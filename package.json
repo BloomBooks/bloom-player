@@ -1,0 +1,36 @@
+{
+  "name": "bloom-player-react",
+  "version": "0.5.0",
+  "description": "React components for displaying Bloom books",
+  "main": "bloom-player-root.ts",
+  "author": "John Thomson <john_thomson@sil.org>",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "css-loader": "^2.1.1",
+    "file-loader": "^3.0.1",
+    "globule": "^1.2.1",
+    "less": "^3.9.0",
+    "less-loader": "^4.1.0",
+    "style-loader": "^0.23.1",
+    "ts-loader": "^5.3.3",
+    "typescript": "*",
+    "url-loader": "^1.1.2",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
+    "webpack-merge": "^4.2.1",
+    "yarn": "^1.15.2"
+  },
+  "dependencies": {
+    "@types/react": "^16.8.10",
+    "axios": "^0.18.0",
+    "jquery": "^3.3.1",
+    "react": "^16.8.5",
+    "react-dom": "^16.8.5",
+    "react-slick": "^0.23.2",
+    "slick-carousel": "^1.8.1",
+    "style-scoped": "^0.1.0"
+  }
+}
