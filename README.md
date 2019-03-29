@@ -1,5 +1,5 @@
 ## Introduction
-bloom-player-react is designed to play bloom books, specifically unzipped .bloomd books such as Bloom creates for BloomReader.
+bloom-player-react is designed to play Bloom books, specifically unzipped .bloomd books such as Bloom creates for BloomReader.
 
 You may embed a BloomPlayerCore control directly in another react component or web page, or use BloomPlayerControls to get some standard playback (and eventually appearance) controls.
 
@@ -13,7 +13,7 @@ This looks for divs similar to
 
     <div class="bloom-player-controls" data-url="/data/user/0/org.sil.bloom.reader/files/openBook"></div>
 
-and converts each into a bloom player displaying the indicated book.
+and converts each into a BloomPlayerControls displaying the indicated book.
 
 ## Development
 

@@ -6,6 +6,10 @@
   "author": "John Thomson <john_thomson@sil.org>",
   "license": "MIT",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BloomBooks/bloom-player-react.git"
+  },
   "devDependencies": {
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
