@@ -15,12 +15,16 @@ This looks for divs similar to
 
 and converts each into a BloomPlayerControls displaying the indicated book.
 
+The individual components are also published in the lib directory. In typescript they may be imported with code like this:
+
+    import { BloomPlayerCore } from "bloom-player-react/lib/bloom-player-core";
+
 ## Development
 
 Run yarn to get the dependencies.
-Then run webpack to build the output bundle.
-
-You can also use webpack --config webpack-config-prod.js to build a 'production' bundle, which is minified to less than half the size. Currently while this module and its clients are in the early stages of development we are pushing the unminified version to npm for greater ease of debugging.
+Then use npm run build to build the dev output bundle.
+Use npm run build-prod to build the production (minified) output bundle
+You should run both of these (and tweak the version number) before publishing.
 
 ##License
 MIT

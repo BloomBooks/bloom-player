@@ -3,14 +3,15 @@
         "target": "es5",
         "module": "commonjs",
         "sourceMap": true,
+        "declaration": true,
         "jsx": "react",
         "lib": ["dom", "es6", "scripthost", "es2017.object"],
         "experimentalDecorators": true,
         "alwaysStrict": true,
         "noImplicitReturns": true,
         "strictNullChecks": true,
-        "outDir": "output",
+        "outDir": "lib",
         "resolveJsonModule": true
     },
-    "exclude": ["node_modules", "typings"]
+    "exclude": ["node_modules", "typings", "lib"]
 }
