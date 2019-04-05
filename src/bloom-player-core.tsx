@@ -14,6 +14,7 @@ import "./bloom-player.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
+import { BloomPlayerControls } from "./bloom-player-root";
 
 // BloomPlayer takes the URL of a folder containing a Bloom book. The file name
 // is expected to match the folder name. (Enhance: might be better to just take
@@ -311,6 +312,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                 });
                 this.setState({ styleRules: combinedStyle });
+                BloomPlayerControls.pageStylesInstalled = true;
             });
     }
 

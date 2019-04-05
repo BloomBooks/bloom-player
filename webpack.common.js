@@ -22,7 +22,7 @@ module.exports = {
     // Webpack-common is intended to be 'required' by something that provides that.
     context: __dirname,
     entry: {
-        bloomPlayerControlBundle: "./src/bloom-player-root.ts"
+        bloomPlayer: "./src/bloom-player-root.ts"
      },
 
     output: {

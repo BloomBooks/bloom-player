@@ -248,6 +248,7 @@ export class Animation {
             page.insertBefore(hidePageDiv, page.firstChild);
         } else {
             // We already made the animation div, just retrieve the wrapDiv from inside it.
+            this.animationView = hidePageDiv;
             wrapDiv = <HTMLElement>this.animationView.children.item(0);
         }
 

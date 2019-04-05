@@ -2,7 +2,7 @@
   "name": "bloom-player-react",
   "version": "0.6.0",
   "description": "React components for displaying Bloom books",
-  "main": "bloomPlayerControlBundle.min.js",
+  "main": "bloomPlayer.min.js",
   "author": "John Thomson <john_thomson@sil.org>",
   "license": "MIT",
   "private": false,
@@ -11,6 +11,7 @@
     "url": "https://github.com/BloomBooks/bloom-player-react.git"
   },
   "devDependencies": {
+    "@types/react-dom": "^16.8.3",
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^2.1.1",
@@ -38,12 +39,12 @@
     "style-scoped": "^0.1.0"
   },
   "scripts": {
-    "build": "tsc && webpack",
-    "build-prod": "tsc && webpack --config webpack-config-prod.js"
+    "build": "webpack",
+    "build-prod": "webpack --config webpack-config-prod.js",
+    "test1": "copy test\\testPage.htm dest /y"
   },
   "files": [
     "dist/*.js",
-    "lib/*.js",
-    "lib/*.d.ts"
+    "lib/*.js"
   ]
 }
