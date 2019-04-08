@@ -180,7 +180,7 @@ export class BloomPlayerControls extends React.Component<
         // though we're looking at it in landscape, resulting in scroll bars and misplaced
         // page turning buttons. So we force all the actual page previews to be no bigger than
         // the height we expect and hide their overflow to fix this.
-        scaleStyleSheet.innerText = `.bloomPlayer.bloomPlayer1 {width: ${width}px; transform-origin: left top 0; transform: scale(${scaleFactor})}
+        scaleStyleSheet.innerText = `.bloomPlayer {width: ${width}px; transform-origin: left top 0; transform: scale(${scaleFactor})}
         .actual-page-preview {height: ${actualPageHeight / scaleFactor}px; overflow: hidden;}`;
     }
 

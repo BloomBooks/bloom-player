@@ -13,7 +13,7 @@ above the page so that page numbers will increment.*/
 }
 
 /* makes context pages smaller and dimmer than regular ones */
-.bloomPlayer.bloomPlayer1 .pageSlider .contextPage .bloom-page {
+.bloomPlayer .pageSlider .contextPage .bloom-page {
     margin-left: 10%;
     width: 80%;
     margin-top: 10%;
@@ -37,7 +37,7 @@ We just make them follow the main content normally. */
 @button-radius: 2mm;
 
 // We need these outer conditions for specificity
-.bloomPlayer.bloomPlayer1 {
+.bloomPlayer {
     // these buttons are positioned relative to the slider, our preview.
     // Usually the buttons are outside the slider, just touching it; but this
     // takes them outside our phone's display. This puts them just inside it.
@@ -110,7 +110,7 @@ We just make them follow the main content normally. */
 // special behavior on FF, so having it ignore the request is fine.)
 @media (hover:none) {
     // We need these outer conditions for specificity
-    .bloomPlayer.bloomPlayer1 {
+    .bloomPlayer {
         .slick-next,
         .slick-prev {
             visibility: hidden;
@@ -118,7 +118,7 @@ We just make them follow the main content normally. */
     }
 }
 
-.bloomPlayer.bloomPlayer1.hideNextPrevButtons {
+.bloomPlayer.hideNextPrevButtons {
     .slick-next,
     .slick-prev {
         // display:none won't work, see comment on slick-disabled
@@ -129,19 +129,19 @@ We just make them follow the main content normally. */
 /* override the rule in bloom-preview that puts a border at the bottom of each page
 to separate the pages in a continuous scrolling view. Unfortunately that rule is
 !important so the only way to beat it is to be !important too. */
-.bloomPlayer.bloomPlayer1 div.bloom-page {
+.bloomPlayer div.bloom-page {
     border-bottom: initial !important;
 }
 
 /* we're giving pages in this control less margin than in regular previews,
 so we need the page number further down to reduce the chance of overlap. */
-.bloomPlayer.bloomPlayer1 .numberedPage::after {
+.bloomPlayer .numberedPage::after {
     bottom: 2px;
 }
 
 /* the reduced margin means we need to adjust the horizontal position to
 align the page number with the margin, too. */
-.bloomPlayer.bloomPlayer1 .numberedPage:nth-of-type(2n + 1)::after {
+.bloomPlayer .numberedPage:nth-of-type(2n + 1)::after {
     left: 5%;
 }
 
@@ -150,7 +150,7 @@ but actually in this control the pages don't have a common direct parent,
 so nth-of-type doesn't do what we want and all the pages come out as left.
 Not trying to solve this for now as we want an architectural solution
 that makes available to the control files more like Bloom Reader uses */
-.bloomPlayer.bloomPlayer1 .numberedPage:nth-of-type(2n)::after {
+.bloomPlayer .numberedPage:nth-of-type(2n)::after {
     right: 5%;
 }
 
