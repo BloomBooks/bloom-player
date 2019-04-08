@@ -1,0 +1,21 @@
+{
+    "rules": {
+        "member-access": true,
+        "jsx-no-lambda": false, // this might cost us in rendering performance, could revisit someday
+        "no-var-keyword": {
+            "severity": "warning"
+        },
+        "prefer-const": {
+            "severity": "warning"
+        },
+        "only-arrow-functions": {
+            "options": "allow-declarations",
+            "severity": "error"
+        }
+    },
+    "extends": [
+        "tslint-react",
+        // leave formatting to prettier
+        "tslint-config-prettier"
+    ]
+}

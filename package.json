@@ -1,26 +1,31 @@
 {
-  "name": "bloom-player-react",
+  "name": "bloom-player",
   "version": "0.6.0",
-  "description": "React components for displaying Bloom books",
+  "description": "A tool for displaying Bloom books in iframes or WebViews",
   "main": "bloomPlayer.min.js",
   "author": "John Thomson <john_thomson@sil.org>",
   "license": "MIT",
   "private": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/BloomBooks/bloom-player-react.git"
+    "url": "https://github.com/BloomBooks/bloom-player.git"
   },
   "devDependencies": {
     "@types/react-dom": "^16.8.3",
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^2.1.1",
+    "editorconfig": "^0.15.3",
     "file-loader": "^3.0.1",
     "globule": "^1.2.1",
     "less": "^3.9.0",
     "less-loader": "^4.1.0",
+    "prettier": "^1.16.4",
     "style-loader": "^0.23.1",
     "ts-loader": "^5.3.3",
+    "tslint": "^5.15.0",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-react": "^4.0.0",
     "typescript": "*",
     "url-loader": "^1.1.2",
     "webpack": "^4.29.6",
@@ -39,9 +44,11 @@
     "style-scoped": "^0.1.0"
   },
   "scripts": {
-    "build": "webpack",
+    "build-dev": "webpack",
     "build-prod": "webpack --config webpack-config-prod.js",
-    "test1": "copy test\\testPage.htm dest /y"
+    "build": "npm run tslint && npm run build-dev && npm run build-prod",
+    "test1": "copy test\\testPage.htm dest /y",
+    "tslint": "tslint  --project tsconfig.json"
   },
   "files": [
     "dist/*.js",

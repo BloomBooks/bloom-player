@@ -49,7 +49,7 @@ export default class Narration {
 
     private playCurrentInternal() {
         if (!this.paused && this.getPlayer()) {
-            var promise = <any>this.getPlayer().play();
+            const promise = <any>this.getPlayer().play();
             // In newer browsers, play() returns a promise which fails
             // if the browser disobeys the command to play, as some do
             // if the user hasn't 'interacted' with the page in some
@@ -173,7 +173,7 @@ export default class Narration {
         includeSelf: boolean = false
     ): HTMLElement[] {
         // querySelectorAll checks all the descendants
-        let allMatches: HTMLElement[] = [].slice.call(
+        const allMatches: HTMLElement[] = [].slice.call(
             (container || document).querySelectorAll(expr)
         );
 

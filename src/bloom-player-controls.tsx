@@ -46,12 +46,12 @@ export class BloomPlayerControls extends React.Component<
         );
     }
 
-    setBookProps(bookProps: { landscape: boolean; canRotate: boolean }) {
+    private setBookProps(bookProps: { landscape: boolean; canRotate: boolean }) {
         this.setState({canRotate: bookProps.canRotate});
     }
 
-    static init() {
-        var vars = {};
+    public static init() {
+        const vars = {}; // deceptive, we don't change the ref, but do change the content
         window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m,key,value) => {
             vars[key] = value;
             return "";
@@ -135,7 +135,7 @@ export class BloomPlayerControls extends React.Component<
         // enhance: maybe we just want to force the automatic browser margins to zero?
         let topMargin = 0;
         let bottomMargin = 0;
-        var style = window.getComputedStyle(document.body);
+        const style = window.getComputedStyle(document.body);
         if (style && style.marginTop) {
             topMargin = parseInt(style.marginTop);
         }
@@ -144,7 +144,7 @@ export class BloomPlayerControls extends React.Component<
         }
         const docHeight = document.body.offsetHeight + topMargin + bottomMargin; // height currently occupied by everything
 
-        var landscape = page.getAttribute("class")!.indexOf("Landscape") >= 0;
+        const landscape = page.getAttribute("class")!.indexOf("Landscape") >= 0;
 
         const pageHeight = landscape ? this.maxPageDimension * 9 / 16 : this.maxPageDimension;
         // The current height of the controls that must share the page with the adjusted document
@@ -193,7 +193,7 @@ export class BloomPlayerControls extends React.Component<
         this.scalePageToWindow();
     }
 
-    setupPlayPause() {
+    private setupPlayPause() {
         const player = document.getElementsByClassName("bloomPlayer")[0] as HTMLElement;
         if (!player) {
             window.setTimeout(() => this.setupPlayPause(), 200);
