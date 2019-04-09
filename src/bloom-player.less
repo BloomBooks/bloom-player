@@ -13,7 +13,7 @@ above the page so that page numbers will increment.*/
 }
 
 /* makes context pages smaller and dimmer than regular ones */
-.bloomPlayer.bloomPlayer1 .pageSlider .contextPage .bloom-page {
+.bloomPlayer .pageSlider .contextPage .bloom-page {
     margin-left: 10%;
     width: 80%;
     margin-top: 10%;
@@ -37,24 +37,28 @@ We just make them follow the main content normally. */
 @button-radius: 2mm;
 
 // We need these outer conditions for specificity
-.bloomPlayer.bloomPlayer1 {
+.bloomPlayer {
     // these buttons are positioned relative to the slider, our preview.
     // Usually the buttons are outside the slider, just touching it; but this
     // takes them outside our phone's display. This puts them just inside it.
     .slick-next {
         right: 0;
         border-radius: @button-radius 0 0 @button-radius;
-        // produced from artwork/page right icon.svg by
+        // The white icons (hover) were produced from artwork/page right icon.svg by
         // - saving in inkscape as plain svg,
         // - open in text editor
         // - copy svg to https://yoksel.github.io/url-encoder/
         // - copy 'ready for CSS' output here
+        // I've also checked in grey versions of the icon files.
         // That icon file was in turn produced by tracing over the one Readium
         // produces, which comes from a special font called glyphicons-halflings.
         // Embedding the SVG like this bypasses all the complications of making
         // the build system put the svg file where we can find it, for all the
         // clients of bloom-player, and saves a server round trip to boot.
-        background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23b2b2b2;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
+        &:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        }
     }
     .slick-prev {
         left: 0;
@@ -66,13 +70,17 @@ We just make them follow the main content normally. */
         // of it to be seen, even when over the preview.
         z-index: 1;
         // See comment on slick-next
-        background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23b2b2b2;fill-opacity:1;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
+        &:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        }
     }
     .slick-next,
     .slick-prev {
         height: 67%;
-        background-color: rgb(203, 203, 203);
-        // This makes them quite faint, allowing all the page content to be seen,
+        background-color: transparent; // except when hovering, see below.
+        // This makes the grey buttons, which are all you can see when not hovering,
+        // quite faint, allowing all the page content to be seen through them,
         // when not hovered over; yet there is some hint of something to click.
         opacity: 0.4;
         // the actual background-url is set in blocks not shared by next/prev
@@ -81,6 +89,7 @@ We just make them follow the main content normally. */
         background-position: center;
         &:hover {
             opacity: 0.9;
+            background-color: rgb(203, 203, 203);
         }
         &:before {
             // we're using background images, override special font chars slick uses
@@ -95,7 +104,21 @@ We just make them follow the main content normally. */
     }
 }
 
-.bloomPlayer.bloomPlayer1.hideNextPrevButtons {
+// On devices where you can't hover (phones, tablets), hide the buttons completely.
+// Users will naturally expect to page by dragging.
+// (Firefox doesn't support this media query, but happily, we don't want any
+// special behavior on FF, so having it ignore the request is fine.)
+@media (hover:none) {
+    // We need these outer conditions for specificity
+    .bloomPlayer {
+        .slick-next,
+        .slick-prev {
+            visibility: hidden;
+        }
+    }
+}
+
+.bloomPlayer.hideNextPrevButtons {
     .slick-next,
     .slick-prev {
         // display:none won't work, see comment on slick-disabled
@@ -106,19 +129,19 @@ We just make them follow the main content normally. */
 /* override the rule in bloom-preview that puts a border at the bottom of each page
 to separate the pages in a continuous scrolling view. Unfortunately that rule is
 !important so the only way to beat it is to be !important too. */
-.bloomPlayer.bloomPlayer1 div.bloom-page {
+.bloomPlayer div.bloom-page {
     border-bottom: initial !important;
 }
 
 /* we're giving pages in this control less margin than in regular previews,
 so we need the page number further down to reduce the chance of overlap. */
-.bloomPlayer.bloomPlayer1 .numberedPage::after {
+.bloomPlayer .numberedPage::after {
     bottom: 2px;
 }
 
 /* the reduced margin means we need to adjust the horizontal position to
 align the page number with the margin, too. */
-.bloomPlayer.bloomPlayer1 .numberedPage:nth-of-type(2n + 1)::after {
+.bloomPlayer .numberedPage:nth-of-type(2n + 1)::after {
     left: 5%;
 }
 
@@ -127,6 +150,26 @@ but actually in this control the pages don't have a common direct parent,
 so nth-of-type doesn't do what we want and all the pages come out as left.
 Not trying to solve this for now as we want an architectural solution
 that makes available to the control files more like Bloom Reader uses */
-.bloomPlayer.bloomPlayer1 .numberedPage:nth-of-type(2n)::after {
+.bloomPlayer .numberedPage:nth-of-type(2n)::after {
     right: 5%;
+}
+
+body {
+    // Scaling things down has an odd effect where the browser thinks it needs a scroll range
+    // big enough for the original, unscaled size. Since we're shrinking the page to fit,
+    // we never need a scroll bar. This prevents it.
+    height: 100%;
+    overflow:hidden;
+}
+
+// Styles the special div we create for motion books. It is put at the root of the page and hides
+// it completely while containing the preview.
+div.bloom-imageContainer.hidePage {
+    height: 100%;
+    width: 100%;
+    position: absolute !important; // !important should not be needed, but there's a bug in FF45.
+    left: 0;
+    top: 0;
+    z-index: 2000;
+    background-color: black; // hide anything not covered by image
 }

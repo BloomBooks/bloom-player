@@ -9,8 +9,8 @@
         "alwaysStrict": true,
         "noImplicitReturns": true,
         "strictNullChecks": true,
-        "outDir": "output",
+        "outDir": "lib",
         "resolveJsonModule": true
     },
-    "exclude": ["node_modules", "typings"]
+    "exclude": ["node_modules", "typings", "lib"]
 }

@@ -4,7 +4,7 @@ var node_modules = path.resolve(__dirname, "node_modules");
 
 var globule = require("globule");
 
-var outputDir = "output";
+var outputDir = "dist";
 
 // From Bloom's webpack, it seems this is needed
 // if ever our output directory does not have the same parent as our node_modules. We then
@@ -22,7 +22,7 @@ module.exports = {
     // Webpack-common is intended to be 'required' by something that provides that.
     context: __dirname,
     entry: {
-        bloomPlayerControlBundle: "./src/bloom-player-root.ts"
+        bloomPlayer: "./src/bloom-player-root.ts"
      },
 
     output: {

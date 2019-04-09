@@ -3,17 +3,19 @@ bloom-player-core is responsible for all the behavior of working through a book,
 (other than page turning).
 */
 import * as React from "react";
-import axios from "axios";
-import { AxiosPromise } from "axios";
+import axios, { AxiosPromise } from "axios";
 import Slider from "react-slick";
+// tslint:disable:no-submodule-imports (no idea how to import this from root, or do without it)
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
 import "style-scoped/scoped"; // maybe use .min.js after debugging?
+// tslint:enable:no-submodule-imports
 import "./bloom-player.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
+import { BloomPlayerControls } from "./bloom-player-controls";
 
 // BloomPlayer takes the URL of a folder containing a Bloom book. The file name
 // is expected to match the folder name. (Enhance: might be better to just take
@@ -43,7 +45,7 @@ interface IProps {
     hideNextPrevButtons?: boolean;
 }
 interface IState {
-    pages: Array<string>; // of the book. First and last are empty in context mode.
+    pages: string[]; // of the book. First and last are empty in context mode.
     styleRules: string; // concatenated stylesheets the book references or embeds.
     // indicates current page, though typically not corresponding to the page
     // numbers actually on the page. This is an index into pages, and in context
@@ -90,7 +92,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if ((newSourceUrl as any).endsWith("/")) {
             newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 1);
         }
-        if (newSourceUrl != this.sourceUrl && newSourceUrl) {
+        if (newSourceUrl !== this.sourceUrl && newSourceUrl) {
             this.sourceUrl = newSourceUrl;
             this.narration.urlPrefix = this.sourceUrl;
             const index = this.sourceUrl.lastIndexOf("/");
@@ -121,7 +123,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // Now we have all the information we need to call reportBookProps if it is set.
                     if (i === 0 && this.props.reportBookProperties) {
                         this.props.reportBookProperties({
-                            landscape: landscape,
+                            landscape,
                             canRotate: this.canRotate
                         });
                     }
@@ -148,7 +150,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }, 500);
             });
         }
-        if (prevProps.landscape != this.props.landscape) {
+        if (prevProps.landscape !== this.props.landscape) {
             // may need to show or hide animation
             this.setIndex(this.state.currentSliderIndex);
             this.showingPage(this.state.currentSliderIndex);
@@ -203,7 +205,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const desiredClass = landscape
                 ? "Device16x9Landscape"
                 : "Device16x9Portrait";
-            if (sizeClass != desiredClass) {
+            if (sizeClass !== desiredClass) {
                 page.classList.remove(sizeClass);
                 page.classList.add(desiredClass);
             }
@@ -272,7 +274,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
             null
         );
-        const promises: AxiosPromise<any>[] = [];
+        const promises: Array<AxiosPromise<any>> = [];
         for (let i = 0; i < linkElts.snapshotLength; i++) {
             const link = linkElts.snapshotItem(i) as HTMLElement;
             const href = link.getAttribute("href");
@@ -311,6 +313,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                 });
                 this.setState({ styleRules: combinedStyle });
+                BloomPlayerControls.pageStylesInstalled = true;
             });
     }
 
@@ -321,6 +324,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private slider: Slider | null;
+    private rootDiv: HTMLElement | null;
+
+    public getRootDiv(): HTMLElement | null { return this.rootDiv;}
 
     public render() {
         // multiple classes help make rules more specific than those in the book's stylesheet
@@ -330,11 +336,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return (
             <div
                 className={
-                    "bloomPlayer bloomPlayer1" +
+                    "bloomPlayer" +
                     (this.props.hideNextPrevButtons
                         ? " hideNextPrevButtons"
                         : "")
                 }
+                ref={bloomplayer => this.rootDiv = bloomplayer}
             >
                 <Slider
                     className="pageSlider"

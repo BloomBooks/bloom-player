@@ -1,26 +1,31 @@
 ## Introduction
-bloom-player-react is designed to play Bloom books, specifically unzipped .bloomd books such as Bloom creates for BloomReader.
 
-You may embed a BloomPlayerCore control directly in another react component or web page, or use BloomPlayerControls to get some standard playback (and eventually appearance) controls.
+bloom-player lets you interact with [Bloom](bloomlibrary.org) books that have been prepared for electronic publication. For example, the contents of a .bloomd (bloom-player cannot unzip .bloomd's).
 
-This is designed to be published using npm so as to be readily available to a variety of clients. The published version includes both the source code, which is convenient to import into other react modules, especially in typescript, and a bundle generated with webpack that is useful for loading directly into a webpage or WebView.
+To use bloomplayer.js,
 
-Especially when using the bundle, it may be helpful to make use of the export 
+    1. get bloomplayer.htm and bloomplayer.js into your project.
 
-    BloomPlayer.BloomPlayerControls.applyToMarkedElements();
+    2. in an iframe or webview navigate to bloomplayer.htm with a url that tells it where to find the book's html. Example:
 
-This looks for divs similar to
+     <iframe src="\bloomplayer.htm?url='https:\\example.com\mybook"></iframe>
 
-    <div class="bloom-player-controls" data-url="/data/user/0/org.sil.bloom.reader/files/openBook"></div>
+## Notes
 
-and converts each into a BloomPlayerControls displaying the indicated book.
+Currently, the url parameter points to the FOLDER that contains the book files. The book itself must have the same name as the folder, with the extension .htm. In the example above, https:\\example.com\mybook\mybook.htm must yield the book's main html file, and the other files it references should be in the same folder.
+
+The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider then it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
+
+Bloom-player is designed to be published using npm so as to be readily available to a variety of clients. The published version includes both dest/bloomPlayer.js and dest/bloomPlayer.min.js.
+
+We deliberately require this component to be used in an iframe so that the containing web page is safe from any scripts that might get embedded in Bloom books. For this reason bloom-player deliberately manipulates (with React) the body of its HTML document.
 
 ## Development
 
-Run yarn to get the dependencies.
-Then run webpack to build the output bundle.
-
-You can also use webpack --config webpack-config-prod.js to build a 'production' bundle, which is minified to less than half the size. Currently while this module and its clients are in the early stages of development we are pushing the unminified version to npm for greater ease of debugging.
+Run `yarn` to get the dependencies.
+Then use `yarn build` to build the outputs.
+You can also use `yarn run build-dev` or `build-prod` to build just the dev or production versions.
+You should also tweak the version number before publishing.
 
 ##License
 MIT
