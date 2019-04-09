@@ -49,7 +49,7 @@ export default class Narration {
 
     private playCurrentInternal() {
         if (!this.paused && this.getPlayer()) {
-            const promise = <any>this.getPlayer().play();
+            const promise = this.getPlayer().play();
             // In newer browsers, play() returns a promise which fails
             // if the browser disobeys the command to play, as some do
             // if the user hasn't 'interacted' with the page in some
@@ -119,7 +119,7 @@ export default class Narration {
                 ".ui-audioCurrent"
             );
             const audioElts = this.getPageAudioElements();
-            let nextIndex = audioElts.indexOf(<HTMLElement>current) + 1;
+            let nextIndex = audioElts.indexOf(current as HTMLElement) + 1;
             while (nextIndex < audioElts.length) {
                 const next = audioElts[nextIndex];
                 if (!this.canPlayAudio(next)) {
@@ -156,7 +156,7 @@ export default class Narration {
             document.body.appendChild(player);
             init(player);
         }
-        return <HTMLMediaElement>player;
+        return player as HTMLMediaElement;
     }
 
     public canPlayAudio(current: Element): boolean {

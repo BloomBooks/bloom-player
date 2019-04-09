@@ -46,12 +46,13 @@
   "scripts": {
     "build-dev": "webpack",
     "build-prod": "webpack --config webpack-config-prod.js",
-    "build": "npm run tslint && npm run build-dev && npm run build-prod",
-    "test1": "copy test\\testPage.htm dest /y",
+    "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copyBp",
+    "copyBp": "copy src\\bloomplayer.htm dist /y",
     "tslint": "tslint  --project tsconfig.json"
   },
   "files": [
     "dist/*.js",
+    "dist/bloomplayer.htm",
     "lib/*.js"
   ]
 }

@@ -1,7 +1,18 @@
 ## Introduction
-bloom-player is designed to play Bloom books, specifically unzipped .bloomd books such as Bloom creates for BloomReader.
 
-You should make a very simple html document, similar to test/testPage.htm, and make it the root document of an iframe or WebView. The src url for the iframe or WebView must specify a parameter in addition to the document, which must give the url of the folder where the bloom book can be found.
+bloom-player lets you interact with [Bloom](bloomlibrary.org) books that have been prepared for electronic publication. For example, the contents of a .bloomd (bloom-player cannot unzip .bloomd's).
+
+To use bloomplayer.js,
+
+    1. get bloomplayer.htm and bloomplayer.js into your project.
+
+    2. in an iframe or webview navigate to bloomplayer.htm with a url that tells it where to find the book's html. Example:
+
+     <iframe src="\bloomplayer.htm?url='https:\\example.com\mybook"></iframe>
+
+## Notes
+
+Currently, the url parameter points to the FOLDER that contains the book files. The book itself must have the same name as the folder, with the extension .htm. In the example above, https:\\example.com\mybook\mybook.htm must yield the book's main html file, and the other files it references should be in the same folder.
 
 The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider then it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
 
@@ -11,9 +22,9 @@ We deliberately require this component to be used in an iframe so that the conta
 
 ## Development
 
-Run yarn to get the dependencies.
-Then use yarn run build to build the outputs.
-You can also use yarn run build-dev or build-prod to build just the dev or production versions.
+Run `yarn` to get the dependencies.
+Then use `yarn build` to build the outputs.
+You can also use `yarn run build-dev` or `build-prod` to build just the dev or production versions.
 You should also tweak the version number before publishing.
 
 ##License

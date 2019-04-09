@@ -30,6 +30,8 @@ export class BloomPlayerControls extends React.Component<
         windowLandscape: false
     };
 
+    private bloomPlayer: BloomPlayerCore | null;
+
     public render() {
         return (
             <div
@@ -41,6 +43,7 @@ export class BloomPlayerControls extends React.Component<
                     showContextPages={this.props.showContextPages}
                     paused={this.state.paused}
                     reportBookProperties={bookProps=>this.setBookProps(bookProps)}
+                    ref = {bloomPlayer => this.bloomPlayer = bloomPlayer}
                 />
             </div>
         );
@@ -52,22 +55,13 @@ export class BloomPlayerControls extends React.Component<
 
     public static init() {
         const vars = {}; // deceptive, we don't change the ref, but do change the content
+        //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
         window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m,key,value) => {
             vars[key] = value;
             return "";
         });
         const url = vars["url"];
         ReactDOM.render(<BloomPlayerControls url={url} />, document.body);
-    }
-
-    // obsolete?
-    public static applyToMarkedElements() {
-        const roots = document.getElementsByClassName("bloom-player-controls");
-        for (let i = 0; i < roots.length; i++) {
-            const root = roots[i];
-            const url = root.getAttribute("data-url") || "";
-            ReactDOM.render(<BloomPlayerControls url={url} />, roots[i]);
-        }
     }
 
     private retries = 0;
@@ -128,7 +122,7 @@ export class BloomPlayerControls extends React.Component<
         }
         const winHeight = window.innerHeight; // total physical space allocated to WebView/iframe
         const desiredWindowLandscape = window.innerWidth > winHeight;
-        if (desiredWindowLandscape != this.state.windowLandscape) {
+        if (desiredWindowLandscape !== this.state.windowLandscape) {
             this.setState({windowLandscape: desiredWindowLandscape});
             return; // will result in fresh call from componentDidUpdate.
         }
@@ -137,10 +131,10 @@ export class BloomPlayerControls extends React.Component<
         let bottomMargin = 0;
         const style = window.getComputedStyle(document.body);
         if (style && style.marginTop) {
-            topMargin = parseInt(style.marginTop);
+            topMargin = parseInt(style.marginTop, 10);
         }
         if (style && style.marginBottom) {
-            bottomMargin = parseInt(style.marginBottom);
+            bottomMargin = parseInt(style.marginBottom, 10);
         }
         const docHeight = document.body.offsetHeight + topMargin + bottomMargin; // height currently occupied by everything
 
@@ -194,11 +188,11 @@ export class BloomPlayerControls extends React.Component<
     }
 
     private setupPlayPause() {
-        const player = document.getElementsByClassName("bloomPlayer")[0] as HTMLElement;
-        if (!player) {
+        if (!this.bloomPlayer || !this.bloomPlayer.getRootDiv()) {
             window.setTimeout(() => this.setupPlayPause(), 200);
             return;
         }
+        const player = this.bloomPlayer.getRootDiv()!;
         // The final 'true' causes this listener to run on the 'capture' phase
         // of event handling, so that we can prevent the usual behavior of a click
         // in slick-carousel, which for some reason is to page backwards.

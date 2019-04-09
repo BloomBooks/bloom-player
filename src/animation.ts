@@ -30,11 +30,11 @@ export class Animation {
 
     // Search for an image container that has the properties we need for animation.
     public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
-        return <HTMLElement>(
+        return (
             [].slice
                 .call(page.getElementsByClassName("bloom-imageContainer"))
-                .find(v => (<IAnimation>v.dataset).initialrect)
-        );
+                .find(v => (v.dataset as IAnimation).initialrect)
+        ) as HTMLElement;
     }
 
     private currentPage: HTMLElement; // one we're currently showing
@@ -89,12 +89,12 @@ export class Animation {
     // May be called when we are not paused; should do nothing if so.
     public PlayAnimation() {
         const stylesheet = this.getAnimationStylesheet().sheet;
-        for (let i = 0; i < (<CSSStyleSheet>stylesheet).cssRules.length; i++) {
+        for (let i = 0; i < (stylesheet as CSSStyleSheet).cssRules.length; i++) {
             if (
-                (<CSSStyleRule>(<CSSStyleSheet>stylesheet).cssRules[i])
+                ((stylesheet as CSSStyleSheet).cssRules[i] as CSSStyleRule)
                     .selectorText === ".bloom-pausable"
             ) {
-                (<CSSStyleSheet>stylesheet).deleteRule(i);
+                (stylesheet as CSSStyleSheet).deleteRule(i);
                 this.permanentRuleCount--;
                 return;
             }
@@ -105,17 +105,18 @@ export class Animation {
     // Not yet tested in bloom preview context; have not yet decided affordance for pausing
     public PauseAnimation() {
         const stylesheet = this.getAnimationStylesheet().sheet;
-        for (let i = 0; i < (<CSSStyleSheet>stylesheet).cssRules.length; i++) {
+        // tslint:disable-next-line:prefer-for-of (cssRules is not an array)
+        for (let i = 0; i < (stylesheet as CSSStyleSheet).cssRules.length; i++) {
             if (
-                (<CSSStyleRule>(<CSSStyleSheet>stylesheet).cssRules[i])
+                ((stylesheet as CSSStyleSheet).cssRules[i] as CSSStyleRule)
                     .selectorText === ".bloom-pausable"
             ) {
                 return; // already paused
             }
         }
-        (<CSSStyleSheet>stylesheet).insertRule(
+        (stylesheet as CSSStyleSheet).insertRule(
             ".bloom-pausable {animation-play-state: paused; -webkit-animation-play-state: paused}",
-            (<CSSStyleSheet>stylesheet).cssRules.length
+            (stylesheet as CSSStyleSheet).cssRules.length
         );
         this.permanentRuleCount++; // not really permanent, but not to be messed with.
     }
@@ -249,7 +250,7 @@ export class Animation {
         } else {
             // We already made the animation div, just retrieve the wrapDiv from inside it.
             this.animationView = hidePageDiv;
-            wrapDiv = <HTMLElement>this.animationView.children.item(0);
+            wrapDiv = this.animationView.children.item(0) as HTMLElement;
         }
 
         // console.log(initialTransform);
@@ -309,15 +310,16 @@ export class Animation {
         // wrapDiv which clips the animation, so we can't compute it until we set that size, which in turn
         // sometimes has to wait until we get the aspect ratio of the image.
         const stylesheet = this.getAnimationStylesheet().sheet;
-        const initialRectStr = (<IAnimation>(<any>this.animationView.dataset))
+        // tslint is so surprised by this cast that it complains without the preliminary "as any"
+        const initialRectStr = (this.animationView.dataset as any as IAnimation)
             .initialrect;
 
         //Fetch the data from the dataset and reformat into scale width and height along with offset x and y
         const initialRect = initialRectStr.split(" ");
         const initialScaleWidth = 1 / parseFloat(initialRect[2]);
         const initialScaleHeight = 1 / parseFloat(initialRect[3]);
-        const finalRect = (<IAnimation>(
-            (<any>this.animationView.dataset)
+        const finalRect = ((
+            (this.animationView.dataset as any as IAnimation)
         )).finalrect.split(" ");
         const finalScaleWidth = 1 / parseFloat(finalRect[2]);
         const finalScaleHeight = 1 / parseFloat(finalRect[3]);
@@ -325,12 +327,12 @@ export class Animation {
         // remove obsolete rules. We want to keep the permanent rules and the ones for the previous page
         // (which may still be visible). That's at most 2. It's harmless to keep an extra one.
         while (
-            (<CSSStyleSheet>stylesheet).cssRules.length >
+            (stylesheet as CSSStyleSheet).cssRules.length >
             this.permanentRuleCount + 4
         ) {
             // remove the last (oldest, since we add at start) non-permanent rule
-            (<CSSStyleSheet>stylesheet).deleteRule(
-                (<CSSStyleSheet>stylesheet).cssRules.length -
+            (stylesheet as CSSStyleSheet).deleteRule(
+                (stylesheet as CSSStyleSheet).cssRules.length -
                     this.permanentRuleCount -
                     1
             );
@@ -378,7 +380,7 @@ export class Animation {
             // this rule puts it in the initial state for the animation, so we get a smooth
             // transition when the animation starts. Don't start THIS animation, though,
             // until the page-turn one completes (or, for android, till we get the signal to start).
-            (<CSSStyleSheet>stylesheet).insertRule(
+            (stylesheet as CSSStyleSheet).insertRule(
                 "." +
                     animateStyleName +
                     " { transform-origin: 0px 0px; transform: " +
@@ -388,7 +390,7 @@ export class Animation {
             );
         } else {
             //Insert the keyframe animation rule with the dynamic begin and end set
-            (<CSSStyleSheet>stylesheet).insertRule(
+            (stylesheet as CSSStyleSheet).insertRule(
                 "@keyframes " +
                     movePicName +
                     " { from{ transform-origin: 0px 0px; transform: " +
@@ -400,7 +402,7 @@ export class Animation {
             );
 
             //Insert the css for the imageView div that utilizes the newly created animation
-            (<CSSStyleSheet>stylesheet).insertRule(
+            (stylesheet as CSSStyleSheet).insertRule(
                 "." +
                     animateStyleName +
                     " { transform-origin: 0px 0px; transform: " +
@@ -418,7 +420,7 @@ export class Animation {
         // and bloom-animationN to trigger the one we just created for page-and-occurence-specific animation.
         // Changing the style name also has the effect of disabling any beforeVisible rule.
         // A separate class for pausing the animation makes it easier to add and remove the relevant rules.
-        const movingDiv = <HTMLElement>wrapDiv.childNodes[0];
+        const movingDiv = wrapDiv.childNodes[0] as HTMLElement;
         movingDiv.setAttribute(
             "class",
             "bloom-animate bloom-pausable " + animateStyleName
@@ -438,14 +440,10 @@ export class Animation {
         const viewAspectRatio = viewWidth / viewHeight;
         let oldStyle = wrapDiv.getAttribute("style")!; // may have visibility: hidden, which we need.
         // If it has anything else (e.g., dimensions for a different orientation), remove them.
-        if (
+        oldStyle = (
             oldStyle.substring(0, "visibility: hidden;".length) ===
             "visibility: hidden;"
-        ) {
-            oldStyle = "visibility: hidden;";
-        } else {
-            oldStyle = "";
-        }
+        ) ? "visibility: hidden;" : "";
         // We always need the wrapDiv to have a white background, in case the image we're
         // animating has transparent regions.
         oldStyle += " background-color: white;";
@@ -512,7 +510,7 @@ export class Animation {
         if (!animationDiv || animationDiv.children.length !== 1) {
             return null;
         }
-        const wrapDiv = <HTMLElement>animationDiv.firstElementChild;
+        const wrapDiv = animationDiv.firstElementChild as HTMLElement;
         if (!wrapDiv.classList.contains(this.wrapperClassName)) {
             return null;
         }
@@ -541,7 +539,7 @@ export class Animation {
             document.body.appendChild(animationElement);
             this.permanentRuleCount = 2; // (<CSSStyleSheet> <any> animationElement).cssRules.length;
         }
-        return <HTMLStyleElement>animationElement;
+        return animationElement as HTMLStyleElement;
     }
 
     private shouldAnimate(page: HTMLElement): boolean {
