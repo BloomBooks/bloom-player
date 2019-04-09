@@ -60,6 +60,8 @@ export default class Narration {
                 promise.catch((reason: any) => {
                     console.log("could not play sound: " + reason);
                     this.removeAudioCurrent();
+                    // With some kinds of invalid sound file it keeps trying and plays over and over.
+                    this.getPlayer().pause();
                     // if (this.Pause) {
                     //     this.Pause.raise();
                     // }
