@@ -136,14 +136,20 @@ export class BloomPlayerControls extends React.Component<
         if (style && style.marginBottom) {
             bottomMargin = parseInt(style.marginBottom, 10);
         }
-        const docHeight = document.body.offsetHeight + topMargin + bottomMargin; // height currently occupied by everything
 
         const landscape = page.getAttribute("class")!.indexOf("Landscape") >= 0;
 
         const pageHeight = landscape ? this.maxPageDimension * 9 / 16 : this.maxPageDimension;
-        // The current height of the controls that must share the page with the adjusted document
-        // This was working the last time we had controls sharing the space, but we no longer do.
-        const controlsHeight = docHeight - pageHeight;
+        // The current height of whatever must share the page with the adjusted document
+        // At one point this could include some visible controls.
+        // It almost works to compute
+        // const docHeight = document.body.offsetHeight + topMargin + bottomMargin;
+        // and then controlsHeight = docHeight - pageHeight.
+        // However, sometimes there are pages (not currently visible) in the wrong orientation.
+        // This can make document.body.offsetHeight unexpectedly big.
+        // For now we are hard-coding that the only thing not part of the document is any
+        // margins on the body.
+        const controlsHeight = topMargin + bottomMargin;
         // How high the document needs to be to make it and the controls fit the window
         const desiredPageHeight = winHeight - controlsHeight;
         let scaleFactor = desiredPageHeight / pageHeight;

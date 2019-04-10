@@ -155,6 +155,8 @@ that makes available to the control files more like Bloom Reader uses */
 }
 
 body {
+    // bloom pages have their own margins, we don't need the browser's
+    margin: 0;
     // Scaling things down has an odd effect where the browser thinks it needs a scroll range
     // big enough for the original, unscaled size. Since we're shrinking the page to fit,
     // we never need a scroll bar. This prevents it.

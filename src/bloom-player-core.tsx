@@ -33,8 +33,10 @@ interface IProps {
     paused?: boolean;
 
     // reportBookProperties is called when book loaded enough to determine these properties.
-    // Not sure this is the best design, but it saves the client doing a lot
-    // of duplicate work retrieving and processing the HTML to figure out these things.
+    // This is probably obsolete, since if the player is embedded in a iframe as we currently
+    // require, only the containing BloomPlayerControls can make use of it. However, it's just
+    // possible we might want it if we end up with rotation-related controls. Note that the
+    // same information is made available via postMessage if the control's window has a parent.
     reportBookProperties?: (
         properties: { landscape: boolean; canRotate: boolean }
     ) => void;
@@ -122,10 +124,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     const landscape = this.forceDevicePageSize(page);
                     // Now we have all the information we need to call reportBookProps if it is set.
                     if (i === 0 && this.props.reportBookProperties) {
+                        // Informs containing react controls (in the same frame)
                         this.props.reportBookProperties({
                             landscape,
                             canRotate: this.canRotate
                         });
+                        // Informs parent window when in an iframe.
+                        if (window.parent) {
+                            window.parent.postMessage({landscape, canRotate: this.canRotate}, "*");
+                        }
+                        // So far there's no way (or need) to inform whatever set up a WebView.
                     }
 
                     this.fixRelativeUrls(page);
