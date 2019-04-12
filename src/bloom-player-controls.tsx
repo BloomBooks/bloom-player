@@ -206,13 +206,29 @@ export class BloomPlayerControls extends React.Component<
         // careful, we can intercept clicks on the forward/back buttons.
         player.addEventListener("click", event => {
             const target = event.target as Element;
-            if (target && target.classList.contains("slick-arrow")) {
+            if (target && target.classList.contains("slick-arrow") || this.inSmartPage(target)) {
                 return; // don't interfere with these clicks!
             }
             this.setState({paused: !this.state.paused});
             event.preventDefault();
             event.stopPropagation();
         }, true);
+    }
+
+    // Tells whether the specified element is a child of one that is marked as a bloom smart page
+    // (e.g., a comprehension question page...typically a page that the reader can interact with).
+    // One reason this is important is that, to allow the interaction, we must not intercept taps/clicks
+    // and use them for pause/resume. Not sure what we will do if we ever have smart pages with
+    // behaviors that should be pausable...
+    private inSmartPage(target: Element) : boolean {
+        let test: Element | null = target;
+        while (test) {
+            if (test.classList.contains("bloom-smart-page")) {
+                return true;
+            }
+            test = test.parentElement;
+        }
+        return false;
     }
 }
 

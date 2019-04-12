@@ -375,9 +375,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 <div
                                     className="actual-page-preview"
                                     dangerouslySetInnerHTML={{ __html: slide }}
-                                    onClick={() =>
-                                        this.slider!.slickGoTo(index - 1)
-                                    }
+                                    ref={div => this.pageLoaded(div)}
                                 />
                             </div>
                         );
@@ -385,6 +383,30 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </Slider>
             </div>
         );
+    }
+
+    private pageLoaded(div: HTMLDivElement | null): void {
+        // When a page loads, if it is a smart page we want to execute any scripts embedded in it.
+        // This is potentially dangerous, so we make it less likely to happen through random attacks
+        // by only doing it in pages that are explicitly marked as bloom smart pages.
+        if (div && div.firstElementChild && div.firstElementChild.classList.contains("bloom-smart-page")) {
+            const scripts = div.getElementsByTagName("script");
+            for (let i = 0; i < scripts.length; i++) {
+                const script = scripts[i];
+                const src = script.getAttribute("src");
+                if (!src) {
+                    // enhance: possibly window.eval(script.innerText?)
+                    // But we consider embedding such scripts in Bloom
+                    // unworkable, because our XHTML conversion mangles angle brackets.
+                    continue;
+                }
+                // This would be highly dangerous in most contexts. It is one of the reasons
+                // we insist that bloom-player should live in its own iframe, protecting the rest
+                // of the page from things this eval might do.
+                // tslint:disable-next-line: no-eval
+                axios.get(src).then(result =>  eval(result.data));
+            }
+        }
     }
 
     // Get a class to apply to a particular slide. This is used to apply the
