@@ -50,6 +50,7 @@ export default class Narration {
     private playCurrentInternal() {
         if (!this.paused && this.getPlayer()) {
             const promise = this.getPlayer().play();
+            
             // In newer browsers, play() returns a promise which fails
             // if the browser disobeys the command to play, as some do
             // if the user hasn't 'interacted' with the page in some
@@ -59,9 +60,17 @@ export default class Narration {
             if (promise && promise.catch) {
                 promise.catch((reason: any) => {
                     console.log("could not play sound: " + reason);
-                    this.removeAudioCurrent();
+
+                    // REVIEW: Don't think the following code is needed?
+                    // If the promise fails, shouldn't the error handler go at it?
+                    // Well, definitely don't want removeAudioCurrent(). That'll mess up the playEnded() call.
+                    // Maybe pausing it isn't a terrible idea.
+
+                    // this.removeAudioCurrent();
                     // With some kinds of invalid sound file it keeps trying and plays over and over.
-                    this.getPlayer().pause();
+                    
+                    // REVIEW: I don't think this line actually helps anything, so I commented it out.
+                    // this.getPlayer().pause();
                     // if (this.Pause) {
                     //     this.Pause.raise();
                     // }
