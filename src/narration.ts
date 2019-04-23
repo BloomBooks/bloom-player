@@ -22,6 +22,10 @@ export default class Narration {
 
     private segments: HTMLElement[];
 
+    // The first one to play should be at the end for both of these
+    private elementsToPlayConsecutivelyStack: HTMLElement[];
+    private timingsStack: number[];
+
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
     public PageDuration: number;
@@ -35,7 +39,41 @@ export default class Narration {
             if (!this.canPlayAudio(first)) {
                 continue;
             }
-            this.setCurrentSpan(original, first);
+
+            const timingsStr: string | null = first.getAttribute("data-audioRecordingTimings");
+
+            let nextElementToHighlight = first;
+            //const timings: number[] = [];
+
+            if (timingsStr) {
+                const fields = timingsStr.split(" ");
+                this.timingsStack = [];
+                for (let i = fields.length - 1; i >= 0; --i) {
+                    //timings[i] = Number(fields[i]);
+                    this.timingsStack.push(Number(fields[i]));
+                }
+                const childSpanElements = first.getElementsByTagName("span");
+
+                this.elementsToPlayConsecutivelyStack = [];
+                for (let i = childSpanElements.length - 1; i >= 0 ; --i) {
+                    this.elementsToPlayConsecutivelyStack.push(childSpanElements.item(i)!);
+                }
+                if (childSpanElements && childSpanElements.length > 0) {
+                    nextElementToHighlight = childSpanElements.item(0)!;
+                }
+            }
+
+            this.setCurrentSpan(original, nextElementToHighlight);
+
+            // TODO: Replace me with a more sophisticated version
+            // for (let i = 1; i < timings.length; ++i) {
+            //     const childSpanElements = first.getElementsByTagName("span");
+
+            //     setTimeout(() => {
+            //         this.setCurrentSpan(original, childSpanElements.item(i)!, false);
+            //     }, timings[i] * 1000);
+            // }
+
             this.playingAll = true;
             //this.setStatus("listen", Status.Active);
             this.playCurrentInternal();
@@ -50,7 +88,14 @@ export default class Narration {
     private playCurrentInternal() {
         if (!this.paused && this.getPlayer()) {
             const promise = this.getPlayer().play();
-            
+
+            for (let i = this.timingsStack.length - 1; i >= 0; --i) {
+                setTimeout( () => {
+                    this.setCurrentSpan(null, this.elementsToPlayConsecutivelyStack[i], false);
+                }, this.timingsStack[i] * 1000);
+            }
+
+
             // In newer browsers, play() returns a promise which fails
             // if the browser disobeys the command to play, as some do
             // if the user hasn't 'interacted' with the page in some
@@ -68,7 +113,7 @@ export default class Narration {
 
                     // this.removeAudioCurrent();
                     // With some kinds of invalid sound file it keeps trying and plays over and over.
-                    
+
                     // REVIEW: I don't think this line actually helps anything, so I commented it out.
                     // this.getPlayer().pause();
                     // if (this.Pause) {
@@ -88,14 +133,17 @@ export default class Narration {
 
     private setCurrentSpan(
         current: Element | null,
-        changeTo: HTMLElement | null
+        changeTo: HTMLElement | null,
+        isUpdateAudioPlayerOn: boolean = true
     ): void {
         this.removeAudioCurrent();
         if (changeTo) {
             changeTo.classList.add("ui-audioCurrent");
             this.idOfCurrentSentence = changeTo.getAttribute("id") || "";
         }
-        this.updatePlayerStatus();
+        if (isUpdateAudioPlayerOn) {
+            this.updatePlayerStatus();
+        }
         //this.changeStateAndSetExpected("record");
     }
 
