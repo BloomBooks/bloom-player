@@ -46,8 +46,8 @@
   "scripts": {
     "build-dev": "webpack",
     "build-prod": "webpack --config webpack-config-prod.js",
-    "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copyBp",
-    "copyBp": "copy src\\bloomplayer.htm dist /y",
+    "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
+    "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist",
     "tslint": "tslint  --project tsconfig.json"
   },
   "files": [
