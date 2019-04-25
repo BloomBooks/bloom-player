@@ -78,7 +78,31 @@ export default class Narration {
         }
     }
     private playSubElementEnded() {
-        // TODO: Check that it actually is ready to finish
+        if (this.timingsStack.length < 2) {
+            // length=0: obviously problematic.
+            // length=1: Could theoretically do partial processing, but since it's the last one, just wait for end event to fire which will call playEnded()
+            return;
+        }
+
+        const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
+        if (mediaPlayer.ended || mediaPlayer.error) {
+            this.removeAudioCurrent();  // TODO: Not sure if desired.
+            return;
+        }
+        const playedDuration: number | undefined | null = mediaPlayer.currentTime;
+
+        // Check if the next one is actually ready to finish. (It might not if the audio got paused).
+        const nextStartTime = this.timingsStack[this.timingsStack.length - 2];
+        console.log(`Currently at ${playedDuration}. Waiting until ${nextStartTime}`);
+        if (playedDuration && playedDuration < nextStartTime) {
+            // Still need to wait. Abort early and check again later.
+            const minimumRemainingDuration = nextStartTime - playedDuration;
+            setTimeout(() => {
+                this.playSubElementEnded();
+            }, minimumRemainingDuration * 1000);
+
+            return;
+        }
 
         this.elementsToHighlightStack.pop();
         this.timingsStack.pop();
@@ -217,6 +241,8 @@ export default class Narration {
     }
 
     private getPlayer(): HTMLMediaElement {
+        // TODO: IDK, should we cache this? is it weird to have this event handler multiple times?
+
         return this.getAudio("bloom-audio-player", audio => {
             // if we just pass the function, it has the wrong "this"
             audio.addEventListener("ended", () => this.playEnded());
