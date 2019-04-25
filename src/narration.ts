@@ -24,102 +24,66 @@ export default class Narration {
 
     // The first one to play should be at the end for both of these
     private elementsToPlayConsecutivelyStack: HTMLElement[];
+    private nextElementIdToPlay: string;
     private timingsStack: number[];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
     public PageDuration: number;
 
+    // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     public playAllSentences(page: HTMLElement): void {
         this.playerPage = page;
-        const audioElts = this.getPageAudioElements();
-        const original: Element | null = page.querySelector(".ui-audioCurrent");
-        for (let firstIndex = 0; firstIndex < audioElts.length; firstIndex++) {
-            const first = audioElts[firstIndex];
-            if (!this.canPlayAudio(first)) {
-                continue;
+
+        this.elementsToPlayConsecutivelyStack = this.getPageAudioElements().reverse();
+
+        const stackSize = this.elementsToPlayConsecutivelyStack.length;
+        if (stackSize === 0) {
+            // Nothing to play
+            if (this.PageNarrationComplete) {
+                this.PageNarrationComplete.raise();
             }
-
-            const timingsStr: string | null = first.getAttribute("data-audioRecordingTimings");
-
-            let nextElementToHighlight = first;
-            //const timings: number[] = [];
-
-            if (timingsStr) {
-                const fields = timingsStr.split(" ");
-                this.timingsStack = [];
-                for (let i = fields.length - 1; i >= 0; --i) {
-                    //timings[i] = Number(fields[i]);
-                    this.timingsStack.push(Number(fields[i]));
-                }
-                const childSpanElements = first.getElementsByTagName("span");
-
-                this.elementsToPlayConsecutivelyStack = [];
-                for (let i = childSpanElements.length - 1; i >= 0 ; --i) {
-                    this.elementsToPlayConsecutivelyStack.push(childSpanElements.item(i)!);
-                }
-                if (childSpanElements && childSpanElements.length > 0) {
-                    nextElementToHighlight = childSpanElements.item(0)!;
-                }
-            }
-
-            this.setCurrentSpan(original, nextElementToHighlight);
-
-            // TODO: Replace me with a more sophisticated version
-            // for (let i = 1; i < timings.length; ++i) {
-            //     const childSpanElements = first.getElementsByTagName("span");
-
-            //     setTimeout(() => {
-            //         this.setCurrentSpan(original, childSpanElements.item(i)!, false);
-            //     }, timings[i] * 1000);
-            // }
-
-            this.playingAll = true;
-            //this.setStatus("listen", Status.Active);
-            this.playCurrentInternal();
             return;
         }
-        // Nothing to play
-        if (this.PageNarrationComplete) {
-            this.PageNarrationComplete.raise();
-        }
+        const firstElementToPlay = this.elementsToPlayConsecutivelyStack[
+            stackSize - 1
+        ]; // Remember to pop it when you're done playing it. (i.e., in playEnded)
+
+        this.setCurrentAudioElement(firstElementToPlay, true);
+        this.playCurrentInternal();
     }
 
     private playCurrentInternal() {
-        if (!this.paused && this.getPlayer()) {
-            const promise = this.getPlayer().play();
+        if (!this.paused) {
+            const mediaPlayer = this.getPlayer();
+            if (mediaPlayer) {
+                const promise = mediaPlayer.play();
 
-            for (let i = this.timingsStack.length - 1; i >= 0; --i) {
-                setTimeout( () => {
-                    this.setCurrentSpan(null, this.elementsToPlayConsecutivelyStack[i], false);
-                }, this.timingsStack[i] * 1000);
-            }
+                // In newer browsers, play() returns a promise which fails
+                // if the browser disobeys the command to play, as some do
+                // if the user hasn't 'interacted' with the page in some
+                // way that makes the browser think they are OK with it
+                // playing audio. In Gecko45, the return value is undefined,
+                // so we mustn't call catch.
+                if (promise && promise.catch) {
+                    promise.catch((reason: any) => {
+                        console.log("could not play sound: " + reason);
 
+                        // REVIEW: Don't think the following code is needed?
+                        // If the promise fails, shouldn't the error handler go at it?
+                        // Well, definitely don't want removeAudioCurrent(). That'll mess up the playEnded() call.
+                        // Maybe pausing it isn't a terrible idea.
 
-            // In newer browsers, play() returns a promise which fails
-            // if the browser disobeys the command to play, as some do
-            // if the user hasn't 'interacted' with the page in some
-            // way that makes the browser think they are OK with it
-            // playing audio. In Gecko45, the return value is undefined,
-            // so we mustn't call catch.
-            if (promise && promise.catch) {
-                promise.catch((reason: any) => {
-                    console.log("could not play sound: " + reason);
+                        // this.removeAudioCurrent();
+                        // With some kinds of invalid sound file it keeps trying and plays over and over.
 
-                    // REVIEW: Don't think the following code is needed?
-                    // If the promise fails, shouldn't the error handler go at it?
-                    // Well, definitely don't want removeAudioCurrent(). That'll mess up the playEnded() call.
-                    // Maybe pausing it isn't a terrible idea.
-
-                    // this.removeAudioCurrent();
-                    // With some kinds of invalid sound file it keeps trying and plays over and over.
-
-                    // REVIEW: I don't think this line actually helps anything, so I commented it out.
-                    // this.getPlayer().pause();
-                    // if (this.Pause) {
-                    //     this.Pause.raise();
-                    // }
-                });
+                        // REVIEW: I don't think this line actually helps anything, so I commented it out.
+                        // this.getPlayer().pause();
+                        // if (this.Pause) {
+                        //     this.Pause.raise();
+                        // }
+                    });
+                }
             }
         }
     }
@@ -131,21 +95,52 @@ export default class Narration {
         }
     }
 
-    private setCurrentSpan(
-        current: Element | null,
-        changeTo: HTMLElement | null,
+    private setCurrentAudioElement(
+        elementToChangeTo: Element,
+        disableHighlightIfNoAudio?: boolean
+    ): void {
+        const firstExistingAudioCurrentElement: Element | null = this.playerPage.querySelector(".ui-audioCurrent");
+
+        this.setCurrentAudioElementFrom(
+            firstExistingAudioCurrentElement,
+            elementToChangeTo,
+            disableHighlightIfNoAudio
+        );
+    }
+
+    private setCurrentAudioElementFrom(
+        currentElement: Element | null | undefined,
+        elementToChangeTo: Element,
+        disableHighlightIfNoAudio,  // TODO: Am i needed? Study BloomDesktop4.6 to find the answer
         isUpdateAudioPlayerOn: boolean = true
     ): void {
-        this.removeAudioCurrent();
-        if (changeTo) {
-            changeTo.classList.add("ui-audioCurrent");
-            this.idOfCurrentSentence = changeTo.getAttribute("id") || "";
+        if (currentElement == elementToChangeTo) {
+            // No need to do much, and better not to so we can avoid any temporary flashes as the highlight is removed and re-applied
+            // TODO: Maybe need to pass isUpdateAudioPlayerOn through here.
+            this.setNextElementIdToPlay(elementToChangeTo.id, isUpdateAudioPlayerOn);
+            return;
         }
-        if (isUpdateAudioPlayerOn) {
-            this.updatePlayerStatus();
+
+        if (currentElement) {
+            this.removeAudioCurrent();
         }
-        //this.changeStateAndSetExpected("record");
+
+        elementToChangeTo.classList.add("ui-audioCurrent");
+
+        this.setNextElementIdToPlay(elementToChangeTo.id, isUpdateAudioPlayerOn);
     }
+
+    // Setter for idOfNextElementToPlay
+    public setNextElementIdToPlay(id: string, isUpdateAudioPlayerOn: boolean) {
+        if (!this.nextElementIdToPlay || this.nextElementIdToPlay != id) {
+            this.nextElementIdToPlay = id;
+
+            if (isUpdateAudioPlayerOn) {
+                this.updatePlayerStatus(); // May be redundant sometimes, but safer to trigger player update whenever the next element changes.
+            }
+        }
+    }
+
 
     private updatePlayerStatus() {
         const player = this.getPlayer();
@@ -154,7 +149,7 @@ export default class Narration {
         }
         player.setAttribute(
             "src",
-            this.currentAudioUrl(this.idOfCurrentSentence) +
+            this.currentAudioUrl(this.nextElementIdToPlay) +
                 "?nocache=" +
                 new Date().getTime()
         );
@@ -173,32 +168,35 @@ export default class Narration {
     }
 
     public playEnded(): void {
-        if (this.playingAll) {
-            const current: Element | null = this.playerPage.querySelector(
-                ".ui-audioCurrent"
-            );
-            const audioElts = this.getPageAudioElements();
-            let nextIndex = audioElts.indexOf(current as HTMLElement) + 1;
-            while (nextIndex < audioElts.length) {
-                const next = audioElts[nextIndex];
-                if (!this.canPlayAudio(next)) {
-                    nextIndex++;
-                    continue;
-                }
-                this.setCurrentSpan(current, next);
-                //this.setStatus("listen", Status.Active); // gets returned to enabled by setCurrentSpan
+        if (this.elementsToPlayConsecutivelyStack &&
+            this.elementsToPlayConsecutivelyStack.length > 0) {
+
+            const currentElement = this.elementsToPlayConsecutivelyStack.pop();
+            const newStackCount = this.elementsToPlayConsecutivelyStack.length;
+            if (newStackCount > 0) {
+                // More items to play
+                const nextElement = this.elementsToPlayConsecutivelyStack[
+                    newStackCount - 1
+                ];
+                this.setCurrentAudioElementFrom(
+                    currentElement,
+                    nextElement,
+                    true
+                );
                 this.playCurrentInternal();
                 return;
+            } else {
+                // Nothing left to play
+                this.elementsToPlayConsecutivelyStack = [];
             }
-            this.playingAll = false;
-            this.setCurrentSpan(current, null);
+
+            this.removeAudioCurrent();
             if (this.PageNarrationComplete) {
                 this.PageNarrationComplete.raise(this.playerPage);
             }
-            //this.changeStateAndSetExpected("listen");
+
             return;
         }
-        //this.changeStateAndSetExpected("next");
     }
 
     private getAudio(id: string, init: (audio: HTMLAudioElement) => void) {
