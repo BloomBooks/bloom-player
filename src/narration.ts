@@ -26,6 +26,7 @@ export default class Narration {
     private elementsToPlayConsecutivelyStack: HTMLElement[];
     private nextElementIdToPlay: string;
     private timingsStack: number[];
+    private elementsToHighlightStack: HTMLElement[];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
@@ -53,11 +54,65 @@ export default class Narration {
         this.playCurrentInternal();
     }
 
+    private playNextSubElement() {
+        // the item should not be popped off the stack until it's completely done with.
+        const highlightCount = this.elementsToHighlightStack.length;
+        const timingsCount = this.timingsStack.length;
+
+        if (highlightCount <= 0 || timingsCount <= 0) {
+            return;
+        }
+
+        const element = this.elementsToHighlightStack[highlightCount -1];
+
+        // TODO: No idea what value to pass in for disableHighlightIfNoAUdio.
+        this.setCurrentAudioElement(element, false, false);  // TODO: can you figure out a way to specify the previous one?
+
+        const startTime = this.timingsStack[timingsCount - 1];
+        if (timingsCount >= 2) {
+            const nextStartTime: number = this.timingsStack[timingsCount - 2];
+            const duration = nextStartTime - startTime;
+            setTimeout(() => {
+                this.playSubElementEnded();
+            }, duration * 1000);
+        }
+    }
+    private playSubElementEnded() {
+        // TODO: Check that it actually is ready to finish
+
+        this.elementsToHighlightStack.pop();
+        this.timingsStack.pop();
+        this.playNextSubElement();
+    }
+
     private playCurrentInternal() {
         if (!this.paused) {
             const mediaPlayer = this.getPlayer();
             if (mediaPlayer) {
+                const element = this.playerPage.querySelector(`#${this.nextElementIdToPlay}`);
+                if (!element || !this.canPlayAudio(element)) {
+                    this.playEnded();
+                    return;
+                }
+
+                const timingsStr: string | null = element.getAttribute("data-audioRecordingTimings");
+                if (timingsStr) {
+                    const fields = timingsStr.split(" ");
+                    this.timingsStack = [];
+                    for (let i = fields.length - 1; i >= 0; --i) {
+                        this.timingsStack.push(Number(fields[i]));
+                    }
+                    const childSpanElements = element.getElementsByTagName("span");
+
+                    this.elementsToHighlightStack = [];
+                    for (let i = childSpanElements.length - 1; i >= 0 ; --i) {
+                        this.elementsToHighlightStack.push(childSpanElements.item(i)!);
+                    }
+
+                }
+
                 const promise = mediaPlayer.play();
+                this.playNextSubElement();
 
                 // In newer browsers, play() returns a promise which fails
                 // if the browser disobeys the command to play, as some do
@@ -97,14 +152,16 @@ export default class Narration {
 
     private setCurrentAudioElement(
         elementToChangeTo: Element,
-        disableHighlightIfNoAudio?: boolean
+        disableHighlightIfNoAudio?: boolean,
+        isUpdateAudioPlayerOn: boolean = true
     ): void {
         const firstExistingAudioCurrentElement: Element | null = this.playerPage.querySelector(".ui-audioCurrent");
 
         this.setCurrentAudioElementFrom(
             firstExistingAudioCurrentElement,
             elementToChangeTo,
-            disableHighlightIfNoAudio
+            disableHighlightIfNoAudio,
+            isUpdateAudioPlayerOn
         );
     }
 
