@@ -1,6 +1,6 @@
 {
   "name": "bloom-player",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "A tool for displaying Bloom books in iframes or WebViews",
   "main": "bloomPlayer.min.js",
   "author": "John Thomson <john_thomson@sil.org>",
@@ -11,17 +11,24 @@
     "url": "https://github.com/BloomBooks/bloom-player.git"
   },
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "@babel/preset-typescript": "^7.3.3",
+    "@types/jest": "^24.0.11",
     "@types/react-dom": "^16.8.3",
+    "babel-jest": "^24.7.1",
     "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^2.1.1",
     "editorconfig": "^0.15.3",
     "file-loader": "^3.0.1",
     "globule": "^1.2.1",
+    "jest": "^24.7.1",
     "less": "^3.9.0",
     "less-loader": "^4.1.0",
     "prettier": "^1.16.4",
     "style-loader": "^0.23.1",
+    "ts-jest": "^24.0.2",
     "ts-loader": "^5.3.3",
     "tslint": "^5.15.0",
     "tslint-config-prettier": "^1.18.0",
@@ -47,12 +54,14 @@
     "build-dev": "webpack",
     "build-prod": "webpack --config webpack-config-prod.js",
     "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
-    "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist",
-    "tslint": "tslint  --project tsconfig.json"
+    "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\simpleComprehensionQuiz.js dist",
+    "tslint": "tslint  --project tsconfig.json",
+    "test": "jest --env=jsdom"
   },
   "files": [
     "dist/*.js",
     "dist/bloomplayer.htm",
     "lib/*.js"
-  ]
+  ],
+  "jest": {"testEnvironment": "jsdom"}
 }

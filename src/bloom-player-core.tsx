@@ -16,6 +16,7 @@ import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { BloomPlayerControls } from "./bloom-player-controls";
+import { OldQuestionsConverter } from "./old-questions";
 
 // BloomPlayer takes the URL of a folder containing a Bloom book. The file name
 // is expected to match the folder name. (Enhance: might be better to just take
@@ -113,49 +114,71 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                 this.makeNonEditable(body);
 
-                // assemble the page content list
-                const pages = doc.getElementsByClassName("bloom-page");
-                const sliderContent: string[] = [];
-                if (this.props.showContextPages) {
-                    sliderContent.push(""); // blank page to fill the space left of first.
-                }
-                for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i];
-                    const landscape = this.forceDevicePageSize(page);
-                    // Now we have all the information we need to call reportBookProps if it is set.
-                    if (i === 0 && this.props.reportBookProperties) {
-                        // Informs containing react controls (in the same frame)
-                        this.props.reportBookProperties({
-                            landscape,
-                            canRotate: this.canRotate
-                        });
-                        // Informs parent window when in an iframe.
-                        if (window.parent) {
-                            window.parent.postMessage({landscape, canRotate: this.canRotate}, "*");
+                // This function, the rest of the work we need to do, will be executed after we attempt
+                // to retrieve questions.json and either get it and convert it into extra pages,
+                // or fail to get it and make no changes.
+                const finishUp = () => {
+                    // assemble the page content list
+                    const pages = doc.getElementsByClassName("bloom-page");
+                    const sliderContent: string[] = [];
+                    if (this.props.showContextPages) {
+                        sliderContent.push(""); // blank page to fill the space left of first.
+                    }
+                    for (let i = 0; i < pages.length; i++) {
+                        const page = pages[i];
+                        const landscape = this.forceDevicePageSize(page);
+                        // Now we have all the information we need to call reportBookProps if it is set.
+                        if (i === 0 && this.props.reportBookProperties) {
+                            // Informs containing react controls (in the same frame)
+                            this.props.reportBookProperties({
+                                landscape,
+                                canRotate: this.canRotate
+                            });
+                            // Informs parent window when in an iframe.
+                            if (window.parent) {
+                                window.parent.postMessage({landscape, canRotate: this.canRotate}, "*");
+                            }
+                            // So far there's no way (or need) to inform whatever set up a WebView.
                         }
-                        // So far there's no way (or need) to inform whatever set up a WebView.
+
+                        this.fixRelativeUrls(page);
+
+                        sliderContent.push(page.outerHTML);
+                    }
+                    if (this.props.showContextPages) {
+                        sliderContent.push(""); // blank page to fill the space right of last.
                     }
 
-                    this.fixRelativeUrls(page);
+                    this.assembleStyleSheets(doc);
+                    this.setState({ pages: sliderContent });
+                    // A pause hopefully allows the document to become visible before we
+                    // start playing any audio or movement on the first page.
+                    // Also gives time for the first page
+                    // element to actually get created in the document.
+                    // Note: typically in Chrome we won't actually start playing, because
+                    // of a rule that the user must interact with the document first.
+                    window.setTimeout(() => {
+                        this.setIndex(0);
+                        this.showingPage(0);
+                    }, 500);
+                };
 
-                    sliderContent.push(page.outerHTML);
-                }
-                if (this.props.showContextPages) {
-                    sliderContent.push(""); // blank page to fill the space right of last.
+                const firstPage = doc.getElementsByClassName("bloom-page")[0];
+                let pageClass = "Device16x9Portrait";
+                if (firstPage) {
+                    pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
 
-                this.assembleStyleSheets(doc);
-                this.setState({ pages: sliderContent });
-                // A pause hopefully allows the document to become visible before we
-                // start playing any audio or movement on the first page.
-                // Also gives time for the first page
-                // element to actually get created in the document.
-                // Note: typically in Chrome we won't actually start playing, because
-                // of a rule that the user must interact with the document first.
-                window.setTimeout(() => {
-                    this.setIndex(0);
-                    this.showingPage(0);
-                }, 500);
+                const urlOfQuestionsFile = this.sourceUrl + "/questions.json";
+                axios.get(urlOfQuestionsFile).then (qfResult => {
+                    const newPages = OldQuestionsConverter.convert(qfResult.data, pageClass);
+                    const firstBackMatterPage = body.getElementsByClassName("bloom-backMatter")[0];
+                    for (let i = 0; i < newPages.length; i++) {
+                        // insertAdjacentElement is tempting, but not in FF45.
+                        firstBackMatterPage.parentElement!.insertBefore(newPages[i], firstBackMatterPage);
+                    }
+                    finishUp();
+                }).catch(() => finishUp())
             });
         }
         if (prevProps.landscape !== this.props.landscape) {
@@ -195,6 +218,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
+    public static getPageSizeClass(page: Element): string {
+        const classAttr = page.getAttribute("class") || "";
+        const matches = classAttr.match(/\b\S*?(Portrait|Landscape)\b/);
+        if (matches && matches.length) {
+            return matches[0];
+        } else {
+            return "";
+        }
+    }
+
     // Force size class to be one of the device classes
     // return true if we determine that the book is landscape
     public static forceDevicePageSize(
@@ -203,10 +236,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         showLandscape: boolean
     ): boolean {
         let landscape = false;
-        const classAttr = page.getAttribute("class") || "";
-        const matches = classAttr.match(/\b\S*?(Portrait|Landscape)\b/);
-        if (matches && matches.length) {
-            const sizeClass = matches[0];
+        const sizeClass = this.getPageSizeClass(page);
+        if (sizeClass) {
             landscape = bookCanRotate
                 ? showLandscape
                 : (sizeClass as any).endsWith("Landscape");
@@ -400,11 +431,34 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // unworkable, because our XHTML conversion mangles angle brackets.
                     continue;
                 }
+
+                // It's quite reasonable for this file to be missing in the book folder itself.
+                // If so, the reader supplies its own version. This annotation is helpful when
+                // previewing books served by Bloom itself, preventing "file not found" yellow boxes.
+                const possiblyOptionalSrc = src.endsWith("/simpleComprehensionQuiz.js")? src + "?optional=true" : src;
                 // This would be highly dangerous in most contexts. It is one of the reasons
                 // we insist that bloom-player should live in its own iframe, protecting the rest
                 // of the page from things this eval might do.
                 // tslint:disable-next-line: no-eval
-                axios.get(src).then(result =>  eval(result.data));
+                axios.get(possiblyOptionalSrc).then(result =>  eval(result.data)).catch(()=>{
+                    if (src.endsWith("/simpleComprehensionQuiz.js")) {
+                        // Probably we generated a replacement page for old-style json comprehension questions.
+                        // The required javascript is not in the book folder, so retrieve our own version.
+                        // We expect this to be in the same place as the root html file, so we strip the file
+                        // name of our url (without params).
+                        const href = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                        const lastSlash = href.lastIndexOf("/");
+                        const folder = href.substring(0, lastSlash);
+                        const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
+                        axios.get(tryForQuiz).then(result =>  {
+                            // tslint:disable-next-line: no-eval
+                            eval(result.data);
+                        }).catch(error => {
+                            console.log(error);
+                        });
+                        // If we don't get it there, not much we can do.
+                    }
+                });
             }
         }
     }
