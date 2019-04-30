@@ -25,12 +25,18 @@ export default class Narration {
     // The first one to play should be at the end for both of these
     private elementsToPlayConsecutivelyStack: HTMLElement[];
     private nextElementIdToPlay: string;
-    private timingsStack: number[];
+    private startTimesInSecsStack: number[];
     private elementsToHighlightStack: HTMLElement[];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
     public PageDuration: number;
+
+    constructor() {
+        // Initialize them here to be safe
+        this.elementsToHighlightStack = [];
+        this.startTimesInSecsStack = [];
+    }
 
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     public playAllSentences(page: HTMLElement): void {
@@ -57,9 +63,9 @@ export default class Narration {
     private playNextSubElement() {
         // the item should not be popped off the stack until it's completely done with.
         const highlightCount = this.elementsToHighlightStack.length;
-        const timingsCount = this.timingsStack.length;
+        const startTimesCount = this.startTimesInSecsStack.length;
 
-        if (highlightCount <= 0 || timingsCount <= 0) {
+        if (highlightCount <= 0 || startTimesCount <= 0) {
             return;
         }
 
@@ -68,17 +74,39 @@ export default class Narration {
         // TODO: No idea what value to pass in for disableHighlightIfNoAUdio.
         this.setCurrentAudioElement(element, false, false);  // TODO: can you figure out a way to specify the previous one?
 
-        const startTime = this.timingsStack[timingsCount - 1];
-        if (timingsCount >= 2) {
-            const nextStartTime: number = this.timingsStack[timingsCount - 2];
-            const duration = nextStartTime - startTime;
+        if (startTimesCount >= 2) {
+            const nextStartTimeInSecs: number = this.startTimesInSecsStack[startTimesCount - 2];
+
+            let currentTimeInSecs: number;
+            const mediaPlayer = document.getElementById("bloom-audio-player");
+            if (mediaPlayer) {
+                // This should be more accurate
+                currentTimeInSecs = (mediaPlayer as HTMLMediaElement).currentTime;
+
+            } else {
+                // TODO: Maybe you should re-structure it and pop sooner  since you really don't need this part of the code
+
+                // A decent estimate if the more accurate method not available
+                currentTimeInSecs = this.startTimesInSecsStack[startTimesCount - 1];
+            }
+
+            let durationInSecs = nextStartTimeInSecs - currentTimeInSecs;
+
+            // Handle cases where the currentTime has already exceeded the nextStartTime
+            //   (might happen if you're unlucky in the thread queue... or if in debugger, etc.)
+            const minHighlightThreshold = 0.1;
+            if (durationInSecs <= minHighlightThreshold) {
+                durationInSecs = minHighlightThreshold;
+            }
+
             setTimeout(() => {
                 this.playSubElementEnded();
-            }, duration * 1000);
+            }, durationInSecs * 1000);
         }
     }
+
     private playSubElementEnded() {
-        if (this.timingsStack.length < 2) {
+        if (this.startTimesInSecsStack.length < 2) {
             // length=0: obviously problematic.
             // length=1: Could theoretically do partial processing, but since it's the last one, just wait for end event to fire which will call playEnded()
             return;
@@ -92,8 +120,7 @@ export default class Narration {
         const playedDuration: number | undefined | null = mediaPlayer.currentTime;
 
         // Check if the next one is actually ready to finish. (It might not if the audio got paused).
-        const nextStartTime = this.timingsStack[this.timingsStack.length - 2];
-        console.log(`Currently at ${playedDuration}. Waiting until ${nextStartTime}`);
+        const nextStartTime = this.startTimesInSecsStack[this.startTimesInSecsStack.length - 2];
         if (playedDuration && playedDuration < nextStartTime) {
             // Still need to wait. Abort early and check again later.
             const minimumRemainingDuration = nextStartTime - playedDuration;
@@ -105,7 +132,7 @@ export default class Narration {
         }
 
         this.elementsToHighlightStack.pop();
-        this.timingsStack.pop();
+        this.startTimesInSecsStack.pop();
         this.playNextSubElement();
     }
 
@@ -122,9 +149,9 @@ export default class Narration {
                 const timingsStr: string | null = element.getAttribute("data-audioRecordingTimings");
                 if (timingsStr) {
                     const fields = timingsStr.split(" ");
-                    this.timingsStack = [];
+                    this.startTimesInSecsStack = [];
                     for (let i = fields.length - 1; i >= 0; --i) {
-                        this.timingsStack.push(Number(fields[i]));
+                        this.startTimesInSecsStack.push(Number(fields[i]));
                     }
                     const childSpanElements = element.getElementsByTagName("span");
 
@@ -168,9 +195,14 @@ export default class Narration {
     }
 
     private removeAudioCurrent() {
-        const elts = document.getElementsByClassName("ui-audioCurrent");
-        for (let i = 0; i < elts.length; i++) {
-            elts[i].classList.remove("ui-audioCurrent");
+        // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
+        const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName("ui-audioCurrent");
+
+        // Convert to an array whose length won't be changed
+        const audioCurrentArray: Element[] = Array.prototype.slice.call(audioCurrentCollection);
+
+        for (let i = 0; i < audioCurrentArray.length; i++) {
+            audioCurrentArray[i].classList.remove("ui-audioCurrent");
         }
     }
 
@@ -271,6 +303,8 @@ export default class Narration {
             } else {
                 // Nothing left to play
                 this.elementsToPlayConsecutivelyStack = [];
+                this.startTimesInSecsStack = [];
+                this.elementsToHighlightStack = [];
             }
 
             this.removeAudioCurrent();
