@@ -10,8 +10,6 @@ import LiteEvent from "./event";
 // let us play until the user interacts with the page.
 export default class Narration {
     private playerPage: HTMLElement;
-    private idOfCurrentSentence: string;
-    private playingAll: boolean;
     private paused: boolean = false;
     public urlPrefix: string;
     // The time we started to play the current page (set in computeDuration, adjusted for pauses)
@@ -25,7 +23,7 @@ export default class Narration {
     // The first one to play should be at the end for both of these
     private elementsToPlayConsecutivelyStack: HTMLElement[];
     private nextElementIdToPlay: string;
-    private startTimesInSecsStack: number[];
+    private endTimesInSecsStack: number[];
     private elementsToHighlightStack: HTMLElement[];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
@@ -35,7 +33,7 @@ export default class Narration {
     constructor() {
         // Initialize them here to be safe
         this.elementsToHighlightStack = [];
-        this.startTimesInSecsStack = [];
+        this.endTimesInSecsStack = [];
     }
 
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
@@ -60,82 +58,6 @@ export default class Narration {
         this.playCurrentInternal();
     }
 
-    private playNextSubElement() {
-        // the item should not be popped off the stack until it's completely done with.
-        const highlightCount = this.elementsToHighlightStack.length;
-        const startTimesCount = this.startTimesInSecsStack.length;
-
-        if (highlightCount <= 0 || startTimesCount <= 0) {
-            return;
-        }
-
-        const element = this.elementsToHighlightStack[highlightCount -1];
-
-        // TODO: No idea what value to pass in for disableHighlightIfNoAUdio.
-        this.setCurrentAudioElement(element, false, false);  // TODO: can you figure out a way to specify the previous one?
-
-        if (startTimesCount >= 2) {
-            const nextStartTimeInSecs: number = this.startTimesInSecsStack[startTimesCount - 2];
-
-            let currentTimeInSecs: number;
-            const mediaPlayer = document.getElementById("bloom-audio-player");
-            if (mediaPlayer) {
-                // This should be more accurate
-                currentTimeInSecs = (mediaPlayer as HTMLMediaElement).currentTime;
-
-            } else {
-                // TODO: Maybe you should re-structure it and pop sooner  since you really don't need this part of the code
-
-                // A decent estimate if the more accurate method not available
-                currentTimeInSecs = this.startTimesInSecsStack[startTimesCount - 1];
-            }
-
-            let durationInSecs = nextStartTimeInSecs - currentTimeInSecs;
-
-            // Handle cases where the currentTime has already exceeded the nextStartTime
-            //   (might happen if you're unlucky in the thread queue... or if in debugger, etc.)
-            const minHighlightThreshold = 0.1;
-            if (durationInSecs <= minHighlightThreshold) {
-                durationInSecs = minHighlightThreshold;
-            }
-
-            setTimeout(() => {
-                this.playSubElementEnded();
-            }, durationInSecs * 1000);
-        }
-    }
-
-    private playSubElementEnded() {
-        if (this.startTimesInSecsStack.length < 2) {
-            // length=0: obviously problematic.
-            // length=1: Could theoretically do partial processing, but since it's the last one, just wait for end event to fire which will call playEnded()
-            return;
-        }
-
-        const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
-        if (mediaPlayer.ended || mediaPlayer.error) {
-            this.removeAudioCurrent();  // TODO: Not sure if desired.
-            return;
-        }
-        const playedDuration: number | undefined | null = mediaPlayer.currentTime;
-
-        // Check if the next one is actually ready to finish. (It might not if the audio got paused).
-        const nextStartTime = this.startTimesInSecsStack[this.startTimesInSecsStack.length - 2];
-        if (playedDuration && playedDuration < nextStartTime) {
-            // Still need to wait. Abort early and check again later.
-            const minimumRemainingDuration = nextStartTime - playedDuration;
-            setTimeout(() => {
-                this.playSubElementEnded();
-            }, minimumRemainingDuration * 1000);
-
-            return;
-        }
-
-        this.elementsToHighlightStack.pop();
-        this.startTimesInSecsStack.pop();
-        this.playNextSubElement();
-    }
-
     private playCurrentInternal() {
         if (!this.paused) {
             const mediaPlayer = this.getPlayer();
@@ -146,12 +68,12 @@ export default class Narration {
                     return;
                 }
 
-                const timingsStr: string | null = element.getAttribute("data-audioRecordingTimings");
+                const timingsStr: string | null = element.getAttribute("data-audioRecordingEndTimes");
                 if (timingsStr) {
                     const fields = timingsStr.split(" ");
-                    this.startTimesInSecsStack = [];
+                    this.endTimesInSecsStack = [];
                     for (let i = fields.length - 1; i >= 0; --i) {
-                        this.startTimesInSecsStack.push(Number(fields[i]));
+                        this.endTimesInSecsStack.push(Number(fields[i]));
                     }
                     const childSpanElements = element.getElementsByTagName("span");
 
@@ -194,6 +116,68 @@ export default class Narration {
         }
     }
 
+    private playNextSubElement() {
+        // the item should not be popped off the stack until it's completely done with.
+        const highlightCount = this.elementsToHighlightStack.length;
+        const endTimesCount = this.endTimesInSecsStack.length;
+
+        if (highlightCount <= 0 || endTimesCount <= 0) {
+            return;
+        }
+
+        const endTimeInSecs: number = this.endTimesInSecsStack[endTimesCount - 1];
+        const element:HTMLElement = this.elementsToHighlightStack[highlightCount - 1];
+
+        this.setCurrentAudioElement(element, true, false);
+
+        let currentTimeInSecs: number;
+        const mediaPlayer: HTMLMediaElement = (document.getElementById("bloom-audio-player")! as HTMLMediaElement);
+        currentTimeInSecs = mediaPlayer.currentTime;
+
+        let durationInSecs = endTimeInSecs - currentTimeInSecs;
+
+        // Handle cases where the currentTime has already exceeded the nextStartTime
+        //   (might happen if you're unlucky in the thread queue... or if in debugger, etc.)
+        const minHighlightThresholdInSecs = 0.1;
+        if (durationInSecs <= minHighlightThresholdInSecs) {
+            durationInSecs = minHighlightThresholdInSecs;
+        }
+
+        setTimeout(() => {
+            this.playSubElementEnded();
+        }, durationInSecs * 1000);
+    }
+
+    private playSubElementEnded() {
+        if (this.endTimesInSecsStack.length <= 0) {
+            return;
+        }
+
+        const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
+        if (mediaPlayer.ended || mediaPlayer.error) {
+            this.removeAudioCurrent();  // When playback has ended, the last highlight should be removed.
+            return;
+        }
+        const playedDurationInSecs: number | undefined | null = mediaPlayer.currentTime;
+
+        // Peek at the next sentence and see if we're ready to start that one. (We might not be ready to play the next audio if the current audio got paused).
+        const nextStartTimeInSecs = this.endTimesInSecsStack[this.endTimesInSecsStack.length - 1];
+        if (playedDurationInSecs && playedDurationInSecs < nextStartTimeInSecs) {
+            // Still need to wait. Exit this function early and re-check later.
+            const minRemainingDurationInSecs = nextStartTimeInSecs - playedDurationInSecs;
+            setTimeout(() => {
+                this.playSubElementEnded();
+            }, minRemainingDurationInSecs * 1000);
+
+            return;
+        }
+
+        this.endTimesInSecsStack.pop();
+        this.elementsToHighlightStack.pop();
+
+        this.playNextSubElement();
+    }
+
     private removeAudioCurrent() {
         // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
         const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName("ui-audioCurrent");
@@ -224,18 +208,35 @@ export default class Narration {
     private setCurrentAudioElementFrom(
         currentElement: Element | null | undefined,
         elementToChangeTo: Element,
-        disableHighlightIfNoAudio,  // TODO: Am i needed? Study BloomDesktop4.6 to find the answer
+        disableHighlightIfNoAudio,
         isUpdateAudioPlayerOn: boolean = true
     ): void {
         if (currentElement == elementToChangeTo) {
-            // No need to do much, and better not to so we can avoid any temporary flashes as the highlight is removed and re-applied
-            // TODO: Maybe need to pass isUpdateAudioPlayerOn through here.
+            // No need to do much, and better not to, so that we can avoid any temporary flashes as the highlight is removed and re-applied
             this.setNextElementIdToPlay(elementToChangeTo.id, isUpdateAudioPlayerOn);
             return;
         }
 
         if (currentElement) {
-            this.removeAudioCurrent();
+            currentElement.classList.remove("ui-audioCurrent");
+            currentElement.classList.remove("disableHighlight");
+        }
+
+        if (disableHighlightIfNoAudio) {
+            const mediaPlayer = this.getPlayer();
+            const isAlreadyPlaying = mediaPlayer.currentTime > 0;
+
+            // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
+            if (!isAlreadyPlaying) {
+                // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
+                // In react-based bloom-player, canPlayAudio() can't trivially identify whether or not audio exists,
+                // so we need to incorporate a derivative of Bloom Desktop's disableHighlight code
+                elementToChangeTo.classList.add("disableHighlight");
+                const mediaPlayer = this.getPlayer();
+                mediaPlayer.addEventListener('playing', (event) => {
+                    elementToChangeTo.classList.remove("disableHighlight");
+                });
+            }
         }
 
         elementToChangeTo.classList.add("ui-audioCurrent");
@@ -273,7 +274,7 @@ export default class Narration {
     }
 
     private getPlayer(): HTMLMediaElement {
-        // TODO: IDK, should we cache this? is it weird to have this event handler multiple times?
+        // REVIEW: Should we cache this? is it weird to have this event handler multiple times?
 
         return this.getAudio("bloom-audio-player", audio => {
             // if we just pass the function, it has the wrong "this"
@@ -303,7 +304,7 @@ export default class Narration {
             } else {
                 // Nothing left to play
                 this.elementsToPlayConsecutivelyStack = [];
-                this.startTimesInSecsStack = [];
+                this.endTimesInSecsStack = [];
                 this.elementsToHighlightStack = [];
             }
 
