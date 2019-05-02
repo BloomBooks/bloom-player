@@ -29,7 +29,7 @@ module.exports = {
         path: path.join(__dirname, outputDir),
         filename: "[name].js",
 
-        libraryTarget: "var",
+        libraryTarget: "window",
 
         //makes the exports of bloom-player-root.ts accessible via window.BloomPlayer.X,
         // e.g., window.BloomPlayer.BloomPlayerCore.

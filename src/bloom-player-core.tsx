@@ -16,7 +16,7 @@ import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { BloomPlayerControls } from "./bloom-player-controls";
-import { OldQuestionsConverter } from "./old-questions";
+import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 
 // BloomPlayer takes the URL of a folder containing a Bloom book. The file name
 // is expected to match the folder name. (Enhance: might be better to just take
@@ -38,9 +38,10 @@ interface IProps {
     // require, only the containing BloomPlayerControls can make use of it. However, it's just
     // possible we might want it if we end up with rotation-related controls. Note that the
     // same information is made available via postMessage if the control's window has a parent.
-    reportBookProperties?: (
-        properties: { landscape: boolean; canRotate: boolean }
-    ) => void;
+    reportBookProperties?: (properties: {
+        landscape: boolean;
+        canRotate: boolean;
+    }) => void;
     // called for initial page and subsequent page changes, passed the slider page
     // (the parent of the .bloom-page, including also the special element that carries
     // all the page styles)
@@ -67,6 +68,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private narration: Narration;
     private animation: Animation;
     private canRotate: boolean;
+
+    private static currentPage: HTMLElement;
 
     public componentDidMount() {
         this.componentDidUpdate(this.props);
@@ -136,7 +139,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             });
                             // Informs parent window when in an iframe.
                             if (window.parent) {
-                                window.parent.postMessage({landscape, canRotate: this.canRotate}, "*");
+                                window.parent.postMessage(
+                                    { landscape, canRotate: this.canRotate },
+                                    "*"
+                                );
                             }
                             // So far there's no way (or need) to inform whatever set up a WebView.
                         }
@@ -170,15 +176,26 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
 
                 const urlOfQuestionsFile = this.sourceUrl + "/questions.json";
-                axios.get(urlOfQuestionsFile).then (qfResult => {
-                    const newPages = OldQuestionsConverter.convert(qfResult.data, pageClass);
-                    const firstBackMatterPage = body.getElementsByClassName("bloom-backMatter")[0];
-                    for (let i = 0; i < newPages.length; i++) {
-                        // insertAdjacentElement is tempting, but not in FF45.
-                        firstBackMatterPage.parentElement!.insertBefore(newPages[i], firstBackMatterPage);
-                    }
-                    finishUp();
-                }).catch(() => finishUp())
+                axios
+                    .get(urlOfQuestionsFile)
+                    .then(qfResult => {
+                        const newPages = OldQuestionsConverter.convert(
+                            qfResult.data,
+                            pageClass
+                        );
+                        const firstBackMatterPage = body.getElementsByClassName(
+                            "bloom-backMatter"
+                        )[0];
+                        for (let i = 0; i < newPages.length; i++) {
+                            // insertAdjacentElement is tempting, but not in FF45.
+                            firstBackMatterPage.parentElement!.insertBefore(
+                                newPages[i],
+                                firstBackMatterPage
+                            );
+                        }
+                        finishUp();
+                    })
+                    .catch(() => finishUp());
             });
         }
         if (prevProps.landscape !== this.props.landscape) {
@@ -365,7 +382,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private slider: Slider | null;
     private rootDiv: HTMLElement | null;
 
-    public getRootDiv(): HTMLElement | null { return this.rootDiv;}
+    public getRootDiv(): HTMLElement | null {
+        return this.rootDiv;
+    }
 
     public render() {
         // multiple classes help make rules more specific than those in the book's stylesheet
@@ -380,7 +399,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         ? " hideNextPrevButtons"
                         : "")
                 }
-                ref={bloomplayer => this.rootDiv = bloomplayer}
+                ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
                 <Slider
                     className="pageSlider"
@@ -417,10 +436,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private pageLoaded(div: HTMLDivElement | null): void {
-        // When a page loads, if it is a smart page we want to execute any scripts embedded in it.
+        // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
         // This is potentially dangerous, so we make it less likely to happen through random attacks
-        // by only doing it in pages that are explicitly marked as bloom smart pages.
-        if (div && div.firstElementChild && div.firstElementChild.classList.contains("bloom-smart-page")) {
+        // by only doing it in pages that are explicitly marked as bloom interactive pages.
+        if (
+            div &&
+            div.firstElementChild &&
+            div.firstElementChild.classList.contains("bloom-interactive-page")
+        ) {
             const scripts = div.getElementsByTagName("script");
             for (let i = 0; i < scripts.length; i++) {
                 const script = scripts[i];
@@ -435,30 +458,45 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // It's quite reasonable for this file to be missing in the book folder itself.
                 // If so, the reader supplies its own version. This annotation is helpful when
                 // previewing books served by Bloom itself, preventing "file not found" yellow boxes.
-                const possiblyOptionalSrc = src.endsWith("/simpleComprehensionQuiz.js")? src + "?optional=true" : src;
+                const possiblyOptionalSrc = src.endsWith(
+                    "/simpleComprehensionQuiz.js"
+                )
+                    ? src + "?optional=true"
+                    : src;
                 // This would be highly dangerous in most contexts. It is one of the reasons
                 // we insist that bloom-player should live in its own iframe, protecting the rest
                 // of the page from things this eval might do.
-                // tslint:disable-next-line: no-eval
-                axios.get(possiblyOptionalSrc).then(result =>  eval(result.data)).catch(()=>{
-                    if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                        // Probably we generated a replacement page for old-style json comprehension questions.
-                        // The required javascript is not in the book folder, so retrieve our own version.
-                        // We expect this to be in the same place as the root html file, so we strip the file
-                        // name of our url (without params).
-                        const href = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                        const lastSlash = href.lastIndexOf("/");
-                        const folder = href.substring(0, lastSlash);
-                        const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
-                        axios.get(tryForQuiz).then(result =>  {
-                            // tslint:disable-next-line: no-eval
-                            eval(result.data);
-                        }).catch(error => {
-                            console.log(error);
-                        });
-                        // If we don't get it there, not much we can do.
-                    }
-                });
+                axios
+                    .get(possiblyOptionalSrc)
+                    // tslint:disable-next-line: no-eval
+                    .then(result => eval(result.data))
+                    .catch(() => {
+                        if (src.endsWith("/simpleComprehensionQuiz.js")) {
+                            // Probably we generated a replacement page for old-style json comprehension questions.
+                            // The required javascript is not in the book folder, so retrieve our own version.
+                            // We expect this to be in the same place as the root html file, so we strip the file
+                            // name of our url (without params).
+                            const href =
+                                window.location.protocol +
+                                "//" +
+                                window.location.host +
+                                window.location.pathname;
+                            const lastSlash = href.lastIndexOf("/");
+                            const folder = href.substring(0, lastSlash);
+                            const tryForQuiz =
+                                folder + "/simpleComprehensionQuiz.js";
+                            axios
+                                .get(tryForQuiz)
+                                .then(result => {
+                                    // tslint:disable-next-line: no-eval
+                                    eval(result.data);
+                                })
+                                .catch(error => {
+                                    console.log(error);
+                                });
+                            // If we don't get it there, not much we can do.
+                        }
+                    });
             }
         }
     }
@@ -515,6 +553,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return { slider: sliderPage, page: bloomPage };
     }
 
+    public static getCurrentPage(): HTMLElement {
+        return BloomPlayerCore.currentPage;
+    }
+
     // Called from afterChange, starts narration, etc.
     private showingPage(index: number): void {
         const {
@@ -524,6 +566,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!bloomPage) {
             return; // blank initial or final page?
         }
+        BloomPlayerCore.currentPage = bloomPage;
         if (this.canRotate) {
             this.forceDevicePageSize(bloomPage);
         }

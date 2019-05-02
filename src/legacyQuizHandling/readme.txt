@@ -1,0 +1,1 @@
+The simpleComprehensionQuiz.js file here is copied from Bloom Desktop's official version. It is used when we open a book created before Bloom 4.6, which will not have this file but instead have some json that we need to convert into the new quiz page.
