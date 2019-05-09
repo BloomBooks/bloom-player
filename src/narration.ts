@@ -21,10 +21,10 @@ export default class Narration {
     private segments: HTMLElement[];
 
     // The first one to play should be at the end for both of these
-    private elementsToPlayConsecutivelyStack: HTMLElement[];
     private nextElementIdToPlay: string;
+    private elementsToPlayConsecutivelyStack: HTMLElement[];
     private endTimesInSecsStack: number[];
-    private elementsToHighlightStack: HTMLElement[];
+    private elementsToHighlightStack: Element[];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
@@ -71,17 +71,26 @@ export default class Narration {
                 const timingsStr: string | null = element.getAttribute("data-audioRecordingEndTimes");
                 if (timingsStr) {
                     const fields = timingsStr.split(" ");
+
+                    let parsedSuccessfully = true;
                     this.endTimesInSecsStack = [];
                     for (let i = fields.length - 1; i >= 0; --i) {
-                        this.endTimesInSecsStack.push(Number(fields[i]));
+                        const numberField: number = Number(fields[i]);
+                        if (isNaN(numberField)) {
+                            parsedSuccessfully = false;
+                            break;
+                        }
+                        this.endTimesInSecsStack.push(numberField);
                     }
-                    const childSpanElements = element.getElementsByTagName("span");
 
-                    this.elementsToHighlightStack = [];
-                    for (let i = childSpanElements.length - 1; i >= 0 ; --i) {
-                        this.elementsToHighlightStack.push(childSpanElements.item(i)!);
+                    if (parsedSuccessfully) {
+                        const childSpanElements = element.querySelectorAll("span.sentence");
+
+                        this.elementsToHighlightStack = [];
+                        for (let i = childSpanElements.length - 1; i >= 0 ; --i) {
+                            this.elementsToHighlightStack.push(childSpanElements.item(i));
+                        }
                     }
-
                 }
 
                 const promise = mediaPlayer.play();
@@ -126,9 +135,9 @@ export default class Narration {
         }
 
         const endTimeInSecs: number = this.endTimesInSecsStack[endTimesCount - 1];
-        const element:HTMLElement = this.elementsToHighlightStack[highlightCount - 1];
+        const element:Element = this.elementsToHighlightStack[highlightCount - 1];
 
-        this.setCurrentAudioElement(element, true, false);
+        this.setCurrentAudioElement(element, false, false);  // 3rd parameter (updateAudioPlayer) needs to be false so that playing the 2md sentence doesn't restart the audio playback from the beginning of th etext box
 
         let currentTimeInSecs: number;
         const mediaPlayer: HTMLMediaElement = (document.getElementById("bloom-audio-player")! as HTMLMediaElement);
@@ -155,7 +164,6 @@ export default class Narration {
 
         const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
         if (mediaPlayer.ended || mediaPlayer.error) {
-            this.removeAudioCurrent();  // When playback has ended, the last highlight should be removed.
             return;
         }
         const playedDurationInSecs: number | undefined | null = mediaPlayer.currentTime;
@@ -178,6 +186,7 @@ export default class Narration {
         this.playNextSubElement();
     }
 
+    // Equivalent of removeAudioCurrentFromPageDocBody() in BloomDesktop.
     private removeAudioCurrent() {
         // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
         const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName("ui-audioCurrent");
@@ -193,7 +202,7 @@ export default class Narration {
     private setCurrentAudioElement(
         elementToChangeTo: Element,
         disableHighlightIfNoAudio?: boolean,
-        isUpdateAudioPlayerOn: boolean = true
+        updateAudioPlayer: boolean = true
     ): void {
         const firstExistingAudioCurrentElement: Element | null = this.playerPage.querySelector(".ui-audioCurrent");
 
@@ -201,7 +210,7 @@ export default class Narration {
             firstExistingAudioCurrentElement,
             elementToChangeTo,
             disableHighlightIfNoAudio,
-            isUpdateAudioPlayerOn
+            updateAudioPlayer
         );
     }
 
@@ -209,18 +218,15 @@ export default class Narration {
         currentElement: Element | null | undefined,
         elementToChangeTo: Element,
         disableHighlightIfNoAudio,
-        isUpdateAudioPlayerOn: boolean = true
+        updateAudioPlayer: boolean = true
     ): void {
         if (currentElement == elementToChangeTo) {
             // No need to do much, and better not to, so that we can avoid any temporary flashes as the highlight is removed and re-applied
-            this.setNextElementIdToPlay(elementToChangeTo.id, isUpdateAudioPlayerOn);
+            this.setNextElementIdToPlay(elementToChangeTo.id, updateAudioPlayer);
             return;
         }
 
-        if (currentElement) {
-            currentElement.classList.remove("ui-audioCurrent");
-            currentElement.classList.remove("disableHighlight");
-        }
+        this.removeAudioCurrent();
 
         if (disableHighlightIfNoAudio) {
             const mediaPlayer = this.getPlayer();
@@ -241,7 +247,7 @@ export default class Narration {
 
         elementToChangeTo.classList.add("ui-audioCurrent");
 
-        this.setNextElementIdToPlay(elementToChangeTo.id, isUpdateAudioPlayerOn);
+        this.setNextElementIdToPlay(elementToChangeTo.id, updateAudioPlayer);
     }
 
     // Setter for idOfNextElementToPlay
@@ -304,8 +310,8 @@ export default class Narration {
             } else {
                 // Nothing left to play
                 this.elementsToPlayConsecutivelyStack = [];
-                this.endTimesInSecsStack = [];
                 this.elementsToHighlightStack = [];
+                this.endTimesInSecsStack = [];
             }
 
             this.removeAudioCurrent();
