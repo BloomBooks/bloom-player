@@ -15,6 +15,7 @@ import "./bloom-player.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
+import { Video } from "./video";
 import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 
@@ -67,6 +68,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private narration: Narration;
     private animation: Animation;
+    private video: Video;
     private canRotate: boolean;
 
     private static currentPage: HTMLElement;
@@ -78,6 +80,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps) {
+        if (!this.video) {
+            this.video = new Video();
+        }
         if (!this.narration) {
             this.narration = new Narration();
             this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
@@ -205,8 +210,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         if (this.props.paused) {
             this.narration.pause();
+            this.video.pause();
         } else {
             this.narration.play();
+            this.video.play();
         }
     }
 
@@ -403,12 +410,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             >
                 <Slider
                     className="pageSlider"
-                    ref={slider => (this.slider = slider)}
+                    ref={(slider: any) => (this.slider = slider)}
                     slidesToShow={this.props.showContextPages ? 3 : 1}
                     infinite={false}
                     dots={this.props.showContextPages}
-                    beforeChange={(current, next) => this.setIndex(next)}
-                    afterChange={current => this.showingPage(current)}
+                    beforeChange={(current: number, next: number) =>
+                        this.setIndex(next)
+                    }
+                    afterChange={(current: number) => this.showingPage(current)}
                 >
                     {this.state.pages.map((slide, index) => {
                         return (
@@ -521,7 +530,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // class changes to animate the page sizing/shading in 3-page mode
     // - may need to force the page layout class to match the current button
     // setting, before we start to slide it into view
-    // - if we're animating motion, need to get the page into the start state
+    // - if we're animating motion or showing video, need to get the page into the start state
     // before we slide it in
     private setIndex(index: number) {
         this.setState({ currentSliderIndex: index });
@@ -533,6 +542,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.forceDevicePageSize(bloomPage);
             }
             this.animation.HandlePageBeforeVisible(bloomPage);
+
+            this.video.HandlePageBeforeVisible(bloomPage);
         }
     }
 
@@ -577,12 +588,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.pageSelected) {
             this.props.pageSelected(sliderPage);
         }
-        if (
-            bloomPage &&
-            Animation.pageHasAnimation(bloomPage as HTMLDivElement)
-        ) {
+        if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
             this.animation.HandlePageBeforeVisible(bloomPage);
         }
+        this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
     }
 }

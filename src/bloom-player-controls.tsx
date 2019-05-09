@@ -1,5 +1,5 @@
-/* 
-bloom-player-preview wraps bloom-player-core and adds just enough controls to preview the 
+/*
+bloom-player-preview wraps bloom-player-core and adds just enough controls to preview the
 book inside of the Bloom:Publish:Android screen.
 */
 import * as React from "react";
