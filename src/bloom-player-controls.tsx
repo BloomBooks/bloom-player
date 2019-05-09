@@ -5,6 +5,7 @@ book inside of the Bloom:Publish:Android screen.
 import * as React from "react";
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
+import {getBookParam} from "./externalContext";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -54,14 +55,7 @@ export class BloomPlayerControls extends React.Component<
     }
 
     public static init() {
-        const vars = {}; // deceptive, we don't change the ref, but do change the content
-        //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
-        window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m,key,value) => {
-            vars[key] = value;
-            return "";
-        });
-        const url = vars["url"];
-        ReactDOM.render(<BloomPlayerControls url={url} />, document.body);
+        ReactDOM.render(<BloomPlayerControls url={getBookParam("url")} />, document.body);
     }
 
     private retries = 0;
@@ -206,7 +200,7 @@ export class BloomPlayerControls extends React.Component<
         // careful, we can intercept clicks on the forward/back buttons.
         player.addEventListener("click", event => {
             const target = event.target as Element;
-            if (target && target.classList.contains("slick-arrow") || this.inSmartPage(target)) {
+            if (target && target.classList.contains("slick-arrow") || this.inInteractivePage(target)) {
                 return; // don't interfere with these clicks!
             }
             this.setState({paused: !this.state.paused});
@@ -215,15 +209,15 @@ export class BloomPlayerControls extends React.Component<
         }, true);
     }
 
-    // Tells whether the specified element is a child of one that is marked as a bloom smart page
+    // Tells whether the specified element is a child of one that is marked as a bloom interactive page
     // (e.g., a comprehension question page...typically a page that the reader can interact with).
     // One reason this is important is that, to allow the interaction, we must not intercept taps/clicks
-    // and use them for pause/resume. Not sure what we will do if we ever have smart pages with
+    // and use them for pause/resume. Not sure what we will do if we ever have interactive pages with
     // behaviors that should be pausable...
-    private inSmartPage(target: Element) : boolean {
+    private inInteractivePage(target: Element) : boolean {
         let test: Element | null = target;
         while (test) {
-            if (test.classList.contains("bloom-smart-page")) {
+            if (test.classList.contains("bloom-interactive-page")) {
                 return true;
             }
             test = test.parentElement;

@@ -20,9 +20,9 @@ export class OldQuestionsConverter {
 
             page.classList.add("bloom-page");
             page.classList.add("simple-comprehension-quiz");
-            page.classList.add("bloom-smart-page");
+            page.classList.add("bloom-interactive-page");
             page.classList.add(pageClass);
-            page.setAttribute("data-analytics", "Questions correct");
+            page.setAttribute("data-analyticsCategories", "comprehension");
 
             const marginBox = this.appendElementWithClass("div", "marginBox", page);
             const quiz = this.appendElementWithClass("div", "quiz", marginBox);
@@ -40,7 +40,7 @@ export class OldQuestionsConverter {
             for (let j = 0; j < answers.length; j++) {
                 const answer = answers[j];
                 const answerText = answer.text as string;
-                const answerDiv = this.appendElementWithClass("div", "checkbox-and-textbox-answer", quiz);
+                const answerDiv = this.appendElementWithClass("div", "checkbox-and-textbox-choice", quiz);
 
                 this.appendElementWithClass("div", "styled-check-box", answerDiv);
 

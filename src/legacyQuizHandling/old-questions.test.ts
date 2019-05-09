@@ -16,9 +16,9 @@ test("pages have expected classes", () => {
         const div = converted[i];
         expect(div.classList).toContain("bloom-page");
         expect(div.classList).toContain("simple-comprehension-quiz");
-        expect(div.classList).toContain("bloom-smart-page");
+        expect(div.classList).toContain("bloom-interactive-page");
         expect(div.classList).toContain("Device16x9Portrait");
-        expect(div.getAttribute("data-analytics")).toBe("Questions correct");
+        expect(div.getAttribute("data-analyticsCategories")).toBe("comprehension");
     }
 });
 
@@ -58,7 +58,7 @@ test("correct questions", () => {
 });
 
 const checkAnswer = (answer: HTMLElement, paraContent: string, lang: string, correct: boolean) => {
-    expect(answer.classList).toContain("checkbox-and-textbox-answer");
+    expect(answer.classList).toContain("checkbox-and-textbox-choice");
     if (correct) {
         expect(answer.classList).toContain("correct-answer");
     } else {
