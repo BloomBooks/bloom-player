@@ -33,9 +33,9 @@ export function reportAnalytics(event: string, params: any) {
     );
 }
 
-// When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us all the stuff that should be
-// in transientPageData, by posting a message with an object containing each of the values we stored as key
-// and the corresponding values as values.
+// When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
+// all the stuff that should be in transientPageData, by posting a message with an object containing
+// each of the values we stored as key and the corresponding values as values.
 // Note: not yet tested, when we implement this in some parent, probably BR, we may need to fine tune it.
 document.addEventListener("message", data => {
     if ((data as any).data.messageType === "restorePageData") {
