@@ -41,7 +41,10 @@ export class Video {
         if (this.paused) {
             this.currentVideoElement.pause();
         } else {
-            this.currentVideoElement.play();
+            const videoElement = this.currentVideoElement;
+            window.setTimeout(() => {
+                videoElement.play();
+            }, 1000);
         }
     }
 
