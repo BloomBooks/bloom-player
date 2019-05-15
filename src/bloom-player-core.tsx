@@ -113,11 +113,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // a few domains (localhost, dev.blorg, blorg).
             const urlOfBookHtmlFile = this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
             axios.get(urlOfBookHtmlFile).then(result => {
-                // we *think* this gets garbage collected
-                const doc = document.createElement("html"); // TODO: would this work if it was "holderForBook"? JH was tripped up by html, thinking we were going to replace ourselves
-                doc.innerHTML = result.data;
+                // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
+                // and setting its innerHtml, since that leads to the browser trying to load all the
+                // urls referenced in the book, which is a waste and also won't work because we
+                // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
+                const parser = new DOMParser();
+                // we *think* bookDoc and bookHtmlElement get garbage collected
+                const bookDoc = parser.parseFromString(
+                    result.data,
+                    "text/html"
+                );
+                const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
-                const body = doc.getElementsByTagName("body")[0];
+                const body = bookHtmlElement.getElementsByTagName("body")[0];
                 this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
 
                 this.makeNonEditable(body);
@@ -127,7 +135,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // or fail to get it and make no changes.
                 const finishUp = () => {
                     // assemble the page content list
-                    const pages = doc.getElementsByClassName("bloom-page");
+                    const pages = bookHtmlElement.getElementsByClassName(
+                        "bloom-page"
+                    );
                     const sliderContent: string[] = [];
                     if (this.props.showContextPages) {
                         sliderContent.push(""); // blank page to fill the space left of first.
@@ -160,7 +170,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         sliderContent.push(""); // blank page to fill the space right of last.
                     }
 
-                    this.assembleStyleSheets(doc);
+                    this.assembleStyleSheets(bookHtmlElement);
                     this.setState({ pages: sliderContent });
                     // A pause hopefully allows the document to become visible before we
                     // start playing any audio or movement on the first page.
@@ -174,7 +184,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }, 500);
                 };
 
-                const firstPage = doc.getElementsByClassName("bloom-page")[0];
+                const firstPage = bookHtmlElement.getElementsByClassName(
+                    "bloom-page"
+                )[0];
                 let pageClass = "Device16x9Portrait";
                 if (firstPage) {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
@@ -220,7 +232,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private makeNonEditable(body: HTMLBodyElement): void {
         // This is a preview, it's distracting to have it be editable.
         // (Should not occur in .bloomd, but might in books direct from BL.)
-        const editable = document.evaluate(
+        const editable = body.ownerDocument!.evaluate(
             ".//*[@contenteditable]",
             body,
             null,
@@ -279,7 +291,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // urls of images and videos and audio need to be made
     // relative to the original book folder, not the page we are embedding them into.
     private fixRelativeUrls(page: Element) {
-        const srcElts = document.evaluate(
+        const srcElts = page.ownerDocument!.evaluate(
             ".//*[@src]",
             page,
             null,
@@ -299,7 +311,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         // now we need to fix elements with attributes like this:
         // style="background-image:url('AOR_10AW.png')"
-        const bgSrcElts = document.evaluate(
+        const bgSrcElts = page.ownerDocument!.evaluate(
             ".//*[@style]",
             page,
             null,
@@ -330,7 +342,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // When we finish (not before this method returns), the result will be set as
     // our state.styles with setState().
     private assembleStyleSheets(doc: HTMLHtmlElement) {
-        const linkElts = document.evaluate(
+        const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
             null,
@@ -357,7 +369,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 let combinedStyle = "";
 
                 // start with embedded styles (typically before links in a bloom doc...)
-                const styleElts = document.evaluate(
+                const styleElts = doc.ownerDocument!.evaluate(
                     ".//style[@type='text/css']",
                     doc,
                     null,
