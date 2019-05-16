@@ -417,7 +417,7 @@ export class Animation {
                     "; animation-duration: " +
                     this.animationDuration +
                     "s; animation-fill-mode: forwards; " +
-                    "animation-timing-function: linear;}",
+                    "animation-timing-function: ease-in-out;}",
                 1
             );
         }
