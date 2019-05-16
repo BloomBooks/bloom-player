@@ -1,6 +1,9 @@
 import LiteEvent from "./event";
 
-// Handles implemenation of narration, including playing the audio and
+const kSegmentClass = "bloom-highlightSegment";
+const kAudioSentence = "audio-sentence"; // Even though these can now encompass more than strict sentences, we continue to use this class name for backwards compatability reasons
+
+// Handles implementation of narration, including playing the audio and
 // highlighting the currently playing text.
 // Enhance: There's code here to support PageNarrationComplete for auto-advance,
 // but that isn't implemented yet so it may not be complete.
@@ -10,8 +13,6 @@ import LiteEvent from "./event";
 // let us play until the user interacts with the page.
 export default class Narration {
     private playerPage: HTMLElement;
-    private idOfCurrentSentence: string;
-    private playingAll: boolean;
     private paused: boolean = false;
     public urlPrefix: string;
     // The time we started to play the current page (set in computeDuration, adjusted for pauses)
@@ -22,72 +23,271 @@ export default class Narration {
 
     private segments: HTMLElement[];
 
+    private currentAudioId: string;
+
+    // The first one to play should be at the end for all of these
+    private elementsToPlayConsecutivelyStack: HTMLElement[] = [];    // The audio-sentence elements (ie those with actual audio files associated with them) that should play one after the other
+    private subElementsWithTimings: [Element, number][] = [];
+
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
     public PageDuration: number;
 
+    // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     public playAllSentences(page: HTMLElement): void {
         this.playerPage = page;
-        const audioElts = this.getPageAudioElements();
-        const original: Element | null = page.querySelector(".ui-audioCurrent");
-        for (let firstIndex = 0; firstIndex < audioElts.length; firstIndex++) {
-            const first = audioElts[firstIndex];
-            if (!this.canPlayAudio(first)) {
-                continue;
+
+        this.elementsToPlayConsecutivelyStack = this.getPageAudioElements().reverse();
+
+        const stackSize = this.elementsToPlayConsecutivelyStack.length;
+        if (stackSize === 0) {
+            // Nothing to play
+            if (this.PageNarrationComplete) {
+                this.PageNarrationComplete.raise();
             }
-            this.setCurrentSpan(original, first);
-            this.playingAll = true;
-            //this.setStatus("listen", Status.Active);
-            this.playCurrentInternal();
             return;
         }
-        // Nothing to play
-        if (this.PageNarrationComplete) {
-            this.PageNarrationComplete.raise();
-        }
+        const firstElementToPlay = this.elementsToPlayConsecutivelyStack[
+            stackSize - 1
+        ]; // Remember to pop it when you're done playing it. (i.e., in playEnded)
+
+        this.setSoundAndHighlight(firstElementToPlay, true);
+        this.playCurrentInternal();
     }
 
     private playCurrentInternal() {
-        if (!this.paused && this.getPlayer()) {
-            const promise = this.getPlayer().play();
-            // In newer browsers, play() returns a promise which fails
-            // if the browser disobeys the command to play, as some do
-            // if the user hasn't 'interacted' with the page in some
-            // way that makes the browser think they are OK with it
-            // playing audio. In Gecko45, the return value is undefined,
-            // so we mustn't call catch.
-            if (promise && promise.catch) {
-                promise.catch((reason: any) => {
-                    console.log("could not play sound: " + reason);
-                    this.removeAudioCurrent();
-                    // With some kinds of invalid sound file it keeps trying and plays over and over.
-                    this.getPlayer().pause();
-                    // if (this.Pause) {
-                    //     this.Pause.raise();
-                    // }
-                });
+        if (!this.paused) {
+            const mediaPlayer = this.getPlayer();
+            if (mediaPlayer) {
+                const element = this.playerPage.querySelector(`#${this.currentAudioId}`);
+                if (!element || !this.canPlayAudio(element)) {
+                    this.playEnded();
+                    return;
+                }
+
+                const timingsStr: string | null = element.getAttribute("data-audioRecordingEndTimes");
+                if (timingsStr) {
+                    const childSpanElements = element.querySelectorAll(`span.${kSegmentClass}`);
+                    const fields = timingsStr.split(" ");
+                    const subElementCount = Math.min(fields.length, childSpanElements.length);
+
+                    this.subElementsWithTimings = [];
+                    for (let i = subElementCount - 1; i >= 0; --i) {
+                        const durationSecs: number = Number(fields[i]);
+                        if (isNaN(durationSecs)) {
+                            continue;
+                        }
+                        this.subElementsWithTimings.push([childSpanElements.item(i), durationSecs]);
+                    }
+                } else {
+                    // No timings string available.
+                    // No need for us to do anything. The correct element is already highlighted by playAllSentences() (which needed to call setCurrent... anyway to set the audio player source).
+                    // We'll just proceed along, start playing the audio, and playNextSubElement() will return immediately because there are no sub-elements in this case.
+                }
+
+                const promise = mediaPlayer.play();
+                this.highlightNextSubElement();
+
+                // In newer browsers, play() returns a promise which fails
+                // if the browser disobeys the command to play, as some do
+                // if the user hasn't 'interacted' with the page in some
+                // way that makes the browser think they are OK with it
+                // playing audio. In Gecko45, the return value is undefined,
+                // so we mustn't call catch.
+                if (promise && promise.catch) {
+                    promise.catch((reason: any) => {
+                        // There is an error handler here, but the HTMLMediaElement also has an error handler (which will end up calling playEnded()).
+                        // This promise.catch error handler is the only one that handles NotAllowedException (that is, playback not started because user has not interacted with the page yet).
+                        // However, older versions of browsers don't support promise from HTMLMediaElement.play(). So this cannot be the only error handler.
+                        // Thus we need both the promise.catch error handler as well as the HTMLMediaElement's error handler.
+                        //
+                        // In many cases (such as NotSupportedError, which happens when the audio file isn't found), both error handlers will run.
+                        // That is a little annoying but if the two don't conflict with each other it's not problematic.
+
+
+                        console.log("could not play sound: " + reason);
+
+                        // Don't call removeAudioCurrent() here. The HTMLMediaElement's error handler will call playEnded() and calling removeAudioCurrent() here will mess up playEnded().
+                        // this.removeAudioCurrent();
+
+                        // With some kinds of invalid sound file it keeps trying and plays over and over.
+                        this.getPlayer().pause();
+                        // if (this.Pause) {
+                        //     this.Pause.raise();
+                        // }
+                    });
+                }
             }
         }
     }
 
+    private highlightNextSubElement() {
+        // the item should not be popped off the stack until it's completely done with.
+        const subElementCount = this.subElementsWithTimings.length;
+
+        if (subElementCount <= 0) {
+            return;
+        }
+
+        const topTuple =  this.subElementsWithTimings[subElementCount - 1];
+        const element = topTuple[0];
+        const endTimeInSecs: number = topTuple[1];
+
+        this.setHighlightTo(element, false);
+
+        const mediaPlayer: HTMLMediaElement = (document.getElementById("bloom-audio-player")! as HTMLMediaElement);
+        const currentTimeInSecs = mediaPlayer.currentTime;
+
+        // Handle cases where the currentTime has already exceeded the nextStartTime
+        //   (might happen if you're unlucky in the thread queue... or if in debugger, etc.)
+        // But instead of setting time to 0, set the minimum highlight time threshold to 0.1 (this threshold is arbitrary).
+        const durationInSecs = Math.max(endTimeInSecs - currentTimeInSecs, 0.1);
+
+        setTimeout(() => {
+            this.onSubElementHighlightTimeEnded();
+        }, durationInSecs * 1000);
+    }
+
+    // Handles a timeout indicating that the expected time for highlighting the current subElement has ended.
+    // If we've really played to the end of that subElement, highlight the next one (if any).
+    private onSubElementHighlightTimeEnded() {
+        const subElementCount = this.subElementsWithTimings.length;
+        if (subElementCount <= 0) {
+            return;
+        }
+
+        const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
+        if (mediaPlayer.ended || mediaPlayer.error) {
+            // audio playback ended. No need to highlight anything else.
+            // (No real need to remove the highlights either, because playEnded() is supposed to take care of that.)
+            return;
+        }
+        const playedDurationInSecs: number | undefined | null = mediaPlayer.currentTime;
+
+        // Peek at the next sentence and see if we're ready to start that one. (We might not be ready to play the next audio if the current audio got paused).
+        const subElementWithTiming = this.subElementsWithTimings[subElementCount - 1];
+        const nextStartTimeInSecs = subElementWithTiming[1];
+
+        if (playedDurationInSecs && playedDurationInSecs < nextStartTimeInSecs) {
+            // Still need to wait. Exit this function early and re-check later.
+            const minRemainingDurationInSecs = nextStartTimeInSecs - playedDurationInSecs;
+            setTimeout(() => {
+                this.onSubElementHighlightTimeEnded();
+            }, minRemainingDurationInSecs * 1000);
+
+            return;
+        }
+
+        this.subElementsWithTimings.pop();
+
+        this.highlightNextSubElement();
+    }
+
+    // Removes the .ui-audioCurrent class from all elements
+    // Equivalent of removeAudioCurrentFromPageDocBody() in BloomDesktop.
     private removeAudioCurrent() {
-        const elts = document.getElementsByClassName("ui-audioCurrent");
-        for (let i = 0; i < elts.length; i++) {
-            elts[i].classList.remove("ui-audioCurrent");
+        // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
+        const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName("ui-audioCurrent");
+
+        // Convert to an array whose length won't be changed
+        const audioCurrentArray: Element[] = Array.from(audioCurrentCollection);
+
+        for (let i = 0; i < audioCurrentArray.length; i++) {
+            audioCurrentArray[i].classList.remove("ui-audioCurrent");
         }
     }
 
-    private setCurrentSpan(
-        current: Element | null,
-        changeTo: HTMLElement | null
-    ): void {
-        this.removeAudioCurrent();
-        if (changeTo) {
-            changeTo.classList.add("ui-audioCurrent");
-            this.idOfCurrentSentence = changeTo.getAttribute("id") || "";
+    private setSoundAndHighlight(
+        newElement: Element,
+        disableHighlightIfNoAudio: boolean,
+        oldElement: Element | null | undefined = undefined,
+    ) {
+        this.setHighlightTo(newElement, disableHighlightIfNoAudio, oldElement);
+        this.setSoundFrom(newElement);
+    }
+
+    private setHighlightTo(
+        newElement: Element,
+        disableHighlightIfNoAudio: boolean,
+        oldElement: Element | null | undefined = undefined,  // Optional. Provides some minor optimization if set.
+    ) {
+        if (oldElement == newElement) {
+            // No need to do much, and better not to, so that we can avoid any temporary flashes as the highlight is removed and re-applied
+            return;
         }
-        this.updatePlayerStatus();
-        //this.changeStateAndSetExpected("record");
+
+        this.removeAudioCurrent();
+
+        if (disableHighlightIfNoAudio) {
+            const mediaPlayer = this.getPlayer();
+            const isAlreadyPlaying = mediaPlayer.currentTime > 0;
+
+            // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
+            if (!isAlreadyPlaying) {
+                // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
+                // In react-based bloom-player, canPlayAudio() can't trivially identify whether or not audio exists,
+                // so we need to incorporate a derivative of Bloom Desktop's disableHighlight code
+                newElement.classList.add("disableHighlight");
+                const mediaPlayer = this.getPlayer();
+                mediaPlayer.addEventListener('playing', (event) => {
+                    newElement.classList.remove("disableHighlight");
+                });
+            }
+        }
+
+        newElement.classList.add("ui-audioCurrent");
+    }
+
+    private setSoundFrom(element: Element) {
+        const firstAudioSentence = this.getFirstAudioSentenceWithinElement(element);
+        let id: string;
+        if (firstAudioSentence) {
+            id = firstAudioSentence.id;
+        } else {
+            id = element.id;
+        }
+        this.setCurrentAudioId(id);
+    }
+
+    public getFirstAudioSentenceWithinElement(
+        element: Element | null
+    ): Element | null {
+        const audioSentences = this.getAudioSegmentsWithinElement(element);
+        if (!audioSentences || audioSentences.length == 0) {
+            return null;
+        }
+
+        return audioSentences[0];
+    }
+
+    public getAudioSegmentsWithinElement(element: Element | null): Element[] {
+        const audioSegments: Element[] = [];
+
+        if (element) {
+            if (element.classList.contains(kAudioSentence)) {
+                audioSegments.push(element);
+            } else {
+                const collection = element.getElementsByClassName(
+                    kAudioSentence
+                );
+                for (let i = 0; i < collection.length; ++i) {
+                    const element = collection.item(i);
+                    if (element) {
+                        audioSegments.push(element);
+                    }
+                }
+            }
+        }
+
+        return audioSegments;
+    }
+
+    // Setter for currentAudio
+    public setCurrentAudioId(id: string) {
+        if (!this.currentAudioId || this.currentAudioId != id) {
+            this.currentAudioId = id;
+            this.updatePlayerStatus();
+        }
     }
 
     private updatePlayerStatus() {
@@ -97,7 +297,7 @@ export default class Narration {
         }
         player.setAttribute(
             "src",
-            this.currentAudioUrl(this.idOfCurrentSentence) +
+            this.currentAudioUrl(this.currentAudioId) +
                 "?nocache=" +
                 new Date().getTime()
         );
@@ -116,32 +316,32 @@ export default class Narration {
     }
 
     public playEnded(): void {
-        if (this.playingAll) {
-            const current: Element | null = this.playerPage.querySelector(
-                ".ui-audioCurrent"
-            );
-            const audioElts = this.getPageAudioElements();
-            let nextIndex = audioElts.indexOf(current as HTMLElement) + 1;
-            while (nextIndex < audioElts.length) {
-                const next = audioElts[nextIndex];
-                if (!this.canPlayAudio(next)) {
-                    nextIndex++;
-                    continue;
-                }
-                this.setCurrentSpan(current, next);
-                //this.setStatus("listen", Status.Active); // gets returned to enabled by setCurrentSpan
+        if (this.elementsToPlayConsecutivelyStack &&
+            this.elementsToPlayConsecutivelyStack.length > 0) {
+
+            const currentElement = this.elementsToPlayConsecutivelyStack.pop();
+            const newStackCount = this.elementsToPlayConsecutivelyStack.length;
+            if (newStackCount > 0) {
+                // More items to play
+                const nextElement = this.elementsToPlayConsecutivelyStack[
+                    newStackCount - 1
+                ];
+                this.setSoundAndHighlight(nextElement, true);
                 this.playCurrentInternal();
                 return;
+            } else {
+                // Nothing left to play
+                this.elementsToPlayConsecutivelyStack = [];
+                this.subElementsWithTimings = [];
             }
-            this.playingAll = false;
-            this.setCurrentSpan(current, null);
+
+            this.removeAudioCurrent();
             if (this.PageNarrationComplete) {
                 this.PageNarrationComplete.raise(this.playerPage);
             }
-            //this.changeStateAndSetExpected("listen");
+
             return;
         }
-        //this.changeStateAndSetExpected("next");
     }
 
     private getAudio(id: string, init: (audio: HTMLAudioElement) => void) {
