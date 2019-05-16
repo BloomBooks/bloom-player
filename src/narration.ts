@@ -26,8 +26,8 @@ export default class Narration {
     private currentAudioId: string;
 
     // The first one to play should be at the end for all of these
-    private elementsToPlayConsecutivelyStack: HTMLElement[] = [];    // The audio-sentence elements (ie those with actual audio files associated with them) that should play one after the other
-    private subElementsWithTimings: [Element, number][] = [];
+    private elementsToPlayConsecutivelyStack: HTMLElement[] = []; // The audio-sentence elements (ie those with actual audio files associated with them) that should play one after the other
+    private subElementsWithTimings: Array<[Element, number]> = [];
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
@@ -59,17 +59,26 @@ export default class Narration {
         if (!this.paused) {
             const mediaPlayer = this.getPlayer();
             if (mediaPlayer) {
-                const element = this.playerPage.querySelector(`#${this.currentAudioId}`);
+                const element = this.playerPage.querySelector(
+                    `#${this.currentAudioId}`
+                );
                 if (!element || !this.canPlayAudio(element)) {
                     this.playEnded();
                     return;
                 }
 
-                const timingsStr: string | null = element.getAttribute("data-audioRecordingEndTimes");
+                const timingsStr: string | null = element.getAttribute(
+                    "data-audioRecordingEndTimes"
+                );
                 if (timingsStr) {
-                    const childSpanElements = element.querySelectorAll(`span.${kSegmentClass}`);
+                    const childSpanElements = element.querySelectorAll(
+                        `span.${kSegmentClass}`
+                    );
                     const fields = timingsStr.split(" ");
-                    const subElementCount = Math.min(fields.length, childSpanElements.length);
+                    const subElementCount = Math.min(
+                        fields.length,
+                        childSpanElements.length
+                    );
 
                     this.subElementsWithTimings = [];
                     for (let i = subElementCount - 1; i >= 0; --i) {
@@ -77,7 +86,10 @@ export default class Narration {
                         if (isNaN(durationSecs)) {
                             continue;
                         }
-                        this.subElementsWithTimings.push([childSpanElements.item(i), durationSecs]);
+                        this.subElementsWithTimings.push([
+                            childSpanElements.item(i),
+                            durationSecs
+                        ]);
                     }
                 } else {
                     // No timings string available.
@@ -104,7 +116,6 @@ export default class Narration {
                         // In many cases (such as NotSupportedError, which happens when the audio file isn't found), both error handlers will run.
                         // That is a little annoying but if the two don't conflict with each other it's not problematic.
 
-
                         console.log("could not play sound: " + reason);
 
                         // Don't call removeAudioCurrent() here. The HTMLMediaElement's error handler will call playEnded() and calling removeAudioCurrent() here will mess up playEnded().
@@ -129,13 +140,15 @@ export default class Narration {
             return;
         }
 
-        const topTuple =  this.subElementsWithTimings[subElementCount - 1];
+        const topTuple = this.subElementsWithTimings[subElementCount - 1];
         const element = topTuple[0];
         const endTimeInSecs: number = topTuple[1];
 
         this.setHighlightTo(element, false);
 
-        const mediaPlayer: HTMLMediaElement = (document.getElementById("bloom-audio-player")! as HTMLMediaElement);
+        const mediaPlayer: HTMLMediaElement = document.getElementById(
+            "bloom-audio-player"
+        )! as HTMLMediaElement;
         const currentTimeInSecs = mediaPlayer.currentTime;
 
         // Handle cases where the currentTime has already exceeded the nextStartTime
@@ -156,21 +169,30 @@ export default class Narration {
             return;
         }
 
-        const mediaPlayer: HTMLMediaElement = document.getElementById("bloom-audio-player")! as HTMLMediaElement;
+        const mediaPlayer: HTMLMediaElement = document.getElementById(
+            "bloom-audio-player"
+        )! as HTMLMediaElement;
         if (mediaPlayer.ended || mediaPlayer.error) {
             // audio playback ended. No need to highlight anything else.
             // (No real need to remove the highlights either, because playEnded() is supposed to take care of that.)
             return;
         }
-        const playedDurationInSecs: number | undefined | null = mediaPlayer.currentTime;
+        const playedDurationInSecs: number | undefined | null =
+            mediaPlayer.currentTime;
 
         // Peek at the next sentence and see if we're ready to start that one. (We might not be ready to play the next audio if the current audio got paused).
-        const subElementWithTiming = this.subElementsWithTimings[subElementCount - 1];
+        const subElementWithTiming = this.subElementsWithTimings[
+            subElementCount - 1
+        ];
         const nextStartTimeInSecs = subElementWithTiming[1];
 
-        if (playedDurationInSecs && playedDurationInSecs < nextStartTimeInSecs) {
+        if (
+            playedDurationInSecs &&
+            playedDurationInSecs < nextStartTimeInSecs
+        ) {
             // Still need to wait. Exit this function early and re-check later.
-            const minRemainingDurationInSecs = nextStartTimeInSecs - playedDurationInSecs;
+            const minRemainingDurationInSecs =
+                nextStartTimeInSecs - playedDurationInSecs;
             setTimeout(() => {
                 this.onSubElementHighlightTimeEnded();
             }, minRemainingDurationInSecs * 1000);
@@ -187,7 +209,9 @@ export default class Narration {
     // Equivalent of removeAudioCurrentFromPageDocBody() in BloomDesktop.
     private removeAudioCurrent() {
         // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
-        const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName("ui-audioCurrent");
+        const audioCurrentCollection: HTMLCollectionOf<
+            Element
+        > = document.getElementsByClassName("ui-audioCurrent");
 
         // Convert to an array whose length won't be changed
         const audioCurrentArray: Element[] = Array.from(audioCurrentCollection);
@@ -200,7 +224,7 @@ export default class Narration {
     private setSoundAndHighlight(
         newElement: Element,
         disableHighlightIfNoAudio: boolean,
-        oldElement: Element | null | undefined = undefined,
+        oldElement?: Element | null | undefined
     ) {
         this.setHighlightTo(newElement, disableHighlightIfNoAudio, oldElement);
         this.setSoundFrom(newElement);
@@ -209,9 +233,9 @@ export default class Narration {
     private setHighlightTo(
         newElement: Element,
         disableHighlightIfNoAudio: boolean,
-        oldElement: Element | null | undefined = undefined,  // Optional. Provides some minor optimization if set.
+        oldElement?: Element | null | undefined // Optional. Provides some minor optimization if set.
     ) {
-        if (oldElement == newElement) {
+        if (oldElement === newElement) {
             // No need to do much, and better not to, so that we can avoid any temporary flashes as the highlight is removed and re-applied
             return;
         }
@@ -228,8 +252,7 @@ export default class Narration {
                 // In react-based bloom-player, canPlayAudio() can't trivially identify whether or not audio exists,
                 // so we need to incorporate a derivative of Bloom Desktop's disableHighlight code
                 newElement.classList.add("disableHighlight");
-                const mediaPlayer = this.getPlayer();
-                mediaPlayer.addEventListener('playing', (event) => {
+                mediaPlayer.addEventListener("playing", event => {
                     newElement.classList.remove("disableHighlight");
                 });
             }
@@ -239,13 +262,12 @@ export default class Narration {
     }
 
     private setSoundFrom(element: Element) {
-        const firstAudioSentence = this.getFirstAudioSentenceWithinElement(element);
-        let id: string;
-        if (firstAudioSentence) {
-            id = firstAudioSentence.id;
-        } else {
-            id = element.id;
-        }
+        const firstAudioSentence = this.getFirstAudioSentenceWithinElement(
+            element
+        );
+        const id: string = firstAudioSentence
+            ? firstAudioSentence.id
+            : element.id;
         this.setCurrentAudioId(id);
     }
 
@@ -253,7 +275,7 @@ export default class Narration {
         element: Element | null
     ): Element | null {
         const audioSentences = this.getAudioSegmentsWithinElement(element);
-        if (!audioSentences || audioSentences.length == 0) {
+        if (!audioSentences || audioSentences.length === 0) {
             return null;
         }
 
@@ -271,9 +293,9 @@ export default class Narration {
                     kAudioSentence
                 );
                 for (let i = 0; i < collection.length; ++i) {
-                    const element = collection.item(i);
-                    if (element) {
-                        audioSegments.push(element);
+                    const audioSentenceElement = collection.item(i);
+                    if (audioSentenceElement) {
+                        audioSegments.push(audioSentenceElement);
                     }
                 }
             }
@@ -284,7 +306,7 @@ export default class Narration {
 
     // Setter for currentAudio
     public setCurrentAudioId(id: string) {
-        if (!this.currentAudioId || this.currentAudioId != id) {
+        if (!this.currentAudioId || this.currentAudioId !== id) {
             this.currentAudioId = id;
             this.updatePlayerStatus();
         }
@@ -316,9 +338,10 @@ export default class Narration {
     }
 
     public playEnded(): void {
-        if (this.elementsToPlayConsecutivelyStack &&
-            this.elementsToPlayConsecutivelyStack.length > 0) {
-
+        if (
+            this.elementsToPlayConsecutivelyStack &&
+            this.elementsToPlayConsecutivelyStack.length > 0
+        ) {
             const currentElement = this.elementsToPlayConsecutivelyStack.pop();
             const newStackCount = this.elementsToPlayConsecutivelyStack.length;
             if (newStackCount > 0) {
