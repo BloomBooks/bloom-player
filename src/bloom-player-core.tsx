@@ -19,9 +19,8 @@ import { Video } from "./video";
 import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 
-// BloomPlayer takes the URL of a folder containing a Bloom book. The file name
-// is expected to match the folder name. (Enhance: might be better to just take
-// the full path to the book. Longer, but removes that assumption.)
+// BloomPlayer takes a URL param that directs it to Bloom book.
+// (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
 // On a wide screen, an option may be used to show the next and previous pages
 // beside the current one.
@@ -64,7 +63,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         currentSliderIndex: 0
     };
 
+    // The book url we were passed as a URL param.
+    // May be a full url of the html file (eventually, typically, index.htm);
+    // in this case, it must end with .htm (currently we do NOT support .html).
+    // May be a url of a folder whose name is the book title, where the book has the same name,
+    // e.g., .../X means the book is .../X/X.htm (NOT X.html)
     private sourceUrl: string;
+    // The folder containing the html file.
+    private urlPrefix: string;
 
     private narration: Narration;
     private animation: Animation;
@@ -98,20 +104,52 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         let newSourceUrl = this.props.url;
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
         // an empty filename or double-slashes in derived URLs.
-        // enhance typescript: when we somehow configure a version that knows about
-        // endsWith, we can remove this cast.
-        if ((newSourceUrl as any).endsWith("/")) {
+        if (newSourceUrl.endsWith("/")) {
             newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 1);
+        }
+        // Or we might get a url-encoded slash.
+        if (newSourceUrl.endsWith("%2f")) {
+            newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 3);
         }
         if (newSourceUrl !== this.sourceUrl && newSourceUrl) {
             this.sourceUrl = newSourceUrl;
-            this.narration.urlPrefix = this.sourceUrl;
-            const index = this.sourceUrl.lastIndexOf("/");
-            const filename = this.sourceUrl.substring(index + 1);
-            // TODO: right now, this takes a url to the folder. Change to a url to the file.
+            // We support a two ways of interpreting URLs.
+            // If the url ends in .htm, it is assumed to be the URL of the htm file that
+            // is the book itself. The last slash indicates the folder in which all the
+            // other resources may be found.
+            // For compatibility with earlier versions of bloom-player, the url may be a folder
+            // ending in the book name, and the book is assumed to occur in that folder and have
+            // the same name as the folder.
             // Note: In the future, we are thinking of limiting to
             // a few domains (localhost, dev.blorg, blorg).
-            const urlOfBookHtmlFile = this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
+            // Note: we don't currently look for .html files, only .htm. That's what
+            // Bloom has consistently created, both in .bloomd files and in
+            // book folders, so it doesn't seem worth complicating the code
+            // to look for the other as well.
+            const slashIndex = this.sourceUrl.lastIndexOf("/");
+            const encodedSlashIndex = this.sourceUrl.lastIndexOf("%2f");
+            let filename = "";
+            if (slashIndex > encodedSlashIndex) {
+                filename = this.sourceUrl.substring(
+                    slashIndex + 1,
+                    this.sourceUrl.length
+                );
+            } else {
+                filename = this.sourceUrl.substring(
+                    encodedSlashIndex + 3,
+                    this.sourceUrl.length
+                );
+            }
+            const fullPath = filename.endsWith(".htm");
+            const urlOfBookHtmlFile = fullPath
+                ? this.sourceUrl
+                : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
+            this.narration.urlPrefix = this.urlPrefix = fullPath
+                ? this.sourceUrl.substring(
+                      0,
+                      Math.max(slashIndex, encodedSlashIndex)
+                  )
+                : this.sourceUrl;
             axios.get(urlOfBookHtmlFile).then(result => {
                 // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
                 // and setting its innerHtml, since that leads to the browser trying to load all the
@@ -192,7 +230,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
 
-                const urlOfQuestionsFile = this.sourceUrl + "/questions.json";
+                const urlOfQuestionsFile = this.urlPrefix + "/questions.json";
                 axios
                     .get(urlOfQuestionsFile)
                     .then(qfResult => {
@@ -395,7 +433,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private fullUrl(url: string | null): string {
         // Enhance: possibly we should only do this if we somehow determine it is a relative URL?
         // But the things we apply it to always are, in bloom books.
-        return this.sourceUrl + "/" + url;
+        return this.urlPrefix + "/" + url;
     }
 
     private slider: Slider | null;
