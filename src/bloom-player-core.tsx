@@ -18,6 +18,8 @@ import { Animation } from "./animation";
 import { Video } from "./video";
 import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
+import { LocalizationManager } from "./l10n/localizationManager";
+import { LocalizationUtils } from "./l10n/localizationUtils";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -57,9 +59,12 @@ interface IState {
     currentSliderIndex: number;
 }
 export class BloomPlayerCore extends React.Component<IProps, IState> {
+    private readonly initialPages: string[] = ["loading..."];
+    private readonly initialStyleRules: string = "";
+
     public readonly state: IState = {
-        pages: ["loading..."],
-        styleRules: "",
+        pages: this.initialPages,
+        styleRules: this.initialStyleRules,
         currentSliderIndex: 0
     };
 
@@ -72,20 +77,40 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // The folder containing the html file.
     private urlPrefix: string;
 
+    private bookLanguage1: string | undefined;
+    private bookLanguage2: string | undefined;
+    private bookLanguage3: string | undefined;
+
     private narration: Narration;
     private animation: Animation;
     private video: Video;
     private canRotate: boolean;
 
+    private isPagesLocalized: boolean = false;
+
     private static currentPage: HTMLElement;
 
     public componentDidMount() {
+        LocalizationManager.setUp();
         this.componentDidUpdate(this.props);
     }
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps) {
+        // We want to localize once and only once after pages has been set and assembleStyleSheets has happened
+        if (
+            !this.isPagesLocalized &&
+            this.state.pages !== this.initialPages &&
+            this.state.styleRules !== this.initialStyleRules
+        ) {
+            LocalizationManager.localizePages(
+                document.body,
+                this.getPreferredTranslationLanguages()
+            );
+            this.isPagesLocalized = true;
+        }
+
         if (!this.video) {
             this.video = new Video();
         }
@@ -164,6 +189,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
                 const body = bookHtmlElement.getElementsByTagName("body")[0];
+                this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
+                    body as HTMLBodyElement
+                );
                 this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
 
                 this.makeNonEditable(body);
@@ -210,6 +238,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                     this.assembleStyleSheets(bookHtmlElement);
                     this.setState({ pages: sliderContent });
+
                     // A pause hopefully allows the document to become visible before we
                     // start playing any audio or movement on the first page.
                     // Also gives time for the first page
@@ -265,6 +294,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.narration.play();
             this.video.play();
         }
+    }
+
+    private getPreferredTranslationLanguages(): string[] {
+        const languages: string[] = [];
+        if (this.bookLanguage1) {
+            languages.push(this.bookLanguage1);
+        }
+        if (this.bookLanguage2) {
+            languages.push(this.bookLanguage2);
+        }
+        if (this.bookLanguage3) {
+            languages.push(this.bookLanguage3);
+        }
+        return languages;
     }
 
     private makeNonEditable(body: HTMLBodyElement): void {
@@ -411,7 +454,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ".//style[@type='text/css']",
                     doc,
                     null,
-                    XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
                     null
                 );
                 for (let k = 0; k < styleElts.snapshotLength; k++) {
@@ -423,6 +466,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 results.forEach(result => {
                     if (result && result.data) {
                         combinedStyle += result.data;
+
+                        // It is somewhat awkward to do this in a method called assembleStyleSheets,
+                        // but this is the best way to access the information currently.
+                        // See further comments in getNationalLanguagesFromCssStyles.
+                        if (
+                            result.config!.url!.endsWith(
+                                "/settingsCollectionStyles.css"
+                            )
+                        ) {
+                            [
+                                this.bookLanguage2,
+                                this.bookLanguage3
+                            ] = LocalizationUtils.getNationalLanguagesFromCssStyles(
+                                result.data
+                            );
+                        }
                     }
                 });
                 this.setState({ styleRules: combinedStyle });

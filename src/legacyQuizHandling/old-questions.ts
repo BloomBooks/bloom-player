@@ -42,23 +42,21 @@ export class OldQuestionsConverter {
                     "quiz",
                     marginBox
                 );
-                const group = this.appendElementWithClass(
-                    "div",
-                    "bloom-translationGroup",
-                    quiz
-                );
-                const editable = this.appendElementWithClass(
-                    "div",
-                    "bloom-editable",
-                    group
-                );
-                editable.classList.add("bloom-content1");
-                editable.classList.add("bloom-visibility-code-on");
-                editable.classList.add("QuizQuestion-style");
-                editable.setAttribute("lang", lang);
 
-                const para = this.appendElementWithClass("p", "", editable);
-                para.textContent = question.question;
+                this.appendTranslationGroup(
+                    quiz,
+                    "Check Your Understanding",
+                    "QuizHeader-style",
+                    "en", // If we find a translation of this, we will change the lang attribute to match later
+                    "Quiz.CheckYourUnderstanding"
+                );
+
+                this.appendTranslationGroup(
+                    quiz,
+                    question.question,
+                    "QuizQuestion-style",
+                    lang
+                );
 
                 const answers = question.answers;
                 for (let j = 0; j < answers.length; j++) {
@@ -115,6 +113,35 @@ export class OldQuestionsConverter {
             }
         }
         return result;
+    }
+
+    private static appendTranslationGroup(
+        parent: HTMLElement,
+        text: string,
+        className: string,
+        lang: string,
+        l10nId?: string
+    ) {
+        const group = this.appendElementWithClass(
+            "div",
+            "bloom-translationGroup",
+            parent
+        );
+        const editable = this.appendElementWithClass(
+            "div",
+            "bloom-editable",
+            group
+        );
+        editable.classList.add("bloom-content1");
+        editable.classList.add("bloom-visibility-code-on");
+        editable.classList.add(className);
+        editable.setAttribute("lang", lang);
+        if (l10nId) {
+            editable.setAttribute("data-i18n", "Quiz.CheckYourUnderstanding");
+        }
+
+        const para = this.appendElementWithClass("p", "", editable);
+        para.textContent = text;
     }
 
     private static appendElementWithClass(

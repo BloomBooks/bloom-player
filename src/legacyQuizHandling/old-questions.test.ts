@@ -91,17 +91,26 @@ const checkTranslationGroup = (
     expect(para.textContent).toBe(paraContent);
 };
 
-test("correct questions", () => {
-    const firstQuestion = converted[0].firstElementChild!.firstElementChild!
+test("correct header", () => {
+    const headerGroup = converted[0].firstElementChild!.firstElementChild!
         .firstElementChild as HTMLElement;
+    checkTranslationGroup(
+        headerGroup,
+        "Check Your Understanding",
+        "QuizHeader-style",
+        "en" // The header is initially set to English and changed by the localization code
+    );
+});
+
+test("correct questions", () => {
+    const firstQuestion = getQuestionTranslationGroup(converted[0]);
     checkTranslationGroup(
         firstQuestion,
         "How did the boy lose his cap",
         "QuizQuestion-style",
         "sp"
     );
-    const secondQuestion = converted[1].firstElementChild!.firstElementChild!
-        .firstElementChild as HTMLElement;
+    const secondQuestion = getQuestionTranslationGroup(converted[1]);
     checkTranslationGroup(
         secondQuestion,
         "What did the moon do?",
@@ -109,8 +118,7 @@ test("correct questions", () => {
         "sp"
     );
 
-    const thirdQuestion = converted[2].firstElementChild!.firstElementChild!
-        .firstElementChild as HTMLElement;
+    const thirdQuestion = getQuestionTranslationGroup(converted[2]);
     checkTranslationGroup(
         thirdQuestion,
         "Why use old questions?",
@@ -118,6 +126,11 @@ test("correct questions", () => {
         "sp"
     );
 });
+
+const getQuestionTranslationGroup = (convertedQuestion: HTMLElement) => {
+    return convertedQuestion.firstElementChild!.firstElementChild!
+        .children[1] as HTMLElement;
+};
 
 const checkAnswer = (
     answer: HTMLElement,
@@ -148,26 +161,26 @@ const checkAnswer = (
 test("correct answers", () => {
     const firstQuiz = converted[0].firstElementChild!
         .firstElementChild as HTMLElement;
-    expect(firstQuiz.children.length).toBe(5); // one question, three answers, script
-    const firstAnswer = firstQuiz.children[1] as HTMLElement;
+    expect(firstQuiz.children.length).toBe(6); // one header, one question, three answers, script
+    const firstAnswer = firstQuiz.children[2] as HTMLElement;
     checkAnswer(firstAnswer, "The bully took it", "sp", false);
-    const secondAnswer = firstQuiz.children[2] as HTMLElement;
+    const secondAnswer = firstQuiz.children[3] as HTMLElement;
     checkAnswer(secondAnswer, "The wind blew it away", "sp", true);
 
     const secondQuiz = converted[1].firstElementChild!
         .firstElementChild as HTMLElement;
-    expect(secondQuiz.children.length).toBe(4); // one question, two answers, script
-    const q2A1 = secondQuiz.children[1] as HTMLElement;
+    expect(secondQuiz.children.length).toBe(5); // one header, one question, two answers, script
+    const q2A1 = secondQuiz.children[2] as HTMLElement;
     checkAnswer(q2A1, "Hid behind clouds", "sp", false);
-    const q2A2 = secondQuiz.children[2] as HTMLElement;
+    const q2A2 = secondQuiz.children[3] as HTMLElement;
     checkAnswer(q2A2, "Appeared to wear the cap", "sp", true);
 
     const thirdQuiz = converted[2].firstElementChild!
         .firstElementChild as HTMLElement;
-    expect(thirdQuiz.children.length).toBe(4); // one question, two answers, script
-    const q3A1 = thirdQuiz.children[1] as HTMLElement;
+    expect(thirdQuiz.children.length).toBe(5); // one header, one question, two answers, script
+    const q3A1 = thirdQuiz.children[2] as HTMLElement;
     checkAnswer(q3A1, "Lack of information", "sp", true);
-    const q3A2 = thirdQuiz.children[2] as HTMLElement;
+    const q3A2 = thirdQuiz.children[3] as HTMLElement;
     checkAnswer(q3A2, "Laziness", "sp", false);
 });
 
