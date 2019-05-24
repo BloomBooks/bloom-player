@@ -54,7 +54,8 @@ function initChoiceWidgets() {
         else {
             x.parentElement.addEventListener("click", handleReadModeClick);
             var key = getStorageKeyForChoice(x.parentElement);
-            if (window.BloomPlayer.getPageData(x.closest(".bloom-page"), key) === kwasSelectedAtOnePoint) {
+            if (window.BloomPlayer &&
+                window.BloomPlayer.getPageData(x.closest(".bloom-page"), key) === kwasSelectedAtOnePoint) {
                 choiceWasClicked(x.parentElement);
             }
         }
@@ -90,7 +91,9 @@ function handleReadModeClick(evt) {
     // The ui shows items that were (selected but wrong) differently than
     // items that were never tried.
     var key = getStorageKeyForChoice(currentTarget);
-    window.BloomPlayer.storePageData(currentTarget.closest(".bloom-page"), key, kwasSelectedAtOnePoint);
+    if (window.BloomPlayer) {
+        window.BloomPlayer.storePageData(currentTarget.closest(".bloom-page"), key, kwasSelectedAtOnePoint);
+    }
     reportScore(correct);
 }
 // it was either clicked just now, or we're loading from storage
