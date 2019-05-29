@@ -70,25 +70,26 @@ export class OldQuestionsConverter {
                         quiz
                     );
 
-                    this.appendElementWithClass(
-                        "div",
+                    const input = this.appendElementWithClass(
+                        "input",
                         "styled-check-box",
                         answerDiv
-                    );
-
-                    const hiddenCheck = this.appendElementWithClass(
-                        "input",
-                        "hiddenCheckbox",
-                        answerDiv
-                    );
-                    hiddenCheck.setAttribute("name", "Correct");
-                    hiddenCheck.setAttribute("type", "checkbox");
+                    ) as HTMLInputElement;
+                    input.setAttribute("name", "Correct");
+                    input.setAttribute("type", "checkbox");
 
                     const answerGroup = this.appendElementWithClass(
                         "div",
                         "bloom-translationGroup",
                         answerDiv
                     );
+
+                    this.appendElementWithClass(
+                        "div",
+                        "placeToPutVariableCircle",
+                        answerDiv
+                    );
+
                     const answerEditable = this.appendElementWithClass(
                         "div",
                         "bloom-editable",

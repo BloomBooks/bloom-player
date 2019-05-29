@@ -20,16 +20,21 @@ export function getBookParam(paramName: string): string {
 
 // Ask the parent window, if any, to store this key/value pair persistently.
 export function storePageDataExternally(key: string, value: string) {
-    window.postMessage(
+    // If we're in an iframe, window.parent is the parent window, which may (but
+    // probably won't) try to store the data. If we're in a WebView, window.parent
+    // is the WebView itself (same as plain 'window') but the React Native code
+    // receives the message.
+    window.parent.postMessage(
         JSON.stringify({ messageType: "storePageData", key, value }),
-        "bloom-player"
+        "*" // any window may receive
     );
 }
 
 export function reportAnalytics(event: string, params: any) {
-    window.postMessage(
+    // See storePageDataExternally for why we use window.parent here.
+    window.parent.postMessage(
         JSON.stringify({ messageType: "sendAnalytics", event, params }),
-        "bloom-player"
+        "*"
     );
 }
 

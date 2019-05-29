@@ -45,26 +45,45 @@ function initChoiceWidgets() {
     markEmptyChoices();
     var observer = new MutationObserver(markEmptyChoices);
     observer.observe(document.body, { characterData: true, subtree: true });
-    var list = document.getElementsByClassName("styled-check-box");
+    var list = document.getElementsByClassName("checkbox-and-textbox-choice");
     for (var i = 0; i < list.length; i++) {
         var x = list[i];
+        var checkbox = getCheckBox(x);
+        var correct = x.classList.contains("correct-answer");
         if (document.body.classList.contains("editMode")) {
-            x.addEventListener("click", handleEditModeClick);
+            checkbox.addEventListener("click", handleEditModeClick);
+            // Not sure why this doesn't get persisted along with the correct-answer class,
+            // but glad it doesn't, because we don't want it to show up even as a flash
+            // in reader mode.
+            checkbox.checked = correct;
         }
         else {
-            x.parentElement.addEventListener("click", handleReadModeClick);
-            var key = getStorageKeyForChoice(x.parentElement);
+            x.addEventListener("click", handleReadModeClick, { capture: true });
+            var key = getStorageKeyForChoice(x);
             if (window.BloomPlayer &&
                 window.BloomPlayer.getPageData(x.closest(".bloom-page"), key) === kwasSelectedAtOnePoint) {
-                choiceWasClicked(x.parentElement);
+                choiceWasClicked(x);
+            }
+            else {
+                checkbox.checked = false; // just to make sure
             }
         }
     }
 }
+function getCheckBox(holder) {
+    return holder.firstElementChild;
+}
 function handleEditModeClick(evt) {
     var target = evt.target;
-    if (target && target.parentElement) {
-        target.parentElement.classList.toggle("correct-answer");
+    if (!target) {
+        return;
+    }
+    var wrapper = evt.currentTarget.parentElement;
+    if (target.checked) {
+        wrapper.classList.add("correct-answer");
+    }
+    else {
+        wrapper.classList.remove("correct-answer");
     }
 }
 // Get a key for a checkbox. It only needs to be unique on this page.
@@ -83,6 +102,9 @@ function getStorageKeyForChoice(choice) {
     return "cbstate_" + index;
 }
 function handleReadModeClick(evt) {
+    // prevent the browser messing with the check box checked state
+    evt.stopPropagation();
+    evt.preventDefault();
     var currentTarget = evt.currentTarget;
     choiceWasClicked(currentTarget);
     var correct = currentTarget.classList.contains("correct-answer");
@@ -97,18 +119,24 @@ function handleReadModeClick(evt) {
     reportScore(correct);
 }
 // it was either clicked just now, or we're loading from storage
-// and we need to make it look like it looke last time we were on this
+// and we need to make it look like it looked last time we were on this
 // page
 function choiceWasClicked(choice) {
     var classes = choice.classList;
     classes.add(kwasSelectedAtOnePoint);
-    // Make the state of the hidden input conform (for screen readers). Only if the
+    // Make the state of the hidden input conform. Only if the
     // correct answer was clicked does the checkbox get checked.
-    var checkBox = choice.getElementsByClassName("hiddenCheckbox")[0];
+    var checkBox = getCheckBox(choice);
     // at this point, we only actually make the check happen if
     // this was the correct answer
     if (checkBox) {
-        checkBox.checked = classes.contains("correct-answer");
+        var desiredState_1 = classes.contains("correct-answer");
+        checkBox.checked = desiredState_1;
+        // Something I can't track down resets it to unchecked
+        // if the user clicks on the input itself. Even with zero delay,
+        // this makes something happen in the next event cycle that
+        // keeps it the way we want.
+        window.setTimeout(function () { return (checkBox.checked = desiredState_1); }, 0);
     }
 }
 function reportScore(correct) {
