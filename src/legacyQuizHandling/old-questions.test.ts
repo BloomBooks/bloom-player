@@ -132,14 +132,17 @@ const checkAnswer = (
         expect(answer.classList).not.toContain("correct-answer");
     }
     expect(answer.children.length).toBe(3);
-    const checkDiv = answer.children[0];
-    expect(checkDiv.classList).toContain("styled-check-box");
-    const hiddenCheck = answer.children[1];
-    expect(hiddenCheck.classList).toContain("hiddenCheckbox");
-    expect(hiddenCheck.getAttribute("name")).toBe("Correct");
-    expect(hiddenCheck.getAttribute("type")).toBe("checkbox");
-    const group = answer.children[2] as HTMLElement;
+    const input = answer.children[0] as HTMLInputElement;
+    expect(input).not.toBeFalsy();
+    expect(input.classList).toContain("styled-check-box");
+    expect(input.getAttribute("name")).toBe("Correct");
+    expect(input.getAttribute("type")).toBe("checkbox");
+
+    const group = answer.children[1] as HTMLElement;
     checkTranslationGroup(group, paraContent, "QuizAnswer-style", lang);
+
+    const circleDiv = answer.children[2];
+    expect(circleDiv.classList).toContain("placeToPutVariableCircle");
 };
 
 test("correct answers", () => {
