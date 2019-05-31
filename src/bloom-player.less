@@ -37,6 +37,12 @@ We just make them follow the main content normally. */
 
 @button-radius: 2mm;
 
+.control-bar {
+    .filler {
+        flex-grow: 1;
+    }
+}
+
 // We need these outer conditions for specificity
 .bloomPlayer {
     // these buttons are positioned relative to the slider, our preview.
@@ -109,7 +115,7 @@ We just make them follow the main content normally. */
 // Users will naturally expect to page by dragging.
 // (Firefox doesn't support this media query, but happily, we don't want any
 // special behavior on FF, so having it ignore the request is fine.)
-@media (hover:none) {
+@media (hover: none) {
     // We need these outer conditions for specificity
     .bloomPlayer {
         .slick-next,
@@ -129,8 +135,9 @@ We just make them follow the main content normally. */
 
 /* override the rule in bloom-preview that puts a border at the bottom of each page
 to separate the pages in a continuous scrolling view. Unfortunately that rule is
-!important so the only way to beat it is to be !important too. */
-.bloomPlayer div.bloom-page {
+!important so the only way to beat it is to be !important too. We also need more than
+ two classes. */
+.bloomPlayer .actual-page-preview div.bloom-page {
     border-bottom: initial !important;
 }
 
@@ -162,7 +169,7 @@ body {
     // big enough for the original, unscaled size. Since we're shrinking the page to fit,
     // we never need a scroll bar. This prevents it.
     height: 100%;
-    overflow:hidden;
+    overflow: hidden;
 }
 
 // Styles the special div we create for motion books. It is put at the root of the page and hides

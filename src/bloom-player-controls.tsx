@@ -5,7 +5,10 @@ book inside of the Bloom:Publish:Android screen.
 import * as React from "react";
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
-import {getBookParam} from "./externalContext";
+import { getBookParam, sendBackClicked } from "./externalContext";
+import { ControlBar } from "./controlBar";
+import { ThemeProvider } from "@material-ui/styles";
+import theme from "./bloomPlayerTheme";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -38,24 +41,39 @@ export class BloomPlayerControls extends React.Component<
             <div
                 {...this.props} // Allow all standard div props
             >
+                <ControlBar
+                    paused={this.state.paused}
+                    pausedChanged={(p: boolean) => this.setState({ paused: p })}
+                    backClicked={() => sendBackClicked()}
+                />
                 <BloomPlayerCore
                     url={this.props.url}
                     landscape={this.state.windowLandscape}
                     showContextPages={this.props.showContextPages}
                     paused={this.state.paused}
-                    reportBookProperties={bookProps=>this.setBookProps(bookProps)}
-                    ref = {bloomPlayer => this.bloomPlayer = bloomPlayer}
+                    reportBookProperties={bookProps =>
+                        this.setBookProps(bookProps)
+                    }
+                    ref={bloomPlayer => (this.bloomPlayer = bloomPlayer)}
                 />
             </div>
         );
     }
 
-    private setBookProps(bookProps: { landscape: boolean; canRotate: boolean }) {
-        this.setState({canRotate: bookProps.canRotate});
+    private setBookProps(bookProps: {
+        landscape: boolean;
+        canRotate: boolean;
+    }) {
+        this.setState({ canRotate: bookProps.canRotate });
     }
 
     public static init() {
-        ReactDOM.render(<BloomPlayerControls url={getBookParam("url")} />, document.body);
+        ReactDOM.render(
+            <ThemeProvider theme={theme}>
+                <BloomPlayerControls url={getBookParam("url")} />
+            </ThemeProvider>,
+            document.body
+        );
     }
 
     private retries = 0;
@@ -73,10 +91,14 @@ export class BloomPlayerControls extends React.Component<
     public scalePageToWindow() {
         // We need to work from the page that is currently visible. Others may not have the right
         // orientation class set.
-        const currentSlickElt = document.getElementsByClassName("slick-current")[0] as HTMLElement;
+        const currentSlickElt = document.getElementsByClassName(
+            "slick-current"
+        )[0] as HTMLElement;
         let page: HTMLElement | null = null;
         if (currentSlickElt) {
-            page = currentSlickElt.getElementsByClassName("bloom-page")[0] as HTMLElement;
+            page = currentSlickElt.getElementsByClassName(
+                "bloom-page"
+            )[0] as HTMLElement;
         }
         if (!page || !BloomPlayerControls.pageStylesInstalled) {
             // may well be called before the book is sufficiently loaded
@@ -92,10 +114,7 @@ export class BloomPlayerControls extends React.Component<
             // time we should be very nearly ready. It's conceivable that even 5s
             // is not long enough to load a big book.
             if (this.retries++ < 50) {
-                window.setTimeout(
-                    () => this.scalePageToWindow(),
-                    100
-                );
+                window.setTimeout(() => this.scalePageToWindow(), 100);
             }
             return; // can't do any useful scaling (yet)
         }
@@ -112,12 +131,15 @@ export class BloomPlayerControls extends React.Component<
             window.onresize = () => this.scalePageToWindow();
             // I'm not sure if this is necessary, but capturing the page size in pixels on this
             // device before we start scaling and rotating it seems to make things more stable.
-            this.maxPageDimension = Math.max(page.offsetHeight, page.offsetWidth);
+            this.maxPageDimension = Math.max(
+                page.offsetHeight,
+                page.offsetWidth
+            );
         }
         const winHeight = window.innerHeight; // total physical space allocated to WebView/iframe
         const desiredWindowLandscape = window.innerWidth > winHeight;
         if (desiredWindowLandscape !== this.state.windowLandscape) {
-            this.setState({windowLandscape: desiredWindowLandscape});
+            this.setState({ windowLandscape: desiredWindowLandscape });
             return; // will result in fresh call from componentDidUpdate.
         }
         // enhance: maybe we just want to force the automatic browser margins to zero?
@@ -133,7 +155,9 @@ export class BloomPlayerControls extends React.Component<
 
         const landscape = page.getAttribute("class")!.indexOf("Landscape") >= 0;
 
-        const pageHeight = landscape ? this.maxPageDimension * 9 / 16 : this.maxPageDimension;
+        const pageHeight = landscape
+            ? (this.maxPageDimension * 9) / 16
+            : this.maxPageDimension;
         // The current height of whatever must share the page with the adjusted document
         // At one point this could include some visible controls.
         // It almost works to compute
@@ -142,24 +166,34 @@ export class BloomPlayerControls extends React.Component<
         // However, sometimes there are pages (not currently visible) in the wrong orientation.
         // This can make document.body.offsetHeight unexpectedly big.
         // For now we are hard-coding that the only thing not part of the document is any
-        // margins on the body.
-        const controlsHeight = topMargin + bottomMargin;
+        // margins on the body and the appbar.
+        let controlsHeight = topMargin + bottomMargin;
+        const appbar = document.getElementById("control-bar");
+        if (appbar) {
+            controlsHeight += appbar.offsetHeight;
+        }
         // How high the document needs to be to make it and the controls fit the window
         const desiredPageHeight = winHeight - controlsHeight;
         let scaleFactor = desiredPageHeight / pageHeight;
 
         // Similarly compute how we'd have to scale to fit horizontally.
         // Not currently trying to allow for controls left or right of page.
-        const pageWidth = landscape ? this.maxPageDimension : this.maxPageDimension * 9 / 16;
+        const pageWidth = landscape
+            ? this.maxPageDimension
+            : (this.maxPageDimension * 9) / 16;
         const desiredPageWidth = document.body.offsetWidth;
         const horizontalScaleFactor = desiredPageWidth / pageWidth;
         scaleFactor = Math.min(scaleFactor, horizontalScaleFactor);
         const actualPageHeight = pageHeight * scaleFactor;
 
-        let width = actualPageHeight * 9 / 16 / scaleFactor;
+        let width = (actualPageHeight * 9) / 16 / scaleFactor;
         if (landscape) {
-            width = actualPageHeight * 16 / 9 / scaleFactor;
+            width = (actualPageHeight * 16) / 9 / scaleFactor;
         }
+        const leftMargin = Math.max(
+            (window.innerWidth - pageWidth * scaleFactor) / 2,
+            0
+        );
         // OK, this is a bit tricky.
         // First, we want to scale the whole bloomPlayer control by the scaleFactor we just computed
         // (relative to the top left). That's the two 'transform' rules.
@@ -174,8 +208,14 @@ export class BloomPlayerControls extends React.Component<
         // though we're looking at it in landscape, resulting in scroll bars and misplaced
         // page turning buttons. So we force all the actual page previews to be no bigger than
         // the height we expect and hide their overflow to fix this.
-        scaleStyleSheet.innerText = `.bloomPlayer {width: ${width}px; transform-origin: left top 0; transform: scale(${scaleFactor})}
-        .actual-page-preview {height: ${actualPageHeight / scaleFactor}px; overflow: hidden;}`;
+        scaleStyleSheet.innerText = `.bloomPlayer {
+            width: ${width}px;
+            transform-origin: left top 0;
+            transform: scale(${scaleFactor});
+            margin-left: ${leftMargin}px;
+        }
+        .actual-page-preview {height: ${actualPageHeight /
+            scaleFactor}px; overflow: hidden;}`;
     }
 
     public componentDidMount() {
@@ -198,15 +238,22 @@ export class BloomPlayerControls extends React.Component<
         // in slick-carousel, which for some reason is to page backwards.
         // Fortunately this doesn't interfere with dragging. However, if we aren't
         // careful, we can intercept clicks on the forward/back buttons.
-        player.addEventListener("click", event => {
-            const target = event.target as Element;
-            if (target && target.classList.contains("slick-arrow") || this.inInteractivePage(target)) {
-                return; // don't interfere with these clicks!
-            }
-            this.setState({paused: !this.state.paused});
-            event.preventDefault();
-            event.stopPropagation();
-        }, true);
+        player.addEventListener(
+            "click",
+            event => {
+                const target = event.target as Element;
+                if (
+                    (target && target.classList.contains("slick-arrow")) ||
+                    this.inInteractivePage(target)
+                ) {
+                    return; // don't interfere with these clicks!
+                }
+                this.setState({ paused: !this.state.paused });
+                event.preventDefault();
+                event.stopPropagation();
+            },
+            true
+        );
     }
 
     // Tells whether the specified element is a child of one that is marked as a bloom interactive page
@@ -214,7 +261,7 @@ export class BloomPlayerControls extends React.Component<
     // One reason this is important is that, to allow the interaction, we must not intercept taps/clicks
     // and use them for pause/resume. Not sure what we will do if we ever have interactive pages with
     // behaviors that should be pausable...
-    private inInteractivePage(target: Element) : boolean {
+    private inInteractivePage(target: Element): boolean {
         let test: Element | null = target;
         while (test) {
             if (test.classList.contains("bloom-interactive-page")) {
