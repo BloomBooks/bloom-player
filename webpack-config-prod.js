@@ -5,7 +5,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 module.exports = merge(common, {
     mode: "production",
     devtool: "source-map",
-    output: { filename: "[name].min.js" }
+    output: { filename: "[name].min.js" },
     // This is an attempt at tree shaking. I don't think I got it working.
     // https://webpack.js.org/guides/tree-shaking#minify-the-output seems
     // to indicate that as long as package.json indicates our module is
@@ -25,10 +25,10 @@ module.exports = merge(common, {
     // is just from minification, not tree-shaking. (Currently from 770K to 351K.)
     // Note: if we do get tree-shaking working, we may need to change the sideEffects: false
     // in our own package.json to prevent shaking our CSS. See comment there.
-    // optimization: {
-    //     minimize: true,
-    //     minimizer: [new TerserPlugin()],
-    //     usedExports: true,
-    //     sideEffects: true
-    // }
+    optimization: {
+        minimize: true,
+        minimizer: [new TerserPlugin()]
+        // usedExports: true,
+        // sideEffects: true
+    }
 });
