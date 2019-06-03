@@ -38,6 +38,13 @@ export function reportAnalytics(event: string, params: any) {
     );
 }
 
+export function onBackClicked() {
+    window.parent.postMessage(
+        JSON.stringify({ messageType: "backButtonClicked" }),
+        "*"
+    );
+}
+
 // When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
 // all the stuff that should be in transientPageData, by posting a message with an object containing
 // each of the values we stored as key and the corresponding values as values.

@@ -1,11 +1,13 @@
 {
     "name": "bloom-player",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",
     "license": "MIT",
     "private": false,
+    "sideEffectsComment": "Might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working",
+    "sideEffects": false,
     "repository": {
         "type": "git",
         "url": "https://github.com/BloomBooks/bloom-player.git"
@@ -29,6 +31,7 @@
         "less-loader": "^4.1.0",
         "prettier": "^1.16.4",
         "style-loader": "^0.23.1",
+        "terser-webpack-plugin": "^1.3.0",
         "ts-jest": "^24.0.2",
         "ts-loader": "^5.3.3",
         "tslint": "^5.15.0",
@@ -37,11 +40,14 @@
         "typescript": "*",
         "url-loader": "^1.1.2",
         "webpack": "^4.29.6",
+        "webpack-bundle-analyzer": "^3.3.2",
         "webpack-cli": "^3.3.0",
         "webpack-merge": "^4.2.1",
         "yarn": "^1.15.2"
     },
     "dependencies": {
+        "@material-ui/core": "^4.0.1",
+        "@material-ui/icons": "^4.0.1",
         "@types/react": "^16.8.10",
         "axios": "^0.18.0",
         "jquery": "^3.4.1",
