@@ -5,7 +5,7 @@ book inside of the Bloom:Publish:Android screen.
 import * as React from "react";
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
-import { getBookParam, sendBackClicked } from "./externalContext";
+import { getBookParam, onBackClicked } from "./externalContext";
 import { ControlBar } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
@@ -44,7 +44,7 @@ export class BloomPlayerControls extends React.Component<
                 <ControlBar
                     paused={this.state.paused}
                     pausedChanged={(p: boolean) => this.setState({ paused: p })}
-                    backClicked={() => sendBackClicked()}
+                    backClicked={() => onBackClicked()}
                 />
                 <BloomPlayerCore
                     url={this.props.url}

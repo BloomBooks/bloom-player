@@ -38,7 +38,7 @@ export function reportAnalytics(event: string, params: any) {
     );
 }
 
-export function sendBackClicked() {
+export function onBackClicked() {
     window.parent.postMessage(
         JSON.stringify({ messageType: "backButtonClicked" }),
         "*"
