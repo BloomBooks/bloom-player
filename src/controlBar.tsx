@@ -1,10 +1,31 @@
 import * as React from "react";
-import { AppBar, Toolbar, IconButton } from "@material-ui/core";
-import {
-    ArrowBack,
-    PlayCircleOutline,
-    PauseCircleOutline
-} from "@material-ui/icons";
+// We'd prefer to use this more elegant form of import:
+//import { AppBar, Toolbar, IconButton } from "@material-ui/core";
+// import {
+//     ArrowBack,
+//     PlayCircleOutline,
+//     PauseCircleOutline
+// } from "@material-ui/icons";
+// However, @material-ui doc indicates that the second-level imports are supported,
+// and using the first-level ones has unfortunate consequences on build times and sizes.
+// It takes roughly twice as long to build our bundles, and they end up roughly
+// ten times bigger, and the extra time to load those bigger bundles is definitely
+// noticeable.
+// The latter two effects probably indicate that I have not yet figured out how to
+// configure webpack to really do tree-shaking, even in our production build.
+
+//tslint:disable-next-line:no-submodule-imports
+import AppBar from "@material-ui/core/AppBar";
+//tslint:disable-next-line:no-submodule-imports
+import Toolbar from "@material-ui/core/Toolbar";
+//tslint:disable-next-line:no-submodule-imports
+import IconButton from "@material-ui/core/IconButton";
+//tslint:disable-next-line:no-submodule-imports
+import ArrowBack from "@material-ui/icons/ArrowBack";
+//tslint:disable-next-line:no-submodule-imports
+import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
+//tslint:disable-next-line:no-submodule-imports
+import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 

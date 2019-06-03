@@ -1,3 +1,4 @@
+//tslint:disable-next-line:no-submodule-imports
 import { createMuiTheme } from "@material-ui/core/styles";
 
 const bloomRed = "#d65649";
