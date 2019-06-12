@@ -37,7 +37,7 @@ interface IControlBarProps {
 export const ControlBar: React.SFC<IControlBarProps> = props => {
     return (
         <div>
-            <AppBar className="control-bar" id="control-bar">
+            <AppBar className="control-bar" id="control-bar" elevation={0}>
                 <Toolbar>
                     <IconButton
                         onClick={() => {
