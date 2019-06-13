@@ -45,12 +45,65 @@ export function onBackClicked() {
     );
 }
 
+let capabilitiesCallback: ((data: any) => void) | null = null;
+
+function requestCapabilitiesOnce(callback: (data: any) => void) {
+    capabilitiesCallback = callback;
+    window.parent.postMessage(
+        JSON.stringify({ messageType: "requestCapabilities" }),
+        "*"
+    );
+}
+
+// Request the container to report what it's capable of doing.
+// If it doesn't respond it's assumed not capable of anything we care about.
+// It is expected to respond by posting a message to our window with a stringified object.
+// Currently, we are looking for "canGoBack" to be true, indicating that we may
+// show the Back button (and expect calling onBackClicked to do something).
+// Also, the returned object must have messageType: "capabilities" to distinguish
+// it from any other messages the host can send us.
+// Note: because of some logic added to handle delays in the host starting to listen,
+// capabilities may be requested more than once, and it is just possible that
+// the callback will be called more than once in response to a single request.
+// Note: currently we can only keep track of ONE caller that wants to be notified
+// when capabilities arrive. We can enhance that when needed.
+export function requestCapabilities(callback: (data: any) => void) {
+    // There appears to be a bug in react native message handling where the listener
+    // does not receive messages until some undefined time after the view is launched.
+    // https://github.com/facebook/react-native/issues/17337
+    // In my testing, a single 100ms wait is enough; but I have no way to be sure
+    // what the maximum needed time might be, so keep trying until we get it
+    // (or, after a second or so, assume we're in a context where no one is ever going
+    // to listen, and give up).
+    let gotCapabilities = false;
+    let retryLimit = 20;
+    const receiveCapabilities = data => {
+        callback(data);
+        gotCapabilities = true;
+    };
+    const timeoutFunc = () => {
+        if (gotCapabilities || retryLimit-- <= 0) {
+            return;
+        }
+        requestCapabilitiesOnce(receiveCapabilities);
+        window.setTimeout(() => {
+            timeoutFunc();
+        }, 50);
+    };
+    timeoutFunc();
+}
+
 // When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
 // all the stuff that should be in transientPageData, by posting a message with an object containing
 // each of the values we stored as key and the corresponding values as values.
 // Note: not yet tested, when we implement this in some parent, probably BR, we may need to fine tune it.
 document.addEventListener("message", data => {
-    if ((data as any).data.messageType === "restorePageData") {
-        TransientPageDataSingleton.setData((data as any).data.pageData);
+    const message = JSON.parse((data as any).data);
+    const messageType = message.messageType;
+    if (messageType === "restorePageData") {
+        TransientPageDataSingleton.setData(message.pageData);
+    }
+    if (messageType === "capabilities" && capabilitiesCallback) {
+        capabilitiesCallback(message);
     }
 });

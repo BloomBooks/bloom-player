@@ -1,4 +1,8 @@
 import * as React from "react";
+// TsLint wants me to combine this with the line above but I can't figure out how.
+// tslint:disable-next-line: no-duplicate-imports
+import { useState, useEffect } from "react";
+import { requestCapabilities } from "./externalContext";
 // We'd prefer to use this more elegant form of import:
 //import { AppBar, Toolbar, IconButton } from "@material-ui/core";
 // import {
@@ -34,20 +38,31 @@ interface IControlBarProps {
     pausedChanged?: (b: boolean) => void;
     backClicked?: () => void;
 }
+
 export const ControlBar: React.SFC<IControlBarProps> = props => {
+    const [canGoBack, setCanGoBack] = useState(false);
+    useEffect(() => {
+        requestCapabilities(data => {
+            if (data.canGoBack) {
+                setCanGoBack(true);
+            }
+        });
+    }, []);
     return (
         <div>
             <AppBar className="control-bar" id="control-bar" elevation={0}>
                 <Toolbar>
-                    <IconButton
-                        onClick={() => {
-                            if (props.backClicked) {
-                                props.backClicked();
-                            }
-                        }}
-                    >
-                        <ArrowBack />
-                    </IconButton>
+                    {!canGoBack || (
+                        <IconButton
+                            onClick={() => {
+                                if (props.backClicked) {
+                                    props.backClicked();
+                                }
+                            }}
+                        >
+                            <ArrowBack />
+                        </IconButton>
+                    )}
                     <div
                         className="filler" // this is set to flex-grow, making the following icons right-aligned.
                     />
