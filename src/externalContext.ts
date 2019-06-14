@@ -45,6 +45,13 @@ export function onBackClicked() {
     );
 }
 
+export function logError(logMessage: string) {
+    window.postMessage(
+        JSON.stringify({ messageType: "logError", message: logMessage }),
+        "*"
+    );
+}
+
 let capabilitiesCallback: ((data: any) => void) | null = null;
 
 function requestCapabilitiesOnce(callback: (data: any) => void) {
