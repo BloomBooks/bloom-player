@@ -52,7 +52,8 @@ class LocalizationManagerImplementation {
             ".bloom-page [data-i18n]"
         );
         if (elementsToTranslate) {
-            elementsToTranslate.forEach(elementToTranslate => {
+            // nodeList.forEach not supported in FF45, so we add Array.from()
+            Array.from(elementsToTranslate).forEach(elementToTranslate => {
                 this.localizeElement(
                     elementToTranslate as HTMLElement,
                     preferredLanguages
