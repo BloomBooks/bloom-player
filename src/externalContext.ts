@@ -38,6 +38,50 @@ export function reportAnalytics(event: string, params: any) {
     );
 }
 
+interface IBookStats {
+    totalNumberedPages: number;
+    questionCount: number;
+    contentLang: string;
+    signLanguage: boolean;
+    motion: boolean;
+    blind: boolean; // technically, whether it has image descriptions not in xmatter
+}
+
+export function reportBookStats(stats: IBookStats) {
+    const args = { messageType: "bookStats", ...stats };
+    postMessageWhenReady(JSON.stringify(args));
+}
+
+export function reportPageShown(
+    pageHasAudio: boolean,
+    lastNumberedPageWasRead: boolean
+) {
+    postMessageWhenReady(
+        JSON.stringify({
+            messageType: "pageShown",
+            pageHasAudio,
+            lastNumberedPageWasRead
+        })
+    );
+}
+
+let pendingMessages: string[] = [];
+let gotCapabilities = false;
+
+// Post a message which the host may not yet be ready to receive.
+// We detect that the host is ready to receive when it sends a capabilities
+// message. Hosts that don't do this are assumed not interested in any
+// of the delayable messages.
+// See the comments in requestCapabilities for why this is needed.
+// Note that this mechanism depends on something calling requestCapabilities.
+function postMessageWhenReady(message: string) {
+    if (gotCapabilities) {
+        window.parent.postMessage(message, "*");
+    } else {
+        pendingMessages.push(message);
+    }
+}
+
 export function onBackClicked() {
     window.parent.postMessage(
         JSON.stringify({ messageType: "backButtonClicked" }),
@@ -82,11 +126,20 @@ export function requestCapabilities(callback: (data: any) => void) {
     // what the maximum needed time might be, so keep trying until we get it
     // (or, after a second or so, assume we're in a context where no one is ever going
     // to listen, and give up).
-    let gotCapabilities = false;
+    // Note: it seems that although we stop sending requests as soon as we get a response,
+    // we can still get several responses; the only explanation I can see is that
+    // something starts to queue up window messages some time before it starts to
+    // process them. But it's definitely not enough to just request once immediately.
     let retryLimit = 20;
     const receiveCapabilities = data => {
+        if (!gotCapabilities) {
+            gotCapabilities = true;
+            pendingMessages.forEach(message =>
+                window.parent.postMessage(message, "*")
+            );
+            pendingMessages = []; // currently redundant, but they aren't pending any more.
+        }
         callback(data);
-        gotCapabilities = true;
     };
     const timeoutFunc = () => {
         if (gotCapabilities || retryLimit-- <= 0) {

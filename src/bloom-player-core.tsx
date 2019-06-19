@@ -20,6 +20,7 @@ import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
+import { reportBookStats, reportPageShown } from "./externalContext";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -89,6 +90,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private isPagesLocalized: boolean = false;
 
     private static currentPage: HTMLElement;
+
+    private indexOflastNumberedPage: number;
 
     public componentDidMount() {
         LocalizationManager.setUp();
@@ -208,6 +211,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     if (this.props.showContextPages) {
                         sliderContent.push(""); // blank page to fill the space left of first.
                     }
+                    let countOfNumberedPages = 0;
+                    let countOfQuestionPages = 0;
                     for (let i = 0; i < pages.length; i++) {
                         const page = pages[i];
                         const landscape = this.forceDevicePageSize(page);
@@ -230,11 +235,67 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                         this.fixRelativeUrls(page);
 
+                        // possibly more efficient to look for attribute data-page-number,
+                        // but due to a bug (BL-7303) many published books may have that on back-matter pages.
+                        const hasPageNum = page.classList.contains(
+                            "numberedPage"
+                        );
+                        if (hasPageNum) {
+                            this.indexOflastNumberedPage =
+                                i + (this.props.showContextPages ? 1 : 0);
+                            countOfNumberedPages++;
+                        }
+                        if (
+                            page.getAttribute("data-analyticscategories") ===
+                            "comprehension"
+                        ) {
+                            // Note that this will count both new-style question pages,
+                            // and ones generated from old-style json.
+                            countOfQuestionPages++;
+                        }
+
                         sliderContent.push(page.outerHTML);
                     }
                     if (this.props.showContextPages) {
                         sliderContent.push(""); // blank page to fill the space right of last.
                     }
+
+                    // initially tried starts-with(@src, 'video') since we use that constraint in BR1.3.
+                    // It never matched. I suspect Android WebView doesn't support starts-with (XPath 1.0.4.2),
+                    // though I can't find any definite documentation saying so. Could use contains, but on
+                    // second thought this query (looking for video/source) is already superior to the 1.3
+                    // regular expression approach.
+                    const signLanguage =
+                        bookHtmlElement.ownerDocument!.evaluate(
+                            ".//video/source[@src]",
+                            body,
+                            null,
+                            XPathResult.ANY_UNORDERED_NODE_TYPE,
+                            null
+                        ).singleNodeValue != null;
+                    const motion =
+                        (
+                            body.getAttribute("data-bffullscreenpicture") || ""
+                        ).indexOf("landscape;bloomReader") >= 0;
+                    const blind =
+                        bookHtmlElement.ownerDocument!.evaluate(
+                            ".//div[contains(@class, 'bloom-page') and not(@data-xmatter-page)]//div[contains(@class, 'bloom-imageDescription')]",
+                            body,
+                            null,
+                            XPathResult.ANY_UNORDERED_NODE_TYPE,
+                            null
+                        ).singleNodeValue != null;
+
+                    // Note: this includes most of the legacy features, but not talking book, since
+                    // a better evaluation of this is whether there are actually audio files.
+                    reportBookStats({
+                        totalNumberedPages: countOfNumberedPages,
+                        contentLang: this.bookLanguage1!,
+                        questionCount: countOfQuestionPages,
+                        signLanguage,
+                        motion,
+                        blind
+                    });
 
                     this.assembleStyleSheets(bookHtmlElement);
                     this.setState({ pages: sliderContent });
@@ -693,7 +754,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // When we have computed it, this will raise PageDurationComplete,
         // which calls an animation method to start the image animation.
         this.narration.computeDuration(bloomPage);
-        this.narration.playAllSentences(bloomPage);
+        const pageHasAudio = this.narration.playAllSentences(bloomPage);
         if (this.props.pageSelected) {
             this.props.pageSelected(sliderPage);
         }
@@ -702,5 +763,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
+
+        reportPageShown(pageHasAudio, index === this.indexOflastNumberedPage);
     }
 }
