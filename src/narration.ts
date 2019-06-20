@@ -34,8 +34,10 @@ export default class Narration {
     public PageDuration: number;
 
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
-    // Return true if page has audio
-    public playAllSentences(page: HTMLElement): boolean {
+    // Return true if playing audio for page (means both it has audio, and we're not paused)
+    public playAllSentences(
+        page: HTMLElement
+    ): { pageHasAudio: boolean; audioWillPlay: boolean } {
         this.playerPage = page;
 
         this.elementsToPlayConsecutivelyStack = this.getPageAudioElements().reverse();
@@ -46,7 +48,7 @@ export default class Narration {
             if (this.PageNarrationComplete) {
                 this.PageNarrationComplete.raise();
             }
-            return false;
+            return { pageHasAudio: false, audioWillPlay: false };
         }
         const firstElementToPlay = this.elementsToPlayConsecutivelyStack[
             stackSize - 1
@@ -54,7 +56,7 @@ export default class Narration {
 
         this.setSoundAndHighlight(firstElementToPlay, true);
         this.playCurrentInternal();
-        return true;
+        return { pageHasAudio: true, audioWillPlay: !this.paused };
     }
 
     private playCurrentInternal() {

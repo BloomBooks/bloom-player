@@ -54,12 +54,14 @@ export function reportBookStats(stats: IBookStats) {
 
 export function reportPageShown(
     pageHasAudio: boolean,
+    audioWillPlay: boolean,
     lastNumberedPageWasRead: boolean
 ) {
     postMessageWhenReady(
         JSON.stringify({
             messageType: "pageShown",
             pageHasAudio,
+            audioWillPlay,
             lastNumberedPageWasRead
         })
     );
