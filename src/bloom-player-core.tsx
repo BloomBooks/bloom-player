@@ -754,7 +754,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // When we have computed it, this will raise PageDurationComplete,
         // which calls an animation method to start the image animation.
         this.narration.computeDuration(bloomPage);
-        const pageHasAudio = this.narration.playAllSentences(bloomPage);
+        const audioResult = this.narration.playAllSentences(bloomPage);
         if (this.props.pageSelected) {
             this.props.pageSelected(sliderPage);
         }
@@ -764,6 +764,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
 
-        reportPageShown(pageHasAudio, index === this.indexOflastNumberedPage);
+        reportPageShown(
+            audioResult.pageHasAudio,
+            audioResult.audioWillPlay,
+            index === this.indexOflastNumberedPage
+        );
     }
 }
