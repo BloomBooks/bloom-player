@@ -348,12 +348,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.setIndex(this.state.currentSliderIndex);
             this.showingPage(this.state.currentSliderIndex);
         }
-        if (this.props.paused) {
-            this.narration.pause();
-            this.video.pause();
-        } else {
-            this.narration.play();
-            this.video.play();
+        if (prevProps.paused !== this.props.paused) {
+            // this code was being called way too often!
+            if (this.props.paused) {
+                this.narration.pause();
+                this.video.pause();
+            } else {
+                this.narration.play();
+                this.video.play();
+            }
         }
     }
 

@@ -39,8 +39,9 @@ interface IControlBarProps {
     backClicked?: () => void;
 }
 
-export const ControlBar: React.SFC<IControlBarProps> = props => {
+export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const [canGoBack, setCanGoBack] = useState(false);
+
     useEffect(() => {
         requestCapabilities(data => {
             if (data.canGoBack) {

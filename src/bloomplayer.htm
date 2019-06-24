@@ -9,7 +9,17 @@ file:///C:\github\bloom-player\dist\bloomplayer.htm?url=https://localhost:...
 Note that if the book as well as the bloomplayer.htm page are local files, cross-domain rules will
 force you to serve the book folder from a local server that supplies CORS permissions,
 unless it is a subfolder of the one that contains bloomplayer.htm.
-If you see the 'Starting...' hanging around, this means that the Javascript in bloomPlayer.min.js from
+-->
+<!-- Another option for testing local files (i.e. what I did --gjm):
+    I created a folder elsewhere on my computer called 'bloom-player-test'. I created a simple 'copyFiles' batch
+    file with one command: "copy \bloom-player\dist\bloom*.* \bloom-player-test". Then I run Bloom and do
+    Publish -> Bloom Reader for the book I want to test. 'bloom-player-test' contains a file called
+    'bloom-player-test.html' containing an iframe element with src attribute:
+    "bloomplayer.htm?url=
+    http://localhost:8089/bloom/C%3A/Users/Gordon/AppData/Local/Temp/PlaceForStagingBook/{book title}", where you
+    enter your book's title instead of {book title}, of course.
+-->
+<!-- If you see the 'Starting...' hanging around, this means that the Javascript in bloomPlayer.min.js from
 bloom-player-controls.init() which calls ReacDOM.render() has failed to replace the body
 of the document with the root react control. (Eventually we hope the user won't see even a flash of this.)
 Contrast with 'loading...' which indicates that the React magic is happening, but the book document is
