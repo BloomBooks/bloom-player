@@ -34,11 +34,18 @@ export default class Narration {
     public PageDuration: number;
 
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
-    // Return true if playing audio for page (means both it has audio, and we're not paused)
+    // Return an object for reporting:
+    //  1- whether the page has audio or not and
+    //  2- whether the audio will play
     public playAllSentences(
-        page: HTMLElement
+        page: HTMLElement | null
     ): { pageHasAudio: boolean; audioWillPlay: boolean } {
-        this.playerPage = page;
+        if (!page && !this.playerPage) {
+            return { pageHasAudio: false, audioWillPlay: false }; // this shouldn't happen
+        }
+        if (page) {
+            this.playerPage = page;
+        }
 
         this.elementsToPlayConsecutivelyStack = this.getPageAudioElements().reverse();
 
@@ -346,7 +353,7 @@ export default class Narration {
             this.elementsToPlayConsecutivelyStack &&
             this.elementsToPlayConsecutivelyStack.length > 0
         ) {
-            const currentElement = this.elementsToPlayConsecutivelyStack.pop();
+            this.elementsToPlayConsecutivelyStack.pop(); // get rid of the last one we played
             const newStackCount = this.elementsToPlayConsecutivelyStack.length;
             if (newStackCount > 0) {
                 // More items to play
@@ -355,19 +362,16 @@ export default class Narration {
                 ];
                 this.setSoundAndHighlight(nextElement, true);
                 this.playCurrentInternal();
-                return;
             } else {
                 // Nothing left to play
                 this.elementsToPlayConsecutivelyStack = [];
                 this.subElementsWithTimings = [];
-            }
 
-            this.removeAudioCurrent();
-            if (this.PageNarrationComplete) {
-                this.PageNarrationComplete.raise(this.playerPage);
+                this.removeAudioCurrent();
+                if (this.PageNarrationComplete) {
+                    this.PageNarrationComplete.raise(this.playerPage);
+                }
             }
-
-            return;
         }
     }
 
@@ -442,7 +446,15 @@ export default class Narration {
         // I'm not sure how getPlayer() can return null/undefined, but have seen it happen
         // typically when doing something odd like trying to go back from the first page.
         if (this.segments.length && this.getPlayer()) {
-            this.getPlayer().play();
+            if (this.elementsToPlayConsecutivelyStack.length) {
+                this.getPlayer().play();
+            } else {
+                // Pressing the play button in this case is triggering a replay of the current page,
+                // so we need to reset the highlighting.
+                this.paused = false;
+                this.playAllSentences(null);
+                return;
+            }
         }
         this.paused = false;
         // adjust startPlay by the elapsed pause. This will cause fakePageNarrationTimedOut to
