@@ -12,7 +12,7 @@ const kAudioSentence = "audio-sentence"; // Even though these can now encompass 
 // notify the container if we are paused forcibly by Chrome refusing to
 // let us play until the user interacts with the page.
 export default class Narration {
-    private playerPage: HTMLElement;
+    public playerPage: HTMLElement;
     private paused: boolean = false;
     public urlPrefix: string;
     // The time we started to play the current page (set in computeDuration, adjusted for pauses)
@@ -34,14 +34,10 @@ export default class Narration {
     public PageDuration: number;
 
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
-    // Return an object for reporting:
-    //  1- whether the page has audio or not and
-    //  2- whether the audio will play
-    public playAllSentences(
-        page: HTMLElement | null
-    ): { pageHasAudio: boolean; audioWillPlay: boolean } {
+    // As long as there is audio on the page, this method will play it.
+    public playAllSentences(page: HTMLElement | null): void {
         if (!page && !this.playerPage) {
-            return { pageHasAudio: false, audioWillPlay: false }; // this shouldn't happen
+            return; // this shouldn't happen
         }
         if (page) {
             this.playerPage = page;
@@ -55,15 +51,17 @@ export default class Narration {
             if (this.PageNarrationComplete) {
                 this.PageNarrationComplete.raise();
             }
-            return { pageHasAudio: false, audioWillPlay: false };
+            return;
         }
+
+        this.paused = false;
         const firstElementToPlay = this.elementsToPlayConsecutivelyStack[
             stackSize - 1
         ]; // Remember to pop it when you're done playing it. (i.e., in playEnded)
 
         this.setSoundAndHighlight(firstElementToPlay, true);
         this.playCurrentInternal();
-        return { pageHasAudio: true, audioWillPlay: !this.paused };
+        return;
     }
 
     private playCurrentInternal() {
@@ -439,6 +437,10 @@ export default class Narration {
         );
     }
 
+    public pageHasAudio(page: HTMLElement): boolean {
+        return this.getPageAudioElements(page).length ? true : false;
+    }
+
     public play() {
         if (!this.paused) {
             return; // no change.
@@ -451,7 +453,6 @@ export default class Narration {
             } else {
                 // Pressing the play button in this case is triggering a replay of the current page,
                 // so we need to reset the highlighting.
-                this.paused = false;
                 this.playAllSentences(null);
                 return;
             }

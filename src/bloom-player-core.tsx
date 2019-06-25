@@ -354,6 +354,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.narration.pause();
                 this.video.pause();
             } else {
+                // This test determines if we changed pages while paused,
+                // since the narration object won't yet be updated.
+                if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
+                    this.resetForNewPageAndPlay(BloomPlayerCore.currentPage);
+                }
                 this.narration.play();
                 this.video.play();
             }
@@ -766,25 +771,36 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.canRotate) {
             this.forceDevicePageSize(bloomPage);
         }
-        // When we have computed it, this will raise PageDurationComplete,
-        // which calls an animation method to start the image animation.
-        this.narration.computeDuration(bloomPage);
-        const audioResult = this.narration.playAllSentences(bloomPage);
         if (this.props.pageSelected) {
             this.props.pageSelected(sliderPage);
         }
+        if (!this.props.paused) {
+            this.resetForNewPageAndPlay(bloomPage);
+        }
+
+        if (!this.isXmatterPage()) {
+            reportPageShown(
+                this.narration.pageHasAudio(bloomPage),
+                !this.props.paused,
+                index === this.indexOflastNumberedPage
+            );
+        }
+    }
+
+    // This should only be called when NOT paused, because it will begin to play audio and highlighting
+    // and animation from the beginning of the page.
+    private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
+        if (this.props.paused) {
+            return; // shouldn't call when paused
+        }
+        // When we have computed it, this will raise PageDurationComplete,
+        // which calls an animation method to start the image animation.
+        this.narration.computeDuration(bloomPage);
+        this.narration.playAllSentences(bloomPage);
         if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
             this.animation.HandlePageBeforeVisible(bloomPage);
         }
         this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
-
-        if (!this.isXmatterPage()) {
-            reportPageShown(
-                audioResult.pageHasAudio,
-                audioResult.audioWillPlay,
-                index === this.indexOflastNumberedPage
-            );
-        }
     }
 }
