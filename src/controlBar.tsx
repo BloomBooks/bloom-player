@@ -49,9 +49,16 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
             }
         });
     }, []);
+
     return (
         <div>
-            <AppBar className="control-bar" id="control-bar" elevation={0}>
+            <AppBar
+                color="primary"
+                className="control-bar"
+                id="control-bar"
+                elevation={0}
+                position="relative" // Keeps the AppBar from floating
+            >
                 <Toolbar>
                     {!canGoBack || (
                         <IconButton
@@ -68,6 +75,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         className="filler" // this is set to flex-grow, making the following icons right-aligned.
                     />
                     <IconButton
+                        color="secondary"
                         onClick={() => {
                             if (props.pausedChanged) {
                                 props.pausedChanged(!props.paused);
@@ -82,9 +90,6 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     </IconButton>
                 </Toolbar>
             </AppBar>
-
-            <Toolbar // The AppBar floats. This occupies the same space (under it, unless scrolling occurs).
-            />
         </div>
     );
 };
