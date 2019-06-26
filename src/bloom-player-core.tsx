@@ -741,6 +741,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return BloomPlayerCore.currentPage;
     }
 
+    private isXmatterPage(): boolean {
+        const page = BloomPlayerCore.currentPage;
+        if (!page) {
+            return true; // shouldn't happen, but at least it won't be counted in analytics
+        }
+        const classAttr = page.getAttribute("class");
+        if (!classAttr || classAttr.indexOf("bloom-page") < 0) {
+            return true; // as above, shouldn't happen, but...
+        }
+        return page.hasAttribute("data-xmatter-page");
+    }
+
     // Called from afterChange, starts narration, etc.
     private showingPage(index: number): void {
         const {
@@ -767,10 +779,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
 
-        reportPageShown(
-            audioResult.pageHasAudio,
-            audioResult.audioWillPlay,
-            index === this.indexOflastNumberedPage
-        );
+        if (!this.isXmatterPage()) {
+            reportPageShown(
+                audioResult.pageHasAudio,
+                audioResult.audioWillPlay,
+                index === this.indexOflastNumberedPage
+            );
+        }
     }
 }
