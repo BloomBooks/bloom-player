@@ -720,7 +720,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.forceDevicePageSize(bloomPage);
             }
             this.animation.HandlePageBeforeVisible(bloomPage);
-
+            // Don't need to be playing a video that's off-screen,
+            // and definitely don't want to be reporting analytics on
+            // its continued playing.
+            this.video.hidingPage();
             this.video.HandlePageBeforeVisible(bloomPage);
         }
     }
