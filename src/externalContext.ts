@@ -67,6 +67,28 @@ export function reportPageShown(
     );
 }
 
+export function reportAudioPlayed(
+    duration: number // seconds
+) {
+    postMessageWhenReady(
+        JSON.stringify({
+            messageType: "audioPlayed",
+            duration
+        })
+    );
+}
+
+export function reportVideoPlayed(
+    duration: number // seconds
+) {
+    postMessageWhenReady(
+        JSON.stringify({
+            messageType: "videoPlayed",
+            duration
+        })
+    );
+}
+
 let pendingMessages: string[] = [];
 let gotCapabilities = false;
 
