@@ -3,7 +3,13 @@
     <!-- This project contains the necessary instructions for publishing the bloom-player assets to S3. It takes advantage
     of the Bloom credentials securely stored on TeamCity, and won't run elsewhere. -->
 
-    <UsingTask TaskName="S3BuildPublisher" AssemblyFile="packages/SIL.BuildTasks.AWS/tools/SIL.BuildTasks.AWS.dll" />
+  <ItemGroup>
+    <DistFiles Include="../dist/*.js" />
+    <DistFiles Include="../dist/bloomplayer.htm" />
+    <DistFiles Include="../dist/*.mp3" />
+  </ItemGroup>
+
+  <UsingTask TaskName="S3BuildPublisher" AssemblyFile="packages/SIL.BuildTasks.AWS/tools/SIL.BuildTasks.AWS.dll" />
 
   <Import Project="../.nuget/NuGet.targets" />
 
@@ -11,12 +17,12 @@
     <Exec Command='$(NuGetCommand) install SIL.BuildTasks.AWS -excludeVersion -source "$(PackageSources)" -solutionDirectory "."' />
   </Target>
 
-    <Target Name="S3Publish" DependsOnTargets="RestoreBuildTasks">
-        <S3BuildPublisher
-        CredentialStoreProfileName = "BloomLibrary"
-        SourceFiles="../dist/*.js; ../dist/bloomplayer.htm; ../dist/*.mp3; ../lib/*.js"
-        DestinationBucket="bloomlibrary.org"
-        DestinationFolder="bloom-player"
-        IsPublicRead="true" />
-    </Target>
+  <Target Name="S3Publish" DependsOnTargets="RestoreBuildTasks">
+    <S3BuildPublisher
+      CredentialStoreProfileName = "BloomLibrary"
+      SourceFiles="@(DistFiles)"
+      DestinationBucket="bloomlibrary.org"
+      DestinationFolder="bloom-player"
+      IsPublicRead="true" />
+  </Target>
 </Project>
