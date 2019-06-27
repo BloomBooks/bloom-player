@@ -29,6 +29,7 @@ export class OldQuestionsConverter {
                 page.classList.add("bloom-page");
                 page.classList.add("simple-comprehension-quiz");
                 page.classList.add("bloom-interactive-page");
+                page.classList.add("numberedPage");
                 page.classList.add(pageClass);
                 page.setAttribute("data-analyticsCategories", "comprehension");
 

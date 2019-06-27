@@ -51,6 +51,7 @@ test("pages have expected classes", () => {
         expect(div.classList).toContain("bloom-page");
         expect(div.classList).toContain("simple-comprehension-quiz");
         expect(div.classList).toContain("bloom-interactive-page");
+        expect(div.classList).toContain("numberedPage");
         expect(div.classList).toContain("Device16x9Portrait");
         expect(div.getAttribute("data-analyticsCategories")).toBe(
             "comprehension"
