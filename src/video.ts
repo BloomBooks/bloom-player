@@ -1,3 +1,5 @@
+import { reportVideoPlayed } from "./externalContext";
+
 // class Video contains functionality to get videos to play properly in bloom-player
 
 export class Video {
@@ -8,6 +10,9 @@ export class Video {
     public static pageHasVideo(page: HTMLDivElement): boolean {
         return !!page.getElementsByTagName("video").length;
     }
+
+    private videoStartTime: number;
+    private videoEnded: boolean;
 
     // Work we prefer to do before the page is visible. This makes sure that when the video
     // is loaded it will begin to play automatically.
@@ -38,11 +43,20 @@ export class Video {
             return;
         }
         this.currentVideoElement = this.getFirstVideo() as HTMLVideoElement;
+        this.videoEnded = false;
+        this.currentVideoElement.onended = (ev: Event) => {
+            this.videoEnded = true;
+            reportVideoPlayed(
+                (ev.target as HTMLVideoElement).currentTime -
+                    this.videoStartTime
+            );
+        };
         if (this.paused) {
             this.currentVideoElement.pause();
         } else {
             const videoElement = this.currentVideoElement;
             window.setTimeout(() => {
+                this.videoStartTime = videoElement.currentTime;
                 videoElement.play();
             }, 1000);
         }
@@ -72,6 +86,9 @@ export class Video {
         if (!videoElement) {
             return; // no change
         }
+        // If it has ended, it's going to replay from the beginning, even though
+        // (to prevent an abrupt visual effect) we didn't reset currentTime when it ended.
+        this.videoStartTime = this.videoEnded ? 0 : videoElement.currentTime;
         videoElement.play();
         this.paused = false;
     }
@@ -80,11 +97,27 @@ export class Video {
         if (this.paused) {
             return;
         }
+        this.pauseCurrentVideo();
+        this.paused = true;
+    }
+
+    private pauseCurrentVideo() {
         const videoElement = this.currentVideoElement;
         if (!videoElement) {
             return; // no change
         }
+        if (
+            videoElement.currentTime > 0 &&
+            !videoElement.paused &&
+            !videoElement.ended
+        ) {
+            // It's playing, and we're about to stop it...report how long it's been going.
+            reportVideoPlayed(videoElement.currentTime - this.videoStartTime);
+        }
         videoElement.pause();
-        this.paused = true;
+    }
+
+    public hidingPage() {
+        this.pauseCurrentVideo(); // but don't set paused state.
     }
 }
