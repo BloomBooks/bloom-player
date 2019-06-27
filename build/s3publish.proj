@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- This project contains the necessary instructions for publishing the bloom-player assets to S3. It takes advantage
     of the Bloom credentials securely stored on TeamCity, and won't run elsewhere. -->
@@ -7,8 +8,13 @@
 
     <UsingTask TaskName="S3BuildPublisher" AssemblyFile="$(BuildTasksAwsDll)" Condition="Exists('$(BuildTasksAwsDll)')" />
 
-    <Target Name="S3Publish">
-        <Exec Command='$(NuGetCommand) install SIL.BuildTasks.AWS -excludeVersion -version 1.0.2 -source "$(PackageSources)" -solutionDirectory "$(SolutionDir)."' />
+  <Import Project="../.nuget/NuGet.targets" />
+
+  <Target Name="RestoreBuildTasks" DependsOnTargets="CheckPrerequisites">
+    <Exec Command='$(NuGetCommand) install SIL.BuildTasks.AWS -excludeVersion -source "$(PackageSources)" -solutionDirectory "."' />
+  </Target>
+
+    <Target Name="S3Publish" DependsOnTargets="RestoreBuildTasks">
         <S3BuildPublisher
         CredentialStoreProfileName = "BloomLibrary"
         SourceFiles="../dist/*.js; ../dist/bloomplayer.htm; ../dist/*.mp3; ../lib/*.js"
