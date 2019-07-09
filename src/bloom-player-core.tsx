@@ -93,6 +93,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private indexOflastNumberedPage: number;
 
+    private needSpecialCss = false;
+
     public componentDidMount() {
         LocalizationManager.setUp();
         this.componentDidUpdate(this.props);
@@ -321,6 +323,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
 
                 const urlOfQuestionsFile = this.urlPrefix + "/questions.json";
+                this.needSpecialCss = false;
                 axios
                     .get(urlOfQuestionsFile)
                     .then(qfResult => {
@@ -332,6 +335,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             "bloom-backMatter"
                         )[0];
                         for (let i = 0; i < newPages.length; i++) {
+                            this.needSpecialCss = true;
                             // insertAdjacentElement is tempting, but not in FF45.
                             firstBackMatterPage.parentElement!.insertBefore(
                                 newPages[i],
@@ -506,6 +510,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const fullHref = this.fullUrl(href);
             promises.push(axios.get(fullHref));
         }
+        if (this.needSpecialCss) {
+            promises.push(
+                axios.get(this.getFolderForSupportFiles() + "/Special.css")
+            );
+        }
         axios
             .all(
                 promises.map(p =>
@@ -663,13 +672,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             // The required javascript is not in the book folder, so retrieve our own version.
                             // We expect this to be in the same place as the root html file, so we strip the file
                             // name of our url (without params).
-                            const href =
-                                window.location.protocol +
-                                "//" +
-                                window.location.host +
-                                window.location.pathname;
-                            const lastSlash = href.lastIndexOf("/");
-                            const folder = href.substring(0, lastSlash);
+                            const folder = this.getFolderForSupportFiles();
                             const tryForQuiz =
                                 folder + "/simpleComprehensionQuiz.js";
                             axios
@@ -686,6 +689,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     });
             }
         }
+    }
+
+    private getFolderForSupportFiles() {
+        const href =
+            window.location.protocol +
+            "//" +
+            window.location.host +
+            window.location.pathname;
+        const lastSlash = href.lastIndexOf("/");
+        return href.substring(0, lastSlash);
     }
 
     // Get a class to apply to a particular slide. This is used to apply the
