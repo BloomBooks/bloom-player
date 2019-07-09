@@ -2,10 +2,10 @@ rem copy the generated outputs from where our build puts them to various places 
 
 rem bloom itself
 rem it would normally get here by fetching the latest npm version of bloom-player, but we are bypassing updating bp on npm. This is the source for Bloom's build process to get it.
-copy "dist\bloomPlayer.*" "..\BloomDesktop\src\BloomBrowserUI\node_modules\bloom-player\dist"
+copy "dist\*.*" "..\BloomDesktop\src\BloomBrowserUI\node_modules\bloom-player\dist"
 rem it would get here by Bloom's gulp copy task (because listed in nodeFilesNeededInOutput), but we can save a step
-copy "dist\bloomPlayer.*" "..\BloomDesktop\output\browser\bloom-player\dist"
+copy "dist\*.*" "..\BloomDesktop\output\browser\bloom-player\dist"
 
 rem bloom-reader rn
 rem where bloom-reader should get it from npm
-copy "dist\bloomPlayer.*" "..\BloomReader-RN\node_modules\bloom-player\dist"
+copy "dist\*.*" "..\BloomReader-RN\node_modules\bloom-player\dist"

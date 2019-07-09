@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.13",
+    "version": "0.9.14",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",
@@ -61,7 +61,7 @@
         "build-dev": "webpack",
         "build-prod": "webpack --config webpack-config-prod.js",
         "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
-        "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist",
+        "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom"
     },
@@ -69,7 +69,8 @@
         "dist/*.js",
         "dist/bloomplayer.htm",
         "dist/*.mp3",
-        "lib/*.js"
+        "lib/*.js",
+        "dist/*.css"
     ],
     "jest": {
         "testEnvironment": "jsdom"
