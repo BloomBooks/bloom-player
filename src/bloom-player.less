@@ -31,6 +31,11 @@ div.ui-audioCurrent:not(.disableHighlight) p {
     background-color: @audioHighlighting;
 }
 
+div.ui-audioCurrentImg {
+    box-sizing: border-box;
+    border: 5px solid @audioHighlighting;
+}
+
 /* the default positioning of these dots is inside the page area, but our pages overlap them.
 Also, if there are more than will fit on a line, some drop outside the control altogether.
 We just make them follow the main content normally. */
@@ -54,7 +59,6 @@ We just make them follow the main content normally. */
     // Usually the buttons are outside the slider, just touching it; but this
     // takes them outside our phone's display. This puts them just inside it.
     .slick-next {
-        right: 0;
         border-radius: @button-radius 0 0 @button-radius;
         // The white icons (hover) were produced from artwork/page right icon.svg by
         // - saving in inkscape as plain svg,
@@ -73,7 +77,6 @@ We just make them follow the main content normally. */
         }
     }
     .slick-prev {
-        left: 0;
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
         // Not quite sure why this is needed on the left button and not the right;
@@ -113,6 +116,25 @@ We just make them follow the main content normally. */
             // this works.
             visibility: hidden;
         }
+    }
+}
+.bloomPlayer:not(.outsideButtons) {
+    .slick-next {
+        right: 0;
+    }
+    .slick-prev {
+        left: 0;
+    }
+}
+
+.bloomPlayer.outsideButtons {
+    .slick-next {
+        // curved on right, flush on left.
+        border-radius: 0 @button-radius @button-radius 0;
+    }
+    .slick-prev {
+        // curved on left, flush on right.
+        border-radius: @button-radius 0 0 @button-radius;
     }
 }
 

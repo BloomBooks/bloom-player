@@ -189,6 +189,21 @@ export class BloomPlayerControls extends React.Component<
         let width = (actualPageHeight * 9) / 16 / scaleFactor;
         if (landscape) {
             width = (actualPageHeight * 16) / 9 / scaleFactor;
+        } else {
+            // how much horizontal space do we have to spare, in the scaled pixels
+            // which control the button size?
+            const widthMargin = window.innerWidth / scaleFactor - width;
+            var player = document.getElementsByClassName("bloomPlayer")[0];
+            // The default positioning of the buttons (by the Slider) is 25px out on each side
+            // Currently this test checks whether there is room for that; if so, we add this
+            // class. Depending on exactly how we end up styling the buttons when outside,
+            // we may need more or less than this.
+            if (widthMargin > 50) {
+                // We have two button widths to spare; can put buttons outside phone
+                player.classList.add("outsideButtons");
+            } else {
+                player.classList.remove("outsideButtons");
+            }
         }
         const leftMargin = Math.max(
             (window.innerWidth - pageWidth * scaleFactor) / 2,
