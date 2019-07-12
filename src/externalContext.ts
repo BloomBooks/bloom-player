@@ -177,16 +177,23 @@ export function requestCapabilities(callback: (data: any) => void) {
     timeoutFunc();
 }
 
-// When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
-// all the stuff that should be in transientPageData, by posting a message with an object containing
-// each of the values we stored as key and the corresponding values as values.
-// Note: not yet tested, when we implement this in some parent, probably BR, we may need to fine tune it.
-document.addEventListener("message", data => {
+// Listen for messages, typically from our parent window, but we're not doing anything security-critical,
+// so no need to worry about origin.
+// Note: it's clear from the documentation and by experiment that when hosted in a web page, we need
+// window.addEventListener. However, for some time the code had document.addEventListener, and this
+// apparently worked in BloomReader-RN. It's just possible we will need to do both when we resume
+// work on that program.
+window.addEventListener("message", data => {
     const message = JSON.parse((data as any).data);
     const messageType = message.messageType;
+    // When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
+    // all the stuff that should be in transientPageData, by posting a message with an object containing
+    // each of the values we stored as key and the corresponding values as values.
+    // Note: not yet tested, when we implement this in some parent, probably BR, we may need to fine tune it.
     if (messageType === "restorePageData") {
         TransientPageDataSingleton.setData(message.pageData);
     }
+    // This is the callback we requested by sending requestCapabilities
     if (messageType === "capabilities" && capabilitiesCallback) {
         capabilitiesCallback(message);
     }

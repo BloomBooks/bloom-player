@@ -62,6 +62,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 <Toolbar>
                     {!canGoBack || (
                         <IconButton
+                            color="secondary"
                             onClick={() => {
                                 if (props.backClicked) {
                                     props.backClicked();
