@@ -278,9 +278,21 @@ export default class Narration {
         }
 
         newElement.classList.add("ui-audioCurrent");
-        const imgContainer = newElement.closest(".bloom-imageContainer");
-        if (imgContainer) {
-            imgContainer.classList.add("ui-audioCurrentImg");
+        // If the current audio is part of a (currently typically hidden) image description,
+        // highlight the image.
+        // it's important to check for imageDescription on the translationGroup;
+        // we don't want to highlight the image while, for example, playing a TOP box content.
+        const translationGroup = newElement.closest(".bloom-translationGroup");
+        if (
+            translationGroup &&
+            translationGroup.classList.contains("bloom-imageDescription")
+        ) {
+            const imgContainer = translationGroup.closest(
+                ".bloom-imageContainer"
+            );
+            if (imgContainer) {
+                imgContainer.classList.add("ui-audioCurrentImg");
+            }
         }
     }
 
