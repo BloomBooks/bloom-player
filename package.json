@@ -19,7 +19,8 @@
         "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom",
-        "---about tobloomlibrary": "rem bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3",
+        "---about tobloomlibrary": "bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.",
+        "---about tobloomlibrary2": "To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js",
         "tobloomlibrary": "copy dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
         "build4bl": "yarn  build && yarn tobloomlibrary"
     },
