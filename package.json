@@ -12,6 +12,17 @@
         "type": "git",
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
+    "scripts": {
+        "build-dev": "webpack",
+        "build-prod": "webpack --config webpack-config-prod.js",
+        "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
+        "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
+        "tslint": "tslint  --project tsconfig.json",
+        "test": "jest --env=jsdom",
+        "---about tobloomlibrary": "rem bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3",
+        "tobloomlibrary": "copy dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
+        "build4bl": "yarn  build && yarn tobloomlibrary"
+    },
     "devDependencies": {
         "@babel/core": "^7.4.3",
         "@babel/preset-env": "^7.4.3",
@@ -56,14 +67,6 @@
         "react-slick": "^0.23.2",
         "slick-carousel": "^1.8.1",
         "style-scoped": "^0.1.0"
-    },
-    "scripts": {
-        "build-dev": "webpack",
-        "build-prod": "webpack --config webpack-config-prod.js",
-        "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
-        "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
-        "tslint": "tslint  --project tsconfig.json",
-        "test": "jest --env=jsdom"
     },
     "files": [
         "dist/*.js",

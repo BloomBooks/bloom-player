@@ -9,3 +9,5 @@ copy "dist\*.*" "..\BloomDesktop\output\browser\bloom-player\dist"
 rem bloom-reader rn
 rem where bloom-reader should get it from npm
 copy "dist\*.*" "..\BloomReader-RN\node_modules\bloom-player\dist"
+
+
