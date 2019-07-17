@@ -7,7 +7,7 @@ export class Video {
     private currentPage: HTMLDivElement;
     private currentVideoElement: HTMLVideoElement | undefined;
 
-    public static pageHasVideo(page: HTMLDivElement): boolean {
+    public static pageHasVideo(page: HTMLElement): boolean {
         return !!page.getElementsByTagName("video").length;
     }
 

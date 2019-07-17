@@ -45,6 +45,12 @@ interface IProps {
         landscape: boolean;
         canRotate: boolean;
     }) => void;
+
+    reportPageProperties?: (properties: {
+        hasAudio: boolean;
+        hasVideo: boolean;
+    }) => void;
+
     // called for initial page and subsequent page changes, passed the slider page
     // (the parent of the .bloom-page, including also the special element that carries
     // all the page styles)
@@ -800,6 +806,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 !this.props.paused,
                 index === this.indexOflastNumberedPage
             );
+        }
+
+        if (this.props.reportPageProperties) {
+            // Informs containing react controls (in the same frame)
+            this.props.reportPageProperties({
+                hasAudio: this.narration.pageHasAudio(bloomPage),
+                hasVideo: Video.pageHasVideo(bloomPage)
+            });
         }
     }
 

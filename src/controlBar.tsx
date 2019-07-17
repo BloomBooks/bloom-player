@@ -36,6 +36,7 @@ import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
 interface IControlBarProps {
     paused: boolean;
     pausedChanged?: (b: boolean) => void;
+    showPlayPause: boolean;
     backClicked?: () => void;
 }
 
@@ -49,6 +50,12 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
             }
         });
     }, []);
+
+    const playOrPause = props.paused ? (
+        <PlayCircleOutline />
+    ) : (
+        <PauseCircleOutline />
+    );
 
     return (
         <div>
@@ -83,11 +90,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             }
                         }}
                     >
-                        {props.paused ? (
-                            <PlayCircleOutline />
-                        ) : (
-                            <PauseCircleOutline />
-                        )}
+                        {props.showPlayPause ? playOrPause : null}
                     </IconButton>
                 </Toolbar>
             </AppBar>

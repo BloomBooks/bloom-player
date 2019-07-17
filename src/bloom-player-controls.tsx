@@ -23,7 +23,10 @@ interface IState {
     paused: boolean;
     canRotate: boolean;
     windowLandscape: boolean;
+    hasAudio: boolean;
+    hasVideo: boolean;
 }
+
 export class BloomPlayerControls extends React.Component<
     IProps & React.HTMLProps<HTMLDivElement>,
     IState
@@ -31,7 +34,9 @@ export class BloomPlayerControls extends React.Component<
     public readonly state: IState = {
         paused: false,
         canRotate: false,
-        windowLandscape: false
+        windowLandscape: false,
+        hasAudio: false,
+        hasVideo: false
     };
 
     private bloomPlayer: BloomPlayerCore | null;
@@ -45,6 +50,7 @@ export class BloomPlayerControls extends React.Component<
                     paused={this.state.paused}
                     pausedChanged={(p: boolean) => this.setState({ paused: p })}
                     backClicked={() => onBackClicked()}
+                    showPlayPause={this.state.hasAudio || this.state.hasVideo}
                 />
                 <BloomPlayerCore
                     url={this.props.url}
@@ -54,10 +60,17 @@ export class BloomPlayerControls extends React.Component<
                     reportBookProperties={bookProps =>
                         this.setBookProps(bookProps)
                     }
+                    reportPageProperties={pageProps =>
+                        this.setPageProps(pageProps)
+                    }
                     ref={bloomPlayer => (this.bloomPlayer = bloomPlayer)}
                 />
             </div>
         );
+    }
+
+    private setPageProps(pageProps: object) {
+        this.setState(pageProps);
     }
 
     private setBookProps(bookProps: {
