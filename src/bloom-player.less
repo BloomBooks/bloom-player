@@ -8,6 +8,7 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 @hoverNextPrevButtonBar: #cbcbcb;
 @contextPageBackground: darkgray; // #a9a9a9
 @audioHighlighting: yellow; // #ffff00
+@bloomRed: #d65649;
 
 /* The rules in the book reset this counter at the body level, but since we scope our
 rules to apply at a lower level, that rule doesn't work. We need to reset at a level
@@ -71,10 +72,10 @@ We just make them follow the main content normally. */
         // Embedding the SVG like this bypasses all the complications of making
         // the build system put the svg file where we can find it, for all the
         // clients of bloom-player, and saves a server round trip to boot.
-        background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23b2b2b2;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
-        &:hover {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
-        }
+        // background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23b2b2b2;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
+        // &:hover {
+        //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        // }
     }
     .slick-prev {
         // curved on right, flush on left.
@@ -85,10 +86,10 @@ We just make them follow the main content normally. */
         // of it to be seen, even when over the preview.
         z-index: 1;
         // See comment on slick-next
-        background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23b2b2b2;fill-opacity:1;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
-        &:hover {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
-        }
+        // background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23b2b2b2;fill-opacity:1;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
+        // &:hover {
+        //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
+        // }
     }
     .slick-next,
     .slick-prev {
@@ -106,10 +107,10 @@ We just make them follow the main content normally. */
             opacity: 0.9;
             background-color: @hoverNextPrevButtonBar;
         }
-        &:before {
-            // we're using background images, override special font chars slick uses
-            content: "";
-        }
+        // &:before {
+        //     // we're using background images, override special font chars slick uses
+        //     content: "";
+        // }
         &.slick-disabled {
             // I would use display:none, but slick puts an explicit display:block on the element itself
             // that nothing in css can override. Since nothing else depends on its size,
@@ -127,14 +128,25 @@ We just make them follow the main content normally. */
     }
 }
 
+@navigationButtonWidth: 100px;
 .bloomPlayer.outsideButtons {
+    .slick-next,
+    .slick-prev {
+        width: @navigationButtonWidth;
+        &::before {
+            font-size: 48pt;
+            color: @bloomRed;
+        }
+    }
     .slick-next {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
+        right: -1 * @navigationButtonWidth;
     }
     .slick-prev {
         // curved on left, flush on right.
         border-radius: @button-radius 0 0 @button-radius;
+        left: -1 * @navigationButtonWidth;
     }
 }
 
