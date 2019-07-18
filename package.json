@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.19",
+    "version": "0.9.20",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",
@@ -19,8 +19,10 @@
         "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom",
-        "---about tobloomlibrary": "bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.",
-        "---about tobloomlibrary2": "To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js",
+        "// bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.": "",
+        "// To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js": "",
+        "// This will fail if the http server is locking the directory": "",
+        "prepbloomlibrary": "mkdir ..\\BloomLibrary\\build\\bloom-player",
         "tobloomlibrary": "copy dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
         "build4bl": "yarn  build && yarn tobloomlibrary"
     },
