@@ -753,7 +753,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         const sliderPage = document.querySelectorAll(
             ".slick-slide[data-index='" +
                 (index + (this.props.showContextPages ? 1 : 0)) +
-                "'"
+                "']"
         )[0] as HTMLElement;
         if (!sliderPage) {
             return { slider: sliderPage, page: null }; // unexpected
