@@ -27,6 +27,24 @@ above the page so that page numbers will increment.*/
     background-color: @contextPageBackground;
 }
 
+// For chrome and safari, we can deal with highlighting overlapping lines. See BL-7442.
+// This media query is supposed to be a way to detect Chrome/Safari.
+// Actually: this did not prevent it from applying in Firefox,: @media screen and (-webkit-min-device-pixel-ratio: 0) {
+// Nor did this: @supports (-webkit-appearance: none) {
+/*@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    span.ui-audioCurrent:not(.disableHighlight) {
+        background: linear-gradient(@audioHighlighting, @audioHighlighting);
+        background-blend-mode: overlay;
+        mix-blend-mode: overlay;
+    }
+}*/
+
+// The above doesn't work on Firefox (through FF 68) (or in Bloom or 2019-era Edge). For those, we can at least
+// deal with the most common case of overlap (the book title on the cover) by just
+// treating the text as a rectangle. And it's fine that this will show this way in Chrome too:
+.Title-On-Cover-style span.ui-audioCurrent:not(.disableHighlight) {
+    display: inline-block;
+}
 span.ui-audioCurrent:not(.disableHighlight),
 div.ui-audioCurrent:not(.disableHighlight) p {
     background-color: @audioHighlighting;
