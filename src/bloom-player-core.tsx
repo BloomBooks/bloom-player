@@ -64,6 +64,7 @@ interface IState {
     // numbers actually on the page. This is an index into pages, and in context
     // mode it's the index of the left context page, not the main page.
     currentSliderIndex: number;
+    isLoading: boolean;
 }
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly initialPages: string[] = ["loading..."];
@@ -72,7 +73,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     public readonly state: IState = {
         pages: this.initialPages,
         styleRules: this.initialStyleRules,
-        currentSliderIndex: 0
+        currentSliderIndex: 0,
+        isLoading: true
     };
 
     // The book url we were passed as a URL param.
@@ -306,7 +308,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     });
 
                     this.assembleStyleSheets(bookHtmlElement);
-                    this.setState({ pages: sliderContent });
+                    // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
+                    // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
+                    // change it when it is done.
+                    this.setState({
+                        pages: sliderContent
+                    });
 
                     // A pause hopefully allows the document to become visible before we
                     // start playing any audio or movement on the first page.
@@ -568,7 +575,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         }
                     }
                 });
-                this.setState({ styleRules: combinedStyle });
+                this.setState({ styleRules: combinedStyle, isLoading: false });
                 BloomPlayerControls.pageStylesInstalled = true;
             });
     }
@@ -587,6 +594,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public render() {
+        if (this.state.isLoading) {
+            return "Loading...";
+        }
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
