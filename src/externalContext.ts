@@ -184,7 +184,17 @@ export function requestCapabilities(callback: (data: any) => void) {
 // apparently worked in BloomReader-RN. It's just possible we will need to do both when we resume
 // work on that program.
 window.addEventListener("message", data => {
-    const message = JSON.parse((data as any).data);
+    // something sends us an empty message, which we haven't figured out, but know we can ignore
+    if (!data || !data.data || data.data.length === 0) {
+        return;
+    }
+    let message: any;
+    try {
+        message = JSON.parse(data.data);
+    } catch (error) {
+        console.error(error);
+        return;
+    }
     const messageType = message.messageType;
     // When bloom-player starts up inside Bloom Reader (or other interactive parent) it should pass us
     // all the stuff that should be in transientPageData, by posting a message with an object containing
