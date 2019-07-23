@@ -9,6 +9,11 @@
     <DistFiles Include="../dist/*.mp3" />
     <DistFiles Include="../dist/*.css" />
   </ItemGroup>
+  <PropertyGroup>
+    <ProfileName>BloomLibrary</ProfileName>
+    <Bucket>dev.bloomlibrary.org</Bucket> <!-- Which bucket to target; May override with /p:Bucket=xxx -->
+    <BucketFolder>bloom-player</BucketFolder>
+  </PropertyGroup>
 
   <UsingTask TaskName="S3BuildPublisher" AssemblyFile="packages/SIL.BuildTasks.AWS/tools/SIL.BuildTasks.AWS.dll" />
 
@@ -20,10 +25,10 @@
 
   <Target Name="S3Publish" DependsOnTargets="RestoreBuildTasks">
     <S3BuildPublisher
-      CredentialStoreProfileName = "BloomLibrary"
+      CredentialStoreProfileName ="$(ProfileName)"
       SourceFiles="@(DistFiles)"
-      DestinationBucket="bloomlibrary.org"
-      DestinationFolder="bloom-player"
+      DestinationBucket="$(Bucket)"
+      DestinationFolder="$(BucketFolder)"
       IsPublicRead="true" />
   </Target>
 </Project>
