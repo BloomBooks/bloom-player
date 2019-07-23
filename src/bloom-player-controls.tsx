@@ -1,5 +1,5 @@
 /*
-bloom-player-preview wraps bloom-player-core and adds just enough controls to preview the
+BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to preview the
 book inside of the Bloom:Publish:Android screen.
 */
 import * as React from "react";
@@ -206,7 +206,7 @@ export class BloomPlayerControls extends React.Component<
             // how much horizontal space do we have to spare, in the scaled pixels
             // which control the button size?
             const widthMargin = window.innerWidth / scaleFactor - width;
-            var player = document.getElementsByClassName("bloomPlayer")[0];
+            const player = document.getElementsByClassName("bloomPlayer")[0];
             // The default positioning of the buttons (by the Slider) is 25px out on each side
             // Currently this test checks whether there is room for that; if so, we add this
             // class. Depending on exactly how we end up styling the buttons when outside,
@@ -276,7 +276,10 @@ export class BloomPlayerControls extends React.Component<
                 ) {
                     return; // don't interfere with these clicks!
                 }
-                this.setState({ paused: !this.state.paused });
+                // If there's no media, don't pause!
+                if (this.state.hasAudio || this.state.hasVideo) {
+                    this.setState({ paused: !this.state.paused });
+                }
                 event.preventDefault();
                 event.stopPropagation();
             },
