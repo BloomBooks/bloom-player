@@ -667,42 +667,36 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     continue;
                 }
 
-                // It's quite reasonable for this file to be missing in the book folder itself.
-                // If so, the reader supplies its own version. This annotation is helpful when
-                // previewing books served by Bloom itself, preventing "file not found" yellow boxes.
-                const possiblyOptionalSrc = src.endsWith(
-                    "/simpleComprehensionQuiz.js"
-                )
-                    ? src + "?optional=true"
-                    : src;
-                // This would be highly dangerous in most contexts. It is one of the reasons
-                // we insist that bloom-player should live in its own iframe, protecting the rest
-                // of the page from things this eval might do.
-                axios
-                    .get(possiblyOptionalSrc)
-                    // tslint:disable-next-line: no-eval
-                    .then(result => eval(result.data))
-                    .catch(() => {
-                        if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                            // Probably we generated a replacement page for old-style json comprehension questions.
-                            // The required javascript is not in the book folder, so retrieve our own version.
-                            // We expect this to be in the same place as the root html file, so we strip the file
-                            // name of our url (without params).
-                            const folder = this.getFolderForSupportFiles();
-                            const tryForQuiz =
-                                folder + "/simpleComprehensionQuiz.js";
-                            axios
-                                .get(tryForQuiz)
-                                .then(result => {
-                                    // tslint:disable-next-line: no-eval
-                                    eval(result.data);
-                                })
-                                .catch(error => {
-                                    console.log(error);
-                                });
+                if (src.endsWith("/simpleComprehensionQuiz.js")) {
+                    // We want the reader's own version of this file. For one thing, if we generated
+                    // the quiz pages from json, the book folder won't have it. Also, this means we
+                    // always use the latest version of the quiz code rather than whatever was current
+                    // when the book was published.
+                    const folder = this.getFolderForSupportFiles();
+                    const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
+                    axios
+                        .get(tryForQuiz)
+                        .then(result => {
+                            // See comment on eval below.
+                            // tslint:disable-next-line: no-eval
+                            eval(result.data);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                } else {
+                    // Get it from the specified place.
+                    axios
+                        .get(src)
+                        // This would be highly dangerous in most contexts. It is one of the reasons
+                        // we insist that bloom-player should live in its own iframe, protecting the rest
+                        // of the page from things this eval might do.
+                        // tslint:disable-next-line: no-eval
+                        .then(result => eval(result.data))
+                        .catch(() => {
                             // If we don't get it there, not much we can do.
-                        }
-                    });
+                        });
+                }
             }
         }
     }
