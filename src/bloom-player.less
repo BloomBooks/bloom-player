@@ -131,9 +131,11 @@ We just make them follow the main content normally. */
         // }
         &.slick-disabled {
             // I would use display:none, but slick puts an explicit display:block on the element itself
-            // that nothing in css can override. Since nothing else depends on its size,
-            // this works.
+            // that nothing in css can override. So the best we can do is hide it.
+            // It's usually an overlay, but just in case, force width to zero so it doesn't take up
+            // any space and affect positions of other things.
             visibility: hidden;
+            width: 0;
         }
     }
 }

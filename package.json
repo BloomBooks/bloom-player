@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.23",
+    "version": "0.9.24",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",
@@ -57,9 +57,7 @@
         "webpack-bundle-analyzer": "^3.3.2",
         "webpack-cli": "^3.3.0",
         "webpack-merge": "^4.2.1",
-        "yarn": "^1.15.2"
-    },
-    "dependencies": {
+        "yarn": "^1.15.2",
         "@material-ui/core": "^4.0.1",
         "@material-ui/icons": "^4.0.1",
         "@types/react": "^16.8.10",
@@ -71,6 +69,7 @@
         "slick-carousel": "^1.8.1",
         "style-scoped": "^0.1.0"
     },
+    "dependencies": {},
     "files": [
         "dist/*.js",
         "dist/bloomplayer.htm",

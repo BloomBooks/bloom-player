@@ -20,7 +20,11 @@ import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
-import { reportBookStats, reportPageShown } from "./externalContext";
+import {
+    reportAnalytics,
+    setAmbientAnalyticsProperties,
+    updateBookProgressReport
+} from "./externalContext";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -66,9 +70,45 @@ interface IState {
     currentSliderIndex: number;
     isLoading: boolean;
 }
+
+enum BookFeatures {
+    talkingBook = "talkingBook",
+    blind = "blind",
+    signLanguage = "signLanguage",
+    motion = "motion"
+}
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly initialPages: string[] = ["loading..."];
     private readonly initialStyleRules: string = "";
+
+    // This block of variables keep track of things we want to report in analytics
+    private totalNumberedPages = 0; // found in book
+    private questionCount = 0; // comprehension questions found in book
+    private features = "";
+
+    private audioPages = 0; // number of (non-xmatter) audio pages user has displayed
+    private totalPagesShown = 0; // number of (non-xmatter) pages of all kinds user has displayed
+    private videoPages = 0; // number of (non-xmatter) video pages user has displayed.
+    private lastNumberedPageWasRead = false; // has user read to last numbered page?
+
+    private totalAudioDuration = 0;
+    private totalVideoDuration = 0;
+    private reportedAudioOnCurrentPage = false;
+    private reportedVideoOnCurrentPage = false;
+    private brandingProjectName = "";
+    private bookTitle = "";
+    private copyrightHolder = "";
+    private originalCopyrightHolder = "";
+    private sessionId = this.generateUUID();
+
+    private static currentPagePlayer: BloomPlayerCore;
+
+    constructor(props, state) {
+        super(props, state);
+        // Make this player (currently always the only one) the recipient for
+        // notifications from narration.ts etc about duration etc.
+        BloomPlayerCore.currentPagePlayer = this;
+    }
 
     public readonly state: IState = {
         pages: this.initialPages,
@@ -207,6 +247,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 );
                 this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
 
+                this.copyrightHolder = this.getCopyrightInfo(body, "copyright");
+                this.originalCopyrightHolder = this.getCopyrightInfo(
+                    body,
+                    "originalCopyright"
+                );
+
                 this.makeNonEditable(body);
 
                 // This function, the rest of the work we need to do, will be executed after we attempt
@@ -221,8 +267,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     if (this.props.showContextPages) {
                         sliderContent.push(""); // blank page to fill the space left of first.
                     }
-                    let countOfNumberedPages = 0;
-                    let countOfQuestionPages = 0;
+                    this.totalNumberedPages = 0;
+                    this.questionCount = 0;
                     for (let i = 0; i < pages.length; i++) {
                         const page = pages[i];
                         const landscape = this.forceDevicePageSize(page);
@@ -253,7 +299,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         if (hasPageNum) {
                             this.indexOflastNumberedPage =
                                 i + (this.props.showContextPages ? 1 : 0);
-                            countOfNumberedPages++;
+                            this.totalNumberedPages++;
                         }
                         if (
                             page.getAttribute("data-analyticscategories") ===
@@ -261,7 +307,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         ) {
                             // Note that this will count both new-style question pages,
                             // and ones generated from old-style json.
-                            countOfQuestionPages++;
+                            this.questionCount++;
                         }
 
                         sliderContent.push(page.outerHTML);
@@ -270,42 +316,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         sliderContent.push(""); // blank page to fill the space right of last.
                     }
 
-                    // initially tried starts-with(@src, 'video') since we use that constraint in BR1.3.
-                    // It never matched. I suspect Android WebView doesn't support starts-with (XPath 1.0.4.2),
-                    // though I can't find any definite documentation saying so. Could use contains, but on
-                    // second thought this query (looking for video/source) is already superior to the 1.3
-                    // regular expression approach.
-                    const signLanguage =
-                        bookHtmlElement.ownerDocument!.evaluate(
-                            ".//video/source[@src]",
-                            body,
-                            null,
-                            XPathResult.ANY_UNORDERED_NODE_TYPE,
-                            null
-                        ).singleNodeValue != null;
-                    const motion =
-                        (
-                            body.getAttribute("data-bffullscreenpicture") || ""
-                        ).indexOf("landscape;bloomReader") >= 0;
-                    const blind =
-                        bookHtmlElement.ownerDocument!.evaluate(
-                            ".//div[contains(@class, 'bloom-page') and not(@data-xmatter-page)]//div[contains(@class, 'bloom-imageDescription')]",
-                            body,
-                            null,
-                            XPathResult.ANY_UNORDERED_NODE_TYPE,
-                            null
-                        ).singleNodeValue != null;
-
-                    // Note: this includes most of the legacy features, but not talking book, since
-                    // a better evaluation of this is whether there are actually audio files.
-                    reportBookStats({
-                        totalNumberedPages: countOfNumberedPages,
-                        contentLang: this.bookLanguage1!,
-                        questionCount: countOfQuestionPages,
-                        signLanguage,
-                        motion,
-                        blind
-                    });
+                    this.reportBookOpened(body);
 
                     this.assembleStyleSheets(bookHtmlElement);
                     // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
@@ -380,6 +391,156 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.video.play();
             }
         }
+    }
+
+    private getCopyrightInfo(
+        body: HTMLBodyElement,
+        dataDivValue: string
+    ): string {
+        const copyrightNoticeRE = /^Copyright © \d\d\d\d, /;
+        const copyrightElement = body.ownerDocument!.evaluate(
+            ".//div[@data-book='" + dataDivValue + "']",
+            body,
+            null,
+            XPathResult.ANY_UNORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+        return copyrightElement
+            ? (this.copyrightHolder = (copyrightElement.textContent || "")
+                  .trim()
+                  .replace(copyrightNoticeRE, ""))
+            : "";
+    }
+
+    private reportBookOpened(body: HTMLBodyElement) {
+        axios.get(this.fullUrl("meta.json")).then(result => {
+            //console.log(JSON.stringify(result));
+            // surprisingly, we don't get the file content as a string, but already parsed ito a object.
+            const metaData = result.data;
+            this.brandingProjectName = metaData.brandingProjectName;
+            this.bookTitle = metaData.title;
+            const bloomdVersion = metaData.bloomdVersion
+                ? metaData.bloomdVersion
+                : 0;
+
+            this.features =
+                bloomdVersion > 0
+                    ? metaData.features
+                    : this.guessFeatures(body);
+
+            // Some facts about the book will go out with not just this event,
+            // but also subsequent events. We call these "ambient" properties.
+            const ambientAnalyticsProps: any = {
+                totalNumberedPages: this.totalNumberedPages,
+                questionCount: this.questionCount,
+                contentLang: this.bookLanguage1,
+                features: this.features,
+                sessionId: this.sessionId,
+                title: this.bookTitle
+            };
+            if (this.brandingProjectName) {
+                ambientAnalyticsProps.brandingProjectName = this.brandingProjectName;
+            }
+            if (this.originalCopyrightHolder) {
+                ambientAnalyticsProps.originalCopyrightHolder = this.originalCopyrightHolder;
+            }
+            if (this.copyrightHolder) {
+                ambientAnalyticsProps.copyrightHolder = this.copyrightHolder;
+            }
+            setAmbientAnalyticsProperties(ambientAnalyticsProps);
+            reportAnalytics("BookOrShelf opened", {});
+        });
+    }
+
+    // In July 2019, Bloom Desktop added a bloomdVersion to meta.json and at the same
+    // time, started to report features more fully/reliably in meta.json:features.
+    private guessFeatures(body: HTMLBodyElement): string {
+        const features: BookFeatures[] = [];
+        // An obsolete .bloomd (won't happen on BL). Guess the features.
+        // The only feature that we haven't already figured out is talkingBook.
+        // Enhance: we could use a series of axios requests to see whether
+        // any of the audio-sentece blocks actually has audio files.
+        // Or, since obsolete bloomd's will only be found by BR, we could
+        // send a request for BR to check the audio folder.
+
+        // initially tried starts-with(@src, 'video') since we use that constraint in BR1.3.
+        // It never matched. I suspect Android WebView doesn't support starts-with (XPath 1.0.4.2),
+        // though I can't find any definite documentation saying so. Could use contains, but on
+        // second thought this query (looking for video/source) is already superior to the 1.3
+        // regular expression approach.
+        const signLanguage =
+            body.ownerDocument!.evaluate(
+                ".//video/source[@src]",
+                body,
+                null,
+                XPathResult.ANY_UNORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue != null;
+        const motion =
+            (body.getAttribute("data-bffullscreenpicture") || "").indexOf(
+                "landscape;bloomReader"
+            ) >= 0;
+        const blind =
+            body.ownerDocument!.evaluate(
+                ".//div[contains(@class, 'bloom-page') and not(@data-xmatter-page)]//div[contains(@class, 'bloom-imageDescription')]",
+                body,
+                null,
+                XPathResult.ANY_UNORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue != null;
+        const isTalkingBook =
+            body.ownerDocument!.evaluate(
+                ".//*[contains(@class, 'audio-sentence')]",
+                body,
+                null,
+                XPathResult.ANY_UNORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue != null;
+        // Note: the order of features here matches Bloom's BookMetaData.Features getter,
+        // so the features will be in the same order as when output from there.
+        // Not sure whether this matters, but it may make analysis of the data easier.
+        if (blind) {
+            features.push(BookFeatures.blind);
+        }
+        if (signLanguage) {
+            features.push(BookFeatures.signLanguage);
+        }
+        if (isTalkingBook) {
+            features.push(BookFeatures.talkingBook);
+        }
+        if (motion) {
+            features.push(BookFeatures.motion);
+        }
+        return features.join(",");
+    }
+
+    // Update the analytics report that will be sent (if not updated again first)
+    // by our external container (Bloom Reader, Bloom Library, etc.)
+    // when the parent reader determines that the session reading this book is finished.
+    private sendUpdateOfBookProgressReportToExternalContext() {
+        const args = {
+            audioPages: this.audioPages,
+            nonAudioPages: this.totalPagesShown - this.audioPages,
+            videoPages: this.videoPages,
+            audioDuration: this.totalAudioDuration,
+            videoDuration: this.totalVideoDuration,
+            lastNumberedPageRead: this.lastNumberedPageWasRead
+        };
+        // Pass the completed report to the externalContext version of this method which actually sends it.
+        updateBookProgressReport("Pages Read", args);
+    }
+
+    private generateUUID() {
+        // Public Domain/MIT (stackoverflow)
+        let d = new Date().getTime();
+
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+            // tslint:disable-next-line: no-bitwise
+            const r = (d + Math.random() * 16) % 16 | 0;
+            d = Math.floor(d / 16);
+            // tslint:disable-next-line: no-bitwise
+            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+        });
     }
 
     private getPreferredTranslationLanguages(): string[] {
@@ -805,11 +966,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
 
         if (!this.isXmatterPage()) {
-            reportPageShown(
-                this.narration.pageHasAudio(bloomPage),
-                !this.props.paused,
-                index === this.indexOflastNumberedPage
-            );
+            this.totalPagesShown++;
+            if (index === this.indexOflastNumberedPage) {
+                this.lastNumberedPageWasRead = true;
+            }
         }
 
         if (this.props.reportPageProperties) {
@@ -819,8 +979,46 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
+
+        this.reportedAudioOnCurrentPage = false;
+        this.reportedVideoOnCurrentPage = false;
+        this.sendUpdateOfBookProgressReportToExternalContext();
     }
 
+    // called by narration.ts
+    public static storeAudioAnalytics(duration: number): void {
+        if (duration < 0.001) {
+            return;
+        }
+        const player = BloomPlayerCore.currentPagePlayer;
+        player.totalAudioDuration += duration;
+
+        if (player.isXmatterPage()) {
+            // Our policy is only to count non-xmatter audio pages. BL-7334.
+            return;
+        }
+
+        if (!player.reportedAudioOnCurrentPage) {
+            player.audioPages++;
+            player.reportedAudioOnCurrentPage = true;
+        }
+        player.sendUpdateOfBookProgressReportToExternalContext();
+    }
+
+    public static storeVideoAnalytics(duration: number) {
+        // We get some spurious very small durations, including sometimes a zero on a page that
+        // doesn't have any video.
+        if (duration < 0.001) {
+            return;
+        }
+        const player = BloomPlayerCore.currentPagePlayer;
+        player.totalVideoDuration += duration;
+        if (!player.reportedVideoOnCurrentPage && !player.isXmatterPage()) {
+            player.reportedVideoOnCurrentPage = true;
+            player.videoPages++;
+        }
+        player.sendUpdateOfBookProgressReportToExternalContext();
+    }
     // This should only be called when NOT paused, because it will begin to play audio and highlighting
     // and animation from the beginning of the page.
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
