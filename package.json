@@ -13,6 +13,8 @@
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
     "scripts": {
+        "serve": "yarn lite-server --config=\"./server-config\"",
+        "watch": "yarn webpack --watch",
         "build-dev": "webpack",
         "build-prod": "webpack --config webpack-config-prod.js",
         "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
@@ -65,6 +67,7 @@
         "@types/react": "^16.8.10",
         "axios": "^0.18.0",
         "jquery": "^3.4.1",
+        "lite-server": "^2.5.3",
         "react": "^16.8.5",
         "react-dom": "^16.8.5",
         "react-slick": "^0.23.2",

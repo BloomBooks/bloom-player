@@ -1,0 +1,5 @@
+{
+    "//": "for documentation on these options, see https://www.browsersync.io/docs/options",
+    "port": 3033,
+    "files": ["./dist/**/*.{html,htm,css,js}"]
+}
