@@ -30,11 +30,9 @@ export class Animation {
 
     // Search for an image container that has the properties we need for animation.
     public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
-        return (
-            [].slice
-                .call(page.getElementsByClassName("bloom-imageContainer"))
-                .find(v => (v.dataset as IAnimation).initialrect)
-        ) as HTMLElement;
+        return [].slice
+            .call(page.getElementsByClassName("bloom-imageContainer"))
+            .find(v => (v.dataset as IAnimation).initialrect) as HTMLElement;
     }
 
     private currentPage: HTMLElement; // one we're currently showing
@@ -89,7 +87,11 @@ export class Animation {
     // May be called when we are not paused; should do nothing if so.
     public PlayAnimation() {
         const stylesheet = this.getAnimationStylesheet().sheet;
-        for (let i = 0; i < (stylesheet as CSSStyleSheet).cssRules.length; i++) {
+        for (
+            let i = 0;
+            i < (stylesheet as CSSStyleSheet).cssRules.length;
+            i++
+        ) {
             if (
                 ((stylesheet as CSSStyleSheet).cssRules[i] as CSSStyleRule)
                     .selectorText === ".bloom-pausable"
@@ -106,7 +108,11 @@ export class Animation {
     public PauseAnimation() {
         const stylesheet = this.getAnimationStylesheet().sheet;
         // tslint:disable-next-line:prefer-for-of (cssRules is not an array)
-        for (let i = 0; i < (stylesheet as CSSStyleSheet).cssRules.length; i++) {
+        for (
+            let i = 0;
+            i < (stylesheet as CSSStyleSheet).cssRules.length;
+            i++
+        ) {
             if (
                 ((stylesheet as CSSStyleSheet).cssRules[i] as CSSStyleRule)
                     .selectorText === ".bloom-pausable"
@@ -156,6 +162,8 @@ export class Animation {
 
         if (!hidePageDiv || !hidePageDiv.classList.contains("hidePage")) {
             // We don't already have one and need to make it.
+            // Note that this copies all the classes, so we need to be careful that css based
+            // on the classes works as expected with/without hidePage.
             hidePageDiv = animatableImageContainer.cloneNode(
                 true
             ) as HTMLDivElement;
@@ -311,16 +319,15 @@ export class Animation {
         // sometimes has to wait until we get the aspect ratio of the image.
         const stylesheet = this.getAnimationStylesheet().sheet;
         // tslint is so surprised by this cast that it complains without the preliminary "as any"
-        const initialRectStr = (this.animationView.dataset as any as IAnimation)
-            .initialrect;
+        const initialRectStr = ((this.animationView
+            .dataset as any) as IAnimation).initialrect;
 
         //Fetch the data from the dataset and reformat into scale width and height along with offset x and y
         const initialRect = initialRectStr.split(" ");
         const initialScaleWidth = 1 / parseFloat(initialRect[2]);
         const initialScaleHeight = 1 / parseFloat(initialRect[3]);
-        const finalRect = ((
-            (this.animationView.dataset as any as IAnimation)
-        )).finalrect.split(" ");
+        const finalRect = ((this.animationView
+            .dataset as any) as IAnimation).finalrect.split(" ");
         const finalScaleWidth = 1 / parseFloat(finalRect[2]);
         const finalScaleHeight = 1 / parseFloat(finalRect[3]);
 
@@ -440,10 +447,11 @@ export class Animation {
         const viewAspectRatio = viewWidth / viewHeight;
         let oldStyle = wrapDiv.getAttribute("style")!; // may have visibility: hidden, which we need.
         // If it has anything else (e.g., dimensions for a different orientation), remove them.
-        oldStyle = (
+        oldStyle =
             oldStyle.substring(0, "visibility: hidden;".length) ===
             "visibility: hidden;"
-        ) ? "visibility: hidden;" : "";
+                ? "visibility: hidden;"
+                : "";
         // We always need the wrapDiv to have a white background, in case the image we're
         // animating has transparent regions.
         oldStyle += " background-color: white;";
