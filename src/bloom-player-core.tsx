@@ -613,6 +613,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             >
                 <Slider
                     className="pageSlider"
+                    // This "progressive" load currently will load them all, but on a delay.
+                    // If you turn pages fast enough, you may see it in an unprepared state.
+                    // If instead want to just progressively load just 1 page ahead,
+                    //  we could switch to this fork: //  https://github.com/chidanandan/react-slick.git
+                    // I haven't found documentation on the change there, but it is discussed
+                    // here: https://github.com/akiran/react-slick/issues/1104.
+                    // Videos & audio are loaded only as needed (probably, regardless of this setting?)
+                    lazyLoad="progressive"
                     ref={(slider: any) => (this.slider = slider)}
                     slidesToShow={this.props.showContextPages ? 3 : 1}
                     infinite={false}
