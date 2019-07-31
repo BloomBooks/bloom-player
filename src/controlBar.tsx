@@ -1,3 +1,12 @@
+// These polyfills are required for React 16 on older browsers, e.g., Android 4 WebView.
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/set";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/weak-map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/promise";
 import * as React from "react";
 // TsLint wants me to combine this with the line above but I can't figure out how.
 // tslint:disable-next-line: no-duplicate-imports

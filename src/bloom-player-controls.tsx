@@ -2,9 +2,19 @@
 BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to preview the
 book inside of the Bloom:Publish:Android screen.
 */
+// These polyfills are required for React 16 on older browsers, e.g., Android 4 WebView.
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/set";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/weak-map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/promise";
 import * as React from "react";
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
+
 import { getBookParam, onBackClicked } from "./externalContext";
 import { ControlBar } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
@@ -253,9 +263,13 @@ export class BloomPlayerControls extends React.Component<
         this.scalePageToWindow();
     }
 
+    private remainingTries = 10;
     private setupPlayPause() {
         if (!this.bloomPlayer || !this.bloomPlayer.getRootDiv()) {
-            window.setTimeout(() => this.setupPlayPause(), 200);
+            if (this.remainingTries-- > 0) {
+                this.remainingTries--;
+                window.setTimeout(() => this.setupPlayPause(), 200);
+            }
             return;
         }
         const player = this.bloomPlayer.getRootDiv()!;

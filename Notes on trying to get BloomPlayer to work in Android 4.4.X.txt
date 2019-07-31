@@ -1,0 +1,57 @@
+Things tried:
+- switch to referencing style-scoped/scoped.min. This fixes the problems with incompatible code in that module.
+  - Works on Nexus 5
+  - VeryKool (4.4) complains that Set is not defined, somewhere in react-dom.production.min.js (line 58 of bloomPlayer.min.js
+	- which is very odd, since there are no occurrences of 'Set' in that code.
+- try to run babel on node_modules. Specifically, for js and jsx files, with 
+	use: [
+			{
+				loader: "babel-loader",
+				query: {
+					presets: [
+						// Ensure that we target our version of geckofx (mozilla/firefox)
+						[
+							"babel-preset-env",
+							{
+								targets: {
+									browsers: [
+										"Firefox >= 45",
+										"last 2 versions",
+										"Android > 4"
+									]
+								}
+							},
+							{ exclude: ["transform-typeof-symbol"] }
+						],
+						"@babel/preset-react"
+					].map(localResolve)
+				}
+			}
+		]
+	- fails on both platforms, stack overflow in _typeof
+	- same without { exclude: ["transform-typeof-symbol"] }, that is, it didn't help.
+	(Note: so far cannot find any doc of possible values for exclude or what they prevent. Not obvious which browser(s) require this fix, or whether they completely fail to support typeof. I've seen some evidence that the patch is to fix a rare problem with getting the typeof something that is a 'symbol'. Seems likely nothing needs this.
+	Possibly helpful information in https://github.com/rollup/rollup-plugin-babel/issues/252.
+	https://github.com/babel/babel/issues/8802 says node_modules is excluded by default in babel 7. (We are using babel-core 7.4.3)
+		- consider something like ignore: [/node_modules\/(?!lodash-es)/] to ignore most of node_modules but transpile one.
+	Tentative conclusion: it's not good practice to apply babel to all of node_modules. If one particular module needs it, that can be arranged. See https://github.com/babel/babel-loader/issues/171.
+- So, back to not transpiling node_modules.
+	https://stackoverflow.com/questions/48219796/reactjs-uncaught-referenceerror-set-is-not-defined mentions Android 4.4 specifically and leads to https://reactjs.org/docs/javascript-environment-requirements.html which says that React needs a polyfill for Set and Map.
+- add polyfill for Set and Map, see https://reactjs.org/docs/javascript-environment-requirements.html.
+	That gets us past the Set problem, now WeakMap is not defined.
+- core.js has a polyfill for that, too; added it:
+- and for WeakMap, and Promise, and string.endsWith, and Array.from...
+	At this point we get our title bar, with the back arrow, so quite a bit is working. But no book content, and no error messages to indicate what to try next.
+	Successfully requests book.htm, no further web requests.
+	(Happily, all is still working on Nexus)
+    Debugging determined that the failure is at what is currently line 258 of bloom-player.core.tsx, where we use axios to
+    try to get the main content of the book HTML file. Nothing happens. No exception is thrown, but neither the 'then' nor the
+    'catch' function is ever executed. Hypothesis: the core-js polyfill for Promise is not adequate.
+    See https://github.com/axios/axios/issues/188 for one possible alternative, but that may not meet the needs of React.
+    Could possibly try letting babel transpile axios.
+    Things are not in a particularly good state in this commit. Probably the polyfills only need to be loaded once, and
+    it may help to load them in our root file before anything else. We stopped here just on the basis of having spent
+    too much time on it.
+Unknowns: how many more things will have to be polyfilled or otherwise fixed before it works;
+how many more would break later as we keep enhancing bloom-player;
+How well bloom-player in BloomReader would perform on a 4.4 device.

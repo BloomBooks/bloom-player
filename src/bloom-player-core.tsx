@@ -2,6 +2,20 @@
 bloom-player-core is responsible for all the behavior of working through a book, but without any UI controls
 (other than page turning).
 */
+// These polyfills are required for React 16 on older browsers, e.g., Android 4 WebView.
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/set";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/weak-map";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/promise";
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/array"; // At least, React uses from
+// This supports endsWith
+// tslint:disable-next-line: no-submodule-imports
+import "core-js/es/string";
 import * as React from "react";
 import axios, { AxiosPromise } from "axios";
 import Slider from "react-slick";
@@ -9,7 +23,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
-import "style-scoped/scoped"; // maybe use .min.js after debugging?
+import "style-scoped/scoped.min"; // maybe use .min.js after debugging?
 // tslint:enable:no-submodule-imports
 import "./bloom-player.less";
 import Narration from "./narration";
@@ -151,246 +165,297 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps) {
-        // We want to localize once and only once after pages has been set and assembleStyleSheets has happened
-        if (
-            !this.isPagesLocalized &&
-            this.state.pages !== this.initialPages &&
-            this.state.styleRules !== this.initialStyleRules
-        ) {
-            LocalizationManager.localizePages(
-                document.body,
-                this.getPreferredTranslationLanguages()
-            );
-            this.isPagesLocalized = true;
-        }
+        window.setTimeout(() => {
+            // We want to localize once and only once after pages has been set and assembleStyleSheets has happened
+            if (
+                !this.isPagesLocalized &&
+                this.state.pages !== this.initialPages &&
+                this.state.styleRules !== this.initialStyleRules
+            ) {
+                LocalizationManager.localizePages(
+                    document.body,
+                    this.getPreferredTranslationLanguages()
+                );
+                this.isPagesLocalized = true;
+            }
 
-        if (!this.video) {
-            this.video = new Video();
-        }
-        if (!this.narration) {
-            this.narration = new Narration();
-            this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
-            this.animation = new Animation();
-            //this.narration.PageNarrationComplete.subscribe();
-            this.narration.PageDurationAvailable.subscribe(pageElement => {
-                this.animation.HandlePageDurationAvailable(
-                    pageElement!,
-                    this.narration.PageDuration
-                );
-            });
-        }
-        let newSourceUrl = this.props.url;
-        // Folder urls often (but not always) end in /. If so, remove it, so we don't get
-        // an empty filename or double-slashes in derived URLs.
-        if (newSourceUrl.endsWith("/")) {
-            newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 1);
-        }
-        // Or we might get a url-encoded slash.
-        if (newSourceUrl.endsWith("%2f")) {
-            newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 3);
-        }
-        if (newSourceUrl !== this.sourceUrl && newSourceUrl) {
-            this.sourceUrl = newSourceUrl;
-            // We support a two ways of interpreting URLs.
-            // If the url ends in .htm, it is assumed to be the URL of the htm file that
-            // is the book itself. The last slash indicates the folder in which all the
-            // other resources may be found.
-            // For compatibility with earlier versions of bloom-player, the url may be a folder
-            // ending in the book name, and the book is assumed to occur in that folder and have
-            // the same name as the folder.
-            // Note: In the future, we are thinking of limiting to
-            // a few domains (localhost, dev.blorg, blorg).
-            // Note: we don't currently look for .html files, only .htm. That's what
-            // Bloom has consistently created, both in .bloomd files and in
-            // book folders, so it doesn't seem worth complicating the code
-            // to look for the other as well.
-            const slashIndex = this.sourceUrl.lastIndexOf("/");
-            const encodedSlashIndex = this.sourceUrl.lastIndexOf("%2f");
-            let filename = "";
-            if (slashIndex > encodedSlashIndex) {
-                filename = this.sourceUrl.substring(
-                    slashIndex + 1,
-                    this.sourceUrl.length
-                );
-            } else {
-                filename = this.sourceUrl.substring(
-                    encodedSlashIndex + 3,
-                    this.sourceUrl.length
+            if (!this.video) {
+                this.video = new Video();
+            }
+            if (!this.narration) {
+                this.narration = new Narration();
+                this.narration.PageDurationAvailable = new LiteEvent<
+                    HTMLElement
+                >();
+                this.animation = new Animation();
+                //this.narration.PageNarrationComplete.subscribe();
+                this.narration.PageDurationAvailable.subscribe(pageElement => {
+                    this.animation.HandlePageDurationAvailable(
+                        pageElement!,
+                        this.narration.PageDuration
+                    );
+                });
+            }
+            let newSourceUrl = this.props.url;
+            // Folder urls often (but not always) end in /. If so, remove it, so we don't get
+            // an empty filename or double-slashes in derived URLs.
+            if (newSourceUrl.endsWith("/")) {
+                newSourceUrl = newSourceUrl.substring(
+                    0,
+                    newSourceUrl.length - 1
                 );
             }
-            const fullPath = filename.endsWith(".htm");
-            const urlOfBookHtmlFile = fullPath
-                ? this.sourceUrl
-                : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
-            this.narration.urlPrefix = this.urlPrefix = fullPath
-                ? this.sourceUrl.substring(
-                      0,
-                      Math.max(slashIndex, encodedSlashIndex)
-                  )
-                : this.sourceUrl;
-            axios.get(urlOfBookHtmlFile).then(result => {
-                // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
-                // and setting its innerHtml, since that leads to the browser trying to load all the
-                // urls referenced in the book, which is a waste and also won't work because we
-                // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
-                const parser = new DOMParser();
-                // we *think* bookDoc and bookHtmlElement get garbage collected
-                const bookDoc = parser.parseFromString(
-                    result.data,
-                    "text/html"
+            // Or we might get a url-encoded slash.
+            if (newSourceUrl.endsWith("%2f")) {
+                newSourceUrl = newSourceUrl.substring(
+                    0,
+                    newSourceUrl.length - 3
                 );
-                const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
-
-                const body = bookHtmlElement.getElementsByTagName("body")[0];
-                this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
-                    body as HTMLBodyElement
-                );
-                this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
-
-                this.copyrightHolder = this.getCopyrightInfo(body, "copyright");
-                this.originalCopyrightHolder = this.getCopyrightInfo(
-                    body,
-                    "originalCopyright"
-                );
-
-                this.makeNonEditable(body);
-
-                // This function, the rest of the work we need to do, will be executed after we attempt
-                // to retrieve questions.json and either get it and convert it into extra pages,
-                // or fail to get it and make no changes.
-                const finishUp = () => {
-                    // assemble the page content list
-                    const pages = bookHtmlElement.getElementsByClassName(
-                        "bloom-page"
+            }
+            if (newSourceUrl !== this.sourceUrl && newSourceUrl) {
+                this.sourceUrl = newSourceUrl;
+                // We support a two ways of interpreting URLs.
+                // If the url ends in .htm, it is assumed to be the URL of the htm file that
+                // is the book itself. The last slash indicates the folder in which all the
+                // other resources may be found.
+                // For compatibility with earlier versions of bloom-player, the url may be a folder
+                // ending in the book name, and the book is assumed to occur in that folder and have
+                // the same name as the folder.
+                // Note: In the future, we are thinking of limiting to
+                // a few domains (localhost, dev.blorg, blorg).
+                // Note: we don't currently look for .html files, only .htm. That's what
+                // Bloom has consistently created, both in .bloomd files and in
+                // book folders, so it doesn't seem worth complicating the code
+                // to look for the other as well.
+                const slashIndex = this.sourceUrl.lastIndexOf("/");
+                const encodedSlashIndex = this.sourceUrl.lastIndexOf("%2f");
+                let filename = "";
+                if (slashIndex > encodedSlashIndex) {
+                    filename = this.sourceUrl.substring(
+                        slashIndex + 1,
+                        this.sourceUrl.length
                     );
-                    const sliderContent: string[] = [];
-                    if (this.props.showContextPages) {
-                        sliderContent.push(""); // blank page to fill the space left of first.
-                    }
-                    this.totalNumberedPages = 0;
-                    this.questionCount = 0;
-                    for (let i = 0; i < pages.length; i++) {
-                        const page = pages[i];
-                        const landscape = this.forceDevicePageSize(page);
-                        // Now we have all the information we need to call reportBookProps if it is set.
-                        if (i === 0 && this.props.reportBookProperties) {
-                            // Informs containing react controls (in the same frame)
-                            this.props.reportBookProperties({
-                                landscape,
-                                canRotate: this.canRotate
-                            });
-                            // Informs parent window when in an iframe.
-                            if (window.parent) {
-                                window.parent.postMessage(
-                                    { landscape, canRotate: this.canRotate },
-                                    "*"
-                                );
-                            }
-                            // So far there's no way (or need) to inform whatever set up a WebView.
-                        }
-
-                        this.fixRelativeUrls(page);
-
-                        // possibly more efficient to look for attribute data-page-number,
-                        // but due to a bug (BL-7303) many published books may have that on back-matter pages.
-                        const hasPageNum = page.classList.contains(
-                            "numberedPage"
-                        );
-                        if (hasPageNum) {
-                            this.indexOflastNumberedPage =
-                                i + (this.props.showContextPages ? 1 : 0);
-                            this.totalNumberedPages++;
-                        }
-                        if (
-                            page.getAttribute("data-analyticscategories") ===
-                            "comprehension"
-                        ) {
-                            // Note that this will count both new-style question pages,
-                            // and ones generated from old-style json.
-                            this.questionCount++;
-                        }
-
-                        sliderContent.push(page.outerHTML);
-                    }
-                    if (this.props.showContextPages) {
-                        sliderContent.push(""); // blank page to fill the space right of last.
-                    }
-
-                    this.reportBookOpened(body);
-
-                    this.assembleStyleSheets(bookHtmlElement);
-                    // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
-                    // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
-                    // change it when it is done.
-                    this.setState({
-                        pages: sliderContent
-                    });
-
-                    // A pause hopefully allows the document to become visible before we
-                    // start playing any audio or movement on the first page.
-                    // Also gives time for the first page
-                    // element to actually get created in the document.
-                    // Note: typically in Chrome we won't actually start playing, because
-                    // of a rule that the user must interact with the document first.
-                    window.setTimeout(() => {
-                        this.setIndex(0);
-                        this.showingPage(0);
-                    }, 500);
-                };
-
-                const firstPage = bookHtmlElement.getElementsByClassName(
-                    "bloom-page"
-                )[0];
-                let pageClass = "Device16x9Portrait";
-                if (firstPage) {
-                    pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
+                } else {
+                    filename = this.sourceUrl.substring(
+                        encodedSlashIndex + 3,
+                        this.sourceUrl.length
+                    );
                 }
+                const fullPath = filename.endsWith(".htm");
+                const urlOfBookHtmlFile = fullPath
+                    ? this.sourceUrl
+                    : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
 
-                const urlOfQuestionsFile = this.urlPrefix + "/questions.json";
-                this.needSpecialCss = false;
+                this.narration.urlPrefix = this.urlPrefix = fullPath
+                    ? this.sourceUrl.substring(
+                          0,
+                          Math.max(slashIndex, encodedSlashIndex)
+                      )
+                    : this.sourceUrl;
+                // tslint:disable-next-line: no-debugger
+                debugger;
                 axios
-                    .get(urlOfQuestionsFile)
-                    .then(qfResult => {
-                        const newPages = OldQuestionsConverter.convert(
-                            qfResult.data,
-                            pageClass
+                    .get(urlOfBookHtmlFile)
+                    .then(result => {
+                        console.log("got html: " + result.data);
+                        // tslint:disable-next-line: no-debugger
+                        debugger;
+                        // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
+                        // and setting its innerHtml, since that leads to the browser trying to load all the
+                        // urls referenced in the book, which is a waste and also won't work because we
+                        // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
+                        const parser = new DOMParser();
+                        // we *think* bookDoc and bookHtmlElement get garbage collected
+                        const bookDoc = parser.parseFromString(
+                            result.data,
+                            "text/html"
                         );
-                        const firstBackMatterPage = body.getElementsByClassName(
-                            "bloom-backMatter"
+                        console.log("parsed html");
+                        const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
+
+                        const body = bookHtmlElement.getElementsByTagName(
+                            "body"
                         )[0];
-                        for (let i = 0; i < newPages.length; i++) {
-                            this.needSpecialCss = true;
-                            // insertAdjacentElement is tempting, but not in FF45.
-                            firstBackMatterPage.parentElement!.insertBefore(
-                                newPages[i],
-                                firstBackMatterPage
+                        this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
+                            body as HTMLBodyElement
+                        );
+                        this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
+
+                        this.copyrightHolder = this.getCopyrightInfo(
+                            body,
+                            "copyright"
+                        );
+                        this.originalCopyrightHolder = this.getCopyrightInfo(
+                            body,
+                            "originalCopyright"
+                        );
+
+                        this.makeNonEditable(body);
+
+                        // This function, the rest of the work we need to do, will be executed after we attempt
+                        // to retrieve questions.json and either get it and convert it into extra pages,
+                        // or fail to get it and make no changes.
+                        const finishUp = () => {
+                            console.log("starting finishup");
+                            // assemble the page content list
+                            const pages = bookHtmlElement.getElementsByClassName(
+                                "bloom-page"
+                            );
+                            const sliderContent: string[] = [];
+                            if (this.props.showContextPages) {
+                                sliderContent.push(""); // blank page to fill the space left of first.
+                            }
+                            this.totalNumberedPages = 0;
+                            this.questionCount = 0;
+                            for (let i = 0; i < pages.length; i++) {
+                                const page = pages[i];
+                                const landscape = this.forceDevicePageSize(
+                                    page
+                                );
+                                // Now we have all the information we need to call reportBookProps if it is set.
+                                if (
+                                    i === 0 &&
+                                    this.props.reportBookProperties
+                                ) {
+                                    // Informs containing react controls (in the same frame)
+                                    this.props.reportBookProperties({
+                                        landscape,
+                                        canRotate: this.canRotate
+                                    });
+                                    // Informs parent window when in an iframe.
+                                    if (window.parent) {
+                                        window.parent.postMessage(
+                                            {
+                                                landscape,
+                                                canRotate: this.canRotate
+                                            },
+                                            "*"
+                                        );
+                                    }
+                                    // So far there's no way (or need) to inform whatever set up a WebView.
+                                }
+                                console.log("about to fix relative URLs");
+                                this.fixRelativeUrls(page);
+
+                                // possibly more efficient to look for attribute data-page-number,
+                                // but due to a bug (BL-7303) many published books may have that on back-matter pages.
+                                const hasPageNum = page.classList.contains(
+                                    "numberedPage"
+                                );
+                                if (hasPageNum) {
+                                    this.indexOflastNumberedPage =
+                                        i +
+                                        (this.props.showContextPages ? 1 : 0);
+                                    this.totalNumberedPages++;
+                                }
+                                if (
+                                    page.getAttribute(
+                                        "data-analyticscategories"
+                                    ) === "comprehension"
+                                ) {
+                                    // Note that this will count both new-style question pages,
+                                    // and ones generated from old-style json.
+                                    this.questionCount++;
+                                }
+
+                                sliderContent.push(page.outerHTML);
+                            }
+                            if (this.props.showContextPages) {
+                                sliderContent.push(""); // blank page to fill the space right of last.
+                            }
+
+                            console.log("reporting book opened");
+                            this.reportBookOpened(body);
+
+                            console.log("starting to assemble stylesheets");
+                            this.assembleStyleSheets(bookHtmlElement);
+                            // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
+                            // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
+                            // change it when it is done.
+                            this.setState({
+                                pages: sliderContent
+                            });
+
+                            // A pause hopefully allows the document to become visible before we
+                            // start playing any audio or movement on the first page.
+                            // Also gives time for the first page
+                            // element to actually get created in the document.
+                            // Note: typically in Chrome we won't actually start playing, because
+                            // of a rule that the user must interact with the document first.
+                            window.setTimeout(() => {
+                                this.setIndex(0);
+                                this.showingPage(0);
+                            }, 500);
+                        };
+
+                        const firstPage = bookHtmlElement.getElementsByClassName(
+                            "bloom-page"
+                        )[0];
+                        let pageClass = "Device16x9Portrait";
+                        if (firstPage) {
+                            pageClass = BloomPlayerCore.getPageSizeClass(
+                                firstPage
                             );
                         }
-                        finishUp();
+
+                        const urlOfQuestionsFile =
+                            this.urlPrefix + "/questions.json";
+                        this.needSpecialCss = false;
+                        console.log("attempting to get questions file");
+                        axios
+                            .get(urlOfQuestionsFile)
+                            .then(qfResult => {
+                                const newPages = OldQuestionsConverter.convert(
+                                    qfResult.data,
+                                    pageClass
+                                );
+                                const firstBackMatterPage = body.getElementsByClassName(
+                                    "bloom-backMatter"
+                                )[0];
+                                for (let i = 0; i < newPages.length; i++) {
+                                    this.needSpecialCss = true;
+                                    // insertAdjacentElement is tempting, but not in FF45.
+                                    firstBackMatterPage.parentElement!.insertBefore(
+                                        newPages[i],
+                                        firstBackMatterPage
+                                    );
+                                }
+                                finishUp();
+                            })
+                            .catch(() => finishUp());
                     })
-                    .catch(() => finishUp());
-            });
-        }
-        if (prevProps.landscape !== this.props.landscape) {
-            // may need to show or hide animation
-            this.setIndex(this.state.currentSliderIndex);
-            this.showingPage(this.state.currentSliderIndex);
-        }
-        if (prevProps.paused !== this.props.paused) {
-            // this code was being called way too often!
-            if (this.props.paused) {
-                this.narration.pause();
-                this.video.pause();
-            } else {
-                // This test determines if we changed pages while paused,
-                // since the narration object won't yet be updated.
-                if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
-                    this.resetForNewPageAndPlay(BloomPlayerCore.currentPage);
-                }
-                this.narration.play();
-                this.video.play();
+                    .catch(reason => {
+                        // tslint:disable-next-line: no-debugger
+                        debugger;
+                        console.log("getting book HTML failed, " + reason);
+                    });
             }
-        }
+            if (prevProps.landscape !== this.props.landscape) {
+                // may need to show or hide animation
+                this.setIndex(this.state.currentSliderIndex);
+                this.showingPage(this.state.currentSliderIndex);
+            }
+            if (prevProps.paused !== this.props.paused) {
+                // this code was being called way too often!
+                if (this.props.paused) {
+                    this.narration.pause();
+                    this.video.pause();
+                } else {
+                    // This test determines if we changed pages while paused,
+                    // since the narration object won't yet be updated.
+                    if (
+                        BloomPlayerCore.currentPage !==
+                        this.narration.playerPage
+                    ) {
+                        this.resetForNewPageAndPlay(
+                            BloomPlayerCore.currentPage
+                        );
+                    }
+                    this.narration.play();
+                    this.video.play();
+                }
+            }
+        }, 10000);
     }
 
     private getCopyrightInfo(

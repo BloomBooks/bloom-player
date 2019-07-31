@@ -23,7 +23,7 @@ module.exports = {
     context: __dirname,
     entry: {
         bloomPlayer: "./src/bloom-player-root.ts"
-     },
+    },
 
     output: {
         path: path.join(__dirname, outputDir),
@@ -42,10 +42,7 @@ module.exports = {
         //   "react-dom": pathToReactDom,
         //   react: pathToReact // the point of this is to use the minified version. https://christianalfoni.github.io/react-webpack-cookbook/Optimizing-rebundling.html
         // },
-        modules: [
-            ".",
-            node_modules,
-        ],
+        modules: [".", node_modules],
         extensions: [".js", ".jsx", ".ts", ".tsx"] //We may need to add .less here... otherwise maybe it will ignore them unless they are require()'d
     },
     plugins: [
@@ -63,7 +60,7 @@ module.exports = {
         namedModules: true,
         splitChunks: {
             cacheGroups: {
-                default: false,
+                default: false
             }
         }
     },
@@ -99,12 +96,14 @@ module.exports = {
                                         targets: {
                                             browsers: [
                                                 "Firefox >= 45",
-                                                "last 2 versions"
+                                                "last 2 versions",
+                                                "Android > 4"
                                             ]
                                         }
-                                    }
+                                    },
+                                    { exclude: ["transform-typeof-symbol"] }
                                 ],
-                                "babel-preset-react"
+                                "@babel/preset-react"
                             ].map(localResolve)
                         }
                     }
