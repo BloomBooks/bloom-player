@@ -13,19 +13,20 @@
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
     "scripts": {
-        "serve": "yarn lite-server --config=\"./server-config\"",
-        "watch": "yarn webpack --watch",
+        "// start will build, watch, and start a server": "",
+        "// you can edit index.html to point to different books": "",
+        "start": "shx cp index.html \"dist/index.html\" && yarn webpack-dev-server --open",
         "build-dev": "webpack",
         "build-prod": "webpack --config webpack-config-prod.js",
         "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
-        "copy-support-files": "copy src\\bloomplayer.htm dist /y && copy src\\*.mp3 dist && copy src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
+        "copy-support-files": "shx cp src\\bloomplayer.htm dist /y && shx cp src\\*.mp3 dist && shx cp src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom",
         "// bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.": "",
         "// To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js": "",
         "// This will fail if the http server is locking the directory": "",
         "prepbloomlibrary": "mkdir ..\\BloomLibrary\\build\\bloom-player",
-        "tobloomlibrary": "copy dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
+        "tobloomlibrary": "shx cp dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
         "build4bl": "yarn  build && yarn tobloomlibrary"
     },
     "devDependencies": {
@@ -46,6 +47,7 @@
         "less": "^3.9.0",
         "less-loader": "^4.1.0",
         "prettier": "^1.16.4",
+        "shx": "^0.3.2",
         "style-loader": "^0.23.1",
         "terser-webpack-plugin": "^1.3.0",
         "ts-jest": "^24.0.2",
@@ -67,12 +69,12 @@
         "@types/react": "^16.8.10",
         "axios": "^0.18.0",
         "jquery": "^3.4.1",
-        "lite-server": "^2.5.3",
         "react": "^16.8.5",
         "react-dom": "^16.8.5",
         "react-slick": "^0.23.2",
         "slick-carousel": "^1.8.1",
-        "style-scoped": "^0.1.0"
+        "style-scoped": "^0.1.0",
+        "webpack-dev-server": "^3.7.2"
     },
     "files": [
         "dist/*.js",
