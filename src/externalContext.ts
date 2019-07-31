@@ -8,6 +8,21 @@ import { TransientPageDataSingleton } from "./transientPageData";
  *       a browser or Bloom Publish preview, there's no one listening and that's fine.
  */
 
+function postMessage(messageObj: object) {
+    const message = JSON.stringify(messageObj);
+    // If we're in a native Android WebView or similar, we could not get it to receive postMessage
+    // messages, so instead it has to inject an object called ParentProxy to receive the message.
+    if ((window as any).ParentProxy) {
+        (window as any).ParentProxy.receiveMessage(message);
+        return;
+    }
+    // If we're in an iframe, window.parent is the parent window, which may (but
+    // probably won't) handle the message. If we're in a ReactNative WebView, window.parent
+    // is the WebView itself (same as plain 'window') but the React Native code
+    // receives the message.
+    window.parent.postMessage(message, "*"); // any window may receive
+}
+
 export function getBookParam(paramName: string): string {
     const vars = {}; // deceptive, we don't change the ref, but do change the content
     //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
@@ -20,114 +35,49 @@ export function getBookParam(paramName: string): string {
 
 // Ask the parent window, if any, to store this key/value pair persistently.
 export function storePageDataExternally(key: string, value: string) {
-    // If we're in an iframe, window.parent is the parent window, which may (but
-    // probably won't) try to store the data. If we're in a WebView, window.parent
-    // is the WebView itself (same as plain 'window') but the React Native code
-    // receives the message.
-    window.parent.postMessage(
-        JSON.stringify({ messageType: "storePageData", key, value }),
-        "*" // any window may receive
-    );
+    postMessage({ messageType: "storePageData", key, value });
 }
 
-export function reportAnalytics(event: string, params: any) {
-    // See storePageDataExternally for why we use window.parent here.
-    window.parent.postMessage(
-        JSON.stringify({ messageType: "sendAnalytics", event, params }),
-        "*"
-    );
+let ambientAnalyticsProps = {};
+export function setAmbientAnalyticsProperties(properties: any) {
+    ambientAnalyticsProps = properties;
 }
 
-interface IBookStats {
-    totalNumberedPages: number;
-    questionCount: number;
-    contentLang: string;
-    signLanguage: boolean;
-    motion: boolean;
-    blind: boolean; // technically, whether it has image descriptions not in xmatter
+export function reportAnalytics(event: string, properties: any) {
+    postMessage({
+        messageType: "sendAnalytics",
+        event,
+        params: { ...ambientAnalyticsProps, ...properties }
+    });
 }
 
-export function reportBookStats(stats: IBookStats) {
-    const args = { messageType: "bookStats", ...stats };
-    postMessageWhenReady(JSON.stringify(args));
+// When the player app pauses/quits or whatever else happens that it
+// decides that now is the time to send the report on how much of
+// this book was read, it will send the latest version of these props.
+// That's why we call this "update" rather than "send".
+export function updateBookProgressReport(event: string, properties: any) {
+    postMessage({
+        messageType: "updateBookProgressReport",
+        event,
+        params: { ...ambientAnalyticsProps, ...properties }
+    });
 }
 
-export function reportPageShown(
-    pageHasAudio: boolean,
-    audioWillPlay: boolean,
-    lastNumberedPageWasRead: boolean
-) {
-    postMessageWhenReady(
-        JSON.stringify({
-            messageType: "pageShown",
-            pageHasAudio,
-            audioWillPlay,
-            lastNumberedPageWasRead
-        })
-    );
-}
-
-export function reportAudioPlayed(
-    duration: number // seconds
-) {
-    postMessageWhenReady(
-        JSON.stringify({
-            messageType: "audioPlayed",
-            duration
-        })
-    );
-}
-
-export function reportVideoPlayed(
-    duration: number // seconds
-) {
-    postMessageWhenReady(
-        JSON.stringify({
-            messageType: "videoPlayed",
-            duration
-        })
-    );
-}
-
-let pendingMessages: string[] = [];
 let gotCapabilities = false;
 
-// Post a message which the host may not yet be ready to receive.
-// We detect that the host is ready to receive when it sends a capabilities
-// message. Hosts that don't do this are assumed not interested in any
-// of the delayable messages.
-// See the comments in requestCapabilities for why this is needed.
-// Note that this mechanism depends on something calling requestCapabilities.
-function postMessageWhenReady(message: string) {
-    if (gotCapabilities) {
-        window.parent.postMessage(message, "*");
-    } else {
-        pendingMessages.push(message);
-    }
-}
-
 export function onBackClicked() {
-    window.parent.postMessage(
-        JSON.stringify({ messageType: "backButtonClicked" }),
-        "*"
-    );
+    postMessage({ messageType: "backButtonClicked" });
 }
 
 export function logError(logMessage: string) {
-    window.postMessage(
-        JSON.stringify({ messageType: "logError", message: logMessage }),
-        "*"
-    );
+    postMessage({ messageType: "logError", message: logMessage });
 }
 
 let capabilitiesCallback: ((data: any) => void) | null = null;
 
 function requestCapabilitiesOnce(callback: (data: any) => void) {
     capabilitiesCallback = callback;
-    window.parent.postMessage(
-        JSON.stringify({ messageType: "requestCapabilities" }),
-        "*"
-    );
+    postMessage({ messageType: "requestCapabilities" });
 }
 
 // Request the container to report what it's capable of doing.
@@ -158,10 +108,6 @@ export function requestCapabilities(callback: (data: any) => void) {
     const receiveCapabilities = data => {
         if (!gotCapabilities) {
             gotCapabilities = true;
-            pendingMessages.forEach(message =>
-                window.parent.postMessage(message, "*")
-            );
-            pendingMessages = []; // currently redundant, but they aren't pending any more.
         }
         callback(data);
     };
@@ -177,22 +123,24 @@ export function requestCapabilities(callback: (data: any) => void) {
     timeoutFunc();
 }
 
-// Listen for messages, typically from our parent window, but we're not doing anything security-critical,
-// so no need to worry about origin.
-// Note: it's clear from the documentation and by experiment that when hosted in a web page, we need
-// window.addEventListener. However, for some time the code had document.addEventListener, and this
-// apparently worked in BloomReader-RN. It's just possible we will need to do both when we resume
-// work on that program.
-window.addEventListener("message", data => {
-    // something sends us an empty message, which we haven't figured out, but know we can ignore
-    if (!data || !data.data || data.data.length === 0) {
-        return;
-    }
-    let message: any;
+// This function receives communications from the context outside the BloomPlayer's iframe
+// or WebView. It is intended to be called by a window message listener responding to a postMessage()
+// call from the context. In the case of Android WebView, I can't find any way to invoke postMessage(),
+// so instead, we make this function directly callable as one of the module's exports,
+// and inject a block of Javascript to call it.
+// Note that the data argument here is the actual stringified object we pass to either receiveMessage
+// or postMessage; that makes it the data.data of the window message listener function.
+export function receiveMessage(data: any) {
+    let message: any = null;
     try {
-        message = JSON.parse(data.data);
-    } catch (error) {
-        console.error(error);
+        message = JSON.parse(data);
+    } catch (e) {
+        console.log(
+            "receiveMessage failed to parse json: " +
+                data +
+                " with errror " +
+                e.message
+        );
         return;
     }
     const messageType = message.messageType;
@@ -207,4 +155,19 @@ window.addEventListener("message", data => {
     if (messageType === "capabilities" && capabilitiesCallback) {
         capabilitiesCallback(message);
     }
+}
+
+// Listen for messages, typically from our parent window, but we're not doing anything security-critical,
+// so no need to worry about origin.
+// Note: it's clear from the documentation and by experiment that when hosted in a web page, we need
+// window.addEventListener. However, for some time the code had document.addEventListener, and this
+// apparently worked in BloomReader-RN. It's just possible we will need to do both when we resume
+// work on that program.
+window.addEventListener("message", data => {
+    // something sends us an empty message, which we haven't figured out, but know we can ignore
+    if (!data || !data.data || data.data.length === 0) {
+        console.log("returning early");
+        return;
+    }
+    receiveMessage((data as any).data);
 });

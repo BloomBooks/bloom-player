@@ -207,11 +207,9 @@ export class BloomPlayerControls extends React.Component<
             // which control the button size?
             const widthMargin = window.innerWidth / scaleFactor - width;
             const player = document.getElementsByClassName("bloomPlayer")[0];
-            // The default positioning of the buttons (by the Slider) is 25px out on each side
-            // Currently this test checks whether there is room for that; if so, we add this
-            // class. Depending on exactly how we end up styling the buttons when outside,
-            // we may need more or less than this.
-            if (widthMargin > 50) {
+            // To put the buttons outside, we need twice @navigationButtonWidth,
+            // as defined in bloom-player.less.
+            if (widthMargin > 200) {
                 // We have two button widths to spare; can put buttons outside phone
                 player.classList.add("outsideButtons");
             } else {

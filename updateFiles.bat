@@ -10,4 +10,8 @@ rem bloom-reader rn
 rem where bloom-reader should get it from npm
 copy "dist\*.*" "..\BloomReader-RN\node_modules\bloom-player\dist"
 
-
+rem BloomReader
+rem where bloom-reader should get it from npm
+copy "dist\*.*" "..\BloomReader\app\node_modules\bloom-player\dist"
+rem where bloom-reader's copyBloomPlayerAssets puts it for deployment
+copy "dist\*.*" "..\BloomReader\app\src\main\assets\bloom-player"
