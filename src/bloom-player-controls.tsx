@@ -247,6 +247,7 @@ export class BloomPlayerControls extends React.Component<
     public componentDidMount() {
         this.scalePageToWindow();
         this.setupPlayPause();
+        this.setupVerticalScrolling();
     }
 
     public componentDidUpdate() {
@@ -267,12 +268,8 @@ export class BloomPlayerControls extends React.Component<
         player.addEventListener(
             "click",
             event => {
-                const target = event.target as Element;
-                if (
-                    (target && target.classList.contains("slick-arrow")) ||
-                    this.inInteractivePage(target)
-                ) {
-                    return; // don't interfere with these clicks!
+                if (this.skipThisEvent(event)) {
+                    return;
                 }
                 // If there's no media, don't pause!
                 if (this.state.hasAudio || this.state.hasVideo) {
@@ -282,6 +279,15 @@ export class BloomPlayerControls extends React.Component<
                 event.stopPropagation();
             },
             true
+        );
+    }
+
+    private skipThisEvent(event: MouseEvent | PointerEvent): boolean {
+        const target = event.target as Element;
+        return (
+            // don't interfere with these clicks!
+            (target && target.classList.contains("slick-arrow")) ||
+            this.inInteractivePage(target)
         );
     }
 
@@ -300,6 +306,143 @@ export class BloomPlayerControls extends React.Component<
         }
         return false;
     }
+
+    private trackedPointerId: number;
+    private lastPointerX: number;
+    private lastPointerY: number;
+
+    private setupVerticalScrolling() {
+        if (!this.bloomPlayer || !this.bloomPlayer.getRootDiv()) {
+            window.setTimeout(() => this.setupVerticalScrolling(), 200);
+            return;
+        }
+        this.resetScroll();
+        const player = this.bloomPlayer.getRootDiv()!;
+        player.addEventListener(
+            "pointerdown",
+            event => {
+                if (this.skipThisEvent(event)) {
+                    return;
+                }
+                if (
+                    this.trackedPointerId > 0 &&
+                    this.eventIsForWrongPointer(event)
+                ) {
+                    return;
+                }
+
+                // Initiate tracking a possible scroll action
+                this.trackedPointerId = event.pointerId;
+                this.lastPointerX = event.clientX;
+                this.lastPointerY = event.clientY;
+            },
+            true
+        );
+        player.addEventListener(
+            "pointermove",
+            event => {
+                if (this.skipThisEvent(event)) {
+                    return;
+                }
+                if (this.eventIsForWrongPointer(event)) {
+                    return;
+                }
+
+                const change = this.calculateDxDy(event);
+
+                if (this.isVerticalScrollMotion(change)) {
+                    this.lastPointerX = event.clientX;
+                    this.lastPointerY = event.clientY;
+                    this.scrollTextBlock(event, change.dy);
+                }
+            },
+            true
+        );
+        player.addEventListener(
+            "pointerup",
+            event => {
+                if (this.skipThisEvent(event)) {
+                    return;
+                }
+                if (this.eventIsForWrongPointer(event)) {
+                    return;
+                }
+
+                const change = this.calculateDxDy(event);
+
+                if (this.isVerticalScrollMotion(change)) {
+                    this.scrollTextBlock(event, change.dy);
+                }
+                this.resetScroll();
+            },
+            true
+        );
+        player.addEventListener(
+            "pointerout",
+            event => {
+                if (this.skipThisEvent(event)) {
+                    return;
+                }
+                if (this.eventIsForWrongPointer(event)) {
+                    return;
+                }
+                this.resetScroll();
+            },
+            true
+        );
+        player.addEventListener(
+            "pointercancel",
+            event => {
+                if (this.skipThisEvent(event)) {
+                    return;
+                }
+                // Cancel ANY pointer
+                this.resetScroll();
+            },
+            true
+        );
+    }
+
+    private scrollTextBlock(event: PointerEvent, dy: number) {
+        let el = event.target as Element;
+        while (el && !el.classList.contains("bloom-editable")) {
+            el = el.parentElement as Element;
+        }
+        if (!el) {
+            return; // safety valve
+        }
+        el.scrollBy(0, -dy);
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    // always TRUE if we are not tracking a pointer
+    private eventIsForWrongPointer(event: PointerEvent) {
+        return event.pointerId !== this.trackedPointerId;
+    }
+
+    private isVerticalScrollMotion(change: IChangeObject): boolean {
+        const dy = change.dy;
+        const dx = change.dx;
+        return Math.abs(dy) > Math.abs(dx * 2) && Math.abs(dy) > 3; // Review: does this seem reasonable to detect vertical scrolling?
+    }
+
+    private resetScroll() {
+        this.trackedPointerId = -1;
+        this.lastPointerX = -1;
+        this.lastPointerY = -1;
+    }
+
+    private calculateDxDy(event: PointerEvent): IChangeObject {
+        const dx: number = event.clientX - this.lastPointerX;
+        const dy: number = event.clientY - this.lastPointerY;
+        return { dx, dy };
+    }
+}
+
+interface IChangeObject {
+    dx: number;
+    dy: number;
 }
 
 // a bit goofy...we need some way to get react called when this code is loaded into an HTML
