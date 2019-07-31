@@ -15,18 +15,19 @@
     "scripts": {
         "// start will build, watch, and start a server": "",
         "// you can edit index.html to point to different books": "",
-        "start": "shx cp index.html \"dist/index.html\" && yarn webpack-dev-server --open",
+        "start": "shx mkdir -p dist && shx cp index.html \"dist/index.html\" && yarn webpack-dev-server --open",
         "build-dev": "webpack",
         "build-prod": "webpack --config webpack-config-prod.js",
         "build": "npm run tslint && npm run build-dev && npm run build-prod && npm run copy-support-files",
-        "copy-support-files": "shx cp src\\bloomplayer.htm dist /y && shx cp src\\*.mp3 dist && shx cp src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && copy src\\legacyQuizHandling\\Special.css dist",
+        "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": "",
+        "copy-support-files": "shx cp src\\bloomplayer.htm dist && shx cp src\\*.mp3 dist && shx cp src\\legacyQuizHandling\\simpleComprehensionQuiz.js dist && shx cp src\\legacyQuizHandling\\Special.css dist",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom",
         "// bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.": "",
         "// To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js": "",
         "// This will fail if the http server is locking the directory": "",
         "prepbloomlibrary": "mkdir ..\\BloomLibrary\\build\\bloom-player",
-        "tobloomlibrary": "shx cp dist\\*.* ..\\BloomLibrary\\build\\bloom-player /Y",
+        "tobloomlibrary": "shx cp dist\\*.* ..\\BloomLibrary\\build\\bloom-player",
         "build4bl": "yarn  build && yarn tobloomlibrary"
     },
     "devDependencies": {
