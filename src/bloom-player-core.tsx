@@ -756,7 +756,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public render() {
         if (this.state.isLoading) {
-            return "Loading...";
+            return "Loading Book...";
         }
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)

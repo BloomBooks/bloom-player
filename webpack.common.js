@@ -3,7 +3,7 @@ var webpack = require("webpack");
 var node_modules = path.resolve(__dirname, "node_modules");
 
 var globule = require("globule");
-
+const CopyPlugin = require("copy-webpack-plugin");
 var outputDir = "dist";
 
 // From Bloom's webpack, it seems this is needed
@@ -23,7 +23,7 @@ module.exports = {
     context: __dirname,
     entry: {
         bloomPlayer: "./src/bloom-player-root.ts"
-     },
+    },
 
     output: {
         path: path.join(__dirname, outputDir),
@@ -42,28 +42,35 @@ module.exports = {
         //   "react-dom": pathToReactDom,
         //   react: pathToReact // the point of this is to use the minified version. https://christianalfoni.github.io/react-webpack-cookbook/Optimizing-rebundling.html
         // },
-        modules: [
-            ".",
-            node_modules,
-        ],
+        modules: [".", node_modules],
         extensions: [".js", ".jsx", ".ts", ".tsx"] //We may need to add .less here... otherwise maybe it will ignore them unless they are require()'d
     },
+
     plugins: [
-        // don't think we need this, no jquery in bloom-player-react
-        //answer on various legacy issues: http://stackoverflow.com/questions/28969861/managing-jquery-plugin-dependency-in-webpack?lq=1
-        //prepend var $ = require("jquery") every time it encounters the global $ identifier or "jQuery".
-        // new webpack.ProvidePlugin({
-        //     $: "jquery",
-        //     jQuery: "jquery",
-        //     "window.jQuery": "jquery"
-        // })
+        // Note: CopyPlugin says to use forward slashes.
+        // Note: the empty "to" options mean to just go to the output folder, which is "dist/"
+        new CopyPlugin([
+            { from: "src/bloomplayer.htm", to: "", flatten: true },
+            { from: "src/*.mp3", to: "", flatten: true },
+            {
+                from: "src/legacyQuizHandling/simpleComprehensionQuiz.js",
+                to: "",
+                flatten: true
+            },
+            {
+                from: "src/legacyQuizHandling/Special.css",
+                to: "",
+                flatten: true
+            }
+        ])
     ],
+
     optimization: {
         minimize: false,
         namedModules: true,
         splitChunks: {
             cacheGroups: {
-                default: false,
+                default: false
             }
         }
     },

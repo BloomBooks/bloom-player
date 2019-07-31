@@ -13,6 +13,7 @@
 function init() {
     ensureEditModeStyleSheet();
     initChoiceWidgets();
+    console.log();
 }
 //------------ Code involved in setting the editMode class on the body element when appropriate-----
 function ensureEditModeStyleSheet() {
@@ -63,15 +64,18 @@ function initChoiceWidgets() {
             // but glad it doesn't, because we don't want it to show up even as a flash
             // in reader mode.
             checkbox.checked = correct;
-        }
-        else {
+        } else {
             x.addEventListener("click", handleReadModeClick, { capture: true });
             var key = getStorageKeyForChoice(x);
-            if (window.BloomPlayer &&
-                window.BloomPlayer.getPageData(x.closest(".bloom-page"), key) === kwasSelectedAtOnePoint) {
+            if (
+                window.BloomPlayer &&
+                window.BloomPlayer.getPageData(
+                    x.closest(".bloom-page"),
+                    key
+                ) === kwasSelectedAtOnePoint
+            ) {
                 choiceWasClicked(x);
-            }
-            else {
+            } else {
                 checkbox.checked = false; // just to make sure
             }
         }
@@ -88,8 +92,7 @@ function handleEditModeClick(evt) {
     var wrapper = evt.currentTarget.parentElement;
     if (target.checked) {
         wrapper.classList.add("correct-answer");
-    }
-    else {
+    } else {
         wrapper.classList.remove("correct-answer");
     }
 }
@@ -103,7 +106,9 @@ function handleEditModeClick(evt) {
 function getStorageKeyForChoice(choice) {
     var page = choice.closest(".bloom-page");
     // what is my index among the other choices on the page
-    var choices = Array.from(page.getElementsByClassName("checkbox-and-textbox-choice"));
+    var choices = Array.from(
+        page.getElementsByClassName("checkbox-and-textbox-choice")
+    );
     var index = choices.indexOf(choice);
     var id = page.getAttribute("id");
     return "cbstate_" + index;
@@ -121,7 +126,11 @@ function handleReadModeClick(evt) {
     // items that were never tried.
     var key = getStorageKeyForChoice(currentTarget);
     if (window.BloomPlayer) {
-        window.BloomPlayer.storePageData(currentTarget.closest(".bloom-page"), key, kwasSelectedAtOnePoint);
+        window.BloomPlayer.storePageData(
+            currentTarget.closest(".bloom-page"),
+            key,
+            kwasSelectedAtOnePoint
+        );
     }
     reportScore(correct);
 }
@@ -143,7 +152,9 @@ function choiceWasClicked(choice) {
         // if the user clicks on the input itself. Even with zero delay,
         // this makes something happen in the next event cycle that
         // keeps it the way we want.
-        window.setTimeout(function () { return (checkBox.checked = desiredState_1); }, 0);
+        window.setTimeout(function() {
+            return (checkBox.checked = desiredState_1);
+        }, 0);
     }
 }
 function reportScore(correct) {
@@ -154,9 +165,11 @@ function reportScore(correct) {
     // analyticsCategory as this page.
     // Note, it is up to the host of BloomPlayer whether it actually is sending the analytics to some server.
     if (window.BloomPlayer) {
-        window.BloomPlayer.reportScoreForCurrentPage(1, // possible score on page
-        correct ? 1 : 0, // actual score
-        "comprehension");
+        window.BloomPlayer.reportScoreForCurrentPage(
+            1, // possible score on page
+            correct ? 1 : 0, // actual score
+            "comprehension"
+        );
     }
 }
 function playSound(url) {
@@ -178,30 +191,32 @@ function getPagePlayer() {
     return player;
 }
 function markEmptyChoices() {
-    var choices = document.getElementsByClassName("checkbox-and-textbox-choice");
+    var choices = document.getElementsByClassName(
+        "checkbox-and-textbox-choice"
+    );
     for (var i = 0; i < choices.length; i++) {
         if (hasVisibleContent(choices[i])) {
             choices[i].classList.remove("empty");
-        }
-        else {
+        } else {
             choices[i].classList.add("empty");
         }
     }
 }
 function hasVisibleContent(choice) {
     var editables = choice.getElementsByClassName("bloom-editable");
-    return Array.from(editables).some(function (e) {
-        return e.classList.contains("bloom-visibility-code-on") &&
-            (e.textContent || "").trim() !== "";
+    return Array.from(editables).some(function(e) {
+        return (
+            e.classList.contains("bloom-visibility-code-on") &&
+            (e.textContent || "").trim() !== ""
+        );
     });
 }
 //-------------- initialize -------------
 // In some cases (loading into a bloom reader carousel, for example) the page may already be loaded.
 if (document.readyState === "complete") {
     init();
-}
-else {
-    window.addEventListener("load", function () {
+} else {
+    window.addEventListener("load", function() {
         init();
     });
 }
