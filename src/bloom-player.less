@@ -138,6 +138,10 @@ We just make them follow the main content normally. */
             width: 0;
         }
     }
+    // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
+    .bloom-editable.bloom-visibility-code-on {
+        overflow-y: auto !important; // unfortunately this needs !important to override 2 basePage.less rules
+    }
 }
 .bloomPlayer:not(.outsideButtons) {
     .slick-next {
