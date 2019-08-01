@@ -790,6 +790,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.setIndex(next)
                     }
                     afterChange={(current: number) => this.showingPage(current)}
+                    // This means a drag of 1/20 screen width is enough to flip the page.
+                    touchThreshold={20}
                 >
                     {this.state.pages.map((slide, index) => {
                         return (
