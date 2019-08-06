@@ -16,6 +16,7 @@ import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { Video } from "./video";
+import { Music } from "./music";
 import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 import { LocalizationManager } from "./l10n/localizationManager";
@@ -52,6 +53,7 @@ interface IProps {
 
     reportPageProperties?: (properties: {
         hasAudio: boolean;
+        hasMusic: boolean;
         hasVideo: boolean;
     }) => void;
 
@@ -132,6 +134,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private narration: Narration;
     private animation: Animation;
+    private music: Music;
     private video: Video;
     private canRotate: boolean;
 
@@ -179,6 +182,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 );
             });
         }
+        if (!this.music) {
+            this.music = new Music();
+        }
         let newSourceUrl = this.props.url;
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
         // an empty filename or double-slashes in derived URLs.
@@ -222,7 +228,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const urlOfBookHtmlFile = fullPath
                 ? this.sourceUrl
                 : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
-            this.narration.urlPrefix = this.urlPrefix = fullPath
+            this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = fullPath
                 ? this.sourceUrl.substring(
                       0,
                       Math.max(slashIndex, encodedSlashIndex)
@@ -381,6 +387,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (this.props.paused) {
                 this.narration.pause();
                 this.video.pause();
+                this.music.pause();
             } else {
                 // This test determines if we changed pages while paused,
                 // since the narration object won't yet be updated.
@@ -389,6 +396,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 this.narration.play();
                 this.video.play();
+                this.music.play();
             }
         }
     }
@@ -965,6 +973,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // its continued playing.
             this.video.hidingPage();
             this.video.HandlePageBeforeVisible(bloomPage);
+            this.music.hidingPage();
         }
     }
 
@@ -1032,6 +1041,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // Informs containing react controls (in the same frame)
             this.props.reportPageProperties({
                 hasAudio: this.narration.pageHasAudio(bloomPage),
+                hasMusic: Music.pageHasMusic(bloomPage),
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
@@ -1090,5 +1100,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
+        this.music.HandlePageVisible(bloomPage);
     }
 }

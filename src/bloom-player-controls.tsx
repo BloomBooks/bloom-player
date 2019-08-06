@@ -24,6 +24,7 @@ interface IState {
     canRotate: boolean;
     windowLandscape: boolean;
     hasAudio: boolean;
+    hasMusic: boolean;
     hasVideo: boolean;
 }
 
@@ -36,6 +37,7 @@ export class BloomPlayerControls extends React.Component<
         canRotate: false,
         windowLandscape: false,
         hasAudio: false,
+        hasMusic: false,
         hasVideo: false
     };
 
@@ -50,7 +52,11 @@ export class BloomPlayerControls extends React.Component<
                     paused={this.state.paused}
                     pausedChanged={(p: boolean) => this.setState({ paused: p })}
                     backClicked={() => onBackClicked()}
-                    showPlayPause={this.state.hasAudio || this.state.hasVideo}
+                    showPlayPause={
+                        this.state.hasAudio ||
+                        this.state.hasMusic ||
+                        this.state.hasVideo
+                    }
                 />
                 <BloomPlayerCore
                     url={this.props.url}
@@ -275,7 +281,11 @@ export class BloomPlayerControls extends React.Component<
                     return; // don't interfere with these clicks!
                 }
                 // If there's no media, don't pause!
-                if (this.state.hasAudio || this.state.hasVideo) {
+                if (
+                    this.state.hasAudio ||
+                    this.state.hasMusic ||
+                    this.state.hasVideo
+                ) {
                     this.setState({ paused: !this.state.paused });
                 }
                 event.preventDefault();
