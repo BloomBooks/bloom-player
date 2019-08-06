@@ -2,7 +2,7 @@
 import { createMuiTheme } from "@material-ui/core/styles";
 
 const bloomRed = "#d65649";
-const bloomGrey = "#2e2e2e";
+const bloomGrey = "#2e2e2e"; // also in bloom-player.less
 
 const theme = createMuiTheme({
     palette: {

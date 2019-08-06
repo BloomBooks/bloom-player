@@ -9,6 +9,7 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 @contextPageBackground: darkgray; // #a9a9a9
 @audioHighlighting: yellow; // #ffff00
 @bloomRed: #d65649;
+@bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
 
 /* The rules in the book reset this counter at the body level, but since we scope our
 rules to apply at a lower level, that rule doesn't work. We need to reset at a level
@@ -233,6 +234,7 @@ body {
     // we never need a scroll bar. This prevents it.
     height: 100%;
     overflow: hidden;
+    background-color: @bloomGrey;
 }
 
 // Styles the special div we create for motion books. It is put at the root of the page and hides
