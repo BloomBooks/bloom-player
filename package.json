@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.29",
+    "version": "0.9.30",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",

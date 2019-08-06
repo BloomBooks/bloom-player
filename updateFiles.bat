@@ -15,3 +15,6 @@ rem where bloom-reader should get it from npm
 copy "dist\*.*" "..\BloomReader\app\node_modules\bloom-player\dist"
 rem where bloom-reader's copyBloomPlayerAssets puts it for deployment
 copy "dist\*.*" "..\BloomReader\app\src\main\assets\bloom-player"
+
+rem BloomLibrary (requires a change to bloomPlayerUrl in detailController.js, and a browser ignoring CORS, as in https://alfilatov.com/posts/run-chrome-without-cors/)
+copy "dist\*.*" "..\BloomLibrary\build\bloom-player"
