@@ -11,6 +11,50 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 @bloomRed: #d65649;
 @bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
 
+/* The Andika New Basic font might be found already installed. Failing that,
+ * if we're inside BloomReader or RAB, we should be able to get it at the standard
+ * URL for assets embedded in the program. If instead we're embedded in a web
+ * page like BloomLibrary.org, we need to download from the web. 
+ * Note that currently that last option will only work when the page origin
+ * is *bloomlibrary.org. This helps limit our exposure to large charges from
+ * people using our font arbitrarily. This does include, however, books
+ * displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm*/
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: normal;
+    src: local("Andika New Basic"),
+        url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: normal;
+    src: local("Andika New Basic"),
+        url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: italic;
+    src: local("Andika New Basic"),
+        url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: italic;
+    src: local("Andika New Basic"),
+        url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff");
+}
+
 /* The rules in the book reset this counter at the body level, but since we scope our
 rules to apply at a lower level, that rule doesn't work. We need to reset at a level
 above the page so that page numbers will increment.*/
