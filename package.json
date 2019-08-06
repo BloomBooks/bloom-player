@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.28",
+    "version": "0.9.29",
     "description": "A tool for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "John Thomson <john_thomson@sil.org>",
@@ -16,6 +16,8 @@
         "// start will build, watch, and start a server": "",
         "// you can edit index-for-developing.html to point to different books": "",
         "start": "yarn webpack-dev-server --open",
+        "// if you are testing with a book hosted on (dev.)bloomlibrary.org, you will have to load chrome with these args": "",
+        "chrome-no-cors": "chrome --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
         "build": "webpack --config webpack-config-prod.js",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest --env=jsdom",
