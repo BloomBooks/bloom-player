@@ -8,6 +8,8 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 @hoverNextPrevButtonBar: #cbcbcb;
 @contextPageBackground: darkgray; // #a9a9a9
 @audioHighlighting: yellow; // #ffff00
+
+@bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
 @bloomRed: #d65649;
 
 /* The rules in the book reset this counter at the body level, but since we scope our
@@ -56,7 +58,7 @@ div.ui-audioCurrentImg {
 }
 
 /* the default positioning of these dots is inside the page area, but our pages overlap them.
-Also, if there are more than will fit on a line, some drop outside the control altogether.
+Also, if there are more than will fit on a line, some drop largeOutside the control altogether.
 We just make them follow the main content normally. */
 .bloomPlayer .slick-dots {
     position: relative;
@@ -75,8 +77,8 @@ We just make them follow the main content normally. */
 // We need these outer conditions for specificity
 .bloomPlayer {
     // these buttons are positioned relative to the slider, our preview.
-    // Usually the buttons are outside the slider, just touching it; but this
-    // takes them outside our phone's display. This puts them just inside it.
+    // Usually the buttons are largeOutside the slider, just touching it; but this
+    // takes them largeOutside our phone's display. This puts them just inside it.
     .slick-next {
         border-radius: @button-radius 0 0 @button-radius;
         // The white icons (hover) were produced from artwork/page right icon.svg by
@@ -143,7 +145,25 @@ We just make them follow the main content normally. */
         overflow-y: auto !important; // unfortunately this needs !important to override 2 basePage.less rules
     }
 }
-.bloomPlayer:not(.outsideButtons) {
+.bloomPlayer {
+    .slick-next,
+    .slick-prev {
+        &::before {
+            //font-size: 48pt;
+            color: @bloomRed;
+            opacity: @nonHoveredNavigationButtonOpacity;
+        }
+    }
+    .slick-next {
+        // curved on right, flush on left.
+        border-radius: 0 @button-radius @button-radius 0;
+    }
+    .slick-prev {
+        // curved on left, flush on right.
+        border-radius: @button-radius 0 0 @button-radius;
+    }
+}
+.bloomPlayer:not(.largeOutsideButtons) {
     .slick-next {
         right: 0;
     }
@@ -152,25 +172,39 @@ We just make them follow the main content normally. */
     }
 }
 
-@navigationButtonWidth: 100px;
-.bloomPlayer.outsideButtons {
+// should match that defined in bloom-player-controls.tsx
+@smallNavigationButtonWidth: 30px;
+@largeNavigationButtonWidth: 100px;
+@nonHoveredNavigationButtonOpacity: 0.5;
+
+.bloomPlayer.smallOutsideButtons {
     .slick-next,
     .slick-prev {
-        width: @navigationButtonWidth;
+        width: @smallNavigationButtonWidth;
         &::before {
-            font-size: 48pt;
-            color: @bloomRed;
+            font-size: 20pt;
         }
     }
     .slick-next {
-        // curved on right, flush on left.
-        border-radius: 0 @button-radius @button-radius 0;
-        right: -1 * @navigationButtonWidth;
+        right: -1 * @smallNavigationButtonWidth;
     }
     .slick-prev {
-        // curved on left, flush on right.
-        border-radius: @button-radius 0 0 @button-radius;
-        left: -1 * @navigationButtonWidth;
+        left: -1 * @smallNavigationButtonWidth;
+    }
+}
+.bloomPlayer.largeOutsideButtons {
+    .slick-next,
+    .slick-prev {
+        width: @largeNavigationButtonWidth;
+        &::before {
+            font-size: 48pt;
+        }
+    }
+    .slick-next {
+        right: -1 * @largeNavigationButtonWidth;
+    }
+    .slick-prev {
+        left: -1 * @largeNavigationButtonWidth;
     }
 }
 

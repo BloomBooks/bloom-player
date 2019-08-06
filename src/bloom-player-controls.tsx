@@ -202,20 +202,27 @@ export class BloomPlayerControls extends React.Component<
         let width = (actualPageHeight * 9) / 16 / scaleFactor;
         if (landscape) {
             width = (actualPageHeight * 16) / 9 / scaleFactor;
-        } else {
-            // how much horizontal space do we have to spare, in the scaled pixels
-            // which control the button size?
-            const widthMargin = window.innerWidth / scaleFactor - width;
-            const player = document.getElementsByClassName("bloomPlayer")[0];
-            // To put the buttons outside, we need twice @navigationButtonWidth,
-            // as defined in bloom-player.less.
-            if (widthMargin > 200) {
-                // We have two button widths to spare; can put buttons outside phone
-                player.classList.add("outsideButtons");
-            } else {
-                player.classList.remove("outsideButtons");
-            }
         }
+        //else {
+        // how much horizontal space do we have to spare, in the scaled pixels
+        // which control the button size?
+        const widthMargin = window.innerWidth / scaleFactor - width;
+        const player = document.getElementsByClassName("bloomPlayer")[0];
+        // To put the buttons outside, we need twice @navigationButtonWidth,
+        // as defined in bloom-player.less.
+        player.classList.remove("largeOutsideButtons");
+        player.classList.remove("smallOutsideButtons");
+
+        // should match that defined in bloom-player.less
+        const smallNavigationButtonWidth = 30;
+        const largeNavigationButtonWidth = 100;
+        if (widthMargin > largeNavigationButtonWidth * 2) {
+            // We have two button widths to spare; can put buttons outside phone
+            player.classList.add("largeOutsideButtons");
+        } else if (widthMargin > smallNavigationButtonWidth * 2) {
+            player.classList.add("smallOutsideButtons");
+        }
+
         const leftMargin = Math.max(
             (window.innerWidth - pageWidth * scaleFactor) / 2,
             0
