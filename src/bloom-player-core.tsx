@@ -41,6 +41,9 @@ interface IProps {
     // a click/touch event callback if needed to support pause-on-touch.
     paused?: boolean;
 
+    pageStylesAreNowInstalled: () => void;
+    onContentClick?: (event: any) => void;
+
     // reportBookProperties is called when book loaded enough to determine these properties.
     // This is probably obsolete, since if the player is embedded in a iframe as we currently
     // require, only the containing BloomPlayerControls can make use of it. However, it's just
@@ -71,6 +74,9 @@ interface IState {
     // mode it's the index of the left context page, not the main page.
     currentSliderIndex: number;
     isLoading: boolean;
+
+    //used to distinguish a drag from a click
+    isChanging: boolean;
 }
 
 enum BookFeatures {
@@ -116,7 +122,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         pages: this.initialPages,
         styleRules: this.initialStyleRules,
         currentSliderIndex: 0,
-        isLoading: true
+        isLoading: true,
+        isChanging: false
     };
 
     // The book url we were passed as a URL param.
@@ -285,14 +292,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 landscape,
                                 canRotate: this.canRotate
                             });
-                            // Informs parent window when in an iframe.
-                            if (window.parent) {
-                                window.parent.postMessage(
-                                    { landscape, canRotate: this.canRotate },
-                                    "*"
-                                );
-                            }
-                            // So far there's no way (or need) to inform whatever set up a WebView.
                         }
 
                         this.fixRelativeUrls(page);
@@ -791,7 +790,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                 });
                 this.setState({ styleRules: combinedStyle, isLoading: false });
-                BloomPlayerControls.pageStylesInstalled = true;
+                this.props.pageStylesAreNowInstalled();
             });
     }
 
@@ -840,10 +839,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     slidesToShow={this.props.showContextPages ? 3 : 1}
                     infinite={false}
                     dots={this.props.showContextPages}
-                    beforeChange={(current: number, next: number) =>
-                        this.setIndex(next)
-                    }
-                    afterChange={(current: number) => this.showingPage(current)}
+                    beforeChange={(current: number, next: number) => {
+                        this.setIndex(next);
+                        this.setState({ isChanging: true });
+                    }}
+                    afterChange={(current: number) => {
+                        this.setState({ isChanging: false });
+                        this.showingPage(current);
+                    }}
                     // This means a drag of 1/20 screen width is enough to flip the page.
                     touchThreshold={20}
                 >
@@ -855,6 +858,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     "page-preview-slide" +
                                     this.getSlideClass(index)
                                 }
+                                onClick={e => {
+                                    if (
+                                        !this.state.isChanging && // if we're dragging, that isn't a click we want to propagate
+                                        this.props.onContentClick
+                                    ) {
+                                        this.props.onContentClick(e);
+                                    }
+                                }}
                             >
                                 <style scoped={true}>
                                     {this.state.styleRules}

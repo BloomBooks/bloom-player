@@ -1,8 +1,5 @@
 import * as React from "react";
-// TsLint wants me to combine this with the line above but I can't figure out how.
-// tslint:disable-next-line: no-duplicate-imports
-import { useState, useEffect } from "react";
-import { requestCapabilities } from "./externalContext";
+
 // We'd prefer to use this more elegant form of import:
 //import { AppBar, Toolbar, IconButton } from "@material-ui/core";
 // import {
@@ -34,23 +31,15 @@ import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
 interface IControlBarProps {
+    visible: boolean; // will slide into / out of view based on this
     paused: boolean;
     pausedChanged?: (b: boolean) => void;
     showPlayPause: boolean;
     backClicked?: () => void;
+    canGoBack: boolean;
 }
 
 export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
-    const [canGoBack, setCanGoBack] = useState(false);
-
-    useEffect(() => {
-        requestCapabilities(data => {
-            if (data.canGoBack) {
-                setCanGoBack(true);
-            }
-        });
-    }, []);
-
     const playOrPause = props.paused ? (
         <PlayCircleOutline />
     ) : (
@@ -58,42 +47,40 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     );
 
     return (
-        <div>
-            <AppBar
-                color="primary"
-                className="control-bar"
-                id="control-bar"
-                elevation={0}
-                position="relative" // Keeps the AppBar from floating
-            >
-                <Toolbar>
-                    {!canGoBack || (
-                        <IconButton
-                            color="secondary"
-                            onClick={() => {
-                                if (props.backClicked) {
-                                    props.backClicked();
-                                }
-                            }}
-                        >
-                            <ArrowBack />
-                        </IconButton>
-                    )}
-                    <div
-                        className="filler" // this is set to flex-grow, making the following icons right-aligned.
-                    />
+        <AppBar
+            color="primary"
+            className={`control-bar ${props.visible ? ", visible" : ""}`}
+            id="control-bar"
+            elevation={0}
+            position="relative" // Keeps the AppBar from floating
+        >
+            <Toolbar>
+                {props.canGoBack && (
                     <IconButton
                         color="secondary"
                         onClick={() => {
-                            if (props.pausedChanged) {
-                                props.pausedChanged(!props.paused);
+                            if (props.backClicked) {
+                                props.backClicked();
                             }
                         }}
                     >
-                        {props.showPlayPause ? playOrPause : null}
+                        <ArrowBack />
                     </IconButton>
-                </Toolbar>
-            </AppBar>
-        </div>
+                )}
+                <div
+                    className="filler" // this is set to flex-grow, making the following icons right-aligned.
+                />
+                <IconButton
+                    color="secondary"
+                    onClick={() => {
+                        if (props.pausedChanged) {
+                            props.pausedChanged(!props.paused);
+                        }
+                    }}
+                >
+                    {props.showPlayPause ? playOrPause : null}
+                </IconButton>
+            </Toolbar>
+        </AppBar>
     );
 };

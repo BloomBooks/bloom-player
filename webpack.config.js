@@ -8,7 +8,8 @@ module.exports = merge(common, {
     devServer: {
         contentBase: "./dist",
         index: "../index.html",
-        writeToDisk: true
+        writeToDisk: true,
+        overlay: true
     },
     plugins: [
         // Note: CopyPlugin says to use forward slashes.        // Note: the empty "to" options mean to just go to the output folder, which is "dist/"

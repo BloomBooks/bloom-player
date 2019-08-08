@@ -16,7 +16,7 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 /* The Andika New Basic font might be found already installed. Failing that,
  * if we're inside BloomReader or RAB, we should be able to get it at the standard
  * URL for assets embedded in the program. If instead we're embedded in a web
- * page like BloomLibrary.org, we need to download from the web. 
+ * page like BloomLibrary.org, we need to download from the web.
  * Note that currently that last option will only work when the page origin
  * is *bloomlibrary.org. This helps limit our exposure to large charges from
  * people using our font arbitrarily. This does include, however, books
@@ -116,6 +116,11 @@ We just make them follow the main content normally. */
 #control-bar {
     .filler {
         flex-grow: 1;
+    }
+    transition: margin-top 0.3s;
+    margin-top: -64px;
+    &.visible {
+        margin-top: 0;
     }
 }
 
@@ -304,7 +309,11 @@ that makes available to the control files more like Bloom Reader uses */
     right: 5%;
 }
 
-body {
+html {
+    height: 100%;
+}
+body,
+#root {
     // bloom pages have their own margins, we don't need the browser's
     margin: 0;
     // Scaling things down has an odd effect where the browser thinks it needs a scroll range
