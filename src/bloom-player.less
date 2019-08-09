@@ -191,10 +191,44 @@ We just make them follow the main content normally. */
         }
     }
     // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
+    // However this can actually make stuff that used to fit stop fitting.
+    // Where "line-height:normal" is ok, it largely fixes it. But just imposing that everywhere
+    // is risky. So I (JH) am trying a the following approach. Admittedly, this is all a
+    // bit of a hack and carries some risk. As we harvest more things, I may repent. For now, 4 steps:
+
+    // 1) In the interior we are conservative and just let scrolls appear, even at the risk of sometimes showing one
+    // (and thus pushing something off the bottom that would otherwise have been visible):
     .bloom-editable.bloom-visibility-code-on {
         overflow-y: auto !important; // unfortunately this needs !important to override 2 basePage.less rules
     }
+
+    // 2) for metadata pages, we (for now) risk changing the line-height. Experimentally, which works well:
+    // Don't try and apply this to the book title: BookTitles have a good reason to have
+    // a lineheight that is less than "normal" (which will override the below rule), because else multi-line
+    // titles spread out and look awful:    .frontCover.cover .bloom-translationGroup.bookTitle,
+    // Instead, we will help out the title in (4).
+    .titlePage,
+    .credits {
+        .bloom-editable {
+            // this can (and is) still be over-ridden by styles in the book. See Title-On-Title-Page for an example where it gets overridden.
+            line-height: normal !important; // fixes problems with showing y scroll when not needed.
+        }
+    }
+
+    // 3), on the cover, which is has a very dynamic layout, we just don't do scrollbars:
+    .bloom-page.cover .bloom-editable {
+        overflow-y: hidden !important;
+    }
+
+    // 4) However, we can instead trade a margin-bottom for a padding-bottom, which will allow texts that are on the edge
+    // to avoid pushing text off-screen because of an over-zealous scroll bar. See the auto-harvested
+    // Haitian "David e Golyat" for an example where this saved the day.
+    .frontCover.cover .bloom-translationGroup.bookTitle .bloom-editable {
+        margin-bottom: 0; // is normally 5px
+        padding-bottom: 5px;
+    }
 }
+
 .bloomPlayer {
     .slick-next,
     .slick-prev {
