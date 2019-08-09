@@ -194,7 +194,7 @@ We just make them follow the main content normally. */
     // However this can actually make stuff that used to fit stop fitting.
     // Where "line-height:normal" is ok, it largely fixes it. But just imposing that everywhere
     // is risky. So I (JH) am trying a the following approach. Admittedly, this is all a
-    // bit of a hack and carries some risk. As we harvest more things, I may repent. For now, 4 steps:
+    // bit of a hack and carries some risk. As we harvest more things, I may repent. For now, 3 steps:
 
     // 1) In the interior we are conservative and just let scrolls appear, even at the risk of sometimes showing one
     // (and thus pushing something off the bottom that would otherwise have been visible):
@@ -206,7 +206,6 @@ We just make them follow the main content normally. */
     // Don't try and apply this to the book title: BookTitles have a good reason to have
     // a lineheight that is less than "normal" (which will override the below rule), because else multi-line
     // titles spread out and look awful:    .frontCover.cover .bloom-translationGroup.bookTitle,
-    // Instead, we will help out the title in (4).
     .titlePage,
     .credits {
         .bloom-editable {
@@ -217,15 +216,7 @@ We just make them follow the main content normally. */
 
     // 3), on the cover, which is has a very dynamic layout, we just don't do scrollbars:
     .bloom-page.cover .bloom-editable {
-        overflow-y: hidden !important;
-    }
-
-    // 4) However, we can instead trade a margin-bottom for a padding-bottom, which will allow texts that are on the edge
-    // to avoid pushing text off-screen because of an over-zealous scroll bar. See the auto-harvested
-    // Haitian "David e Golyat" for an example where this saved the day.
-    .frontCover.cover .bloom-translationGroup.bookTitle .bloom-editable {
-        margin-bottom: 0; // is normally 5px
-        padding-bottom: 5px;
+        overflow-y: visible !important;
     }
 }
 
