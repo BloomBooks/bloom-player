@@ -858,6 +858,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     "page-preview-slide" +
                                     this.getSlideClass(index)
                                 }
+                                onKeyDown={e => {
+                                    if (e.key === "Home") {
+                                        this.slider.slickGoTo(0);
+                                        e.preventDefault();
+                                    }
+                                    if (e.key === "End") {
+                                        this.slider.slickGoTo(9999);
+                                        e.preventDefault();
+                                    }
+                                }}
                                 onClick={e => {
                                     if (
                                         !this.state.isChanging && // if we're dragging, that isn't a click we want to propagate
