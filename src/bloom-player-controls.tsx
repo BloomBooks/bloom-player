@@ -217,9 +217,15 @@ export const BloomPlayerControls: React.FunctionComponent<
             scaleFactor}px; overflow: hidden;}`;
     };
 
+    const {
+        allowToggleAppBar,
+        showBackButton,
+        initiallyShowAppBar,
+        ...rest
+    } = props;
     return (
         <div
-            {...props} // Allow all standard div props
+            {...rest} // Allow all standard div props
         >
             <ControlBar
                 canGoBack={props.showBackButton}
