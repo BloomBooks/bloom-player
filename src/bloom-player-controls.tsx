@@ -4,11 +4,7 @@ book inside of the Bloom:Publish:Android screen.
 */
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
-import {
-    requestCapabilities,
-    getBookParam,
-    onBackClicked
-} from "./externalContext";
+import { onBackClicked } from "./externalContext";
 import { ControlBar } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
@@ -21,15 +17,18 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface IProps {
     url: string; // of the bloom book (folder)
+    initiallyShowAppBar: boolean;
+    allowToggleAppBar: boolean;
+    showBackButton: boolean;
     showContextPages?: boolean;
 }
 
 export const BloomPlayerControls: React.FunctionComponent<
     IProps & React.HTMLProps<HTMLDivElement>
 > = props => {
-    const [canGoBack, setCanGoBack] = useState(false);
-    const [allowHideAppBar, setAllowHideAppBar] = useState(false);
-    const [showAppBar, setShowAppBar] = useState(true);
+    const [showAppBar, setShowAppBar] = useState<boolean>(
+        props.initiallyShowAppBar
+    );
 
     const [paused, setPaused] = useState(false);
     const [windowLandscape, setWindowLandscape] = useState(false);
@@ -52,13 +51,6 @@ export const BloomPlayerControls: React.FunctionComponent<
     useEffect(() => {
         scalePageToWindow();
     }, [pageStylesInstalled, scalePageToWindowTrigger, windowLandscape]);
-
-    useEffect(() => {
-        requestCapabilities(data => {
-            setAllowHideAppBar(data.allowHideAppBar || false);
-            setCanGoBack(data.canGoBack);
-        });
-    }, []);
 
     // Assumes that we want the controls and player to fill a (typically device) window.
     // (The page is trying to be a standard height (in mm) for a predictable layout
@@ -225,12 +217,18 @@ export const BloomPlayerControls: React.FunctionComponent<
             scaleFactor}px; overflow: hidden;}`;
     };
 
+    const {
+        allowToggleAppBar,
+        showBackButton,
+        initiallyShowAppBar,
+        ...rest
+    } = props;
     return (
         <div
-            {...props} // Allow all standard div props
+            {...rest} // Allow all standard div props
         >
             <ControlBar
-                canGoBack={canGoBack}
+                canGoBack={props.showBackButton}
                 visible={showAppBar}
                 paused={paused}
                 pausedChanged={(p: boolean) => setPaused(p)}
@@ -265,7 +263,7 @@ export const BloomPlayerControls: React.FunctionComponent<
                     setHasVideo(pageProps.hasVideo);
                 }}
                 onContentClick={e => {
-                    if (allowHideAppBar) {
+                    if (props.allowToggleAppBar) {
                         setShowAppBar(!showAppBar);
                         // Note: we could get the useEffect() to run this by listing
                         // showAppBar in its array of things to watch, but we
@@ -283,6 +281,28 @@ export const BloomPlayerControls: React.FunctionComponent<
     );
 };
 
+export function getUrlParam(paramName: string, defaultValue?: any): string {
+    const vars = {}; // deceptive, we don't change the ref, but do change the content
+    //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
+    window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m, key, value) => {
+        vars[key] = value;
+        return "";
+    });
+    if (
+        defaultValue !== undefined &&
+        (vars[paramName] === undefined || vars[paramName] === null)
+    ) {
+        return defaultValue;
+    }
+    return vars[paramName];
+}
+
+export function getBooleanUrlParam(
+    paramName: string,
+    defaultValue: boolean
+): boolean {
+    return getUrlParam(paramName, defaultValue ? "true" : "false") === "true";
+}
 // a bit goofy...we need some way to get react called when this code is loaded into an HTML
 // document (as part of bloomPlayerControlBundle.js). When that module is loaded, any
 // not-in-a-class code gets called. So we arrange here for a bit of it to turn any element
@@ -291,7 +311,18 @@ export const BloomPlayerControls: React.FunctionComponent<
 export function InitBloomPlayerControls() {
     ReactDOM.render(
         <ThemeProvider theme={theme}>
-            <BloomPlayerControls url={getBookParam("url")} />
+            <BloomPlayerControls
+                url={getUrlParam("url")}
+                allowToggleAppBar={getBooleanUrlParam(
+                    "allowToggleAppBar",
+                    false
+                )}
+                showBackButton={getBooleanUrlParam("showBackButton", false)}
+                initiallyShowAppBar={getBooleanUrlParam(
+                    "initiallyShowAppBar",
+                    true
+                )}
+            />
         </ThemeProvider>,
         document.getElementById("root")
     );

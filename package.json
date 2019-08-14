@@ -1,6 +1,6 @@
 {
     "name": "bloom-player",
-    "version": "0.9.37",
+    "version": "1.0.0",
     "description": "A library for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "SIL International",
@@ -25,9 +25,8 @@
         "// bloom-library doesn't normally *have* this code; instead, it goes and gets it from s3.": "",
         "// To make use of this code while you are developing how BP works in BL, you have to uncomment a line in BloomLibrary's detail-controller.js": "",
         "// This will fail if the http server is locking the directory": "",
-        "prepbloomlibrary": "mkdir ..\\BloomLibrary\\build\\bloom-player",
         "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": "",
-        "tobloomlibrary": "shx cp dist\\*.* ..\\BloomLibrary\\build\\bloom-player",
+        "tobloomlibrary": "shx cp dist\\bloomplayer-for-developing.htm ..\\BloomLibrary\\build && shx cp dist\\bloomPlayer.js ..\\BloomLibrary\\build",
         "tobloomreader": "shx cp dist\\*.* ..\\BloomReader\\app\\src\\main\\assets\\bloom-player",
         "build4bl": "yarn  build && yarn tobloomlibrary",
         "build4br": "yarn  build && yarn tobloomreader"

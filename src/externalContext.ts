@@ -23,16 +23,6 @@ function postMessage(messageObj: object) {
     window.parent.postMessage(message, "*"); // any window may receive
 }
 
-export function getBookParam(paramName: string): string {
-    const vars = {}; // deceptive, we don't change the ref, but do change the content
-    //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
-    window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m, key, value) => {
-        vars[key] = value;
-        return "";
-    });
-    return vars[paramName];
-}
-
 // Ask the parent window, if any, to store this key/value pair persistently.
 export function storePageDataExternally(key: string, value: string) {
     postMessage({ messageType: "storePageData", key, value });
