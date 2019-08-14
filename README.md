@@ -24,6 +24,40 @@ So to embed a book in your website, you just need an iframe element that points 
 ></iframe>
 ```
 
+# Optional Parameters
+
+You can customize some aspects of the bloom-player to fit your context. For example, if you never want to show the [app bar](https://material.io/design/components/app-bars-top.html),
+
+```html
+<iframe
+    src="https://bloomlibrary.org/bloom-player/bloomplayer.htm?url=path-to-your-book&initiallyShowAppBar=false&allowToggleAppBar=false"
+></iframe>
+```
+
+#### initiallyShowAppBar
+
+Show the [app bar](https://material.io/design/components/app-bars-top.html) above the book when the book is first displayed.
+
+Example: `initiallyShowAppBar=false`
+
+Default: `true`
+
+#### allowToggleAppBar
+
+If the user clicks in a content area of the page, toggle display of the app bar.
+
+Example: `allowToggleAppBar=true`
+
+Default: `false`
+
+#### showBackButton
+
+If true, displays an arrow in the upper left corner of the app bar. When clicked, bloom-player will post a message "backButtonClicked" that the surrounding context can catch and respond to.
+
+Example: `showBackButton=true`
+
+Default: `false`
+
 # Development
 
 Run `yarn` to get the dependencies.
