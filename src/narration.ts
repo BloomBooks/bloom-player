@@ -145,7 +145,9 @@ export default class Narration {
         }
     }
 
-    private highlightNextSubElement() {
+    // Moves the highlight to the next sub-element
+    // startTimeInSecs is an optional fallback that will be used in case the currentTime cannot be determined from the audio player element.
+    private highlightNextSubElement(startTimeInSecs: number = 0) {
         // the item should not be popped off the stack until it's completely done with.
         const subElementCount = this.subElementsWithTimings.length;
 
@@ -162,7 +164,10 @@ export default class Narration {
         const mediaPlayer: HTMLMediaElement = document.getElementById(
             "bloom-audio-player"
         )! as HTMLMediaElement;
-        const currentTimeInSecs = mediaPlayer.currentTime;
+        let currentTimeInSecs: number = mediaPlayer.currentTime;
+        if (currentTimeInSecs <= 0) {
+            currentTimeInSecs = startTimeInSecs;
+        }
 
         // Handle cases where the currentTime has already exceeded the nextStartTime
         //   (might happen if you're unlucky in the thread queue... or if in debugger, etc.)
@@ -215,7 +220,7 @@ export default class Narration {
 
         this.subElementsWithTimings.pop();
 
-        this.highlightNextSubElement();
+        this.highlightNextSubElement(nextStartTimeInSecs);
     }
 
     // Removes the .ui-audioCurrent class from all elements (also ui-audioCurrentImg)
