@@ -32,7 +32,7 @@ export class Animation {
     public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
         return [].slice
             .call(page.getElementsByClassName("bloom-imageContainer"))
-            .find(v => (v.dataset as IAnimation).initialrect) as HTMLElement;
+            .find(v => !!(v.dataset as IAnimation).initialrect) as HTMLElement;
     }
 
     private currentPage: HTMLElement; // one we're currently showing
