@@ -29,6 +29,12 @@ export const BloomPlayerControls: React.FunctionComponent<
     const [showAppBar, setShowAppBar] = useState<boolean>(
         props.initiallyShowAppBar
     );
+    // while the initiallyShowAppBar prop won't change in production, it can change
+    // when we're tinkering with storybook. The statement above won't re-run if
+    // that prop changes, so we have to do this:
+    useEffect(() => {
+        setShowAppBar(props.initiallyShowAppBar);
+    }, [props.initiallyShowAppBar]);
 
     const [paused, setPaused] = useState(false);
     const [windowLandscape, setWindowLandscape] = useState(false);

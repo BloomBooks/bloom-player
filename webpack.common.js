@@ -1,8 +1,7 @@
 var path = require("path");
-var webpack = require("webpack");
 var node_modules = path.resolve(__dirname, "node_modules");
-
-var globule = require("globule");
+const core = require("./webpack.core.js");
+const merge = require("webpack-merge");
 const CopyPlugin = require("copy-webpack-plugin");
 var outputDir = "dist";
 
@@ -16,8 +15,7 @@ function localResolve(preset) {
         ? [require.resolve(preset[0]), preset[1]]
         : require.resolve(preset);
 }
-
-module.exports = {
+module.exports = merge(core, {
     // mode must be set to either "production" or "development" in webpack 4.
     // Webpack-common is intended to be 'required' by something that provides that.
     context: __dirname,
@@ -76,10 +74,7 @@ module.exports = {
     },
     module: {
         rules: [
-            {
-                test: /\.ts(x?)$/,
-                use: [{ loader: "ts-loader" }]
-            },
+            // Note: typescript handling is imported from webpack.core.js
             {
                 // For the most part, we're using typescript and ts-loader handles that.
                 // But for things that are still in javascript, the following babel setup allows newer
@@ -118,20 +113,6 @@ module.exports = {
                 ]
             },
             {
-                test: /\.less$/i,
-                use: [
-                    {
-                        loader: "style-loader" // creates style nodes from JS strings
-                    },
-                    {
-                        loader: "css-loader" // translates CSS into CommonJS
-                    },
-                    {
-                        loader: "less-loader" // compiles Less to CSS
-                    }
-                ]
-            },
-            {
                 test: /\.css$/,
                 loader: "style-loader!css-loader"
             },
@@ -156,4 +137,4 @@ module.exports = {
             }
         ]
     }
-};
+});

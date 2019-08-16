@@ -1,4 +1,4 @@
-import i18nData = require("./i18n.json");
+import i18nData from "./i18n.json";
 
 // Handles loading and retrieving of localization data.
 //
@@ -21,7 +21,7 @@ class LocalizationManagerImplementation {
     private isSetup: boolean = false;
 
     // Set up the l10n dictionary. If this is not called first, localize will do nothing.
-    public setUp(i18nDataOverride?) {
+    public setUp(i18nDataOverride?: any) {
         if (this.isSetup) {
             return;
         }

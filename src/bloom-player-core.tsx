@@ -111,7 +111,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private static currentPagePlayer: BloomPlayerCore;
 
-    constructor(props, state) {
+    constructor(props: IProps, state) {
         super(props, state);
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
