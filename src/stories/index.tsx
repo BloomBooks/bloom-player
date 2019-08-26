@@ -44,6 +44,7 @@ AddBloomPlayerStory(
     "Talking book with image descriptions",
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
 );
+AddBloomPlayerStory("Snake Game", "src/activity-starter/index.htm");
 
 AddBloomPlayerStory(
     "Book with music",
