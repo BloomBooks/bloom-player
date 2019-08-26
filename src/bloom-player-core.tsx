@@ -25,6 +25,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
+import { loadDynamically } from "./loadDynamically";
 
 // See related comments in controlBar.tsx
 //tslint:disable-next-line:no-submodule-imports
@@ -1133,7 +1134,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     dangerouslySetInnerHTML={{
                                         __html: slide
                                     }}
-                                    ref={div => this.pageLoaded(div)}
+                                    ref={div => this.loadButDoNotStartScripts(pageDiv)}
                                 />
                             </div>
                         );
@@ -1173,16 +1174,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
-    private pageLoaded(div: HTMLDivElement | null): void {
+    private loadButDoNotStartScripts(pageDiv: HTMLDivElement | null): void {
         // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
         // This is potentially dangerous, so we make it less likely to happen through random attacks
         // by only doing it in pages that are explicitly marked as bloom interactive pages.
         if (
-            div &&
-            div.firstElementChild &&
-            div.firstElementChild.classList.contains("bloom-interactive-page")
+            pageDiv &&
+            pageDiv.firstElementChild &&
+            pageDiv.firstElementChild.classList.contains(
+                "bloom-interactive-page"
+            )
         ) {
-            const scripts = div.getElementsByTagName("script");
+            const scripts = pageDiv.getElementsByTagName("script");
             for (let i = 0; i < scripts.length; i++) {
                 const script = scripts[i];
                 const src = script.getAttribute("src");
@@ -1211,17 +1214,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             console.log(error);
                         });
                 } else {
-                    // Get it from the specified place.
-                    axios
-                        .get(src)
-                        // This would be highly dangerous in most contexts. It is one of the reasons
-                        // we insist that bloom-player should live in its own iframe, protecting the rest
-                        // of the page from things this eval might do.
-                        // tslint:disable-next-line: no-eval
-                        .then(result => eval(result.data))
-                        .catch(() => {
-                            // If we don't get it there, not much we can do.
-                        });
+                    console.log("src=" + src);
+
+                    // NB: this has to start with a slash https://stackoverflow.com/a/46739184/723299
+                    loadDynamically(src).then(module => {
+                        console.log(src + " loaded dynamically");
+                        module.start();
+                    });
                 }
             }
         }
