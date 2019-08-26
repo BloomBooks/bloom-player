@@ -6,6 +6,10 @@ module.exports = {
                 use: [{ loader: "ts-loader" }]
             },
             {
+                test: /\.js(x?)$/,
+                exclude: [/activity-starter/]
+            },
+            {
                 test: /\.less$/i,
                 use: [
                     {
