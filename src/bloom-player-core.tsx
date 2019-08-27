@@ -96,7 +96,10 @@ enum BookFeatures {
     signLanguage = "signLanguage",
     motion = "motion"
 }
-
+interface IActivityScript {
+    path: string;
+    module: any;
+}
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static DEFAULT_CREATOR: string = "bloom";
     private readonly initialPages: string[] = ["loading..."];
@@ -122,6 +125,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private originalCopyrightHolder = "";
     private sessionId = this.generateUUID();
     private creator = BloomPlayerCore.DEFAULT_CREATOR; // If we find a head/meta element, we will replace this.
+    private loadedActivityScripts: IActivityScript[] = [];
 
     private static currentPagePlayer: BloomPlayerCore;
 
@@ -1173,7 +1177,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             </div>
         );
     }
-
+    private getActivityUrls(pageDiv: HTMLDivElement): string[] {
+        const scripts = pageDiv.getElementsByTagName("script");
+        const urls: string[] = [];
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].getAttribute("src");
+            if (src) {
+                urls.push(src);
+            }
+        }
+        return urls;
+    }
     private loadButDoNotStartScripts(pageDiv: HTMLDivElement | null): void {
         // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
         // This is potentially dangerous, so we make it less likely to happen through random attacks
@@ -1185,44 +1199,41 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 "bloom-interactive-page"
             )
         ) {
-            const scripts = pageDiv.getElementsByTagName("script");
-            for (let i = 0; i < scripts.length; i++) {
-                const script = scripts[i];
-                const src = script.getAttribute("src");
-                if (!src) {
-                    // enhance: possibly window.eval(script.innerText?)
-                    // But we consider embedding such scripts in Bloom
-                    // unworkable, because our XHTML conversion mangles angle brackets.
-                    continue;
-                }
-
-                if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                    // We want the reader's own version of this file. For one thing, if we generated
-                    // the quiz pages from json, the book folder won't have it. Also, this means we
-                    // always use the latest version of the quiz code rather than whatever was current
-                    // when the book was published.
-                    const folder = this.getFolderForSupportFiles();
-                    const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
-                    axios
-                        .get(tryForQuiz)
-                        .then(result => {
-                            // See comment on eval below.
-                            // tslint:disable-next-line: no-eval
-                            eval(result.data);
-                        })
-                        .catch(error => {
-                            console.log(error);
+            this.getActivityUrls(pageDiv).forEach(src => {
+                if (!this.loadedActivityScripts.some(a => a.path === src)) {
+                    if (src.endsWith("/simpleComprehensionQuiz.js")) {
+                        // We want the reader's own version of this file. For one thing, if we generated
+                        // the quiz pages from json, the book folder won't have it. Also, this means we
+                        // always use the latest version of the quiz code rather than whatever was current
+                        // when the book was published.
+                        const folder = this.getFolderForSupportFiles();
+                        const tryForQuiz =
+                            folder + "/simpleComprehensionQuiz.js";
+                        axios
+                            .get(tryForQuiz)
+                            .then(result => {
+                                // See comment on eval below.
+                                // tslint:disable-next-line: no-eval
+                                eval(result.data);
+                                // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
+                                this.loadedActivityScripts.push({
+                                    path: src,
+                                    module: null
+                                });
+                            })
+                            .catch(error => {
+                                console.log(error);
+                            });
+                    } else {
+                        loadDynamically(src).then(module => {
+                            this.loadedActivityScripts.push({
+                                path: src,
+                                module
+                            });
                         });
-                } else {
-                    console.log("src=" + src);
-
-                    // NB: this has to start with a slash https://stackoverflow.com/a/46739184/723299
-                    loadDynamically(src).then(module => {
-                        console.log(src + " loaded dynamically");
-                        module.start();
-                    });
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -1315,6 +1326,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         return page.hasAttribute("data-xmatter-page");
     }
+    private previousActivityScript: IActivityScript | undefined;
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
@@ -1348,6 +1360,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
+        if (this.previousActivityScript && this.previousActivityScript.module) {
+            this.previousActivityScript.module.stop();
+        }
+        this.previousActivityScript = undefined;
+
+        this.getActivityUrls(bloomPage).some(url => {
+            const script = this.loadedActivityScripts.find(s => s.path === url);
+            console.assert(
+                script,
+                `Trying to start script ${url} but it wasn't previously loaded.`
+            );
+            this.previousActivityScript = script!;
+            script!.module.start();
+            return false; // only start the first module on the page (because... come ON!)
+        });
 
         this.reportedAudioOnCurrentPage = false;
         this.reportedVideoOnCurrentPage = false;
