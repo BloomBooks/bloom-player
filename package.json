@@ -1,6 +1,11 @@
 {
     "name": "bloom-player",
-    "version": "1.0.3",
+    "// The patch level of this version number is replaced on TeamCity by its build number.": "",
+    "// A dummy value is needed for the simple-minded replacement to work.": "",
+    "// The major and minor version numbers shown here are used by the TeamCity build, so they are meaningful.": "",
+    "// Local builds will always get this exact version number, but that should be okay.": "",
+    "// There's no need to update the patch value before committing and merging: the TeamCity process ensures a new patch number for each merge.": "",
+    "version": "1.0.0",
     "description": "A library for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "SIL International",
