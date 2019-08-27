@@ -1,19 +1,31 @@
-var frameCount = 0;
+var kCellsInEachDimension = 10;
 
-// called by bloom-player
-var snake = {};
-var cellsInEachDimension = 10;
-var canvas = document.getElementById("game");
-var minDimension = Math.min(canvas.width, canvas.height);
-var grid = minDimension / cellsInEachDimension; // 16;
+var frameCount;
+var minDimension;
+var grid;
+var snake;
+var canvas;
+var context;
+var apple;
+var startX;
+var startY;
+var running;
 
-var context = canvas.getContext("2d");
-var apple = {};
-var startX = 0;
-var startY = 0;
+export function stop() {
+    running = false;
+    //alert("stop(snake)");
+}
 
 export function start() {
-    alert("Loaded snake");
+    //alert("start(snake)");
+    running = true;
+    frameCount = 0;
+    canvas = document.getElementById("game");
+    minDimension = Math.min(canvas.width, canvas.height);
+    grid = minDimension / kCellsInEachDimension; // 16;
+    context = canvas.getContext("2d");
+    startX = 0;
+    startY = 0;
 
     snake = {
         x: 160,
@@ -103,7 +115,9 @@ function getRandomInt(min, max) {
 
 // game loop
 function loop() {
-    requestAnimationFrame(loop);
+    if (!running) {
+        requestAnimationFrame(loop);
+    }
 
     // slow game loop to 15 fps instead of 60 - 60/15 = 4
     if (++frameCount < 8) {
@@ -150,8 +164,8 @@ function loop() {
         if (cell.x === apple.x && cell.y === apple.y) {
             snake.maxCells++;
 
-            apple.x = getRandomInt(0, cellsInEachDimension - 1) * grid;
-            apple.y = getRandomInt(0, cellsInEachDimension - 1) * grid;
+            apple.x = getRandomInt(0, kCellsInEachDimension - 1) * grid;
+            apple.y = getRandomInt(0, kCellsInEachDimension - 1) * grid;
         }
 
         // check collision with all cells after this one (modified bubble sort)
@@ -165,8 +179,8 @@ function loop() {
                 snake.dx = grid;
                 snake.dy = 0;
 
-                apple.x = getRandomInt(0, cellsInEachDimension - 1) * grid;
-                apple.y = getRandomInt(0, cellsInEachDimension - 1) * grid;
+                apple.x = getRandomInt(0, kCellsInEachDimension - 1) * grid;
+                apple.y = getRandomInt(0, kCellsInEachDimension - 1) * grid;
             }
         }
     });
