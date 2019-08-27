@@ -85,7 +85,9 @@ enum BookFeatures {
     signLanguage = "signLanguage",
     motion = "motion"
 }
+
 export class BloomPlayerCore extends React.Component<IProps, IState> {
+    private static DEFAULT_CREATOR: string = "bloom";
     private readonly initialPages: string[] = ["loading..."];
     private readonly initialStyleRules: string = "";
 
@@ -108,6 +110,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private copyrightHolder = "";
     private originalCopyrightHolder = "";
     private sessionId = this.generateUUID();
+    private creator = BloomPlayerCore.DEFAULT_CREATOR; // If we find a head/meta element, we will replace this.
 
     private static currentPagePlayer: BloomPlayerCore;
 
@@ -255,6 +258,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
                 const body = bookHtmlElement.getElementsByTagName("body")[0];
+                const head = bookHtmlElement.getElementsByTagName("head")[0]; // need this to find creator meta element
                 this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
                     body as HTMLBodyElement
                 );
@@ -321,6 +325,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         sliderContent.push(""); // blank page to fill the space right of last.
                     }
 
+                    this.creator = this.getCreator(head); // prep for reportBookOpened()
                     this.reportBookOpened(body);
 
                     this.assembleStyleSheets(bookHtmlElement);
@@ -400,6 +405,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    private getCreator(head: HTMLHeadElement): string {
+        const metaElements = head.getElementsByTagName("meta");
+        if (metaElements.length === 0) {
+            return BloomPlayerCore.DEFAULT_CREATOR;
+        }
+        const creatorElement = metaElements.namedItem("bloom-digital-creator");
+        if (creatorElement === null) {
+            return BloomPlayerCore.DEFAULT_CREATOR;
+        }
+        return creatorElement.content;
+    }
+
     private getCopyrightInfo(
         body: HTMLBodyElement,
         dataDivValue: string
@@ -443,7 +460,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 contentLang: this.bookLanguage1,
                 features: this.features,
                 sessionId: this.sessionId,
-                title: this.bookTitle
+                title: this.bookTitle,
+                creator: this.creator
             };
             if (this.brandingProjectName) {
                 ambientAnalyticsProps.brandingProjectName = this.brandingProjectName;
