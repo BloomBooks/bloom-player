@@ -27,7 +27,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 
-import { ActivityManager } from "./activityManager";
+import { ActivityManager, IActivity } from "./activityManager";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
@@ -78,6 +78,8 @@ interface IState {
 
     //used to distinguish a drag from a click
     isChanging: boolean;
+
+    //activityOnThisPage: IActivity | null;
 }
 
 enum BookFeatures {
@@ -115,7 +117,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private originalCopyrightHolder = "";
     private sessionId = this.generateUUID();
     private creator = BloomPlayerCore.DEFAULT_CREATOR; // If we find a head/meta element, we will replace this.
-    private loadedActivityScripts: IActivityScript[] = [];
 
     private static currentPagePlayer: BloomPlayerCore;
 
@@ -851,6 +852,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public render() {
+        const activityNeedsToOwnDragging = this.activityManager.getPreventPageDragging();
+
+        const hideNextPrevButtons =
+            this.props.hideNextPrevButtons && !activityNeedsToOwnDragging;
+
         if (this.state.isLoading) {
             return "Loading Book...";
         }
@@ -898,9 +904,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             <div
                 className={
                     "bloomPlayer" +
-                    (this.props.hideNextPrevButtons
-                        ? " hideNextPrevButtons"
-                        : "")
+                    (hideNextPrevButtons ? " hideNextPrevButtons" : "")
                 }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
