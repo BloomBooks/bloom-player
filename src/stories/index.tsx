@@ -42,9 +42,11 @@ function AddBloomPlayerStory(label: string, url: string) {
                 allowToggleAppBar={allowToggleAppBar()}
                 paused={paused()}
                 url={url}
+                locationOfDistFolder={"/dist/"}
             />
         );
     });
+            
 }
 
 function pause() {
