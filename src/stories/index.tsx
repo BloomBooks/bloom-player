@@ -27,6 +27,7 @@ function AddBloomPlayerStory(label: string, url: string) {
             initiallyShowAppBar={initiallyShowAppBar()}
             allowToggleAppBar={allowToggleAppBar()}
             url={url}
+            locationOfDistFolder={"/dist/"}
         />
     ));
 }

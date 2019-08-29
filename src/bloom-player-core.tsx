@@ -17,6 +17,8 @@ import { Animation } from "./animation";
 import { Video } from "./video";
 import { Music } from "./music";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
+import { BloomPlayerControls } from "./bloom-player-controls";
+
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
 import {
@@ -24,7 +26,9 @@ import {
     setAmbientAnalyticsProperties,
     updateBookProgressReport
 } from "./externalContext";
-import { loadDynamically } from "./loadDynamically";
+
+import { ActivityManager } from "./activityManager";
+import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -60,6 +64,8 @@ interface IProps {
     }) => void;
 
     hideNextPrevButtons?: boolean;
+
+    locationOfDistFolder: string;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -80,13 +86,12 @@ enum BookFeatures {
     signLanguage = "signLanguage",
     motion = "motion"
 }
-interface IActivityScript {
-    path: string;
-    module: any;
-    runningObject: any;
-}
+
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static DEFAULT_CREATOR: string = "bloom";
+    private readonly activityManager: ActivityManager = new ActivityManager();
+    private readonly legacyQuestionHandler: LegacyQuestionHandler;
+
     private readonly initialPages: string[] = ["loading..."];
     private readonly initialStyleRules: string = "";
 
@@ -119,6 +124,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
+        this.legacyQuestionHandler = new LegacyQuestionHandler(
+            props.locationOfDistFolder
+        );
     }
 
     public readonly state: IState = {
@@ -153,8 +161,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static currentPage: HTMLElement;
 
     private indexOflastNumberedPage: number;
-
-    private needSpecialCss = false;
 
     public componentDidMount() {
         LocalizationManager.setUp();
@@ -360,30 +366,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (firstPage) {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
-
-                const urlOfQuestionsFile = this.urlPrefix + "/questions.json";
-                this.needSpecialCss = false;
-                axios
-                    .get(urlOfQuestionsFile)
-                    .then(qfResult => {
-                        const newPages = OldQuestionsConverter.convert(
-                            qfResult.data,
-                            pageClass
-                        );
-                        const firstBackMatterPage = body.getElementsByClassName(
-                            "bloom-backMatter"
-                        )[0];
-                        for (let i = 0; i < newPages.length; i++) {
-                            this.needSpecialCss = true;
-                            // insertAdjacentElement is tempting, but not in FF45.
-                            firstBackMatterPage.parentElement!.insertBefore(
-                                newPages[i],
-                                firstBackMatterPage
-                            );
-                        }
+                // enhance: make this callback thing into a promise
+                this.legacyQuestionHandler.handleLegacyQuestions(
+                    this.urlPrefix,
+                    body,
+                    pageClass,
+                    () => {
                         finishUp();
-                    })
-                    .catch(() => finishUp());
+                    }
+                );
             });
         } else if (prevProps.landscape !== this.props.landscape) {
             // rotating the phone...may need to switch the orientation class on each page.
@@ -789,11 +780,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 promises.push(axios.get(fullHref));
             }
         }
-        if (this.needSpecialCss) {
-            promises.push(
-                axios.get(this.getFolderForSupportFiles() + "/Special.css")
-            );
+        const p = this.legacyQuestionHandler.getPromiseForAnySpecialCss();
+        if (p) {
+            promises.push(p);
         }
+
         axios
             .all(
                 promises.map(p =>
@@ -948,9 +939,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     }}
                                     tabIndex={0} // required for onKeyDown to fire
                                     dangerouslySetInnerHTML={{ __html: slide }}
-                                    ref={pageDiv =>
-                                        this.loadButDoNotStartScripts(pageDiv)
-                                    }
+                                    ref={pageDiv => {
+                                        if (pageDiv) {
+                                            this.activityManager.processPage(
+                                                this.urlPrefix,
+                                                pageDiv.firstElementChild!,
+                                                this.legacyQuestionHandler
+                                            );
+                                        }
+                                    }}
                                 />
                             </div>
                         );
@@ -977,77 +974,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 />
             </div>
         );
-    }
-    private getActivityUrls(pageDiv: HTMLDivElement): string[] {
-        const scripts = pageDiv.getElementsByTagName("script");
-        const urls: string[] = [];
-        for (let i = 0; i < scripts.length; i++) {
-            const src = scripts[i].getAttribute("src");
-            if (src) {
-                urls.push(src);
-            }
-        }
-        return urls;
-    }
-    private loadButDoNotStartScripts(pageDiv: HTMLDivElement | null): void {
-        // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
-        // This is potentially dangerous, so we make it less likely to happen through random attacks
-        // by only doing it in pages that are explicitly marked as bloom interactive pages.
-        if (
-            pageDiv &&
-            pageDiv.firstElementChild &&
-            pageDiv.firstElementChild.classList.contains(
-                "bloom-interactive-page"
-            )
-        ) {
-            this.getActivityUrls(pageDiv).forEach(src => {
-                if (!this.loadedActivityScripts.some(a => a.path === src)) {
-                    if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                        // We want the reader's own version of this file. For one thing, if we generated
-                        // the quiz pages from json, the book folder won't have it. Also, this means we
-                        // always use the latest version of the quiz code rather than whatever was current
-                        // when the book was published.
-                        const folder = this.getFolderForSupportFiles();
-                        const tryForQuiz =
-                            folder + "/simpleComprehensionQuiz.js";
-                        axios
-                            .get(tryForQuiz)
-                            .then(result => {
-                                // See comment on eval below.
-                                // tslint:disable-next-line: no-eval
-                                eval(result.data);
-                                // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
-                                this.loadedActivityScripts.push({
-                                    path: src,
-                                    module: null,
-                                    runningObject: null
-                                });
-                            })
-                            .catch(error => {
-                                console.log(error);
-                            });
-                    } else {
-                        loadDynamically(src).then(module => {
-                            this.loadedActivityScripts.push({
-                                path: src,
-                                module,
-                                runningObject: null
-                            });
-                        });
-                    }
-                }
-            });
-        }
-    }
-
-    private getFolderForSupportFiles() {
-        const href =
-            window.location.protocol +
-            "//" +
-            window.location.host +
-            window.location.pathname;
-        const lastSlash = href.lastIndexOf("/");
-        return href.substring(0, lastSlash);
     }
 
     // Get a class to apply to a particular slide. This is used to apply the
@@ -1129,7 +1055,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         return page.hasAttribute("data-xmatter-page");
     }
-    private previousActivity: IActivityScript | undefined;
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
@@ -1163,24 +1088,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
-        if (this.previousActivity && this.previousActivity.module) {
-            this.previousActivity.runningObject.stop();
-            this.previousActivity.runningObject = undefined;
-        }
-        this.previousActivity = undefined;
-
-        this.getActivityUrls(bloomPage).some(url => {
-            const activity = this.loadedActivityScripts.find(
-                s => s.path === url
-            );
-            console.assert(
-                activity,
-                `Trying to start script ${url} but it wasn't previously loaded.`
-            );
-            this.previousActivity = activity!;
-            activity!.runningObject = new activity!.module.default();
-            return false; // only start the first module on the page (because... come ON!)
-        });
+        this.activityManager.showingPage(bloomPage);
 
         this.reportedAudioOnCurrentPage = false;
         this.reportedVideoOnCurrentPage = false;

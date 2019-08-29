@@ -21,6 +21,10 @@ interface IProps {
     allowToggleAppBar: boolean;
     showBackButton: boolean;
     showContextPages?: boolean;
+    // in production, this is just "". But during testing, we need
+    // the server to be able to serve sample books from a directory that isn't in dist/,
+    // e.g. src/activity-starter/
+    locationOfDistFolder: string;
 }
 
 export const BloomPlayerControls: React.FunctionComponent<
@@ -232,6 +236,7 @@ export const BloomPlayerControls: React.FunctionComponent<
         allowToggleAppBar,
         showBackButton,
         initiallyShowAppBar,
+        locationOfDistFolder,
         ...rest
     } = props;
     return (
@@ -254,6 +259,7 @@ export const BloomPlayerControls: React.FunctionComponent<
                 pageStylesAreNowInstalled={() => {
                     setPageStylesInstalled(true);
                 }}
+                locationOfDistFolder={props.locationOfDistFolder}
                 reportBookProperties={bookProps => {
                     const bookPropsObj = {
                         landscape: bookProps.landscape,
@@ -328,6 +334,7 @@ export function InitBloomPlayerControls() {
                     "initiallyShowAppBar",
                     true
                 )}
+                locationOfDistFolder={""}
             />
         </ThemeProvider>,
         document.getElementById("root")
