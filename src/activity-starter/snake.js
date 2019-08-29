@@ -2,7 +2,13 @@
 
 const kCellsInEachDimension = 10;
 
-export default class Activity {
+export function activityRequirements() {
+    return {
+        dragging: true
+    };
+}
+
+export default class SnakeActivity {
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
     // we are using a javascript class to make sure that we get a fresh start,
@@ -37,6 +43,8 @@ export default class Activity {
         // and 2) keep track of them so we can remove them when the user moves
         // away from this page
         this.listeners = [];
+    }
+    /* public*/ start() {
         this.addEventListener("touchstart", this.handleTouchstart);
         this.addEventListener("touchmove", this.handleTouchMove);
         this.addEventListener("touchend", this.handleTouchEnd);

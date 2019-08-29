@@ -1,15 +1,22 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
-export interface IActivityScript {
+interface IActivityRequirements {
+    dragging: boolean;
+}
+export interface IActivity {
     name: string;
     module: any;
     runningObject: any;
+    requirements: IActivityRequirements;
 }
 
 export class ActivityManager {
-    private previousActivity: IActivityScript | undefined;
-    private loadedActivityScripts: { [name: string]: IActivityScript } = {};
+    public getPreventPageDragging(): boolean {
+        return !!this.currentActivity;
+    }
+    private currentActivity: IActivity | undefined;
+    private loadedActivityScripts: { [name: string]: IActivity } = {};
 
     public processPage(
         bookUrlPrefix: string,
@@ -22,10 +29,12 @@ export class ActivityManager {
             // at the moment we start loading them in the background. This
             // probably isn't necessary, we could probably wait.
             loadDynamically(bookUrlPrefix + "/" + name + ".js").then(module => {
+                const requirements = module.activityRequirements();
                 this.loadedActivityScripts[name] = {
                     name,
                     module,
-                    runningObject: null
+                    runningObject: null,
+                    requirements
                 };
             });
         } else {
@@ -39,11 +48,11 @@ export class ActivityManager {
     public showingPage(bloomPage) {
         // Regardless of what we're showing now, first lets stop any activity that
         // was running on the previous page:
-        if (this.previousActivity && this.previousActivity.module) {
-            this.previousActivity.runningObject.stop();
-            this.previousActivity.runningObject = undefined;
+        if (this.currentActivity && this.currentActivity.module) {
+            this.currentActivity.runningObject.stop();
+            this.currentActivity.runningObject = undefined;
         }
-        this.previousActivity = undefined;
+        this.currentActivity = undefined;
 
         // OK, let's look at this page and see if has an activity:
         const name = bloomPage!.getAttribute("data-activity");
@@ -57,8 +66,9 @@ export class ActivityManager {
                 `Trying to start activity "${name}" but it wasn't previously loaded.`
             );
             if (activity) {
-                this.previousActivity = activity;
+                this.currentActivity = activity;
                 activity.runningObject = new activity.module.default();
+                activity.runningObject.start();
             }
         }
     }

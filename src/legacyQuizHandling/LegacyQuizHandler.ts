@@ -1,7 +1,14 @@
 import axios from "axios";
 import { OldQuestionsConverter } from "./old-questions";
-import { IActivityScript } from "../activityManager";
+import { IActivity } from "../activityManager";
 
+// NB: there are two levels of "legacy" we're dealing with here.
+// The first is before we had actual activity pages; instead the presence of a
+// "questions.json" was the trigger to make pages at the end. Next, starting with Bloom 4.6,
+// we had a first go at actual bloom pages that could be activities. The only activity
+// developed for that was the "SimpleComprehensionQuiz.js", and it had several things that
+// got simplified away for the next round of APIs, along with some problems that required
+// hacks to prevent multiple copies from stepping on each other.
 export class LegacyQuestionHandler {
     public constructor(locationOfDistFolder: string) {
         this.locationOfDistFolder = locationOfDistFolder;
@@ -76,7 +83,7 @@ export class LegacyQuestionHandler {
 
     public processPage(
         pageDiv: Element,
-        loadedActivityScripts: { [name: string]: IActivityScript }
+        loadedActivityScripts: { [name: string]: IActivity }
     ) {
         // The following is the 4.6 version, which used <script> tags and, as far as we know,
         //  is just for simpleComprehensionQuiz.js.
@@ -94,7 +101,8 @@ export class LegacyQuestionHandler {
                                         // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
                                         name: src,
                                         module: null,
-                                        runningObject: null
+                                        runningObject: null,
+                                        requirements: { dragging: false }
                                     })
                             );
                         }
