@@ -11,11 +11,11 @@ var startX;
 var startY;
 var running;
 
-export function stop() {
-    running = false;
-    //alert("stop(snake)");
-}
-
+// When our page is not the selected one, the bloom-player calls this.
+// We need to connect any listeners, start animation, etc. It's important
+// to think about what you want reset, too, in case the user is either
+// coming back to this page, or going to another instance of this activity
+// in a subsequent page.
 export function start() {
     //alert("start(snake)");
     running = true;
@@ -41,81 +41,84 @@ export function start() {
         y: grid * 3
     };
 
-    document.addEventListener(
-        "touchstart",
-        function(e) {
-            var touch = e.changedTouches[0];
-            startX = touch.pageX;
-            startY = touch.pageY;
-            startTime = new Date().getTime();
-            e.preventDefault();
-        },
-        false
-    );
-
-    document.addEventListener(
-        "touchmove",
-        function(e) {
-            e.preventDefault();
-        },
-        false
-    );
-
-    document.addEventListener(
-        "touchend",
-        function(e) {
-            var touch = e.changedTouches[0];
-            distX = touch.pageX - startX;
-            distY = touch.pageY - startY;
-
-            if (Math.abs(distX) > Math.abs(distY)) {
-                if (distX > 0 && snake.dx === 0) {
-                    snake.dx = grid;
-                    snake.dy = 0;
-                } else if (distX < 0 && snake.dx === 0) {
-                    snake.dx = -grid;
-                    snake.dy = 0;
-                }
-            } else {
-                if (distY > 0 && snake.dy === 0) {
-                    snake.dy = grid;
-                    snake.dx = 0;
-                } else if (distY < 0 && snake.dy === 0) {
-                    snake.dy = -grid;
-                    snake.dx = 0;
-                }
-            }
-            e.preventDefault();
-        },
-        false
-    );
-
-    document.addEventListener("keydown", function(e) {
-        // prevent snake from backtracking on itself
-        if (e.which === 37 && snake.dx === 0) {
-            snake.dx = -grid;
-            snake.dy = 0;
-        } else if (e.which === 38 && snake.dy === 0) {
-            snake.dy = -grid;
-            snake.dx = 0;
-        } else if (e.which === 39 && snake.dx === 0) {
-            snake.dx = grid;
-            snake.dy = 0;
-        } else if (e.which === 40 && snake.dy === 0) {
-            snake.dy = grid;
-            snake.dx = 0;
-        }
-    });
+    document.addEventListener("touchstart", handleTouchStart);
+    document.addEventListener("touchmove", handleTouchMove);
+    document.addEventListener("touchend", handleTouchEnd);
+    document.addEventListener("keydown", handleKeydown);
 
     requestAnimationFrame(loop);
 }
+
+// When our page is not the selected one, the bloom-player calls this.
+// We need to disconnect any listeners.
+export function stop() {
+    running = false;
+    document.removeEventListener("touchstart", handleTouchStart);
+    document.removeEventListener("touchmove", handleTouchMove);
+    document.removeEventListener("touchend", handleTouchEnd);
+    document.removeEventListener("keydown", handleKeydown);
+}
+
+function handleKeydown(e) {
+    // prevent snake from backtracking on itself
+    if (e.which === 37 && snake.dx === 0) {
+        snake.dx = -grid;
+        snake.dy = 0;
+    } else if (e.which === 38 && snake.dy === 0) {
+        snake.dy = -grid;
+        snake.dx = 0;
+    } else if (e.which === 39 && snake.dx === 0) {
+        snake.dx = grid;
+        snake.dy = 0;
+    } else if (e.which === 40 && snake.dy === 0) {
+        snake.dy = grid;
+        snake.dx = 0;
+    }
+}
+
+function handleTouchEnd(e) {
+    var touch = e.changedTouches[0];
+    distX = touch.pageX - startX;
+    distY = touch.pageY - startY;
+    if (Math.abs(distX) > Math.abs(distY)) {
+        if (distX > 0 && snake.dx === 0) {
+            snake.dx = grid;
+            snake.dy = 0;
+        } else if (distX < 0 && snake.dx === 0) {
+            snake.dx = -grid;
+            snake.dy = 0;
+        }
+    } else {
+        if (distY > 0 && snake.dy === 0) {
+            snake.dy = grid;
+            snake.dx = 0;
+        } else if (distY < 0 && snake.dy === 0) {
+            snake.dy = -grid;
+            snake.dx = 0;
+        }
+    }
+    e.preventDefault();
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+}
+
+function handleTouchStart(e) {
+    var touch = e.changedTouches[0];
+    startX = touch.pageX;
+    startY = touch.pageY;
+    startTime = new Date().getTime();
+    e.preventDefault();
+}
+
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
 // game loop
 function loop() {
-    if (!running) {
+    if (running) {
         requestAnimationFrame(loop);
     }
 
