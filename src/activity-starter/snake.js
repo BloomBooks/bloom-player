@@ -1,190 +1,203 @@
-var kCellsInEachDimension = 10;
+"use strict";
 
-var frameCount;
-var minDimension;
-var grid;
-var snake;
-var canvas;
-var context;
-var apple;
-var startX;
-var startY;
-var running;
+const kCellsInEachDimension = 10;
 
-// When our page is not the selected one, the bloom-player calls this.
-// We need to connect any listeners, start animation, etc. It's important
-// to think about what you want reset, too, in case the user is either
-// coming back to this page, or going to another instance of this activity
-// in a subsequent page.
-export function start() {
-    //alert("start(snake)");
-    running = true;
-    frameCount = 0;
-    canvas = document.getElementById("game");
-    minDimension = Math.min(canvas.width, canvas.height);
-    grid = minDimension / kCellsInEachDimension; // 16;
-    context = canvas.getContext("2d");
-    startX = 0;
-    startY = 0;
+export default class Activity {
+    // When a page that has this activity becomes the selected one, the bloom-player calls this.
+    // We need to connect any listeners, start animation, etc. Here,
+    // we are using a javascript class to make sure that we get a fresh start,
+    // which is important because the user could be either
+    // coming back to this page, or going to another instance of this activity
+    // in a subsequent page.
+    constructor() {
+        //alert("this.start(this.snake)");
+        this.running = true;
+        this.frameCount = 0;
+        this.canvas = document.getElementById("game");
+        this.minDimension = Math.min(this.canvas.width, this.canvas.height);
+        this.grid = this.minDimension / kCellsInEachDimension; // 16;
+        this.context = this.canvas.getContext("2d");
+        this.startX = 0;
+        this.startY = 0;
 
-    snake = {
-        x: 160,
-        y: 160,
-        dx: grid,
-        dy: 0,
-        cells: [],
-        maxCells: 4
-    };
+        this.snake = {
+            x: 160,
+            y: 160,
+            dx: this.grid,
+            dy: 0,
+            cells: [],
+            maxCells: 4
+        };
 
-    apple = {
-        x: grid * 3,
-        y: grid * 3
-    };
-
-    document.addEventListener("touchstart", handleTouchStart);
-    document.addEventListener("touchmove", handleTouchMove);
-    document.addEventListener("touchend", handleTouchEnd);
-    document.addEventListener("keydown", handleKeydown);
-
-    requestAnimationFrame(loop);
-}
-
-// When our page is not the selected one, the bloom-player calls this.
-// We need to disconnect any listeners.
-export function stop() {
-    running = false;
-    document.removeEventListener("touchstart", handleTouchStart);
-    document.removeEventListener("touchmove", handleTouchMove);
-    document.removeEventListener("touchend", handleTouchEnd);
-    document.removeEventListener("keydown", handleKeydown);
-}
-
-function handleKeydown(e) {
-    // prevent snake from backtracking on itself
-    if (e.which === 37 && snake.dx === 0) {
-        snake.dx = -grid;
-        snake.dy = 0;
-    } else if (e.which === 38 && snake.dy === 0) {
-        snake.dy = -grid;
-        snake.dx = 0;
-    } else if (e.which === 39 && snake.dx === 0) {
-        snake.dx = grid;
-        snake.dy = 0;
-    } else if (e.which === 40 && snake.dy === 0) {
-        snake.dy = grid;
-        snake.dx = 0;
+        this.apple = {
+            x: this.grid * 3,
+            y: this.grid * 3
+        };
+        // we need to 1) bind our listeners to this object so we can use "this.",
+        // and 2) keep track of them so we can remove them when the user moves
+        // away from this page
+        this.listeners = [];
+        this.addEventListener("touchstart", this.handleTouchstart);
+        this.addEventListener("touchmove", this.handleTouchMove);
+        this.addEventListener("touchend", this.handleTouchEnd);
+        this.addEventListener("keydown", this.handleKeydown);
+        window.requestAnimationFrame(this.loop.bind(this));
     }
-}
+    addEventListener(name, func) {
+        const boundFunc = func.bind(this);
+        this.listeners.push({ name, boundFunc });
+        document.addEventListener(name, boundFunc);
+    }
+    // When our page is not the selected one, the bloom-player calls this.
+    // We need to disconnect any listeners.
+    /* public */ stop() {
+        this.running = false;
+        this.listeners.forEach(l =>
+            document.removeEventListener(l.name, l.boundFunc)
+        );
+    }
 
-function handleTouchEnd(e) {
-    var touch = e.changedTouches[0];
-    distX = touch.pageX - startX;
-    distY = touch.pageY - startY;
-    if (Math.abs(distX) > Math.abs(distY)) {
-        if (distX > 0 && snake.dx === 0) {
-            snake.dx = grid;
-            snake.dy = 0;
-        } else if (distX < 0 && snake.dx === 0) {
-            snake.dx = -grid;
-            snake.dy = 0;
-        }
-    } else {
-        if (distY > 0 && snake.dy === 0) {
-            snake.dy = grid;
-            snake.dx = 0;
-        } else if (distY < 0 && snake.dy === 0) {
-            snake.dy = -grid;
-            snake.dx = 0;
+    handleKeydown(e) {
+        // prevent this.snake from backtracking on itself
+        if (e.which === 37 && this.snake.dx === 0) {
+            this.snake.dx = -this.grid;
+            this.snake.dy = 0;
+        } else if (e.which === 38 && this.snake.dy === 0) {
+            this.snake.dy = -this.grid;
+            this.snake.dx = 0;
+        } else if (e.which === 39 && this.snake.dx === 0) {
+            this.snake.dx = this.grid;
+            this.snake.dy = 0;
+        } else if (e.which === 40 && this.snake.dy === 0) {
+            this.snake.dy = this.grid;
+            this.snake.dx = 0;
         }
     }
-    e.preventDefault();
-}
 
-function handleTouchMove(e) {
-    e.preventDefault();
-}
-
-function handleTouchStart(e) {
-    var touch = e.changedTouches[0];
-    startX = touch.pageX;
-    startY = touch.pageY;
-    startTime = new Date().getTime();
-    e.preventDefault();
-}
-
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
-// game loop
-function loop() {
-    if (running) {
-        requestAnimationFrame(loop);
-    }
-
-    // slow game loop to 15 fps instead of 60 - 60/15 = 4
-    if (++frameCount < 8) {
-        return;
-    }
-
-    frameCount = 0;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    snake.x += snake.dx;
-    snake.y += snake.dy;
-
-    // wrap snake position on edge of screen
-    if (snake.x < 0) {
-        snake.x = canvas.width - grid;
-    } else if (snake.x >= canvas.width) {
-        snake.x = 0;
-    }
-
-    if (snake.y < 0) {
-        snake.y = canvas.height - grid;
-    } else if (snake.y >= canvas.height) {
-        snake.y = 0;
-    }
-
-    // keep track of where snake has been. front of the array is always the head
-    snake.cells.unshift({ x: snake.x, y: snake.y });
-
-    // remove cells as we move away from them
-    if (snake.cells.length > snake.maxCells) {
-        snake.cells.pop();
-    }
-
-    // draw apple
-    context.fillStyle = "red";
-    context.fillRect(apple.x, apple.y, grid - 1, grid - 1);
-
-    // draw snake
-    context.fillStyle = "green";
-    snake.cells.forEach(function(cell, index) {
-        context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
-
-        // snake ate apple
-        if (cell.x === apple.x && cell.y === apple.y) {
-            snake.maxCells++;
-
-            apple.x = getRandomInt(0, kCellsInEachDimension - 1) * grid;
-            apple.y = getRandomInt(0, kCellsInEachDimension - 1) * grid;
-        }
-
-        // check collision with all cells after this one (modified bubble sort)
-        for (var i = index + 1; i < snake.cells.length; i++) {
-            // collision. reset game
-            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                snake.x = grid * 10;
-                snake.y = grid * 10;
-                snake.cells = [];
-                snake.maxCells = 4;
-                snake.dx = grid;
-                snake.dy = 0;
-
-                apple.x = getRandomInt(0, kCellsInEachDimension - 1) * grid;
-                apple.y = getRandomInt(0, kCellsInEachDimension - 1) * grid;
+    handleTouchEnd(e) {
+        var touch = e.changedTouches[0];
+        this.distX = touch.pageX - this.startX;
+        this.distY = touch.pageY - this.startY;
+        if (Math.abs(this.distX) > Math.abs(this.distY)) {
+            if (this.distX > 0 && this.snake.dx === 0) {
+                this.snake.dx = this.grid;
+                this.snake.dy = 0;
+            } else if (this.distX < 0 && this.snake.dx === 0) {
+                this.snake.dx = -this.grid;
+                this.snake.dy = 0;
+            }
+        } else {
+            if (this.distY > 0 && this.snake.dy === 0) {
+                this.snake.dy = this.grid;
+                this.snake.dx = 0;
+            } else if (this.distY < 0 && this.snake.dy === 0) {
+                this.snake.dy = -this.grid;
+                this.snake.dx = 0;
             }
         }
-    });
+        e.preventDefault();
+    }
+
+    handleTouchMove(e) {
+        e.preventDefault();
+    }
+
+    handleTouchstart(e) {
+        var touch = e.changedTouches[0];
+        this.startX = touch.pageX;
+        this.startY = touch.pageY;
+        this.startTime = new Date().getTime();
+        e.preventDefault();
+    }
+
+    getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    // game this.loop
+    loop() {
+        if (this.running) {
+            window.requestAnimationFrame(this.loop.bind(this));
+        }
+
+        // slow game this.loop to 15 fps instead of 60 - 60/15 = 4
+        if (++this.frameCount < 8) {
+            return;
+        }
+
+        this.frameCount = 0;
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.snake.x += this.snake.dx;
+        this.snake.y += this.snake.dy;
+
+        // wrap this.snake position on edge of screen
+        if (this.snake.x < 0) {
+            this.snake.x = this.canvas.width - this.grid;
+        } else if (this.snake.x >= this.canvas.width) {
+            this.snake.x = 0;
+        }
+
+        if (this.snake.y < 0) {
+            this.snake.y = this.canvas.height - this.grid;
+        } else if (this.snake.y >= this.canvas.height) {
+            this.snake.y = 0;
+        }
+
+        // keep track of where this.snake has been. front of the array is always the head
+        this.snake.cells.unshift({ x: this.snake.x, y: this.snake.y });
+
+        // remove cells as we move away from them
+        if (this.snake.cells.length > this.snake.maxCells) {
+            this.snake.cells.pop();
+        }
+
+        // draw this.apple
+        this.context.fillStyle = "red";
+        this.context.fillRect(
+            this.apple.x,
+            this.apple.y,
+            this.grid - 1,
+            this.grid - 1
+        );
+
+        // draw this.snake
+        this.context.fillStyle = "green";
+        this.snake.cells.forEach((cell, index) => {
+            this.context.fillRect(cell.x, cell.y, this.grid - 1, this.grid - 1);
+
+            // this.snake ate this.apple
+            if (cell.x === this.apple.x && cell.y === this.apple.y) {
+                this.snake.maxCells++;
+
+                this.apple.x =
+                    this.getRandomInt(0, kCellsInEachDimension - 1) * this.grid;
+                this.apple.y =
+                    this.getRandomInt(0, kCellsInEachDimension - 1) * this.grid;
+            }
+
+            // check collision with all cells after this one (modified bubble sort)
+            for (var i = index + 1; i < this.snake.cells.length; i++) {
+                // collision. reset game
+                if (
+                    cell.x === this.snake.cells[i].x &&
+                    cell.y === this.snake.cells[i].y
+                ) {
+                    this.snake.x = this.grid * 10;
+                    this.snake.y = this.grid * 10;
+                    this.snake.cells = [];
+                    this.snake.maxCells = 4;
+                    this.snake.dx = this.grid;
+                    this.snake.dy = 0;
+
+                    this.apple.x =
+                        this.getRandomInt(0, kCellsInEachDimension - 1) *
+                        this.grid;
+                    this.apple.y =
+                        this.getRandomInt(0, kCellsInEachDimension - 1) *
+                        this.grid;
+                }
+            }
+        });
+    }
 }

@@ -99,6 +99,7 @@ enum BookFeatures {
 interface IActivityScript {
     path: string;
     module: any;
+    runningObject: any;
 }
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static DEFAULT_CREATOR: string = "bloom";
@@ -1218,7 +1219,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
                                 this.loadedActivityScripts.push({
                                     path: src,
-                                    module: null
+                                    module: null,
+                                    runningObject: null
                                 });
                             })
                             .catch(error => {
@@ -1228,7 +1230,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         loadDynamically(src).then(module => {
                             this.loadedActivityScripts.push({
                                 path: src,
-                                module
+                                module,
+                                runningObject: null
                             });
                         });
                     }
@@ -1326,7 +1329,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         return page.hasAttribute("data-xmatter-page");
     }
-    private previousActivityScript: IActivityScript | undefined;
+    private previousActivity: IActivityScript | undefined;
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
@@ -1360,19 +1363,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
-        if (this.previousActivityScript && this.previousActivityScript.module) {
-            this.previousActivityScript.module.stop();
+        if (this.previousActivity && this.previousActivity.module) {
+            this.previousActivity.runningObject.stop();
+            this.previousActivity.runningObject = undefined;
         }
-        this.previousActivityScript = undefined;
+        this.previousActivity = undefined;
 
         this.getActivityUrls(bloomPage).some(url => {
-            const script = this.loadedActivityScripts.find(s => s.path === url);
+            const activity = this.loadedActivityScripts.find(
+                s => s.path === url
+            );
             console.assert(
-                script,
+                activity,
                 `Trying to start script ${url} but it wasn't previously loaded.`
             );
-            this.previousActivityScript = script!;
-            script!.module.start();
+            this.previousActivity = activity!;
+            activity!.runningObject = new activity!.module.default();
             return false; // only start the first module on the page (because... come ON!)
         });
 
