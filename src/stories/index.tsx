@@ -44,3 +44,8 @@ AddBloomPlayerStory(
     "Talking book with image descriptions",
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
 );
+
+AddBloomPlayerStory(
+    "Book with music",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
+);
