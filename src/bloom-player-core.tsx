@@ -389,9 +389,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (prevProps.paused !== this.props.paused) {
             // this code was being called way too often!
             if (this.props.paused) {
-                this.narration.pause();
-                this.video.pause();
-                this.music.pause();
+                this.pauseAllMultimedia();
             } else {
                 // This test determines if we changed pages while paused,
                 // since the narration object won't yet be updated.
@@ -403,6 +401,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.music.play();
             }
         }
+    }
+
+    public componentWillUnmount() {
+        this.pauseAllMultimedia();
+    }
+
+    private pauseAllMultimedia() {
+        this.narration.pause();
+        this.video.pause();
+        this.music.pause();
     }
 
     private getCreator(head: HTMLHeadElement): string {
@@ -720,7 +728,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 document.head.appendChild(stylesheet);
                 stylesheet.setAttribute("id", "fontCssStyleSheet");
             }
-            var prefix = href.substring(0, href.length - "/fonts.css".length);
+            const prefix = href.substring(0, href.length - "/fonts.css".length);
             stylesheet.innerText = result.data.replace(
                 /src:url\(([^)]*)\)/g,
                 "src:url(" + prefix + "/$1)"
