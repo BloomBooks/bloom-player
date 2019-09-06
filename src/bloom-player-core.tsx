@@ -1054,6 +1054,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!classAttr || classAttr.indexOf("bloom-page") < 0) {
             return true; // as above, shouldn't happen, but...
         }
+        // This test shouldn't be necessary, all xmatter pages are supposed to have data-xmatter-page,
+        // but some (e.g., the final 'End' page in device-xmatter) currently don't. Even if we fix that,
+        // it won't necessarily be fixed in existing bloomds.
+        if (
+            classAttr.indexOf("bloom-backMatter") >= 0 ||
+            classAttr.indexOf("bloom-frontMatter") >= 0
+        ) {
+            return true;
+        }
         return page.hasAttribute("data-xmatter-page");
     }
 
