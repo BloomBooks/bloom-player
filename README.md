@@ -66,6 +66,8 @@ Either, run `yarn storybook` (which has multiple books),
 
 or run `yarn start` (which will use `index-for-developing.html`).
 
+Note: you need to have `chrome` on your path.
+
 See package.json for other scripts.
 
 ### Testing with a book hosted on the web
