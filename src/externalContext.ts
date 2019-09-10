@@ -20,7 +20,10 @@ function postMessage(messageObj: object) {
     // probably won't) handle the message. If we're in a ReactNative WebView, window.parent
     // is the WebView itself (same as plain 'window') but the React Native code
     // receives the message.
-    window.parent.postMessage(message, "*"); // any window may receive
+    // This is probably not used now, but if we ever did, it now sends a messageType as well.
+    if (window.parent) {
+        window.parent.postMessage(message, "*"); // any window may receive
+    }
 }
 
 // Ask the parent window, if any, to store this key/value pair persistently.
@@ -38,6 +41,13 @@ export function reportAnalytics(event: string, properties: any) {
         messageType: "sendAnalytics",
         event,
         params: { ...ambientAnalyticsProps, ...properties }
+    });
+}
+
+export function reportBookProperties(properties: any) {
+    postMessage({
+        messageType: "reportBookProperties",
+        params: { ...properties }
     });
 }
 
