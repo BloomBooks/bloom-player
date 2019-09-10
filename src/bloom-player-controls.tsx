@@ -72,12 +72,12 @@ export const BloomPlayerControls: React.FunctionComponent<
     const scalePageToWindow = () => {
         // We need to work from the page that is currently visible. Others may not have the right
         // orientation class set.
-        const currentSlickElt = document.getElementsByClassName(
-            "slick-current"
+        const currentSwiperElt = document.getElementsByClassName(
+            "swiper-slide-active"
         )[0] as HTMLElement;
         let page: HTMLElement | null = null;
-        if (currentSlickElt) {
-            page = currentSlickElt.getElementsByClassName(
+        if (currentSwiperElt) {
+            page = currentSwiperElt.getElementsByClassName(
                 "bloom-page"
             )[0] as HTMLElement;
         }

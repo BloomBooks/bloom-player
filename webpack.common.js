@@ -129,7 +129,8 @@ module.exports = merge(core, {
             },
             {
                 // this allows things like background-image: url("myComponentsButton.svg") and have the resulting path look for the svg in the stylesheet's folder
-                // the last few seem to be needed for (at least) slick-carousel to build.
+                // the last few seem to be needed for (at least) slick-carousel to build. We're no longer using that, so maybe we could shorten it...
+                // We do still have one font borrowed from slick.
                 test: /\.(svg|jpg|png|ttf|eot|gif)$/,
                 use: {
                     loader: "file-loader"
