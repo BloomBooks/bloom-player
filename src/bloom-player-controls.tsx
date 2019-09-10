@@ -4,7 +4,7 @@ book inside of the Bloom:Publish:Android screen.
 */
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
-import { onBackClicked } from "./externalContext";
+import { onBackClicked, showNavBar, hideNavBar } from "./externalContext";
 import { ControlBar } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
@@ -35,6 +35,11 @@ export const BloomPlayerControls: React.FunctionComponent<
     useEffect(() => {
         setShowAppBar(props.initiallyShowAppBar);
     }, [props.initiallyShowAppBar]);
+
+    useEffect(() => {
+        // We show and hide the app bar and nav bar together.
+        showAppBar ? showNavBar() : hideNavBar();
+    }, [showAppBar]);
 
     const [paused, setPaused] = useState(false);
     const [windowLandscape, setWindowLandscape] = useState(false);

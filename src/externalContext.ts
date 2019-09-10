@@ -59,6 +59,14 @@ export function onBackClicked() {
     postMessage({ messageType: "backButtonClicked" });
 }
 
+// For now anyway, this refers to the Android bottom navigation bar
+export function showNavBar() {
+    postMessage({ messageType: "showNavBar" });
+}
+export function hideNavBar() {
+    postMessage({ messageType: "hideNavBar" });
+}
+
 export function logError(logMessage: string) {
     postMessage({ messageType: "logError", message: logMessage });
 }
