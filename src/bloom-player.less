@@ -118,9 +118,21 @@ We just make them follow the main content normally. */
         flex-grow: 1;
     }
     transition: margin-top 0.3s;
-    margin-top: -64px;
     &.visible {
         margin-top: 0;
+    }
+
+    // The React/Material UI libraries we're using overlay the toolbar on top of our view.
+    // But we want to conditionally make the book fully visible, hiding the app bar with the appearance of sliding it up.
+    // To achieve this we give the bar a negative top margin which matches its height.
+    // It needs to be responsive in the same way as the toolbar height rules.
+    // These rules are derived from the compiled MaterialUI ones for toolbar minHeight.
+    margin-top: -56px;
+    @media (min-width: 0px) and (orientation: landscape) {
+        margin-top: -48px;
+    }
+    @media (min-width: 600px) {
+        margin-top: -64px;
     }
 }
 
