@@ -57,7 +57,10 @@ export class Video {
             const videoElement = this.currentVideoElement;
             window.setTimeout(() => {
                 this.videoStartTime = videoElement.currentTime;
-                videoElement.play();
+                const promise = videoElement.play();
+                if (promise) {
+                    promise.catch(reason => console.log(reason));
+                }
             }, 1000);
         }
     }
