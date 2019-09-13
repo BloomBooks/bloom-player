@@ -4,7 +4,13 @@ book inside of the Bloom:Publish:Android screen.
 */
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
-import { onBackClicked, showNavBar, hideNavBar, reportBookProperties } from "./externalContext";
+import {
+    onBackClicked,
+    showNavBar,
+    hideNavBar,
+    reportBookProperties,
+    setExternalControlCallback
+} from "./externalContext";
 import { ControlBar } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
@@ -21,11 +27,33 @@ interface IProps {
     allowToggleAppBar: boolean;
     showBackButton: boolean;
     showContextPages?: boolean;
+    paused: boolean;
 }
+
+// This logic is not straightforward...
+// Basically, if an external app sends a resume command, we only want
+// to start playback if an external app was the one to initially pause.
+// The use case is...
+// * Bloom Reader goes out of the foreground (sending an external "pause" event)
+// * Bloom Reader comes back to the foreground (sending an external "resume" event)
+// * We want to return the user to the state he was in when he left (playing or paused)
+let canExternallyResume: boolean = false;
 
 export const BloomPlayerControls: React.FunctionComponent<
     IProps & React.HTMLProps<HTMLDivElement>
 > = props => {
+    // Allows an external controller (such as Bloom Reader) to manipulate our controls
+    setExternalControlCallback(data => {
+        if (data.pause) {
+            canExternallyResume = !paused;
+            setPaused(true);
+        } else if (data.resume && canExternallyResume) {
+            setPaused(false);
+        } else if (data.play) {
+            setPaused(false);
+        }
+    });
+
     const [showAppBar, setShowAppBar] = useState<boolean>(
         props.initiallyShowAppBar
     );
@@ -41,7 +69,18 @@ export const BloomPlayerControls: React.FunctionComponent<
         showAppBar ? showNavBar() : hideNavBar();
     }, [showAppBar]);
 
+    useEffect(() => {
+        setPaused(props.paused);
+    }, [props.paused]);
+
     const [paused, setPaused] = useState(false);
+    useEffect(() => {
+        if (!paused) {
+            // When we change from paused to playing, reset this to the initial state (false)
+            canExternallyResume = false;
+        }
+    }, [paused]);
+
     const [windowLandscape, setWindowLandscape] = useState(false);
     const [hasAudio, setHasAudio] = useState(false);
     const [hasMusic, setHasMusic] = useState(false);
@@ -328,6 +367,7 @@ export function InitBloomPlayerControls() {
                     "initiallyShowAppBar",
                     true
                 )}
+                paused={false}
             />
         </ThemeProvider>,
         document.getElementById("root")

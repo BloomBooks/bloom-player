@@ -4,7 +4,11 @@ import { storiesOf } from "@storybook/react";
 
 import { ThemeProvider } from "@material-ui/styles";
 import { BloomPlayerControls } from "../bloom-player-controls";
-import { withKnobs, boolean as booleanKnob } from "@storybook/addon-knobs";
+import {
+    withKnobs,
+    boolean as booleanKnob,
+    button
+} from "@storybook/addon-knobs";
 import { withA11y } from "@storybook/addon-a11y";
 
 const stories = storiesOf("Various books", module);
@@ -14,21 +18,47 @@ stories.addDecorator(storyFn => (
     <ThemeProvider theme={theme}>{storyFn()}</ThemeProvider>
 ));
 
+const KNOB_TABS = {
+    PROPS: "Props",
+    EXTERNAL: "External"
+};
 const allowToggleAppBar = () =>
-    booleanKnob("Allow Toggle App Bar", true) as boolean;
-const showBackButton = () => booleanKnob("Show Back Button", true) as boolean;
+    booleanKnob("Allow Toggle App Bar", true, KNOB_TABS.PROPS) as boolean;
+const showBackButton = () =>
+    booleanKnob("Show Back Button", true, KNOB_TABS.PROPS) as boolean;
 const initiallyShowAppBar = () =>
-    booleanKnob("Initially Show App Bar", true) as boolean;
+    booleanKnob("Initially Show App Bar", true, KNOB_TABS.PROPS) as boolean;
+const paused = () => booleanKnob("Paused", false, KNOB_TABS.PROPS) as boolean;
 
 function AddBloomPlayerStory(label: string, url: string) {
-    stories.add(label, () => (
-        <BloomPlayerControls
-            showBackButton={showBackButton()}
-            initiallyShowAppBar={initiallyShowAppBar()}
-            allowToggleAppBar={allowToggleAppBar()}
-            url={url}
-        />
-    ));
+    stories.add(label, () => {
+        button("Pause", pause, KNOB_TABS.EXTERNAL);
+        button("Resume", resume, KNOB_TABS.EXTERNAL);
+        button("Play", play, KNOB_TABS.EXTERNAL);
+        return (
+            <BloomPlayerControls
+                showBackButton={showBackButton()}
+                initiallyShowAppBar={initiallyShowAppBar()}
+                allowToggleAppBar={allowToggleAppBar()}
+                paused={paused()}
+                url={url}
+            />
+        );
+    });
+}
+
+function pause() {
+    simulateExternalMessage('{ "messageType": "control", "pause": "true" }');
+}
+function resume() {
+    simulateExternalMessage('{ "messageType": "control", "resume": "true" }');
+}
+function play() {
+    simulateExternalMessage('{ "messageType": "control", "play": "true" }');
+}
+
+function simulateExternalMessage(message: string) {
+    window.postMessage(message, "*");
 }
 
 AddBloomPlayerStory(

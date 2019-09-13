@@ -81,6 +81,11 @@ export function logError(logMessage: string) {
     postMessage({ messageType: "logError", message: logMessage });
 }
 
+let externalControlCallback: ((data: any) => void) | null = null;
+export function setExternalControlCallback(callback: (data: any) => void) {
+    externalControlCallback = callback;
+}
+
 let capabilitiesCallback: ((data: any) => void) | null = null;
 
 function requestCapabilitiesOnce(callback: (data: any) => void) {
@@ -162,6 +167,10 @@ export function receiveMessage(data: any) {
     // This is the callback we requested by sending requestCapabilities
     if (messageType === "capabilities" && capabilitiesCallback) {
         capabilitiesCallback(message);
+    }
+
+    if (messageType === "control" && externalControlCallback) {
+        externalControlCallback(message);
     }
 }
 
