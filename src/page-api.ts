@@ -135,7 +135,7 @@ function getFullDataKey(page: Element, key: string): string {
 }
 
 function getIndexOfPage(page: Element): string {
-    const slider = page.closest(".slick-slide");
+    const slider = page.closest(".swiper-slide");
     if (!slider) {
         alert("page not embedded as expected");
         return "";

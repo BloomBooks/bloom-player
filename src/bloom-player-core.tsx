@@ -4,12 +4,11 @@ bloom-player-core is responsible for all the behavior of working through a book,
 */
 import * as React from "react";
 import axios, { AxiosPromise } from "axios";
-import Slider from "react-slick";
-// tslint:disable:no-submodule-imports (no idea how to import this from root, or do without it)
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
 import "style-scoped/scoped"; // maybe use .min.js after debugging?
+// tslint:disable-next-line: no-submodule-imports
+import "swiper/dist/css/swiper.css";
 // tslint:enable:no-submodule-imports
 import "./bloom-player.less";
 import Narration from "./narration";
@@ -17,7 +16,6 @@ import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { Video } from "./video";
 import { Music } from "./music";
-import { BloomPlayerControls } from "./bloom-player-controls";
 import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
@@ -60,10 +58,6 @@ interface IProps {
         hasVideo: boolean;
     }) => void;
 
-    // called for initial page and subsequent page changes, passed the slider page
-    // (the parent of the .bloom-page, including also the special element that carries
-    // all the page styles)
-    pageSelected?: (sliderPage: HTMLElement) => void;
     hideNextPrevButtons?: boolean;
 }
 interface IState {
@@ -72,7 +66,7 @@ interface IState {
     // indicates current page, though typically not corresponding to the page
     // numbers actually on the page. This is an index into pages, and in context
     // mode it's the index of the left context page, not the main page.
-    currentSliderIndex: number;
+    currentSwiperIndex: number;
     isLoading: boolean;
 
     //used to distinguish a drag from a click
@@ -124,7 +118,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     public readonly state: IState = {
         pages: this.initialPages,
         styleRules: this.initialStyleRules,
-        currentSliderIndex: 0,
+        currentSwiperIndex: 0,
         isLoading: true,
         isChanging: false
     };
@@ -205,6 +199,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (newSourceUrl.endsWith("%2f")) {
             newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 3);
         }
+
         if (newSourceUrl !== this.sourceUrl && newSourceUrl) {
             this.sourceUrl = newSourceUrl;
             // We support a two ways of interpreting URLs.
@@ -280,15 +275,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     const pages = bookHtmlElement.getElementsByClassName(
                         "bloom-page"
                     );
-                    const sliderContent: string[] = [];
+                    const swiperContent: string[] = [];
                     if (this.props.showContextPages) {
-                        sliderContent.push(""); // blank page to fill the space left of first.
+                        swiperContent.push(""); // blank page to fill the space left of first.
                     }
                     this.totalNumberedPages = 0;
                     this.questionCount = 0;
                     for (let i = 0; i < pages.length; i++) {
                         const page = pages[i];
                         const landscape = this.forceDevicePageSize(page);
+                        // this used to be done for us by react-slick, but swiper does not.
+                        // Since it's used by at least page-api code, it's easiest to just stick it in.
+                        page.setAttribute("data-index", i.toString(10));
+
                         // Now we have all the information we need to call reportBookProps if it is set.
                         if (i === 0 && this.props.reportBookProperties) {
                             // Informs containing react controls (in the same frame)
@@ -319,10 +318,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             this.questionCount++;
                         }
 
-                        sliderContent.push(page.outerHTML);
+                        swiperContent.push(page.outerHTML);
                     }
                     if (this.props.showContextPages) {
-                        sliderContent.push(""); // blank page to fill the space right of last.
+                        swiperContent.push(""); // blank page to fill the space right of last.
                     }
 
                     this.creator = this.getCreator(head); // prep for reportBookOpened()
@@ -333,7 +332,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
                     // change it when it is done.
                     this.setState({
-                        pages: sliderContent
+                        pages: swiperContent
                     });
 
                     // A pause hopefully allows the document to become visible before we
@@ -380,11 +379,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     })
                     .catch(() => finishUp());
             });
+        } else if (prevProps.landscape !== this.props.landscape) {
+            // rotating the phone...may need to switch the orientation class on each page.
+            const pages = document.getElementsByClassName("bloom-page");
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                this.forceDevicePageSize(page);
+            }
         }
         if (prevProps.landscape !== this.props.landscape) {
             // may need to show or hide animation
-            this.setIndex(this.state.currentSliderIndex);
-            this.showingPage(this.state.currentSliderIndex);
+            this.setIndex(this.state.currentSwiperIndex);
+            this.showingPage(this.state.currentSwiperIndex);
         }
         if (prevProps.paused !== this.props.paused) {
             // this code was being called way too often!
@@ -400,6 +406,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.video.play();
                 this.music.play();
             }
+        }
+        if (
+            this.props.landscape !== prevProps.landscape &&
+            this.swiperInstance
+        ) {
+            // Without this, or without the delay, rotating a phone produces a strange result,
+            // displaying half of one page and half of the next. Debugging indicates that
+            // the update operation sees the old page size. Pushing it into the next cycle
+            // somehow prevents this.
+            window.setTimeout(() => this.swiperInstance.update(), 10);
         }
     }
 
@@ -693,9 +709,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const newUrl = this.fullUrl(match[1]);
             const newStyle = style.replace(
                 /background-image:url\(['"](.*?)['"]/,
-                "background-image:url('" + newUrl + "'"
+                // if we weren't using lazy-load:
+                //  "background-image:url('" + newUrl + "'"
+                ""
             );
             item.setAttribute("style", newStyle);
+            item.setAttribute("data-background", newUrl);
+            item.classList.add("swiper-lazy");
         }
     }
 
@@ -826,7 +846,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return this.urlPrefix + "/" + url;
     }
 
-    private slider: Slider | null;
+    private swiperInstance: SwiperInstance | null;
     private rootDiv: HTMLElement | null;
 
     public getRootDiv(): HTMLElement | null {
@@ -837,6 +857,42 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.state.isLoading) {
             return "Loading Book...";
         }
+        const params = {
+            // This is how we'd expect to make the next/prev buttons show up.
+            // However, swiper puts them inside the swiper-container div, which has position:relative
+            // and overflow:hidden. This hides the buttons when we want them to be outside the book
+            // (e.g., bloom library). So instead we make our own buttons.
+            // navigation: {
+            //     nextEl: ".swiper-button-next",
+            //     prevEl: ".swiper-button-prev"
+            // },
+            getSwiper: s => {
+                this.swiperInstance = s;
+            },
+            on: {
+                slideChange: () =>
+                    this.showingPage(this.swiperInstance.activeIndex),
+                slideChangeTransitionStart: () =>
+                    this.setIndex(this.swiperInstance.activeIndex)
+            },
+            keyboard: {
+                enabled: true,
+                onlyInViewport: false
+            },
+            // Disable preloading of all images
+            preloadImages: false,
+            // Enable lazy loading, but load anything needed for the next couple of slides.
+            // (I'm trying to avoid a problem where, in landscape mode of motion books,
+            // we see a flash of the page without the full-screen picture overlaid.
+            // I don't _think_ I saw this before implementing laziness. So far, I haven't
+            // found settings that eliminate it completely, even commenting out preloadImages:false,
+            // which defeats much of the purpose.)
+            lazy: {
+                loadPrevNext: true,
+                loadOnTransitionStart: true,
+                loadPrevNextAmount: 2
+            }
+        };
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
@@ -851,49 +907,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
-                <Slider
-                    className="pageSlider"
-                    // This "progressive" load currently will load them all, but on a delay.
-                    // If you turn pages fast enough, you may see it in an unprepared state.
-                    // If instead want to just progressively load just 1 page ahead,
-                    //  we could switch to this fork: //  https://github.com/chidanandan/react-slick.git
-                    // I haven't found documentation on the change there, but it is discussed
-                    // here: https://github.com/akiran/react-slick/issues/1104.
-                    // Videos & audio are loaded only as needed (probably, regardless of this setting?)
-                    lazyLoad="progressive"
-                    ref={(slider: any) => (this.slider = slider)}
-                    slidesToShow={this.props.showContextPages ? 3 : 1}
-                    infinite={false}
-                    dots={this.props.showContextPages}
-                    beforeChange={(current: number, next: number) => {
-                        this.setIndex(next);
-                        this.setState({ isChanging: true });
-                    }}
-                    afterChange={(current: number) => {
-                        this.setState({ isChanging: false });
-                        this.showingPage(current);
-                    }}
-                    // This means a drag of 1/20 screen width is enough to flip the page.
-                    touchThreshold={20}
-                >
+                <Swiper {...params}>
                     {this.state.pages.map((slide, index) => {
                         return (
                             <div
                                 key={slide}
                                 className={
-                                    "page-preview-slide" +
+                                    "page-preview-slide " +
                                     this.getSlideClass(index)
                                 }
-                                onKeyDown={e => {
-                                    if (e.key === "Home") {
-                                        this.slider.slickGoTo(0);
-                                        e.preventDefault();
-                                    }
-                                    if (e.key === "End") {
-                                        this.slider.slickGoTo(9999);
-                                        e.preventDefault();
-                                    }
-                                }}
                                 onClick={e => {
                                     if (
                                         !this.state.isChanging && // if we're dragging, that isn't a click we want to propagate
@@ -908,13 +930,45 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 </style>
                                 <div
                                     className="actual-page-preview"
-                                    dangerouslySetInnerHTML={{ __html: slide }}
+                                    onKeyDown={e => {
+                                        if (e.key === "Home") {
+                                            this.swiperInstance.slideTo(0);
+                                            e.preventDefault();
+                                        }
+                                        if (e.key === "End") {
+                                            this.swiperInstance.slideTo(9999);
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    tabIndex={0} // required for onKeyDown to fire
+                                    dangerouslySetInnerHTML={{
+                                        __html: slide
+                                    }}
                                     ref={div => this.pageLoaded(div)}
                                 />
                             </div>
                         );
                     })}
-                </Slider>
+                </Swiper>
+                <div
+                    className={
+                        "swiper-button-prev" +
+                        (this.state.currentSwiperIndex === 0
+                            ? " swiper-button-disabled"
+                            : "")
+                    }
+                    onClick={() => this.swiperInstance.slidePrev()}
+                />
+                <div
+                    className={
+                        "swiper-button-next" +
+                        (this.state.currentSwiperIndex >=
+                        this.state.pages.length - 1
+                            ? " swiper-button-disabled"
+                            : "")
+                    }
+                    onClick={() => this.swiperInstance.slideNext()}
+                />
             </div>
         );
     }
@@ -990,27 +1044,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             return "";
         }
         if (
-            itemIndex === this.state.currentSliderIndex ||
-            itemIndex === this.state.currentSliderIndex + 2
+            itemIndex === this.state.currentSwiperIndex ||
+            itemIndex === this.state.currentSwiperIndex + 2
         ) {
             return "contextPage";
         }
         return "";
     }
 
-    // Called from beforeChange
-    // - makes an early change to state.currentSliderIndex, which triggers some
+    // Called from slideChangeTransitionStart
+    // - makes an early change to state.currentSwiperIndex, which triggers some
     // class changes to animate the page sizing/shading in 3-page mode
     // - may need to force the page layout class to match the current button
     // setting, before we start to slide it into view
     // - if we're animating motion or showing video, need to get the page into the start state
     // before we slide it in
     private setIndex(index: number) {
-        this.setState({ currentSliderIndex: index });
-        const { slider: _, page: bloomPage } = this.getPageAtSliderIndex(index);
+        this.setState({ currentSwiperIndex: index });
+        const bloomPage = this.getPageAtSwiperIndex(index);
         if (bloomPage) {
-            // If the book can rotate, the page size class in the preview
-            // may not match the one we need for the current state of the orientation buttons.
+            // This is probably obsolete, since we update all the page sizes on rotate.
+            // It's not expensive so leaving it in for robustness.
             if (this.canRotate) {
                 this.forceDevicePageSize(bloomPage);
             }
@@ -1024,21 +1078,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private getPageAtSliderIndex(
-        index: number
-    ): { slider: HTMLElement; page: HTMLElement | null } {
-        const sliderPage = document.querySelectorAll(
-            ".slick-slide[data-index='" +
-                (index + (this.props.showContextPages ? 1 : 0)) +
-                "']"
-        )[0] as HTMLElement;
-        if (!sliderPage) {
-            return { slider: sliderPage, page: null }; // unexpected
+    private getPageAtSwiperIndex(index: number): HTMLElement | null {
+        if (this.swiperInstance == null) {
+            return null;
         }
-        const bloomPage = sliderPage.getElementsByClassName(
+        const swiperPage = this.swiperInstance.slides[index] as HTMLElement;
+        if (!swiperPage) {
+            return null; // unexpected
+        }
+        const bloomPage = swiperPage.getElementsByClassName(
             "bloom-page"
         )[0] as HTMLElement;
-        return { slider: sliderPage, page: bloomPage };
+        return bloomPage;
     }
 
     public static getCurrentPage(): HTMLElement {
@@ -1066,22 +1117,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return page.hasAttribute("data-xmatter-page");
     }
 
-    // Called from afterChange, starts narration, etc.
+    // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
-        const {
-            slider: sliderPage,
-            page: bloomPage
-        } = this.getPageAtSliderIndex(index);
+        const bloomPage = this.getPageAtSwiperIndex(index);
         if (!bloomPage) {
             return; // blank initial or final page?
         }
         BloomPlayerCore.currentPage = bloomPage;
+        // This is probably obsolete, since we update all the page sizes on rotate, and again in setIndex.
+        // It's not expensive so leaving it in for robustness.
         if (this.canRotate) {
             this.forceDevicePageSize(bloomPage);
         }
-        if (this.props.pageSelected) {
-            this.props.pageSelected(sliderPage);
-        }
+
         if (!this.props.paused) {
             this.resetForNewPageAndPlay(bloomPage);
         }

@@ -5,6 +5,15 @@ Much of it could go away if we exclude previewMode.css, or if we end up with a s
 process which produces an htm file in the Bloom Reader state, or if we re-architect so
 there is some simple way like a root class to toggle a book's appearance to BR mode.*/
 
+// We use this font (borrowed from react-slick) for the next and previous buttons.
+@font-face {
+    font-family: "slick";
+    font-weight: normal;
+    font-style: normal;
+
+    src: url("./fonts/slick.ttf") format("truetype");
+}
+
 @hoverNextPrevButtonBar: #cbcbcb;
 @contextPageBackground: darkgray; // #a9a9a9
 @audioHighlighting: yellow; // #ffff00
@@ -141,7 +150,7 @@ We just make them follow the main content normally. */
     // these buttons are positioned relative to the slider, our preview.
     // Usually the buttons are outside the slider, just touching it; but this
     // takes them outside our phone's display. This puts them just inside it.
-    .slick-next {
+    .swiper-button-next {
         border-radius: @button-radius 0 0 @button-radius;
         // The white icons (hover) were produced from artwork/page right icon.svg by
         // - saving in inkscape as plain svg,
@@ -159,7 +168,7 @@ We just make them follow the main content normally. */
         //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
         // }
     }
-    .slick-prev {
+    .swiper-button-prev {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
         // Not quite sure why this is needed on the left button and not the right;
@@ -173,9 +182,10 @@ We just make them follow the main content normally. */
         //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
         // }
     }
-    .slick-next,
-    .slick-prev {
+    .swiper-button-next,
+    .swiper-button-prev {
         height: 67%;
+        top: 18%;
         background-color: transparent; // except when hovering, see below.
         // This makes the grey buttons, which are all you can see when not hovering,
         // quite faint, allowing all the page content to be seen through them,
@@ -185,22 +195,28 @@ We just make them follow the main content normally. */
         background-repeat: no-repeat;
         background-size: 4mm;
         background-position: center;
+        background-image: none; // removes swiper default; we use a font character in :before
         &:hover {
             opacity: 0.9;
             background-color: @hoverNextPrevButtonBar;
         }
-        // &:before {
-        //     // we're using background images, override special font chars slick uses
-        //     content: "";
-        // }
-        &.slick-disabled {
-            // I would use display:none, but slick puts an explicit display:block on the element itself
-            // that nothing in css can override. So the best we can do is hide it.
-            // It's usually an overlay, but just in case, force width to zero so it doesn't take up
-            // any space and affect positions of other things.
-            visibility: hidden;
-            width: 0;
+        &:before {
+            position: relative;
+            font-family: "slick";
+            font-size: 20px;
+            line-height: 1;
+            top: calc(50% - 22px);
+            left: 19%;
         }
+        &.swiper-button-disabled {
+            display: none;
+        }
+    }
+    .swiper-button-next:before {
+        content: "→";
+    }
+    .swiper-button-prev:before {
+        content: "←";
     }
     // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
     // However this can actually make stuff that used to fit stop fitting.
@@ -233,28 +249,28 @@ We just make them follow the main content normally. */
 }
 
 .bloomPlayer {
-    .slick-next,
-    .slick-prev {
+    .swiper-button-next,
+    .swiper-button-prev {
         &::before {
             //font-size: 48pt;
             color: @bloomRed;
             opacity: @nonHoveredNavigationButtonOpacity;
         }
     }
-    .slick-next {
+    .swiper-button-next {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
     }
-    .slick-prev {
+    .swiper-button-prev {
         // curved on left, flush on right.
         border-radius: @button-radius 0 0 @button-radius;
     }
 }
 .bloomPlayer:not(.largeOutsideButtons) {
-    .slick-next {
+    .swiper-button-next {
         right: 0;
     }
-    .slick-prev {
+    .swiper-button-prev {
         left: 0;
     }
 }
@@ -265,32 +281,33 @@ We just make them follow the main content normally. */
 @nonHoveredNavigationButtonOpacity: 0.5;
 
 .bloomPlayer.smallOutsideButtons {
-    .slick-next,
-    .slick-prev {
+    .swiper-button-next,
+    .swiper-button-prev {
         width: @smallNavigationButtonWidth;
         &::before {
             font-size: 20pt;
+            left: 5%;
         }
     }
-    .slick-next {
+    .swiper-button-next {
         right: -1 * @smallNavigationButtonWidth;
     }
-    .slick-prev {
+    .swiper-button-prev {
         left: -1 * @smallNavigationButtonWidth;
     }
 }
 .bloomPlayer.largeOutsideButtons {
-    .slick-next,
-    .slick-prev {
+    .swiper-button-next,
+    .swiper-button-prev {
         width: @largeNavigationButtonWidth;
         &::before {
             font-size: 48pt;
         }
     }
-    .slick-next {
+    .swiper-button-next {
         right: -1 * @largeNavigationButtonWidth;
     }
-    .slick-prev {
+    .swiper-button-prev {
         left: -1 * @largeNavigationButtonWidth;
     }
 }
@@ -302,18 +319,17 @@ We just make them follow the main content normally. */
 @media (hover: none) {
     // We need these outer conditions for specificity
     .bloomPlayer {
-        .slick-next,
-        .slick-prev {
+        .swiper-button-next,
+        .swiper-button-prev {
             visibility: hidden;
         }
     }
 }
 
 .bloomPlayer.hideNextPrevButtons {
-    .slick-next,
-    .slick-prev {
-        // display:none won't work, see comment on slick-disabled
-        visibility: hidden;
+    .swiper-button-next,
+    .swiper-button-prev {
+        display: none;
     }
 }
 
