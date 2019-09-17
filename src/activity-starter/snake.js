@@ -4,7 +4,9 @@ const kCellsInEachDimension = 10;
 
 export function activityRequirements() {
     return {
-        dragging: true
+        dragging: true,
+        clicking: true, // well actually we don't need this, but we're saying 'true' so we can test this
+        typing: true // arrow keys
     };
 }
 
@@ -80,6 +82,7 @@ export default class SnakeActivity {
             this.snake.dy = this.grid;
             this.snake.dx = 0;
         }
+        e.preventDefault();
     }
 
     handleTouchEnd(e) {
