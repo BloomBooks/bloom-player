@@ -62,6 +62,10 @@ export const BloomPlayerControls: React.FunctionComponent<
     const [showAppBar, setShowAppBar] = useState<boolean>(
         props.initiallyShowAppBar
     );
+    // When we're in storybook we won't get a new page when we change the book,
+    // so we need to be able to detect that the book changed and thus do new size calculations.
+    const [previousUrl, setPreviousUrl] = useState<string>("");
+
     // while the initiallyShowAppBar prop won't change in production, it can change
     // when we're tinkering with storybook. The statement above won't re-run if
     // that prop changes, so we have to do this:
@@ -155,7 +159,7 @@ export const BloomPlayerControls: React.FunctionComponent<
 
         // Make a stylesheet that causes bloom pages to be the size we want.
         let scaleStyleSheet = document.getElementById("scale-style-sheet");
-        const firstTimeThrough = !scaleStyleSheet;
+
         if (!scaleStyleSheet) {
             scaleStyleSheet = document.createElement("style");
             scaleStyleSheet.setAttribute("type", "text/css");
@@ -165,7 +169,8 @@ export const BloomPlayerControls: React.FunctionComponent<
         // The first time through, we compute this, afterwards we get it from the state.
         // There has to be a better way to do this, probably a separate useEffect to compute maxPageDimension.
         let localMaxPageDimension = maxPageDimension;
-        if (firstTimeThrough) {
+        if (props.url !== previousUrl) {
+            setPreviousUrl(props.url);
             // Some other one-time stuff:
             // Arrange for this to keep being called when the window size changes.
             window.onresize = () => {
@@ -278,6 +283,7 @@ export const BloomPlayerControls: React.FunctionComponent<
         // though we're looking at it in landscape, resulting in scroll bars and misplaced
         // page turning buttons. So we force all the actual page previews to be no bigger than
         // the height we expect and hide their overflow to fix
+
         scaleStyleSheet.innerText = `.bloomPlayer {
             width: ${width}px;
             transform-origin: left top 0;
