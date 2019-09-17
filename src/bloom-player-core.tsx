@@ -16,9 +16,6 @@ import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { Video } from "./video";
 import { Music } from "./music";
-import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
-import { BloomPlayerControls } from "./bloom-player-controls";
-
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
 import {
@@ -93,10 +90,11 @@ interface IState {
     currentSwiperIndex: number;
     isLoading: boolean;
 
-    //used to distinguish a drag from a click
-    isChanging: boolean;
-
-    //activityOnThisPage: IActivity | null;
+    //When in touch mode (in chrome debugger at least), a touch on a navigation button
+    //causes a click to be raised after the onTouchEnd(). This would normally try and
+    //toggle the app bar. So we have onTouchStart() set this to true and then set to
+    // false in the onClick handler. Sigh.
+    ignorePhonyClick: boolean;
 }
 
 enum BookFeatures {
@@ -152,7 +150,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         styleRules: this.initialStyleRules,
         currentSwiperIndex: 0,
         isLoading: true,
-        isChanging: false
+        ignorePhonyClick: false
     };
 
     // The book url we were passed as a URL param.
@@ -1051,15 +1049,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const activityNeedsToOwnDragging = this.activityManager.getPreventPageDragging();
-
-        const hideNextPrevButtons =
-            this.props.hideNextPrevButtons && !activityNeedsToOwnDragging;
+        const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
 
         if (this.state.isLoading) {
             return "Loading Book...";
         }
-        const params = {
+        const params: any = {
             // This is how we'd expect to make the next/prev buttons show up.
             // However, swiper puts them inside the swiper-container div, which has position:relative
             // and overflow:hidden. This hides the buttons when we want them to be outside the book
@@ -1071,6 +1066,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             getSwiper: s => {
                 this.swiperInstance = s;
             },
+            simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
+
             on: {
                 slideChange: () =>
                     this.showingPage(this.swiperInstance.activeIndex),
@@ -1097,6 +1094,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This seems make it unnecessary to call Swiper.update at the end of componentDidUpdate.
             shouldSwiperUpdate: true
         };
+
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
@@ -1105,7 +1103,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             <div
                 className={
                     "bloomPlayer" +
-                    (hideNextPrevButtons ? " hideNextPrevButtons" : "")
+                    (showNavigationButtonsEvenOnTouchDevices
+                        ? " showNavigationButtonsEvenOnTouchDevices"
+                        : this.props.hideNextPrevButtons
+                        ? " hideNextPrevButtons"
+                        : "")
                 }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
@@ -1120,11 +1122,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 }
                                 onClick={e => {
                                     if (
-                                        !this.state.isChanging && // if we're dragging, that isn't a click we want to propagate
-                                        this.props.onContentClick
+                                        !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
+                                        this.props.onContentClick &&
+                                        !this.activityManager.getActivityAbsorbsClicking()
                                     ) {
                                         this.props.onContentClick(e);
                                     }
+                                    this.setState({ ignorePhonyClick: false });
                                 }}
                             >
                                 <style scoped={true}>
@@ -1155,6 +1159,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slidePrev()}
+                    onTouchStart={e => {
+                        this.setState({ ignorePhonyClick: true });
+                        this.swiperInstance.slidePrev();
+                        // these don't work
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
+               
                 >
                     {/* The ripple is an animation on the button on click and
                     focus, but it isn't placed correctly on our buttons for
@@ -1172,6 +1184,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slideNext()}
+                    onTouchStart={() => this.swiperInstance.slideNext()}
+                
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward />
@@ -1298,6 +1312,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.reportedAudioOnCurrentPage = false;
         this.reportedVideoOnCurrentPage = false;
         this.sendUpdateOfBookProgressReportToExternalContext();
+
+        // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
+        this.swiperInstance.params.noSwiping = this.activityManager.getActivityAbsorbsDragging();
+        this.swiperInstance.params.touchRatio = this.activityManager.getActivityAbsorbsDragging()
+            ? 0
+            : 1;
+        // didn't seem to help: this.swiperInstance.params.allowTouchMove = false;
+        if (this.activityManager.getActivityAbsorbsTyping()) {
+            this.swiperInstance.keyboard.disable();
+        } else {
+            this.swiperInstance.keyboard.enable();
+        }
     }
 
     // called by narration.ts

@@ -2,7 +2,9 @@ import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 interface IActivityRequirements {
-    dragging: boolean;
+    dragging?: boolean;
+    clicking?: boolean;
+    typing?: boolean;
 }
 export interface IActivity {
     name: string;
@@ -12,8 +14,22 @@ export interface IActivity {
 }
 
 export class ActivityManager {
-    public getPreventPageDragging(): boolean {
-        return !!this.currentActivity;
+    public getActivityAbsorbsDragging(): boolean {
+        return (
+            !!this.currentActivity &&
+            !!this.currentActivity.requirements.dragging
+        );
+    }
+    public getActivityAbsorbsClicking(): boolean {
+        return (
+            !!this.currentActivity &&
+            !!this.currentActivity.requirements.clicking
+        );
+    }
+    public getActivityAbsorbsTyping(): boolean {
+        return (
+            !!this.currentActivity && !!this.currentActivity.requirements.typing
+        );
     }
     private currentActivity: IActivity | undefined;
     private loadedActivityScripts: { [name: string]: IActivity } = {};
