@@ -1,6 +1,6 @@
 import axios from "axios";
 import { OldQuestionsConverter } from "./old-questions";
-import { IActivity } from "../activityManager";
+import { IActivityInformation } from "../activityManager";
 
 // NB: there are two levels of "legacy" we're dealing with here.
 // The first is before we had actual activity pages; instead the presence of a
@@ -13,41 +13,48 @@ export class LegacyQuestionHandler {
     public constructor(locationOfDistFolder: string) {
         this.locationOfDistFolder = locationOfDistFolder;
     }
-    private needSpecialCss = false;
+    private needQuizCss = false;
     private locationOfDistFolder: string;
-    public getPromiseForAnySpecialCss() {
-        return this.needSpecialCss
-            ? axios.get(this.getFolderForSupportFiles() + "/Special.css")
+    public getPromiseForAnyQuizCss() {
+        return this.needQuizCss
+            ? // enhance: we would like to change this name to "simpleComprehensionQuiz.css", but
+              // we're unsure if that would break something and don't want to deal with it at the
+              // moment. (also Special.less includes simpleComprehensionQuiz.less plus something else?)
+              // And at the moment the "special" is a template book that happens to only have this
+              // quiz, but could contain other things... in any case this "special" is unhelpful.
+              axios.get(this.getFolderForSupportFiles() + "/Special.css")
             : null;
     }
 
-    public loadQuizScript(callWithUrl: (url: string) => void) {
+    private loadQuizScript(finished: (url: string) => void) {
         // We want the reader's own version of this file. For one thing, if we generated
         // the quiz pages from json, the book folder won't have it. Also, this means we
         // always use the latest version of the quiz code rather than whatever was current
         // when the book was published.
         const folder = this.getFolderForSupportFiles();
-        const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
+        const quizPath = folder + "/simpleComprehensionQuiz.js";
         axios
-            .get(tryForQuiz)
+            .get(quizPath)
             .then(result => {
                 // See comment on eval below.
                 // tslint:disable-next-line: no-eval
                 eval(result.data);
-                callWithUrl(tryForQuiz);
+                finished(quizPath);
             })
             .catch(error => {
                 console.log(error);
             });
     }
-    public handleLegacyQuestions(
+
+    // Prior to Bloom 4.6, quizzes were done by writing out a json file,
+    // rather than having the wysiwyg pages we have now.
+    public generateQuizPagesFromLegacyJSON(
         urlPrefix,
         body,
         pageClass,
         finished: () => void
     ) {
         const urlOfQuestionsFile = urlPrefix + "/questions.json";
-        this.needSpecialCss = false;
         axios
             .get(urlOfQuestionsFile)
             .then(qfResult => {
@@ -59,7 +66,7 @@ export class LegacyQuestionHandler {
                     "bloom-backMatter"
                 )[0];
                 for (let i = 0; i < newPages.length; i++) {
-                    this.needSpecialCss = true;
+                    this.needQuizCss = true;
                     // insertAdjacentElement is tempting, but not in FF45.
                     firstBackMatterPage.parentElement!.insertBefore(
                         newPages[i],
@@ -83,7 +90,7 @@ export class LegacyQuestionHandler {
 
     public processPage(
         pageDiv: Element,
-        loadedActivityScripts: { [name: string]: IActivity }
+        loadedActivityScripts: { [name: string]: IActivityInformation }
     ) {
         // The following is the 4.6 version, which used <script> tags and, as far as we know,
         //  is just for simpleComprehensionQuiz.js.
@@ -100,8 +107,8 @@ export class LegacyQuestionHandler {
                                     (loadedActivityScripts[url] = {
                                         // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
                                         name: src,
-                                        module: null,
-                                        runningObject: null,
+                                        module: undefined,
+                                        runningObject: undefined,
                                         requirements: { clicking: true }
                                     })
                             );

@@ -311,7 +311,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
                 // enhance: make this callback thing into a promise
-                this.legacyQuestionHandler.handleLegacyQuestions(
+                this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
                     this.urlPrefix,
                     body,
                     pageClass,
@@ -396,6 +396,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             swiperContent.push(page.outerHTML);
+
+            // look for activities on this page
+            this.activityManager.processPage(
+                this.urlPrefix,
+                page,
+                this.legacyQuestionHandler
+            );
         }
         if (this.props.showContextPages) {
             swiperContent.push(""); // blank page to fill the space right of last.
@@ -975,7 +982,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 promises.push(axios.get(fullHref));
             }
         }
-        const p = this.legacyQuestionHandler.getPromiseForAnySpecialCss();
+        const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
         if (p) {
             promises.push(p);
         }
@@ -1135,17 +1142,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     {this.state.styleRules}
                                 </style>
                                 <div
-                                    className="actual-page-preview"                              
+                                    className="actual-page-preview"
                                     dangerouslySetInnerHTML={{ __html: slide }}
-                                    ref={pageDiv => {
-                                        if (pageDiv) {
-                                            this.activityManager.processPage(
-                                                this.urlPrefix,
-                                                pageDiv.firstElementChild!,
-                                                this.legacyQuestionHandler
-                                            );
-                                        }
-                                    }}
                                 />
                             </div>
                         );
@@ -1162,9 +1160,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     onTouchStart={e => {
                         this.setState({ ignorePhonyClick: true });
                         this.swiperInstance.slidePrev();
-                        // these don't work
-                        e.preventDefault();
-                        e.stopPropagation();
                     }}
                
                 >
