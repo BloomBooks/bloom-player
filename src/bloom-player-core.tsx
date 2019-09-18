@@ -24,7 +24,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 
-import { ActivityManager, IActivity } from "./activityManager";
+import { ActivityManager, IActivityInformation } from "./activityManager";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
@@ -330,6 +330,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         }
 
                         swiperContent.push(page.outerHTML);
+
+                        // look for activities on this page
+                        this.activityManager.processPage(
+                            this.urlPrefix,
+                            page,
+                            this.legacyQuestionHandler
+                        );
                     }
                     if (this.props.showContextPages) {
                         swiperContent.push(""); // blank page to fill the space right of last.
@@ -366,7 +373,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
                 // enhance: make this callback thing into a promise
-                this.legacyQuestionHandler.handleLegacyQuestions(
+                this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
                     this.urlPrefix,
                     body,
                     pageClass,
@@ -779,7 +786,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 promises.push(axios.get(fullHref));
             }
         }
-        const p = this.legacyQuestionHandler.getPromiseForAnySpecialCss();
+        const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
         if (p) {
             promises.push(p);
         }
@@ -955,15 +962,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     }}
                                     tabIndex={0} // required for onKeyDown to fire
                                     dangerouslySetInnerHTML={{ __html: slide }}
-                                    ref={pageDiv => {
-                                        if (pageDiv) {
-                                            this.activityManager.processPage(
-                                                this.urlPrefix,
-                                                pageDiv.firstElementChild!,
-                                                this.legacyQuestionHandler
-                                            );
-                                        }
-                                    }}
                                 />
                             </div>
                         );
@@ -980,9 +978,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     onTouchStart={e => {
                         this.setState({ ignorePhonyClick: true });
                         this.swiperInstance.slidePrev();
-                        // these don't work
-                        e.preventDefault();
-                        e.stopPropagation();
                     }}
                 />
                 <div

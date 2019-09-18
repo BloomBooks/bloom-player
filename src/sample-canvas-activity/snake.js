@@ -2,6 +2,9 @@
 
 const kCellsInEachDimension = 10;
 
+// This file implements IActivityModule (though at the moment it is javascript, so there's
+// no way to say that)
+
 export function activityRequirements() {
     return {
         dragging: true,
@@ -10,6 +13,8 @@ export function activityRequirements() {
     };
 }
 
+// This implements IActivityObject (though at the moment it is javascript, so there's
+// no way to say that)
 export default class SnakeActivity {
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -17,11 +22,11 @@ export default class SnakeActivity {
     // which is important because the user could be either
     // coming back to this page, or going to another instance of this activity
     // in a subsequent page.
-    constructor() {
+    constructor(pageElement) {
         //alert("this.start(this.snake)");
         this.running = true;
         this.frameCount = 0;
-        this.canvas = document.getElementById("game");
+        this.canvas = pageElement.getElementsByTagName("canvas")[0];
         this.minDimension = Math.min(this.canvas.width, this.canvas.height);
         this.grid = this.minDimension / kCellsInEachDimension; // 16;
         this.context = this.canvas.getContext("2d");
