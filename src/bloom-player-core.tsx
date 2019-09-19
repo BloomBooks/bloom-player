@@ -34,7 +34,7 @@ import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
 //tslint:disable-next-line:no-submodule-imports
 import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
 
-import { ActivityManager, IActivity } from "./activityManager";
+import { ActivityManager } from "./activityManager";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
@@ -316,7 +316,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     body,
                     pageClass,
                     () => {
-                        finishUp();
+                        this.finishUp();
                     }
                 );
             });
@@ -1161,7 +1161,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.setState({ ignorePhonyClick: true });
                         this.swiperInstance.slidePrev();
                     }}
-               
                 >
                     {/* The ripple is an animation on the button on click and
                     focus, but it isn't placed correctly on our buttons for
@@ -1180,7 +1179,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                     onClick={() => this.swiperInstance.slideNext()}
                     onTouchStart={() => this.swiperInstance.slideNext()}
-                
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward />

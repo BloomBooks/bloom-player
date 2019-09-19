@@ -3,8 +3,8 @@
 export function activityRequirements() {
     return {
         dragging: true,
-        clicking: true, // well actually we don't need this, but we're saying 'true' so we can test this
-        typing: true // arrow keys
+        clicking: false,
+        typing: false
     };
 }
 
@@ -15,5 +15,6 @@ export default class BreakoutActivity {
     // which is important because the user could be either
     // coming back to this page, or going to another instance of this activity
     // in a subsequent page.
-    constructor() {}
+    // eslint-disable-next-line no-unused-vars
+    constructor(pageElement) {}
 }
