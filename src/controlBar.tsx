@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useState } from "react";
 
 // We'd prefer to use this more elegant form of import:
 //import { AppBar, Toolbar, IconButton } from "@material-ui/core";
@@ -27,6 +27,11 @@ import ArrowBack from "@material-ui/icons/ArrowBack";
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 //tslint:disable-next-line:no-submodule-imports
 import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
+//tslint:disable-next-line:no-submodule-imports
+import Language from "@material-ui/icons/Language";
+
+import LanguageMenu from "./languageMenu";
+import LangData from "./langData";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
@@ -37,9 +42,23 @@ interface IControlBarProps {
     showPlayPause: boolean;
     backClicked?: () => void;
     canGoBack: boolean;
+    bookLanguages: LangData[];
+    onLanguageChanged: (language: string) => void;
 }
 
 export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
+    const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+
+    // The "single" class triggers the change in color of the globe icon
+    // in the LanguageMenu.
+    const lgButtonClass =
+        "languageButton" + (props.bookLanguages.length < 2 ? " single" : "");
+
+    const handleCloseLanguageMenu = (isoCode: string) => {
+        setLanguageMenuOpen(false);
+        props.onLanguageChanged(isoCode);
+    };
+
     const playOrPause = props.paused ? (
         <PlayCircleOutline />
     ) : (
@@ -70,6 +89,21 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 <div
                     className="filler" // this is set to flex-grow, making the following icons right-aligned.
                 />
+                <IconButton
+                    className={lgButtonClass}
+                    color={"secondary"}
+                    onClick={() => {
+                        setLanguageMenuOpen(true);
+                    }}
+                >
+                    <Language />
+                </IconButton>
+                {languageMenuOpen && (
+                    <LanguageMenu
+                        languages={props.bookLanguages}
+                        onClose={handleCloseLanguageMenu}
+                    />
+                )}
                 <IconButton
                     color="secondary"
                     onClick={() => {
