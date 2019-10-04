@@ -36,8 +36,10 @@
         "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": "",
         "tobloomlibrary": "shx cp dist\\bloomplayer-for-developing.htm ..\\BloomLibrary\\build && shx cp dist\\bloomPlayer.js ..\\BloomLibrary\\build",
         "tobloomreader": "shx cp dist\\*.* ..\\BloomReader\\app\\src\\main\\assets\\bloom-player",
-        "build4bl": "yarn  build && yarn tobloomlibrary",
-        "build4br": "yarn  build && yarn tobloomreader"
+        "tobloom": "shx cp dist\\*.* ..\\BloomDesktop\\output\\browser\\bloom-player\\dist",
+        "build4bl": "yarn build && yarn tobloomlibrary",
+        "build4br": "yarn build && yarn tobloomreader",
+        "build4bd": "yarn build && yarn tobloom"
     },
     "devDependencies": {
         "@babel/core": "^7.5.5",

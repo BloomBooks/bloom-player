@@ -102,6 +102,19 @@ export const BloomPlayerControls: React.FunctionComponent<
         scalePageToWindow();
     }, [pageStylesInstalled, scalePageToWindowTrigger, windowLandscape]);
 
+    // One-time cleanup when this component is being removed
+    useEffect(() => {
+        return () => {
+            // Likely this only matters for Storybook where the main dom remains the same for multiple books
+            const scaleStyleSheet = document.getElementById(
+                "scale-style-sheet"
+            );
+            if (scaleStyleSheet) {
+                scaleStyleSheet.parentNode!.removeChild(scaleStyleSheet);
+            }
+        };
+    }, []);
+
     // Assumes that we want the controls and player to fill a (typically device) window.
     // (The page is trying to be a standard height (in mm) for a predictable layout
     // that does not depend on how text of a particular point size fits onto a
