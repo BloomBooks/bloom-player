@@ -25,6 +25,14 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 
+// See related comments in controlBar.tsx
+//tslint:disable-next-line:no-submodule-imports
+import IconButton from "@material-ui/core/IconButton";
+//tslint:disable-next-line:no-submodule-imports
+import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
+//tslint:disable-next-line:no-submodule-imports
+import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
+
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -958,7 +966,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slidePrev()}
-                />
+                >
+                    {/* The ripple is an animation on the button on click and
+                    focus, but it isn't placed correctly on our buttons for
+                    some reason */}
+                    <IconButton disableRipple={true}>
+                        <ArrowBack />
+                    </IconButton>
+                </div>
                 <div
                     className={
                         "swiper-button-next" +
@@ -968,7 +983,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slideNext()}
-                />
+                >
+                    <IconButton disableRipple={true}>
+                        <ArrowForward />
+                    </IconButton>
+                </div>
             </div>
         );
     }
