@@ -5,15 +5,6 @@ Much of it could go away if we exclude previewMode.css, or if we end up with a s
 process which produces an htm file in the Bloom Reader state, or if we re-architect so
 there is some simple way like a root class to toggle a book's appearance to BR mode.*/
 
-// We use this font (borrowed from react-slick) for the next and previous buttons.
-@font-face {
-    font-family: "slick";
-    font-weight: normal;
-    font-style: normal;
-
-    src: url("./fonts/slick.ttf") format("truetype");
-}
-
 @hoverNextPrevButtonBar: #cbcbcb;
 @contextPageBackground: darkgray; // #a9a9a9
 @audioHighlighting: yellow; // #ffff00
@@ -176,7 +167,7 @@ We just make them follow the main content normally. */
         // is after it, and by default this puts it behind. Anyway, this allows all
         // of it to be seen, even when over the preview.
         z-index: 1;
-        // See comment on slick-next
+        // See comment on swiper-button-next above
         // background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8' standalone='no'%3F%3E%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23b2b2b2;fill-opacity:1;stroke:%23b2b2b2;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E%0A");
         // &:hover {
         //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 160.75281,97.63443 7.81763,7.81763 -11.02487,11.42578 11.42577,11.09168 -8.15171,8.28536 -19.44386,-19.5775 z' style='fill:%23ffffff;fill-opacity:1;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
@@ -199,25 +190,22 @@ We just make them follow the main content normally. */
         &:hover {
             opacity: 0.9;
             background-color: @hoverNextPrevButtonBar;
+            button {
+                color: @hoverNextPrevButtonBar;
+            }
         }
-        &:before {
+        button {
             position: relative;
-            font-family: "slick";
-            font-size: 20px;
-            line-height: 1;
             top: calc(50% - 22px);
             left: 19%;
+            color: @hoverNextPrevButtonBar;
+            background-color: @bloomRed;
         }
         &.swiper-button-disabled {
             display: none;
         }
     }
-    .swiper-button-next:before {
-        content: "→";
-    }
-    .swiper-button-prev:before {
-        content: "←";
-    }
+
     // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
     // However this can actually make stuff that used to fit stop fitting.
     // Where "line-height:normal" is ok, it largely fixes it. But just imposing that everywhere
@@ -248,15 +236,8 @@ We just make them follow the main content normally. */
     }
 }
 
-.bloomPlayer {
-    .swiper-button-next,
-    .swiper-button-prev {
-        &::before {
-            //font-size: 48pt;
-            color: @bloomRed;
-            opacity: @nonHoveredNavigationButtonOpacity;
-        }
-    }
+.bloomPlayer.smallOutsideButtons,
+.bloomPlayer.largeOutsideButtons {
     .swiper-button-next {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
@@ -265,13 +246,38 @@ We just make them follow the main content normally. */
         // curved on left, flush on right.
         border-radius: @button-radius 0 0 @button-radius;
     }
+    .swiper-button-next,
+    .swiper-button-prev {
+        button {
+            color: @bloomGrey;
+        }
+        &:hover {
+            button {
+                color: @hoverNextPrevButtonBar;
+            }
+        }
+    }
 }
 .bloomPlayer:not(.largeOutsideButtons) {
     .swiper-button-next {
         right: 0;
+        button {
+            padding-left: 2px;
+        }
     }
     .swiper-button-prev {
         left: 0;
+        button {
+            padding-right: 2px;
+        }
+    }
+
+    button {
+        padding: 1px 0px 1px 0px;
+        svg {
+            width: 0.8em;
+            height: 0.8em;
+        }
     }
 }
 
@@ -284,10 +290,6 @@ We just make them follow the main content normally. */
     .swiper-button-next,
     .swiper-button-prev {
         width: @smallNavigationButtonWidth;
-        &::before {
-            font-size: 20pt;
-            left: 5%;
-        }
     }
     .swiper-button-next {
         right: -1 * @smallNavigationButtonWidth;
@@ -300,9 +302,6 @@ We just make them follow the main content normally. */
     .swiper-button-next,
     .swiper-button-prev {
         width: @largeNavigationButtonWidth;
-        &::before {
-            font-size: 48pt;
-        }
     }
     .swiper-button-next {
         right: -1 * @largeNavigationButtonWidth;
