@@ -160,8 +160,26 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public componentDidMount() {
         LocalizationManager.setUp();
+
+        // To get this to fire consistently no matter where the focus is,
+        // we have to attach to the document itself. No level of react component
+        // seems to work (using the OnKeyDown prop). So we use good ol'-fashioned js.
+        document.addEventListener("keydown", e =>
+            this.handleDocumentLevelKeyDown(e)
+        );
         this.componentDidUpdate(this.props);
     }
+
+    private handleDocumentLevelKeyDown = e => {
+        if (e.key === "Home") {
+            this.goToFirstPage();
+            e.preventDefault();
+        }
+        if (e.key === "End") {
+            this.goToLastPage();
+            e.preventDefault();
+        }
+    };
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
@@ -429,6 +447,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public componentWillUnmount() {
         this.pauseAllMultimedia();
+        document.removeEventListener("keydown", e =>
+            this.handleDocumentLevelKeyDown(e)
+        );
     }
 
     private pauseAllMultimedia() {
@@ -671,6 +692,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         }
         return landscape;
+    }
+
+    private goToFirstPage() {
+        this.swiperInstance.slideTo(0);
+    }
+
+    private goToLastPage() {
+        this.swiperInstance.slideTo(99999);
     }
 
     // urls of images and videos and audio need to be made
@@ -938,17 +967,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 </style>
                                 <div
                                     className="actual-page-preview"
-                                    onKeyDown={e => {
-                                        if (e.key === "Home") {
-                                            this.swiperInstance.slideTo(0);
-                                            e.preventDefault();
-                                        }
-                                        if (e.key === "End") {
-                                            this.swiperInstance.slideTo(9999);
-                                            e.preventDefault();
-                                        }
-                                    }}
-                                    tabIndex={0} // required for onKeyDown to fire
                                     dangerouslySetInnerHTML={{
                                         __html: slide
                                     }}
