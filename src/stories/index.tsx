@@ -79,3 +79,8 @@ AddBloomPlayerStory(
     "Book with music",
     "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
 );
+
+AddBloomPlayerStory(
+    "Multilingual motion book",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital%2findex.htm"
+);

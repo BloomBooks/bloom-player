@@ -7,6 +7,7 @@ there is some simple way like a root class to toggle a book's appearance to BR m
 
 @hoverNextPrevButtonBar: #cbcbcb;
 @contextPageBackground: darkgray; // #a9a9a9
+@disabledButton: @contextPageBackground;
 @audioHighlighting: yellow; // #ffff00
 
 @bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
@@ -362,9 +363,33 @@ that makes available to the control files more like Bloom Reader uses */
     right: 5%;
 }
 
+.control-bar .button.disabled {
+    color: @disabledButton;
+}
+
+.languageMenu .radioGroup {
+    flex: 1;
+    padding: 20px;
+    .radioGroupDiv {
+        flex: 1;
+        flex-direction: column;
+        .chooserItem {
+            display: flex;
+            flex-direction: row;
+            .spacer {
+                flex-grow: 1; // pushes the audio icon to the right
+            }
+            .icon {
+                align-self: center; // aligns the audio icon vertically
+            }
+        }
+    }
+}
+
 html {
     height: 100%;
 }
+
 body,
 #root {
     // bloom pages have their own margins, we don't need the browser's
