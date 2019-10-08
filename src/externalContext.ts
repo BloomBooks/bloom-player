@@ -183,7 +183,7 @@ export function receiveMessage(data: any) {
 window.addEventListener("message", data => {
     // something sends us an empty message, which we haven't figured out, but know we can ignore
     if (!data || !data.data || data.data.length === 0) {
-        console.log("returning early");
+        //console.log("returning early");
         return;
     }
     receiveMessage((data as any).data);

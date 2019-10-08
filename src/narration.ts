@@ -529,7 +529,7 @@ export default class Narration {
             return;
         }
         const player = this.getPlayer();
-        if (this.segments.length && player) {
+        if (this.segments && this.segments.length && player) {
             // Before reporting duration, try to check that we really are playing.
             // a separate report is sent if play ends.
             if (player.currentTime > 0 && !player.paused && !player.ended) {
