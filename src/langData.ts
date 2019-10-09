@@ -80,11 +80,12 @@ export default class LangData {
     ): LangData[] {
         const result: LangData[] = [];
         if (!metadataObject.hasOwnProperty("language-display-names")) {
-            return result; // shouldn't ever happen
+            const fallbackLangData = LangData.getMinimalFallbackL1(body);
+            result.push(fallbackLangData);
+            return result;
         }
         const languageDisplayNames: object =
             metadataObject["language-display-names"];
-        let index = 0;
         for (const code in languageDisplayNames) {
             if (languageDisplayNames.hasOwnProperty(code)) {
                 const displayName: string = languageDisplayNames[code];
@@ -92,18 +93,65 @@ export default class LangData {
                     displayName === "" ? code : displayName,
                     code
                 );
-                if (index === 0) {
-                    // assume the first is selected to begin with
-                    langData.IsSelected = true;
-                }
                 if (LangData.hasAudioInLanguage(body, code)) {
                     langData.HasAudio = true;
                 }
                 result.push(langData);
-                index++;
             }
         }
+        // Apply fallback information if we need it
+        if (result.length === 0 || result[0].Name === result[0].Code) {
+            const fallbackLangData = LangData.getMinimalFallbackL1(body);
+            if (result.length === 0) {
+                result.push(fallbackLangData);
+            } else {
+                result[0].name = fallbackLangData.Name;
+            }
+        }
+        // Always assume the first is selected to begin with
+        result[0].IsSelected = true;
         return result;
+    }
+
+    private static getMinimalFallbackL1(body: HTMLBodyElement): LangData {
+        const dataDivElement = body.ownerDocument!.getElementById(
+            "bloomDataDiv"
+        );
+        if (!dataDivElement) {
+            // Not even a bloomDataDiv in the book!
+            const totalFallBack = new LangData("English", "en");
+            totalFallBack.IsSelected = true;
+            return totalFallBack;
+        }
+        const contentLangDiv = dataDivElement.ownerDocument!.evaluate(
+            "//div[@data-book='contentLanguage1' and @lang='*']",
+            dataDivElement,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+        const langsOfBookDiv = dataDivElement.ownerDocument!.evaluate(
+            "//div[@data-book='languagesOfBook' and @lang='*']",
+            dataDivElement,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+        const code =
+            contentLangDiv === null ? "en" : contentLangDiv.textContent!.trim();
+        let name =
+            langsOfBookDiv === null
+                ? "English"
+                : langsOfBookDiv.textContent!.trim();
+        // langsOfBookDiv could have a couple of comma separated language names,
+        //but we only want the first for our fallback.
+        name = name.split(",")[0];
+        const fallback = new LangData(name, code);
+        fallback.IsSelected = true;
+        if (LangData.hasAudioInLanguage(body, code)) {
+            fallback.HasAudio = true;
+        }
+        return fallback;
     }
 
     private static hasAudioInLanguage(
