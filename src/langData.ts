@@ -1,5 +1,6 @@
 // LangData groups information about a language that BloomPlayerCore finds
 // in a book for transmission to/from the LanguageMenu in the ControlBar.
+import AutonymHandler from "./autonyms";
 
 export default class LangData {
     private name: string;
@@ -88,7 +89,9 @@ export default class LangData {
             metadataObject["language-display-names"];
         for (const code in languageDisplayNames) {
             if (languageDisplayNames.hasOwnProperty(code)) {
-                const displayName: string = languageDisplayNames[code];
+                let displayName: string = languageDisplayNames[code];
+                // This makes it very unlikely to have an empty displayName.
+                displayName = LangData.getBestLanguageName(code, name);
                 const langData = new LangData(
                     displayName === "" ? code : displayName,
                     code
@@ -140,18 +143,50 @@ export default class LangData {
         const code =
             contentLangDiv === null ? "en" : contentLangDiv.textContent!.trim();
         let name =
-            langsOfBookDiv === null
-                ? "English"
-                : langsOfBookDiv.textContent!.trim();
+            langsOfBookDiv === null ? "" : langsOfBookDiv.textContent!.trim();
         // langsOfBookDiv could have a couple of comma separated language names,
-        //but we only want the first for our fallback.
+        // but we only want the first for our fallback.
         name = name.split(",")[0];
+        name = LangData.getBestLanguageName(code, name);
         const fallback = new LangData(name, code);
         fallback.IsSelected = true;
         if (LangData.hasAudioInLanguage(body, code)) {
             fallback.HasAudio = true;
         }
         return fallback;
+    }
+
+    private static getBestLanguageName(
+        code: string,
+        proposedName: string
+    ): string {
+        const autonymHandler = AutonymHandler.getAutonymHandler();
+        const langDbEntry = autonymHandler.getAutonymDataFor(code);
+        const autonym = langDbEntry.autonym;
+        const english = langDbEntry.english;
+        // The "business logic" of choosing the best name as laid out by JH in BL-7610.
+        if (proposedName === "") {
+            if (autonym !== "") {
+                if (english !== autonym) {
+                    return `${autonym} (${english})`;
+                }
+                return autonym;
+            } else {
+                if (english === "") {
+                    return `${code} ("unknown")`;
+                }
+                return english;
+            }
+        } else {
+            if (proposedName === english) {
+                return proposedName;
+            } else {
+                if (english === "") {
+                    return `${proposedName} (${code})`;
+                }
+                return `${proposedName} (${english})`;
+            }
+        }
     }
 
     private static hasAudioInLanguage(

@@ -78,6 +78,7 @@
         "less": "^3.9.0",
         "less-loader": "^4.1.0",
         "prettier": "^1.16.4",
+        "raw-loader": "^3.1.0",
         "react": "^16.8.5",
         "react-dom": "^16.8.5",
         "react-id-swiper": "^2.3.2",
@@ -100,13 +101,13 @@
         "webpack-merge": "^4.2.1",
         "yarn": "^1.15.2"
     },
-    "dependencies": {},
     "files": [
         "dist/*.js",
         "dist/bloomplayer.htm",
         "dist/*.mp3",
         "lib/*.js",
-        "dist/*.css"
+        "dist/*.css",
+        "dist/*.tsv"
     ],
     "jest": {
         "testEnvironment": "jsdom"
