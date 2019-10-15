@@ -59,7 +59,8 @@ module.exports = merge(core, {
                 from: "src/legacyQuizHandling/Special.css",
                 to: "",
                 flatten: true
-            }
+            },
+            { from: "src/iso639-autonyms.tsv", to: "", flatten: true }
         ])
     ],
 
@@ -134,6 +135,10 @@ module.exports = merge(core, {
                 use: {
                     loader: "file-loader"
                 }
+            },
+            {
+                test: /\.(tsv)$/,
+                use: "raw-loader"
             }
         ]
     }

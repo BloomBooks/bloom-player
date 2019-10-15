@@ -6,6 +6,7 @@ import * as React from "react";
 import axios, { AxiosPromise } from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
+// tslint:disable-next-line: no-submodule-imports
 import "style-scoped/scoped"; // maybe use .min.js after debugging?
 // tslint:disable-next-line: no-submodule-imports
 import "swiper/dist/css/swiper.css";
@@ -562,7 +563,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     continue;
                 }
                 // Find the right div to remove visibility from
-                if (divLang === previousLangCode) {
+                // We don't want to remove visibility from bi-/tri-lingual divs that were already visible.
+                if (divLang === previousLangCode &&
+                    !(divElement.classList.contains("bloom-content2") ||
+                    divElement.classList.contains("bloom-content3"))) {
                     divElement.classList.remove(visibilityClass);
                 }
                 if (divLang === this.props.activeLanguageCode) {
