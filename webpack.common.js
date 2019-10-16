@@ -135,10 +135,6 @@ module.exports = merge(core, {
                 use: {
                     loader: "file-loader"
                 }
-            },
-            {
-                test: /\.(tsv)$/,
-                use: "raw-loader"
             }
         ]
     }
