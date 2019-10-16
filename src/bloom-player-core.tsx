@@ -410,7 +410,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const body = this.htmlElement.getElementsByTagName("body")[0];
             this.reportBookOpened(body);
             if (this.props.controlsCallback) {
-                const languages = LangData.createLangDataArrayFromMetadata(
+                const languages = LangData.createLangDataArrayFromDomAndMetadata(
                     body,
                     this.metaDataObject
                 );
