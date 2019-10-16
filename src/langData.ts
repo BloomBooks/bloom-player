@@ -75,7 +75,7 @@ export default class LangData {
         }
     };
 
-    public static createLangDataArrayFromMetadata(
+    public static createLangDataArrayFromDomAndMetadata(
         body: HTMLBodyElement,
         metadataObject: object
     ): LangData[] {
@@ -90,12 +90,8 @@ export default class LangData {
         for (const code in languageDisplayNames) {
             if (languageDisplayNames.hasOwnProperty(code)) {
                 let displayName: string = languageDisplayNames[code];
-                // This makes it very unlikely to have an empty displayName.
-                displayName = LangData.getBestLanguageName(code, name);
-                const langData = new LangData(
-                    displayName === "" ? code : displayName,
-                    code
-                );
+                displayName = LangData.getBestLanguageName(code, displayName);
+                const langData = new LangData(displayName, code);
                 if (LangData.hasAudioInLanguage(body, code)) {
                     langData.HasAudio = true;
                 }
