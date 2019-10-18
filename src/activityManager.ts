@@ -1,5 +1,6 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
+const iframeModule = require("./iframeActivity.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -65,23 +66,38 @@ export class ActivityManager {
         const name = pageDiv.getAttribute("data-activity");
         // if it has a an activity that we haven't already loaded the code for
         if (name && !this.loadedActivityScripts[name]) {
-            // Even though we won't use the script until we get to the page,
-            // at the moment we start loading them in the background. This
-            // probably isn't necessary, we could probably wait.
-            loadDynamically(bookUrlPrefix + "/" + name + ".js").then(module => {
-                // if the same activity is encountered multiple times, we
-                // could still get here multiple times because the load
-                // is async
-                if (!this.loadedActivityScripts[name]) {
-                    const requirements = module.activityRequirements();
-                    this.loadedActivityScripts[name] = {
-                        name,
-                        module,
-                        runningObject: undefined,
-                        requirements
-                    };
-                }
-            });
+            // First handle iframe activities which is special in that the "iframeActivity" module
+            // is built-in to bloom-player, rather than
+            // being loaded dynamically from the book's folder (currently just iframe)
+            if (name === "iframe") {
+                this.loadedActivityScripts[name] = {
+                    name,
+                    module: iframeModule as IActivityModule,
+                    runningObject: undefined, // for now were just registering the module, not constructing the object
+                    requirements: iframeModule.activityRequirements()
+                };
+            }
+            // Try to find the named activity js in the book's folder.
+            else {
+                // Even though we won't use the script until we get to the page,
+                // at the moment we start loading them in the background. This
+                // probably isn't necessary, we could probably wait.
+                loadDynamically(bookUrlPrefix + "/" + name + ".js").then(
+                    module => {
+                        // if the same activity is encountered multiple times, we
+                        // could still get here multiple times because the load
+                        // is async
+                        if (!this.loadedActivityScripts[name]) {
+                            this.loadedActivityScripts[name] = {
+                                name,
+                                module,
+                                runningObject: undefined, // for now were just registering the module, not constructing the object
+                                requirements: module.activityRequirements()
+                            };
+                        }
+                    }
+                );
+            }
         } else {
             legacyQuestionHandler.processPage(
                 pageDiv,

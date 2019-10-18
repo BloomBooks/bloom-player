@@ -46,7 +46,6 @@ function AddBloomPlayerStory(label: string, url: string) {
             />
         );
     });
-            
 }
 
 function pause() {
@@ -77,11 +76,11 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
 );
 AddBloomPlayerStory(
-    "Activity - Using Construct Runtime",
-    "src/sample-construct-activity/index.htm"
+    "Activity - IFrame - Construct Runtime Game",
+    "src/sample-iframe-activity/index.htm"
 );
 AddBloomPlayerStory(
-    "Activity - Simple canvas game",
+    "Activity - Canvas Game - Snake",
     "src/sample-canvas-activity/index.htm"
 );
 
