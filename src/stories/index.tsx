@@ -42,6 +42,7 @@ function AddBloomPlayerStory(label: string, url: string) {
                 allowToggleAppBar={allowToggleAppBar()}
                 paused={paused()}
                 url={url}
+                locationOfDistFolder={"/dist/"}
             />
         );
     });
@@ -73,6 +74,14 @@ AddBloomPlayerStory(
 AddBloomPlayerStory(
     "Talking book with image descriptions",
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
+);
+AddBloomPlayerStory(
+    "Activity - IFrame - Construct Runtime Game",
+    "src/sample-iframe-activity/index.htm"
+);
+AddBloomPlayerStory(
+    "Activity - Canvas Game - Snake",
+    "src/sample-canvas-activity/index.htm"
 );
 
 AddBloomPlayerStory(

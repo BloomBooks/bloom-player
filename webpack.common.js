@@ -94,6 +94,7 @@ module.exports = merge(core, {
                     {
                         loader: "babel-loader",
                         query: {
+                            plugins: ["@babel/plugin-syntax-dynamic-import"],
                             presets: [
                                 // Ensure that we target our version of geckofx (mozilla/firefox)
                                 [
@@ -106,8 +107,8 @@ module.exports = merge(core, {
                                             ]
                                         }
                                     }
-                                ],
-                                "babel-preset-react"
+                                ]
+                                //"babel-preset-react" this leads to an error if we export from raw .js, and we aren't doing react with js
                             ].map(localResolve)
                         }
                     }

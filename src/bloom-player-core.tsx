@@ -17,7 +17,6 @@ import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { Video } from "./video";
 import { Music } from "./music";
-import { OldQuestionsConverter } from "./legacyQuizHandling/old-questions";
 import { LocalizationManager } from "./l10n/localizationManager";
 import { LocalizationUtils } from "./l10n/localizationUtils";
 import {
@@ -26,6 +25,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
+import { loadDynamically } from "./loadDynamically";
 
 // See related comments in controlBar.tsx
 //tslint:disable-next-line:no-submodule-imports
@@ -34,6 +34,9 @@ import IconButton from "@material-ui/core/IconButton";
 import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
 //tslint:disable-next-line:no-submodule-imports
 import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
+
+import { ActivityManager } from "./activityManager";
+import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -76,6 +79,8 @@ interface IProps {
     }) => void;
 
     hideNextPrevButtons?: boolean;
+
+    locationOfDistFolder: string;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -86,8 +91,11 @@ interface IState {
     currentSwiperIndex: number;
     isLoading: boolean;
 
-    //used to distinguish a drag from a click
-    isChanging: boolean;
+    //When in touch mode (in chrome debugger at least), a touch on a navigation button
+    //causes a click to be raised after the onTouchEnd(). This would normally try and
+    //toggle the app bar. So we have onTouchStart() set this to true and then set to
+    // false in the onClick handler. Sigh.
+    ignorePhonyClick: boolean;
 }
 
 enum BookFeatures {
@@ -99,6 +107,9 @@ enum BookFeatures {
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static DEFAULT_CREATOR: string = "bloom";
+    private readonly activityManager: ActivityManager = new ActivityManager();
+    private readonly legacyQuestionHandler: LegacyQuestionHandler;
+
     private readonly initialPages: string[] = ["loading..."];
     private readonly initialStyleRules: string = "";
 
@@ -130,6 +141,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
+        this.legacyQuestionHandler = new LegacyQuestionHandler(
+            props.locationOfDistFolder
+        );
     }
 
     public readonly state: IState = {
@@ -137,7 +151,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         styleRules: this.initialStyleRules,
         currentSwiperIndex: 0,
         isLoading: true,
-        isChanging: false
+        ignorePhonyClick: false
     };
 
     // The book url we were passed as a URL param.
@@ -167,8 +181,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static currentPage: HTMLElement;
 
     private indexOflastNumberedPage: number;
-
-    private needSpecialCss = false;
 
     public componentDidMount() {
         LocalizationManager.setUp();
@@ -299,31 +311,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (firstPage) {
                     pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                 }
-
-                const urlOfQuestionsFile = this.urlPrefix + "/questions.json";
-                this.needSpecialCss = false;
-                axios
-                    .get(urlOfQuestionsFile)
-                    .then(qfResult => {
-                        const newPages = OldQuestionsConverter.convert(
-                            qfResult.data,
-                            pageClass
-                        );
-                        const firstBackMatterPage = body.getElementsByClassName(
-                            "bloom-backMatter"
-                        )[0];
-                        for (let i = 0; i < newPages.length; i++) {
-                            this.needSpecialCss = true;
-                            // insertAdjacentElement is tempting, but not in FF45.
-                            firstBackMatterPage.parentElement!.insertBefore(
-                                newPages[i],
-                                firstBackMatterPage
-                            );
-                        }
+                // enhance: make this callback thing into a promise
+                this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
+                    this.urlPrefix,
+                    body,
+                    pageClass,
+                    () => {
                         this.finishUp();
-                    })
-                    .catch(() => this.finishUp());
-            }); // end of block that loads html and meta.json
+                    }
+                );
+            });
         } else if (prevProps.landscape !== this.props.landscape) {
             // rotating the phone...may need to switch the orientation class on each page.
             const pages = document.getElementsByClassName("bloom-page");
@@ -400,6 +397,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             swiperContent.push(page.outerHTML);
+
+            // look for activities on this page
+            this.activityManager.processPage(
+                this.urlPrefix,
+                page,
+                this.legacyQuestionHandler
+            );
         }
         if (this.props.showContextPages) {
             swiperContent.push(""); // blank page to fill the space right of last.
@@ -982,11 +986,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 promises.push(axios.get(fullHref));
             }
         }
-        if (this.needSpecialCss) {
-            promises.push(
-                axios.get(this.getFolderForSupportFiles() + "/Special.css")
-            );
+        const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
+        if (p) {
+            promises.push(p);
         }
+
         axios
             .all(
                 promises.map(p =>
@@ -1056,10 +1060,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public render() {
+        const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
+
         if (this.state.isLoading) {
             return "Loading Book...";
         }
-        const params = {
+        const params: any = {
             // This is how we'd expect to make the next/prev buttons show up.
             // However, swiper puts them inside the swiper-container div, which has position:relative
             // and overflow:hidden. This hides the buttons when we want them to be outside the book
@@ -1071,6 +1077,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             getSwiper: s => {
                 this.swiperInstance = s;
             },
+            simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
+
             on: {
                 slideChange: () =>
                     this.showingPage(this.swiperInstance.activeIndex),
@@ -1097,6 +1105,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This seems make it unnecessary to call Swiper.update at the end of componentDidUpdate.
             shouldSwiperUpdate: true
         };
+
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
@@ -1105,7 +1114,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             <div
                 className={
                     "bloomPlayer" +
-                    (this.props.hideNextPrevButtons
+                    (showNavigationButtonsEvenOnTouchDevices
+                        ? " showNavigationButtonsEvenOnTouchDevices"
+                        : this.props.hideNextPrevButtons
                         ? " hideNextPrevButtons"
                         : "")
                 }
@@ -1122,11 +1133,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 }
                                 onClick={e => {
                                     if (
-                                        !this.state.isChanging && // if we're dragging, that isn't a click we want to propagate
-                                        this.props.onContentClick
+                                        !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
+                                        this.props.onContentClick &&
+                                        !this.activityManager.getActivityAbsorbsClicking()
                                     ) {
                                         this.props.onContentClick(e);
                                     }
+                                    this.setState({ ignorePhonyClick: false });
                                 }}
                             >
                                 <style scoped={true}>
@@ -1134,10 +1147,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 </style>
                                 <div
                                     className="actual-page-preview"
-                                    dangerouslySetInnerHTML={{
-                                        __html: slide
-                                    }}
-                                    ref={div => this.pageLoaded(div)}
+                                    dangerouslySetInnerHTML={{ __html: slide }}
                                 />
                             </div>
                         );
@@ -1151,6 +1161,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slidePrev()}
+                    onTouchStart={e => {
+                        this.setState({ ignorePhonyClick: true });
+                        this.swiperInstance.slidePrev();
+                    }}
                 >
                     {/* The ripple is an animation on the button on click and
                     focus, but it isn't placed correctly on our buttons for
@@ -1168,6 +1182,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.swiperInstance.slideNext()}
+                    onTouchStart={() => this.swiperInstance.slideNext()}
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward />
@@ -1175,70 +1190,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </div>
             </div>
         );
-    }
-
-    private pageLoaded(div: HTMLDivElement | null): void {
-        // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
-        // This is potentially dangerous, so we make it less likely to happen through random attacks
-        // by only doing it in pages that are explicitly marked as bloom interactive pages.
-        if (
-            div &&
-            div.firstElementChild &&
-            div.firstElementChild.classList.contains("bloom-interactive-page")
-        ) {
-            const scripts = div.getElementsByTagName("script");
-            for (let i = 0; i < scripts.length; i++) {
-                const script = scripts[i];
-                const src = script.getAttribute("src");
-                if (!src) {
-                    // enhance: possibly window.eval(script.innerText?)
-                    // But we consider embedding such scripts in Bloom
-                    // unworkable, because our XHTML conversion mangles angle brackets.
-                    continue;
-                }
-
-                if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                    // We want the reader's own version of this file. For one thing, if we generated
-                    // the quiz pages from json, the book folder won't have it. Also, this means we
-                    // always use the latest version of the quiz code rather than whatever was current
-                    // when the book was published.
-                    const folder = this.getFolderForSupportFiles();
-                    const tryForQuiz = folder + "/simpleComprehensionQuiz.js";
-                    axios
-                        .get(tryForQuiz)
-                        .then(result => {
-                            // See comment on eval below.
-                            // tslint:disable-next-line: no-eval
-                            eval(result.data);
-                        })
-                        .catch(error => {
-                            console.log(error);
-                        });
-                } else {
-                    // Get it from the specified place.
-                    axios
-                        .get(src)
-                        // This would be highly dangerous in most contexts. It is one of the reasons
-                        // we insist that bloom-player should live in its own iframe, protecting the rest
-                        // of the page from things this eval might do.
-                        // tslint:disable-next-line: no-eval
-                        .then(result => eval(result.data))
-                        .catch(() => {
-                            // If we don't get it there, not much we can do.
-                        });
-                }
-            }
-        }
-    }
-
-    private getFolderForSupportFiles() {
-        const href =
-            window.location.protocol +
-            "//" +
-            window.location.host +
-            window.location.pathname;
-        const lastSlash = href.lastIndexOf("/");
-        return href.substring(0, lastSlash);
     }
 
     // Get a class to apply to a particular slide. This is used to apply the
@@ -1353,10 +1304,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 hasVideo: Video.pageHasVideo(bloomPage)
             });
         }
+        this.activityManager.showingPage(bloomPage);
 
         this.reportedAudioOnCurrentPage = false;
         this.reportedVideoOnCurrentPage = false;
         this.sendUpdateOfBookProgressReportToExternalContext();
+
+        // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
+        this.swiperInstance.params.noSwiping = this.activityManager.getActivityAbsorbsDragging();
+        this.swiperInstance.params.touchRatio = this.activityManager.getActivityAbsorbsDragging()
+            ? 0
+            : 1;
+        // didn't seem to help: this.swiperInstance.params.allowTouchMove = false;
+        if (this.activityManager.getActivityAbsorbsTyping()) {
+            this.swiperInstance.keyboard.disable();
+        } else {
+            this.swiperInstance.keyboard.enable();
+        }
     }
 
     // called by narration.ts
