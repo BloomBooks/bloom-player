@@ -1,6 +1,7 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 const iframeModule = require("./iframeActivity.ts");
+const simpleDomActivityModule = require("./simpleDomActivity.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -75,6 +76,13 @@ export class ActivityManager {
                     module: iframeModule as IActivityModule,
                     runningObject: undefined, // for now were just registering the module, not constructing the object
                     requirements: iframeModule.activityRequirements()
+                };
+            } else if (name === "simple-dom") {
+                this.loadedActivityScripts[name] = {
+                    name,
+                    module: simpleDomActivityModule as IActivityModule,
+                    runningObject: undefined, // for now were just registering the module, not constructing the object
+                    requirements: simpleDomActivityModule.activityRequirements()
                 };
             }
             // Try to find the named activity js in the book's folder.
