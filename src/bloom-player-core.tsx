@@ -25,7 +25,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
-import { loadDynamically } from "./loadDynamically";
+import { loadDynamically } from "./activities/loadDynamically";
 
 // See related comments in controlBar.tsx
 //tslint:disable-next-line:no-submodule-imports
@@ -35,8 +35,8 @@ import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
 //tslint:disable-next-line:no-submodule-imports
 import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
 
-import { ActivityManager } from "./activityManager";
-import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
+import { ActivityManager } from "./activities/activityManager";
+import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQuizHandler";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -568,9 +568,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 // Find the right div to remove visibility from
                 // We don't want to remove visibility from bi-/tri-lingual divs that were already visible.
-                if (divLang === previousLangCode &&
-                    !(divElement.classList.contains("bloom-content2") ||
-                    divElement.classList.contains("bloom-content3"))) {
+                if (
+                    divLang === previousLangCode &&
+                    !(
+                        divElement.classList.contains("bloom-content2") ||
+                        divElement.classList.contains("bloom-content3")
+                    )
+                ) {
                     divElement.classList.remove(visibilityClass);
                 }
                 if (divLang === this.props.activeLanguageCode) {

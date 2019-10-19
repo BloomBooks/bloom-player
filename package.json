@@ -23,7 +23,7 @@
         "start": "concurrently npm:start-webpack-serve npm:chrome",
         "start-webpack-serve": "yarn webpack-dev-server",
         "storybook": "concurrently npm:storybook-inner npm:schrome",
-        "storybook-inner": "start-storybook --static-dir ./ -p 9009 --ci",
+        "storybook-inner": "start-storybook --static-dir ./,src/activities -p 9009 --ci",
         "// if you are testing with a book hosted on (dev.)bloomlibrary.org, you will have to load chrome with these args": "",
         "chrome": "chrome http://localhost:8080/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
         "schrome": "chrome http://localhost:9009/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
