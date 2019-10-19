@@ -1,5 +1,6 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
+import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
 const simpleDomActivityModule = require("./simpleDomActivity.ts");
 
@@ -14,7 +15,7 @@ export interface IActivityModule {
 // This is the class that the activity module has to implement
 export interface IActivityObject {
     new (HTMLElement): object;
-    start: () => void;
+    start: (soundPlayer: ActivityContext) => void;
     stop: () => void;
 }
 
@@ -34,6 +35,10 @@ export interface IActivityInformation {
 }
 
 export class ActivityManager {
+    private soundPlayer: ActivityContext;
+    constructor() {
+        this.soundPlayer = new ActivityContext();
+    }
     public getActivityAbsorbsDragging(): boolean {
         return (
             !!this.currentActivity &&
@@ -140,7 +145,7 @@ export class ActivityManager {
                 activity.runningObject = new activity.module!.default(
                     bloomPageElement
                 ) as IActivityObject;
-                activity.runningObject!.start();
+                activity.runningObject!.start(this.soundPlayer);
             }
         }
     }

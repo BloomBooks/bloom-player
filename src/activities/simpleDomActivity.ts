@@ -1,3 +1,5 @@
+import { ActivityContext } from "./ActivityContext";
+
 // A "DOM activity" is one that interacts with the html of a page
 
 export default class SimpleDomActivity {
@@ -8,6 +10,7 @@ export default class SimpleDomActivity {
     }>();
 
     private pageElement: HTMLElement;
+    private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
     // we are using a javascript class to make sure that we get a fresh start,
@@ -20,7 +23,8 @@ export default class SimpleDomActivity {
         this.pageElement = pageElement;
     }
 
-    public start() {
+    public start(activityContext: ActivityContext) {
+        this.activityContext = activityContext;
         console.log("SimpleDomActivity activity start");
 
         // in the future, Bloom could offer some special style. For this experiment,
@@ -45,18 +49,16 @@ export default class SimpleDomActivity {
                 this.addEventListener(
                     "click",
                     button,
-                    correct
-                        ? SimpleDomActivity.onCorrectClick
-                        : SimpleDomActivity.onWrongClick
+                    correct ? this.onCorrectClick : this.onWrongClick
                 );
             });
     }
-    public static onCorrectClick(evt: Event) {
-        console.log("********* COrrect");
-    }
-    public static onWrongClick(evt: Event) {
-        console.log("********* Wrong");
-    }
+    private onCorrectClick = (evt: Event) => {
+        this.activityContext.playCorrect();
+    };
+    private onWrongClick = (evt: Event) => {
+        this.activityContext.playWrong();
+    };
     private addEventListener(
         name: string,
         target: Element,
