@@ -1,4 +1,6 @@
-import { ActivityContext } from "./ActivityContext";
+import { ActivityContext } from "../ActivityContext";
+// tslint:disable-next-line: no-submodule-imports
+const activityCss = require("!!raw-loader!./domActivity.css").default;
 
 // A "DOM activity" is one that interacts with the html of a page
 
@@ -26,13 +28,16 @@ export default class SimpleDomActivity {
     public start(activityContext: ActivityContext) {
         this.activityContext = activityContext;
         console.log("SimpleDomActivity activity start");
+        activityContext.addPlayerStyles(this.pageElement, activityCss);
 
         // in the future, Bloom could offer some special style. For this experiment,
-        // we're just reusing and existing one.
+        // we're just reusing an existing one.
         const classForButtons = "bloom-borderstyle-black-round";
+
         this.pageElement
             .querySelectorAll("." + classForButtons)
             .forEach((translationGroup: HTMLElement) => {
+                // add a button around the transltation group
                 this.removeClass(translationGroup, classForButtons);
                 const correct =
                     translationGroup.querySelector(".Correct-style") != null;
@@ -46,6 +51,7 @@ export default class SimpleDomActivity {
                 button.appendChild(clone);
                 translationGroup.parentNode!.removeChild(translationGroup);
 
+                // wire up events
                 this.addEventListener(
                     "click",
                     button,
@@ -54,11 +60,14 @@ export default class SimpleDomActivity {
             });
     }
     private onCorrectClick = (evt: Event) => {
+        (evt.currentTarget as HTMLElement).classList.add("chosen-correct");
         this.activityContext.playCorrect();
     };
     private onWrongClick = (evt: Event) => {
+        (evt.currentTarget as HTMLElement).classList.add("chosen-wrong");
         this.activityContext.playWrong();
     };
+
     private addEventListener(
         name: string,
         target: Element,

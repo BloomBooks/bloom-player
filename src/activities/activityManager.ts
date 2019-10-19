@@ -2,7 +2,7 @@ import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
-const simpleDomActivityModule = require("./simpleDomActivity.ts");
+const simpleDomActivityModule = require("./domActivities/simpleDomActivity.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {

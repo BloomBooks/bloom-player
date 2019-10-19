@@ -24,4 +24,11 @@ export class ActivityContext {
         player.setAttribute("src", url);
         player.play();
     }
+
+    public addPlayerStyles(element: HTMLElement, css: string) {
+        const style = document.createElement("style");
+        style.setAttribute("scoped", "true");
+        style.innerText = css;
+        element.insertBefore(style, element.firstChild); //NB: will be added even if firstChild is null
+    }
 }
