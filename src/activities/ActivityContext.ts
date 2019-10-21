@@ -1,6 +1,9 @@
 // at the moment this just plays sounds, but the idea is that it would also handle scoring
 export class ActivityContext {
     public playCorrect() {
+        // NB: if this stops working in storybook; the file should be found because the package.json
+        // script that starts storybook has a "--static-dir" option that should include the folder
+        // containing the standard activity sounds.
         this.playSound("right_answer.mp3");
     }
     public playWrong() {
