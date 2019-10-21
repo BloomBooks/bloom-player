@@ -1,10 +1,13 @@
 import { ActivityContext } from "../ActivityContext";
 // tslint:disable-next-line: no-submodule-imports
-const activityCss = require("!!raw-loader!./domActivity.css").default;
+const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
+    .default;
 
-// A "DOM activity" is one that interacts with the html of a page
+// This class is intentionally very generic. All it needs is that the html of the
+// page it is given should have some objects (translation groups or images) that have
+// a data-activityRole of either "correct-answer" or "wrong-answer".
 
-export default class SimpleDomActivity {
+export default class MultipleChoiceDomActivity {
     private listeners = new Array<{
         name: string;
         target: Element;
@@ -21,35 +24,35 @@ export default class SimpleDomActivity {
     // in a subsequent page.
     // eslint-disable-next-line no-unused-vars
     constructor(pageElement: HTMLElement) {
-        console.log("SimpleDomActivity activity constructed");
         this.pageElement = pageElement;
     }
 
     public start(activityContext: ActivityContext) {
         this.activityContext = activityContext;
-        console.log("SimpleDomActivity activity start");
         activityContext.addPlayerStyles(this.pageElement, activityCss);
-
-        // in the future, Bloom could offer some special style. For this experiment,
-        // we're just reusing an existing one.
-        const classForButtons = "bloom-borderstyle-black-round";
+        // const "data-preparedForActivtyRuntime"
+        // const x  =(this.pageElement.hasAttribute());
 
         this.pageElement
-            .querySelectorAll("." + classForButtons)
+            .querySelectorAll("[data-activityRole]")
             .forEach((translationGroup: HTMLElement) => {
-                // add a button around the transltation group
-                this.removeClass(translationGroup, classForButtons);
+                // add a button around the translation group or image container
                 const correct =
-                    translationGroup.querySelector(".Correct-style") != null;
-                const button = document.createElement("button");
-                translationGroup.parentNode!.insertBefore(
-                    button,
-                    translationGroup
-                );
-                // review: this clone and the removeChild shouldn't be needed, but they are
-                const clone = translationGroup.cloneNode(true);
-                button.appendChild(clone);
-                translationGroup.parentNode!.removeChild(translationGroup);
+                    translationGroup.getAttribute("data-activityRole") ===
+                    "correct-answer";
+
+                let button = translationGroup.parentNode as HTMLElement;
+                if (button.tagName !== "BUTTON") {
+                    button = document.createElement("button");
+                    translationGroup.parentNode!.insertBefore(
+                        button,
+                        translationGroup
+                    );
+                    // review: this clone and the removeChild shouldn't be needed, but they are
+                    const clone = translationGroup.cloneNode(true);
+                    button.appendChild(clone);
+                    translationGroup.parentNode!.removeChild(translationGroup);
+                }
 
                 // wire up events
                 this.addEventListener(
@@ -83,22 +86,11 @@ export default class SimpleDomActivity {
             l.target.removeEventListener(l.name, l.listener)
         );
     }
-
-    private removeClass(el: HTMLElement, className: string) {
-        if (el.classList) {
-            el.classList.remove(className);
-        } else {
-            el.className = el.className.replace(
-                new RegExp("\\b" + className + "\\b", "g"),
-                ""
-            );
-        }
-    }
 }
 
 export function activityRequirements() {
     return {
-        dragging: false,
+        dragging: true, // we don't actually get dragging, but we are getting accidental drags... maybe the swiper needs to be less sensitive
         clicking: true,
         typing: false
     };

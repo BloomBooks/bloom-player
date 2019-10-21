@@ -2,7 +2,7 @@ import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
-const simpleDomActivityModule = require("./domActivities/simpleDomActivity.ts");
+const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -82,12 +82,12 @@ export class ActivityManager {
                     runningObject: undefined, // for now were just registering the module, not constructing the object
                     requirements: iframeModule.activityRequirements()
                 };
-            } else if (name === "simple-dom") {
+            } else if (name === "multiple-choice") {
                 this.loadedActivityScripts[name] = {
                     name,
-                    module: simpleDomActivityModule as IActivityModule,
+                    module: multipleChoiceActivityModule as IActivityModule,
                     runningObject: undefined, // for now were just registering the module, not constructing the object
-                    requirements: simpleDomActivityModule.activityRequirements()
+                    requirements: multipleChoiceActivityModule.activityRequirements()
                 };
             }
             // Try to find the named activity js in the book's folder.
@@ -145,6 +145,8 @@ export class ActivityManager {
                 activity.runningObject = new activity.module!.default(
                     bloomPageElement
                 ) as IActivityObject;
+                // for use in styling things differently during playback versus book editing
+                bloomPageElement.classList.add("bloom-activityPlayback");
                 activity.runningObject!.start(this.soundPlayer);
             }
         }

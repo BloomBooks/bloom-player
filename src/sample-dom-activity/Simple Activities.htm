@@ -11,10 +11,11 @@
     <title>Simple Activities</title>
     <style type="text/css" title="userModifiedStyles">
     /*<![CDATA[*/
-    .Correct-style { font-size: 28pt ! important; line-height: 1.5 ! important; word-spacing: normal ! important; font-style: normal ! important; text-align: center ! important; text-decoration: underline;}
-    .Correct-style > p { text-indent: 0px ! important; margin-left: 0px ! important; margin-bottom: 0em ! important; }
-    .Wrong-style { font-size: 30pt ! important; line-height: 1.5 ! important; word-spacing: normal ! important; font-weight: normal ! important; font-style: normal ! important; text-decoration: none ! important; text-align: center ! important; }
-    .Wrong-style > p { text-indent: 0px ! important; margin-left: 0px ! important; margin-bottom: 0em ! important; }
+    .Answer-style { font-size: 28pt ! important; line-height: 1.5 ! important; word-spacing: normal ! important; font-style: normal ! important; text-align: center ! important;}
+    .Answer-style > p { text-indent: 0px ! important; margin-left: 0px ! important; margin-bottom: 0em ! important; }
+    .ShortPrompt-style { font-size: 35pt ! important; line-height: 1.5 ! important; word-spacing: normal ! important; font-weight: normal ! important; font-style: normal ! important; text-decoration: none ! important; text-align: center ! important; }
+    .ShortPrompt-style > p { text-indent: 0px ! important; margin-left: 0px ! important; margin-bottom: 0em ! important; }
+
     /*]]>*/
     </style>
     <style type="text/css">
@@ -130,7 +131,7 @@
         </div>
     </div>
 
-    <div data-activity="simple-dom" class="bloom-page numberedPage customPage Device16x9Landscape side-right bloom-monolingual" data-page="extra" id="9e2a2355-7c65-4723-aa50-f321953f0833" data-pagelineage="5dcd48df-e9ab-4a07-afd4-6a24d0398386" data-page-number="1" lang="">
+    <div data-activity="multiple-choice" class="bloom-page numberedPage customPage Device16x9Landscape side-right bloom-monolingual" data-page="extra" id="9e2a2355-7c65-4723-aa50-f321953f0833" data-pagelineage="5dcd48df-e9ab-4a07-afd4-6a24d0398386" data-page-number="1" lang="">
 
         <div class="pageLabel" data-i18n="TemplateBooks.PageLabel.Picture &amp; Three Choices" lang="en">
             Picture &amp; Three Choices
@@ -180,8 +181,8 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="bloom-translationGroup bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
-                                                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 60px;" class="bloom-editable Correct-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                <div data-activityRole="correct-answer" class="bloom-translationGroup Answer-style bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
+                                                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 60px;" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
                                                         <p>cap</p>
                                                     </div>
                                                 </div>
@@ -200,8 +201,8 @@
                                                             </div>
                                                         </div>
 
-                                                        <div class="bloom-translationGroup bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
-                                                            <div data-languagetipcontent="English" data-hasqtip="true" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 60px;" class="bloom-editable Wrong-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                        <div data-activityRole="wrong-answer" class="bloom-translationGroup Answer-style bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
+                                                            <div data-languagetipcontent="English" data-hasqtip="true" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 60px;" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
                                                                 <p>boy</p>
                                                             </div>
                                                         </div>
@@ -218,8 +219,8 @@
                                                             </div>
                                                         </div>
 
-                                                        <div class="bloom-translationGroup bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
-                                                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 56px;" class="bloom-editable Wrong-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                        <div data-activityRole="wrong-answer" class="bloom-translationGroup Answer-style bloom-trailingElement bloom-borderstyle-black-round bloom-vertical-align-center">
+                                                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 56px;" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
                                                                 <p>moon</p>
                                                             </div>
                                                         </div>
@@ -233,6 +234,119 @@
                                 <div style="bottom: 29.2517%;" title="70.7%" class="split-pane-divider horizontal-divider"></div>
 
                                 <div style="height: 29.2517%;" class="split-pane-component position-bottom">
+                                    <div min-width="60px 150px 250px" style="position: relative;" class="split-pane-component-inner adding">
+                                        <div class="box-header-off bloom-translationGroup">
+                                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                <p></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div data-activity="multiple-choice" class="bloom-page numberedPage customPage Device16x9Landscape side-left bloom-monolingual" data-page="extra" id="278b42fb-49de-4b6e-b9ac-2cef440d949c" data-pagelineage="5dcd48df-e9ab-4a07-afd4-6a24d0398386" data-page-number="2" lang="">
+        <div class="pageLabel" data-i18n="TemplateBooks.PageLabel.Text Prompt with 3 Picture Choices" lang="en">
+            Text Prompt with 3 Picture Choices
+        </div>
+
+        <div class="pageDescription" lang="en"></div>
+
+        <div class="marginBox">
+            <div style="min-height: 42px;" class="split-pane horizontal-percent">
+                <div style="bottom: 67.2673%;" class="split-pane-component position-top">
+                    <div min-height="60px" min-width="60px 150px 250px" style="position: relative;" class="split-pane-component-inner">
+                        <div class="box-header-off bloom-translationGroup">
+                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                <p></p>
+                            </div>
+                        </div>
+
+                        <div class="bloom-translationGroup bloom-trailingElement">
+                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" style="min-height: 70px;" class="bloom-editable ShortPrompt-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                <p>Cap</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="bottom: 67.2673%;" title="32.7%" class="split-pane-divider horizontal-divider"></div>
+
+                <div style="height: 67.2673%;" class="split-pane-component position-bottom">
+                    <div style="min-height: 42px;" class="split-pane horizontal-percent">
+                        <div style="bottom: 83.0357%;" class="split-pane-component position-top">
+                            <div min-width="60px 150px 250px" style="position: relative;" class="split-pane-component-inner adding">
+                                <div class="box-header-off bloom-translationGroup">
+                                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                        <p></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="bottom: 83.0357%;" title="17%" class="split-pane-divider horizontal-divider"></div>
+
+                        <div style="height: 83.0357%;" class="split-pane-component position-bottom">
+                            <div style="min-height: 42px;" class="split-pane horizontal-percent">
+                                <div style="bottom: 20.9677%;" class="split-pane-component position-top">
+                                    <div style="min-width: 0px;" class="split-pane vertical-percent">
+                                        <div style="right: 65.9509%;" class="split-pane-component position-left">
+                                            <div min-height="60px" min-width="60px 150px" style="position: relative;" class="split-pane-component-inner adding">
+                                                <div class="box-header-off bloom-translationGroup">
+                                                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                        <p></p>
+                                                    </div>
+                                                </div>
+
+                                                <div data-activityRole="correct-answer" title="cap.png 22.28 KB 315 x 184 139 DPI (should be 300-600) Bit Depth: 8" class="bloom-imageContainer bloom-leadingElement">
+                                                    <img data-license="" data-creator="" data-copyright="" src="cap.png" alt=""></img></div>
+                                            </div>
+                                        </div>
+
+                                        <div style="right: 65.9509%;" title="34%" class="split-pane-divider vertical-divider"></div>
+
+                                        <div style="width: 65.9509%;" class="split-pane-component position-right">
+                                            <div style="min-width: 0px;" class="split-pane vertical-percent">
+                                                <div class="split-pane-component position-left">
+                                                    <div min-height="60px" min-width="60px 150px" style="position: relative;" class="split-pane-component-inner adding">
+                                                        <div class="box-header-off bloom-translationGroup">
+                                                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                                <p></p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div data-activityRole="wrong-answer" title="moon.png 36.84 KB 152 x 158 69 DPI (should be 300-600) Bit Depth: 32" class="bloom-imageContainer bloom-leadingElement">
+                                                            <img data-license="" data-creator="" data-copyright="" src="moon.png" alt=""></img></div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="split-pane-divider vertical-divider"></div>
+
+                                                <div class="split-pane-component position-right">
+                                                    <div min-height="60px" min-width="60px 150px" style="position: relative;" class="split-pane-component-inner adding">
+                                                        <div class="box-header-off bloom-translationGroup">
+                                                            <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                                                                <p></p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div data-activityRole="wrong-answer" title="star.png 49.48 KB 310 x 283 140 DPI (should be 300-600) Bit Depth: 32" class="bloom-imageContainer bloom-leadingElement">
+                                                            <img data-license="" data-creator="" data-copyright="" src="star.png" alt=""></img></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="bottom: 20.9677%;" title="79%" class="split-pane-divider horizontal-divider"></div>
+
+                                <div style="height: 20.9677%;" class="split-pane-component position-bottom">
                                     <div min-width="60px 150px 250px" style="position: relative;" class="split-pane-component-inner adding">
                                         <div class="box-header-off bloom-translationGroup">
                                             <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
