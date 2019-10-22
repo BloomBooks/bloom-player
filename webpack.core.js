@@ -3,11 +3,12 @@ module.exports = {
         rules: [
             {
                 test: /\.ts(x?)$/,
-                use: [{ loader: "ts-loader" }]
+                use: [{ loader: "ts-loader" }],
+                exclude: [/sample-/]
             },
             {
                 test: /\.js(x?)$/,
-                exclude: [/activity-starter/]
+                exclude: [/sample-/]
             },
             {
                 test: /\.less$/i,

@@ -85,7 +85,11 @@ export class LegacyQuestionHandler {
             window.location.host +
             window.location.pathname;
         const lastSlash = href.lastIndexOf("/");
-        return href.substring(0, lastSlash) + this.locationOfDistFolder;
+        const sub =
+            window["STORYBOOK_ENV"] !== undefined
+                ? "/legacyQuizHandling"
+                : this.locationOfDistFolder;
+        return href.substring(0, lastSlash) + sub;
     }
 
     public processPage(

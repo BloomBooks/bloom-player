@@ -49,14 +49,15 @@ module.exports = merge(core, {
         // Note: the empty "to" options mean to just go to the output folder, which is "dist/"
         new CopyPlugin([
             { from: "src/bloomplayer.htm", to: "", flatten: true },
-            { from: "src/*.mp3", to: "", flatten: true },
+            { from: "src/activities/*.mp3", to: "", flatten: true },
             {
-                from: "src/legacyQuizHandling/simpleComprehensionQuiz.js",
+                from:
+                    "src/activities/legacyQuizHandling/simpleComprehensionQuiz.js",
                 to: "",
                 flatten: true
             },
             {
-                from: "src/legacyQuizHandling/Special.css",
+                from: "src/activities/legacyQuizHandling/Special.css",
                 to: "",
                 flatten: true
             },

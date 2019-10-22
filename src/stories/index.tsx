@@ -76,6 +76,10 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
 );
 AddBloomPlayerStory(
+    "Activity - Simple DOM",
+    "src/sample-dom-activity/Simple Activities.htm"
+);
+AddBloomPlayerStory(
     "Activity - IFrame - Construct Runtime Game",
     "src/sample-iframe-activity/index.htm"
 );
