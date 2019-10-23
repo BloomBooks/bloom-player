@@ -185,20 +185,41 @@ export default class LangData {
         }
     }
 
+    // ENHANCE
+    // Ideally, we would have access to this information in meta.json, but alas we don't.
+    // We would like to add it, but even then, it wouldn't be there for older books.
+    // When we do add it, we could update the meta version number so we know we can
+    // trust meta.json as the source of truth after that version number and fall back to
+    // this for versions before it.
     private static hasAudioInLanguage(
         body: HTMLBodyElement,
         isoCode: string
     ): boolean {
-        return (
+        let result = false;
+        const audioDivs =
             body.ownerDocument!.evaluate(
                 ".//div[@lang='" +
                     isoCode +
                     "']//span[contains(@class, 'audio-sentence')]",
                 body,
                 null,
-                XPathResult.ANY_UNORDERED_NODE_TYPE,
+                XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
                 null
-            ).singleNodeValue != null
-        );
+            );
+            for (let idx = 0; idx < audioDivs.snapshotLength; idx++) {
+                const audioSpan = audioDivs.snapshotItem(
+                    idx
+                ) as HTMLElement;
+                const divParent = audioSpan.closest("div");
+                if (divParent === null) {
+                    continue;
+                }
+                if (divParent.getAttribute("data-book") !== null) {
+                    continue;
+                }
+                result = true;
+                break;
+            }
+        return result;
     }
 }
