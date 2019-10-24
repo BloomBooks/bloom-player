@@ -43,7 +43,6 @@
     },
     "devDependencies": {
         "@babel/core": "^7.5.5",
-        "@babel/plugin-syntax-dynamic-import": "^7.2.0",
         "@babel/preset-env": "^7.5.5",
         "@babel/preset-typescript": "^7.3.3",
         "@material-ui/core": "^4.0.1",
@@ -113,5 +112,8 @@
     ],
     "jest": {
         "testEnvironment": "jsdom"
+    },
+    "dependencies": {
+        "dynamic-import-polyfill": "^0.1.1"
     }
 }

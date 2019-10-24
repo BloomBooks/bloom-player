@@ -1,12 +1,15 @@
-// This is in a javascript file because this import needs this "magic comment", "webpackIgnore",
-// in order to be truly runtime-dynamic.
-// However when used in typescript, the comment is getting stripped so webpack doesn't see it,
-// and I haven't been able to make it stop (e.g. in tsconfig).
+import dynamicImportPolyfill from "dynamic-import-polyfill";
+
+// This needs to be done before any dynamic imports are used.
+dynamicImportPolyfill.initialize({
+    importFunctionName: "polyfill_import" // Defaults to '__import__'
+});
 
 export function loadDynamically(src) {
     // NB: src has to start with a slash https://stackoverflow.com/a/46739184/723299
     if (src.indexOf("/") !== 0) {
         src = "/" + src;
     }
-    return import(/* webpackIgnore: true */ src);
+    // eslint-disable-next-line no-undef
+    return polyfill_import(src);
 }
