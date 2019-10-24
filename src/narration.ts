@@ -463,7 +463,7 @@ export default class Narration {
     private getPlayableDivs(container: HTMLElement) {
         // We want to play any audio we have from divs the user can see.
         // This is a crude test, but currently we always use display:none to hide unwanted languages.
-        return this.findAll("div.bloom-editable", container).filter(
+        return this.findAll(".bloom-editable", container).filter(
             e => window.getComputedStyle(e).display !== "none"
         );
     }

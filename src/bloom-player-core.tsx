@@ -1095,6 +1095,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             },
             // Disable preloading of all images
             preloadImages: false,
+
             // Enable lazy loading, but load anything needed for the next couple of slides.
             // (I'm trying to avoid a problem where, in landscape mode of motion books,
             // we see a flash of the page without the full-screen picture overlaid.
@@ -1130,7 +1131,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     {this.state.pages.map((slide, index) => {
                         return (
                             <div
-                                key={slide}
+                                key={index}
                                 className={
                                     "page-preview-slide " +
                                     this.getSlideClass(index)
@@ -1146,13 +1147,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     this.setState({ ignorePhonyClick: false });
                                 }}
                             >
-                                <style scoped={true}>
-                                    {this.state.styleRules}
-                                </style>
-                                <div
-                                    className="actual-page-preview"
-                                    dangerouslySetInnerHTML={{ __html: slide }}
-                                />
+                                {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
+                                    Only load up the one that is about to be current page and the ones on either side of it with
+                                    actual html contents, let every other page be an empty string placeholder. Ref BL-7652 */}
+                                {Math.abs(
+                                    index - this.state.currentSwiperIndex
+                                ) < 2 ? (
+                                    <>
+                                        <style scoped={true}>
+                                            {this.state.styleRules}
+                                        </style>
+                                        <div
+                                            className="actual-page-preview"
+                                            dangerouslySetInnerHTML={{
+                                                __html: slide
+                                            }}
+                                        />
+                                    </>
+                                ) : (
+                                    // All other pages are just empty strings
+                                    ""
+                                )}
                             </div>
                         );
                     })}
@@ -1278,53 +1293,59 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
-        const bloomPage = this.getPageAtSwiperIndex(index);
-        if (!bloomPage) {
-            return; // blank initial or final page?
-        }
-        BloomPlayerCore.currentPage = bloomPage;
-        // This is probably obsolete, since we update all the page sizes on rotate, and again in setIndex.
-        // It's not expensive so leaving it in for robustness.
-        if (this.canRotate) {
-            this.forceDevicePageSize(bloomPage);
-        }
+        // While working on performance, we found that (at least some of) the following was slow.
+        // (In a large book, still somewhat inexplicably, the stuff checking for audio was slow).
+        // Even though the new page was already computed, we found that this blocked the ui from
+        // scrolling it into view. So now we allow that to finish, then do this stuff.
+        window.setTimeout(() => {
+            const bloomPage = this.getPageAtSwiperIndex(index);
+            if (!bloomPage) {
+                return; // blank initial or final page?
+            }
+            BloomPlayerCore.currentPage = bloomPage;
+            // This is probably obsolete, since we update all the page sizes on rotate, and again in setIndex.
+            // It's not expensive so leaving it in for robustness.
+            if (this.canRotate) {
+                this.forceDevicePageSize(bloomPage);
+            }
 
         if (!this.props.paused) {
             this.resetForNewPageAndPlay(bloomPage);
         }
 
-        if (!this.isXmatterPage()) {
-            this.totalPagesShown++;
-            if (index === this.indexOflastNumberedPage) {
-                this.lastNumberedPageWasRead = true;
+            if (!this.isXmatterPage()) {
+                this.totalPagesShown++;
+                if (index === this.indexOflastNumberedPage) {
+                    this.lastNumberedPageWasRead = true;
+                }
             }
-        }
 
-        if (this.props.reportPageProperties) {
-            // Informs containing react controls (in the same frame)
-            this.props.reportPageProperties({
-                hasAudio: this.narration.pageHasAudio(bloomPage),
-                hasMusic: Music.pageHasMusic(bloomPage),
-                hasVideo: Video.pageHasVideo(bloomPage)
-            });
-        }
-        this.activityManager.showingPage(bloomPage);
+            if (this.props.reportPageProperties) {
+                // Informs containing react controls (in the same frame)
+                this.props.reportPageProperties({
+                    hasAudio: this.narration.pageHasAudio(bloomPage),
+                    hasMusic: Music.pageHasMusic(bloomPage),
+                    hasVideo: Video.pageHasVideo(bloomPage)
+                });
+            }
+            this.activityManager.showingPage(bloomPage);
 
-        this.reportedAudioOnCurrentPage = false;
-        this.reportedVideoOnCurrentPage = false;
-        this.sendUpdateOfBookProgressReportToExternalContext();
+            this.reportedAudioOnCurrentPage = false;
+            this.reportedVideoOnCurrentPage = false;
+            this.sendUpdateOfBookProgressReportToExternalContext();
 
-        // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
-        this.swiperInstance.params.noSwiping = this.activityManager.getActivityAbsorbsDragging();
-        this.swiperInstance.params.touchRatio = this.activityManager.getActivityAbsorbsDragging()
-            ? 0
-            : 1;
-        // didn't seem to help: this.swiperInstance.params.allowTouchMove = false;
-        if (this.activityManager.getActivityAbsorbsTyping()) {
-            this.swiperInstance.keyboard.disable();
-        } else {
-            this.swiperInstance.keyboard.enable();
-        }
+            // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
+            this.swiperInstance.params.noSwiping = this.activityManager.getActivityAbsorbsDragging();
+            this.swiperInstance.params.touchRatio = this.activityManager.getActivityAbsorbsDragging()
+                ? 0
+                : 1;
+            // didn't seem to help: this.swiperInstance.params.allowTouchMove = false;
+            if (this.activityManager.getActivityAbsorbsTyping()) {
+                this.swiperInstance.keyboard.disable();
+            } else {
+                this.swiperInstance.keyboard.enable();
+            }
+        }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
     }
 
     // called by narration.ts
