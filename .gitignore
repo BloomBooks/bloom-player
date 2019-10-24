@@ -3,3 +3,5 @@ dist
 lib
 updateFiles.bat
 *.orig
+
+debug.log

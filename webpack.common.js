@@ -95,16 +95,16 @@ module.exports = merge(core, {
                     {
                         loader: "babel-loader",
                         query: {
-                            plugins: ["@babel/plugin-syntax-dynamic-import"],
                             presets: [
-                                // Ensure that we target our version of geckofx (mozilla/firefox)
+                                // Target Bloom Desktop's current version of geckofx
                                 [
                                     "babel-preset-env",
                                     {
                                         targets: {
                                             browsers: [
-                                                "Firefox >= 45",
-                                                "last 2 versions"
+                                                "last 3 ChromeAndroid versions", // this is kind of bogus, it ignores the number
+                                                "Firefox >= 60", // what Bloom Desktop needs
+                                                ">1%" //don't support if the browser is <= 1% use
                                             ]
                                         }
                                     }
