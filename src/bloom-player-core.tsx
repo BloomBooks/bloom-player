@@ -34,9 +34,12 @@ import IconButton from "@material-ui/core/IconButton";
 import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
 //tslint:disable-next-line:no-submodule-imports
 import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
+//tslint:disable-next-line:no-submodule-imports
+import LoadFailedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
 
 import { ActivityManager } from "./activities/activityManager";
 import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQuizHandler";
+import { CircularProgress } from "@material-ui/core";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -90,6 +93,8 @@ interface IState {
     // mode it's the index of the left context page, not the main page.
     currentSwiperIndex: number;
     isLoading: boolean;
+    loadFailed: boolean;
+    loadErrorHtml: string;
 
     //When in touch mode (in chrome debugger at least), a touch on a navigation button
     //causes a click to be raised after the onTouchEnd(). This would normally try and
@@ -151,6 +156,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         styleRules: this.initialStyleRules,
         currentSwiperIndex: 0,
         isLoading: true,
+        loadFailed: false,
+        loadErrorHtml: "",
         ignorePhonyClick: false
     };
 
@@ -215,6 +222,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (
             !this.state.isLoading &&
+            !this.state.loadFailed &&
             prevProps.activeLanguageCode !== this.props.activeLanguageCode
         ) {
             // The usual case invoked by changing the language on the player menu.
@@ -230,7 +238,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
             // We're changing books; reset several variables including isLoading,
             // until we inform the controls which languages are available.
-            this.setState({ isLoading: true });
+            this.setState({ isLoading: true, loadFailed: false });
             this.metaDataObject = undefined;
             this.htmlElement = undefined;
 
@@ -274,53 +282,60 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 : this.sourceUrl;
             const htmlPromise = axios.get(urlOfBookHtmlFile);
             const metadataPromise = axios.get(this.fullUrl("meta.json"));
-            Promise.all([htmlPromise, metadataPromise]).then(result => {
-                const [htmlResult, metadataResult] = result;
-                this.metaDataObject = metadataResult.data;
-                // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
-                // and setting its innerHtml, since that leads to the browser trying to load all the
-                // urls referenced in the book, which is a waste and also won't work because we
-                // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
-                const parser = new DOMParser();
-                // we *think* bookDoc and bookHtmlElement get garbage collected
-                const bookDoc = parser.parseFromString(
-                    htmlResult.data,
-                    "text/html"
-                );
-                const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
+            Promise.all([htmlPromise, metadataPromise])
+                .then(result => {
+                    const [htmlResult, metadataResult] = result;
+                    this.metaDataObject = metadataResult.data;
+                    // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
+                    // and setting its innerHtml, since that leads to the browser trying to load all the
+                    // urls referenced in the book, which is a waste and also won't work because we
+                    // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
+                    const parser = new DOMParser();
+                    // we *think* bookDoc and bookHtmlElement get garbage collected
+                    const bookDoc = parser.parseFromString(
+                        htmlResult.data,
+                        "text/html"
+                    );
+                    const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
-                const body = bookHtmlElement.getElementsByTagName("body")[0];
-                this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
-                    body as HTMLBodyElement
-                );
-                this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
+                    const body = bookHtmlElement.getElementsByTagName(
+                        "body"
+                    )[0];
+                    this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
+                        body as HTMLBodyElement
+                    );
+                    this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
 
-                this.copyrightHolder = this.getCopyrightInfo(body, "copyright");
-                this.originalCopyrightHolder = this.getCopyrightInfo(
-                    body,
-                    "originalCopyright"
-                );
+                    this.copyrightHolder = this.getCopyrightInfo(
+                        body,
+                        "copyright"
+                    );
+                    this.originalCopyrightHolder = this.getCopyrightInfo(
+                        body,
+                        "originalCopyright"
+                    );
 
-                this.makeNonEditable(body);
-                this.htmlElement = bookHtmlElement;
+                    this.makeNonEditable(body);
+                    this.htmlElement = bookHtmlElement;
 
-                const firstPage = bookHtmlElement.getElementsByClassName(
-                    "bloom-page"
-                )[0];
-                let pageClass = "Device16x9Portrait";
-                if (firstPage) {
-                    pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
-                }
-                // enhance: make this callback thing into a promise
-                this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
-                    this.urlPrefix,
-                    body,
-                    pageClass,
-                    () => {
-                        this.finishUp();
+                    const firstPage = bookHtmlElement.getElementsByClassName(
+                        "bloom-page"
+                    )[0];
+                    let pageClass = "Device16x9Portrait";
+                    if (firstPage) {
+                        pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
                     }
-                );
-            });
+                    // enhance: make this callback thing into a promise
+                    this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
+                        this.urlPrefix,
+                        body,
+                        pageClass,
+                        () => {
+                            this.finishUp();
+                        }
+                    );
+                })
+                .catch(err => this.HandleLoadingError(err));
         } else if (prevProps.landscape !== this.props.landscape) {
             // rotating the phone...may need to switch the orientation class on each page.
             const pages = document.getElementsByClassName("bloom-page");
@@ -343,6 +358,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // OTOH, we need to do a lazy.load(), otherwise all our pictures disappear when changing languages!
             this.swiperInstance.lazy.load();
         }
+    }
+
+    private HandleLoadingError(axiosError: any) {
+        const errorMessage = axiosError.message as string;
+        // Note: intentionally no bothering to add this to the l10n load, at this time.
+        let msg = `<p>There was a problem displaying this book: ${errorMessage}<p>`; // just show the raw thing
+        if (axiosError.message.indexOf("404") >= 0) {
+            msg = "<p>This book (or some part of it) was not found.<p>";
+            if (axiosError.config && axiosError.config.url) {
+                msg += `<p class='errorDetails'>${encodeURI(
+                    axiosError.config.url
+                )}</p>`;
+            }
+        }
+        this.setState({
+            isLoading: false,
+            loadFailed: true,
+            loadErrorHtml: msg
+        });
     }
 
     // This function, the rest of the work we need to do, will be executed after we attempt
@@ -1047,7 +1081,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     isLoading: false
                 });
                 this.props.pageStylesAreNowInstalled();
-            });
+            })
+            .catch(err => this.HandleLoadingError(err));
     }
 
     private fullUrl(url: string | null): string {
@@ -1065,9 +1100,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public render() {
         const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
-
         if (this.state.isLoading) {
-            return "Loading Book...";
+            return (
+                <CircularProgress
+                    className="loadingSpinner"
+                    color="secondary"
+                />
+            );
+        }
+        if (this.state.loadFailed) {
+            return (
+                <>
+                    <LoadFailedIcon
+                        className="loadFailedIcon"
+                        color="secondary"
+                    />
+                    <div
+                        className="loadErrorMessage"
+                        dangerouslySetInnerHTML={{
+                            __html: this.state.loadErrorHtml
+                        }}
+                    />
+                </>
+            );
         }
         const params: any = {
             // This is how we'd expect to make the next/prev buttons show up.
@@ -1309,9 +1364,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.forceDevicePageSize(bloomPage);
             }
 
-        if (!this.props.paused) {
-            this.resetForNewPageAndPlay(bloomPage);
-        }
+            if (!this.props.paused) {
+                this.resetForNewPageAndPlay(bloomPage);
+            }
 
             if (!this.isXmatterPage()) {
                 this.totalPagesShown++;

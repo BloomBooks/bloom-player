@@ -1,3 +1,9 @@
 {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#D65649",
+        "statusBar.debuggingBackground": "#D65649",
+        "statusBar.noFolderBackground": "#D65649",
+        "statussBar.prominentBackground": "#D65649"
+    }
 }
