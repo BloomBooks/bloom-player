@@ -97,3 +97,7 @@ AddBloomPlayerStory(
     "Multilingual motion book",
     "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital%2findex.htm"
 );
+AddBloomPlayerStory(
+    "Book that isn't found",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital/NOTTHERE.htm"
+);
