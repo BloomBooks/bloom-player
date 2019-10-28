@@ -991,8 +991,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
             const prefix = href.substring(0, href.length - "/fonts.css".length);
             stylesheet.innerText = result.data.replace(
-                /src:url\(([^)]*)\)/g,
-                "src:url(" + prefix + "/$1)"
+                // This is so complex because at one time we weren't adding the
+                // quotes around the original url. So, now we handle no quotes,
+                // single quotes, and double quotes. Note that we also have to
+                // handle possible parentheses in the file name.
+                /src:url\(['"]?(.*\.[^\)'"]*)['"]?\)/g,
+                "src:url('" + prefix + "/$1')"
             );
         });
         // no catch clause...if there's no fonts.css, we should never get a 'then' and

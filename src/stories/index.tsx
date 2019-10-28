@@ -66,8 +66,9 @@ AddBloomPlayerStory(
     "Landscape SL with Quiz",
     "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2f6f6d82d5-e98d-445d-b4be-143df993c3c0/bloomdigital%2findex.htm"
 );
+
 AddBloomPlayerStory(
-    "Book with some overflowing pages",
+    "Overflowing pages (some)",
     "https://s3.amazonaws.com/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
 );
 
@@ -75,6 +76,22 @@ AddBloomPlayerStory(
     "Talking book with image descriptions",
     "https://s3.amazonaws.com/bloomharvest/chris_weber%40sil-lead.org%2fd7e8058e-c0cb-4b62-a030-e710fe8b7906/bloomdigital%2findex.htm"
 );
+
+AddBloomPlayerStory(
+    "Music",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
+);
+
+AddBloomPlayerStory(
+    "Multilingual motion book",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital%2findex.htm"
+);
+
+AddBloomPlayerStory(
+    "Requires custom font",
+    "https://s3.amazonaws.com/bloomharvest-sandbox/andrew_polk%40sil.org%2fa0a92e1b-ccad-4dbd-8ce5-2159aaee02aa/bloomdigital%2findex.htm"
+);
+
 AddBloomPlayerStory(
     "Activity - Simple DOM",
     "src/sample-dom-activity/Simple Activities.htm"
@@ -88,15 +105,6 @@ AddBloomPlayerStory(
     "src/sample-canvas-activity/index.htm"
 );
 
-AddBloomPlayerStory(
-    "Book with music",
-    "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
-);
-
-AddBloomPlayerStory(
-    "Multilingual motion book",
-    "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital%2findex.htm"
-);
 AddBloomPlayerStory(
     "Book that isn't found",
     "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital/NOTTHERE.htm"
