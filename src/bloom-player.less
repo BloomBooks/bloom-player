@@ -424,6 +424,22 @@ body,
     background-color: black; // hide anything not covered by image
 }
 
+// The next three rules are needed for some old books that lack the div.split-pane* intermediate
+// elements (and usually the internal p elements as well).  Without these rules, the picture is
+// maximally sized, and the text and picture can overlap.
+.bloom-page > .marginBox > .bloom-imageContainer {
+    max-height: 50%;
+}
+.bloom-page > .marginBox > .bloom-translationGroup {
+    max-height: 50%;
+}
+.bloom-page.bloom-monolingual
+    > .marginBox
+    > .bloom-translationGroup
+    > .bloom-editable.bloom-visibility-code-on {
+    height: 100%;
+}
+
 // If we're trying to hide the page, then the sibling elements must have a lower z-index
 // for stacking.
 // See https://issues.bloomlibrary.org/youtrack/issue/BL-7452 for details.
