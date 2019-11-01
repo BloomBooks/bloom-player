@@ -287,28 +287,35 @@ export default class LangData {
         body: HTMLBodyElement,
         isoCode: string
     ): boolean {
-        let result = false;
-        const audioDivs = body.ownerDocument!.evaluate(
+        const audioClass = "audio-sentence";
+        const divsInLang = body.ownerDocument!.evaluate(
             ".//div[@lang='" +
                 isoCode +
-                "']//span[contains(@class, 'audio-sentence')]",
+                "']",
             body,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
             null
         );
-        for (let idx = 0; idx < audioDivs.snapshotLength; idx++) {
-            const audioSpan = audioDivs.snapshotItem(idx) as HTMLElement;
-            const divParent = audioSpan.closest("div");
-            if (divParent === null) {
+        for (let idx = 0; idx < divsInLang.snapshotLength; idx++) {
+            const mainDiv = divsInLang.snapshotItem(idx) as HTMLElement;
+            if (mainDiv.getAttribute("data-book") !== null) {
                 continue;
             }
-            if (divParent.getAttribute("data-book") !== null) {
-                continue;
+            if (mainDiv.classList.contains(audioClass)) {
+                return true;
             }
-            result = true;
-            break;
+            const audioSpan = body.ownerDocument!.evaluate(
+                ".//span[contains(@class, '" + audioClass + "')]",
+                mainDiv,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
+            if (audioSpan) {
+                return true;
+            }
         }
-        return result;
+        return false;
     }
 }
