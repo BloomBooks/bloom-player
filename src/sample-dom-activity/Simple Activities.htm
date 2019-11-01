@@ -22,16 +22,13 @@
                     DIV.coverColor  TEXTAREA        {               background-color: #B0DEE4 !important;   }
                     DIV.bloom-page.coverColor       {               background-color: #B0DEE4 !important;   }
     </style>
-    <meta name="xmatter" content="TemplateStarter"></meta>
     <link rel="stylesheet" href="basePage.css" type="text/css"></link>
     <link rel="stylesheet" href="previewMode.css" type="text/css"></link>
     <link rel="stylesheet" href="origami.css" type="text/css"></link>
-    <link rel="stylesheet" href="branding.css" type="text/css"></link>
     <link rel="stylesheet" href="Basic Book.css" type="text/css"></link>
-    <link rel="stylesheet" href="TemplateStarter-XMatter.css" type="text/css"></link>
     <link rel="stylesheet" href="langVisibility.css" type="text/css"></link>
     <link rel="stylesheet" href="defaultLangStyles.css" type="text/css"></link>
-    <link rel="stylesheet" href="C:/Users/hatto/Documents/Bloom/Activity%20Experiments/customCollectionStyles.css" type="text/css"></link>
+     <link rel="stylesheet" href="Activity.css" type="text/css"></link> <!--this is for the 4.6 legacy comprehension quiz -->
 </head>
 
 <body>
@@ -80,53 +77,129 @@
         <div data-xmatter-page="frontCover" data-page="required singleton" data-export="front-matter-cover" data-page-number=""></div>
     </div>
 
-    <div class="bloom-page cover coverColor bloom-frontMatter frontCover outsideFrontCover Device16x9Landscape side-right" data-page="required singleton" data-export="front-matter-cover" data-xmatter-page="frontCover" id="fa49c27d-6897-4a70-94f6-dc4db6799f6c" data-page-number="">
-        <div class="pageLabel" lang="en" data-i18n="TemplateBooks.PageLabel.Image For Thumbnail">
-            Image For Thumbnail
+
+    <div class="bloom-page simple-comprehension-quiz bloom-interactive-page enterprise-only numberedPage side-left Device16x9Landscape bloom-monolingual" id="9b0217ad-881e-4776-8080-d09448e78c4c" data-page="" data-analyticscategories="comprehension" data-reader-version="2" data-pagelineage="F125A8B6-EA15-4FB7-9F8D-271D7B3C8D4D" data-page-number="1" lang="">
+        <div class="pageLabel" data-i18n="TemplateBooks.PageLabel.Quiz Page" lang="en">
+            Quiz Page
         </div>
+
         <div class="pageDescription" lang="en"></div>
 
         <div class="marginBox">
-            <div class="bloom-imageContainer bloom-backgroundImage" data-book="coverImage" style="background-image:url('DOM%20Activity.png')" data-copyright="" data-creator="" data-license="">
-                <label class="bubble">Simple line drawings look best. Instead of using this page, you can also make your own thumbnail.png file and set it to Read-only so Bloom doesn't write over it.</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="bloom-page bloom-frontMatter Device16x9Landscape side-left" data-page="required singleton" data-export="front-matter-about" id="61ef6ac5-a63b-4f7e-bbe3-387e9832901e" data-page-number="">
-        <div class="pageLabel" lang="en" data-i18n="TemplateBooks.PageLabel.About">
-            About
-        </div>
-        <div class="pageDescription" lang="en"></div>
-
-        <div class="marginBox">
-            Template Title
-
-            <div class="bloom-translationGroup title" data-default-languages="en, L1, L2">
-                <div class="bloom-editable" lang="z" contenteditable="true" data-book="bookTitle"></div>
-
-                <div class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" lang="en" contenteditable="true" data-book="bookTitle">
-                    <p>Simple Activities</p>
+            <div class="quiz">
+                <div aria-describedby="qtip-0" data-hasqtip="true" class="bloom-translationGroup bloom-ignoreChildrenForBookLanguageList" data-default-languages="auto">
+                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizHeader-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" data-collection="simpleComprehensionQuizHeading" contenteditable="true" lang="en">
+                        <p>Check Your Understanding</p>
+                    </div>
                 </div>
-                <div class="bloom-editable" lang="z" contenteditable="true"></div>
-            </div>Name of Template Creator
 
-            <div class="bloom-translationGroup templateCreator" data-default-languages="L1">
-                <div class="bloom-editable" lang="z" contenteditable="true" data-book="templateCreator"></div>
+                <div aria-describedby="qtip-4" data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a comprehension question here">
+                    <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizQuestion-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                        <p>This page has the Bloom 4.6 format with explicit script tag</p>
+                    </div>
 
-                <div class="bloom-editable bloom-content1 bloom-contentNational1 bloom-visibility-code-on" lang="en" contenteditable="true" data-book="templateCreator">
-                    <p>Bloom Team</p>
+                    <div style="" class="bloom-editable QuizQuestion-style" contenteditable="true" lang="z">
+                        <p></p>
+                    </div>
                 </div>
-            </div>
 
-            <div class="licenseInfo">
-                Any images that you include in this template will retain their embedded copyright and license, and so books using those images can and should give credit and abide by those licenses. However we require that the structure of your template be free of copyright and in the <a href="http://creativecommons.org/publicdomain/zero/1.0/">Public Domain (CC0).</a>
+                <div class="checkbox-and-textbox-choice">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
 
-                <p></p><img class="licenseImage" src="license.png" alt=""></img>
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p>one</p>
+                        </div>
 
-                <div class="div" data-book="licenseUrl">
-                    http://creativecommons.org/publicdomain/zero/1.0/
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
                 </div>
+
+                <div class="checkbox-and-textbox-choice">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
+
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p>two</p>
+                        </div>
+
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
+                </div>
+
+                <div class="checkbox-and-textbox-choice">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
+
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p>three</p>
+                        </div>
+
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
+                </div>
+
+                <div class="checkbox-and-textbox-choice empty">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
+
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p></p>
+                        </div>
+
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
+                </div>
+
+                <div class="checkbox-and-textbox-choice empty">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
+
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p></p>
+                        </div>
+
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
+                </div>
+
+                <div class="checkbox-and-textbox-choice empty">
+                    <input class="styled-check-box" name="Correct" type="checkbox"></input>
+
+                    <div data-hasqtip="true" class="bloom-translationGroup" data-default-languages="auto" data-hint="Put a possible answer here. Check it if it is correct.">
+                        <div data-languagetipcontent="English" aria-label="false" role="textbox" spellcheck="true" tabindex="0" class="bloom-editable QuizAnswer-style bloom-content1 bloom-contentNational1 bloom-visibility-code-on" contenteditable="true" lang="en">
+                            <p></p>
+                        </div>
+
+                        <div style="" class="bloom-editable QuizAnswer-style" contenteditable="true" lang="z">
+                            <p></p>
+                        </div>
+                    </div>
+
+                    <div class="placeToPutVariableCircle"></div>
+                </div>
+                <script src="simpleComprehensionQuiz.js">
+                </script>
             </div>
         </div>
     </div>
