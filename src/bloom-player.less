@@ -176,8 +176,9 @@ We just make them follow the main content normally. */
     }
     .swiper-button-next,
     .swiper-button-prev {
-        height: 67%;
-        top: 18%;
+        height: 66%;
+        top: 17%; // height at 66% leaves 34% spacing, half of that is 17%
+        margin-top: unset; // defeat Swiper's own positioning that would throw ours off
         background-color: transparent; // except when hovering, see below.
         // This makes the grey buttons, which are all you can see when not hovering,
         // quite faint, allowing all the page content to be seen through them,
@@ -197,7 +198,10 @@ We just make them follow the main content normally. */
         }
         button {
             position: relative;
-            top: calc(50% - 0.5em);
+            // This is the calc. for .largeOutsideButtons; see under :not(.largeOutsideButtons) below for other calc.
+            //   These are both MaterialUI things we don't control, otherwise I'd make them variables.
+            //   12px = 1/2 of MuiIconButton-root padding; 0.5em = 1/2 of MuiSvgIcon-root height
+            top: calc(50% - 12px - 0.5em);
             margin: 0 auto;
             display: block;
             color: @hoverNextPrevButtonBar;
@@ -261,6 +265,7 @@ We just make them follow the main content normally. */
     }
 }
 @insideButtonQuizMargin: 30px;
+@smallButtonSize: 0.8em;
 .bloomPlayer:not(.largeOutsideButtons) {
     .swiper-button-next {
         right: 0;
@@ -286,9 +291,10 @@ We just make them follow the main content normally. */
     button {
         padding: 1px 0px 1px 0px;
         svg {
-            width: 0.8em;
-            height: 0.8em;
+            width: @smallButtonSize;
+            height: @smallButtonSize;
         }
+        top: calc(50% - @smallButtonSize / 2);
     }
 }
 
