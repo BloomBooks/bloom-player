@@ -1,6 +1,7 @@
 import axios from "axios";
 import { OldQuestionsConverter } from "./old-questions";
 import { IActivityInformation } from "../activityManager";
+import { loadDynamically } from "../loadDynamically";
 
 // NB: there are two levels of "legacy" we're dealing with here.
 // The first is before we had actual activity pages; instead the presence of a
@@ -31,19 +32,9 @@ export class LegacyQuestionHandler {
         // the quiz pages from json, the book folder won't have it. Also, this means we
         // always use the latest version of the quiz code rather than whatever was current
         // when the book was published.
-        const folder = this.getFolderForSupportFiles();
-        const quizPath = folder + "/simpleComprehensionQuiz.js";
-        axios
-            .get(quizPath)
-            .then(result => {
-                // See comment on eval below.
-                // tslint:disable-next-line: no-eval
-                eval(result.data);
-                finished(quizPath);
-            })
-            .catch(error => {
-                console.log(error);
-            });
+        // In storybook, this will be found in it's source folder because of command-line arguments to storybook.
+        // In the distribution, it is found because wepack copies it into the dist file.
+        loadDynamically("simpleComprehensionQuiz.js");
     }
 
     // Prior to Bloom 4.6, quizzes were done by writing out a json file,
