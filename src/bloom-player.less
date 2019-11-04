@@ -260,6 +260,7 @@ We just make them follow the main content normally. */
         }
     }
 }
+@insideButtonQuizMargin: 30px;
 .bloomPlayer:not(.largeOutsideButtons) {
     .swiper-button-next {
         right: 0;
@@ -272,6 +273,14 @@ We just make them follow the main content normally. */
         button {
             padding-right: 2px;
         }
+    }
+    &:not(.smallOutsideButtons) .QuizQuestion-style {
+        // BL-7758 don't allow inside paging handles in bloom-player to cover checkboxes
+        margin-left: @insideButtonQuizMargin;
+    }
+    &:not(.smallOutsideButtons) .checkbox-and-textbox-choice {
+        // BL-7758 don't allow inside paging handles in bloom-player to cover checkboxes
+        margin-left: @insideButtonQuizMargin;
     }
 
     button {
