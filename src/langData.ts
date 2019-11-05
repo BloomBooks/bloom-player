@@ -235,10 +235,10 @@ export default class LangData {
 
     private static getBestLanguageNameFromMetaData(
         code: string,
-        languageDisplayNames: object
+        languageDisplayNames: object | undefined
     ): string {
         let proposedDisplayName = "";
-        if (languageDisplayNames.hasOwnProperty(code)) {
+        if (languageDisplayNames && languageDisplayNames.hasOwnProperty(code)) {
             proposedDisplayName = languageDisplayNames[code];
         }
         return LangData.getBestLanguageName(code, proposedDisplayName);
