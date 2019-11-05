@@ -472,3 +472,9 @@ body,
 .errorDetails {
     font-size: 9pt;
 }
+
+// BL-7517 Older books had a tabindex attribute, which newer versions of .bloomd files remove.
+// When the attribute is present, tapping on the div causes it to be bordered in orange. (See BL-6849 too.)
+*[tabindex]:focus {
+    outline: none;
+}
