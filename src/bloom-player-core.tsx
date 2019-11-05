@@ -344,11 +344,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.forceDevicePageSize(page);
             }
         }
+
         if (prevProps.landscape !== this.props.landscape) {
-            // may need to show or hide animation
+            // if there was a rotation, we may need to show the page differently (e.g. Motion books)
             this.setIndex(this.state.currentSwiperIndex);
             this.showingPage(this.state.currentSwiperIndex);
         }
+
         if (prevProps.paused !== this.props.paused) {
             this.handlePausePlay();
         }
@@ -398,7 +400,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.questionCount = 0;
         }
         for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
+            const page = pages[i] as HTMLElement;
             const landscape = this.forceDevicePageSize(page);
             // this used to be done for us by react-slick, but swiper does not.
             // Since it's used by at least page-api code, it's easiest to just stick it in.
@@ -1356,6 +1358,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // (In a large book, still somewhat inexplicably, the stuff checking for audio was slow).
         // Even though the new page was already computed, we found that this blocked the ui from
         // scrolling it into view. So now we allow that to finish, then do this stuff.
+        console.log(`ShowingPage(${index})`);
         window.setTimeout(() => {
             const bloomPage = this.getPageAtSwiperIndex(index);
             if (!bloomPage) {

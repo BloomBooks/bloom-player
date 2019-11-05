@@ -1,8 +1,10 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
+import RadioComprehensionQuiz from "./domActivities/RadioComprehensionQuiz";
 const iframeModule = require("./iframeActivity.ts");
 const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
+const radioRadioComprehensionQuizModule = require("./domActivities/RadioComprehensionQuiz.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -36,8 +38,19 @@ export interface IActivityInformation {
 
 export class ActivityManager {
     private soundPlayer: ActivityContext;
+
+    private buildInActivities: { [id: string]: IActivityModule } = {};
+    previousPageElement: HTMLElement;
+
     constructor() {
         this.soundPlayer = new ActivityContext();
+        this.buildInActivities["iframe"] = iframeModule as IActivityModule;
+        this.buildInActivities[
+            "multiple-choice"
+        ] = multipleChoiceActivityModule as IActivityModule;
+        this.buildInActivities[
+            radioRadioComprehensionQuizModule.dataActivityID
+        ] = radioRadioComprehensionQuizModule as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
         return (
@@ -61,48 +74,53 @@ export class ActivityManager {
         [name: string]: IActivityInformation;
     } = {};
 
+    private getActivityIdOfPage(pageDiv: HTMLElement) {
+        let activityID = pageDiv.getAttribute("data-activity") || "";
+
+        // Handle "simple comprehension quizzes", which in 4.6 (and maybe into 4.7 and beyond?) don't have data-activity but
+        // instead have a <script> tag. In the Bloom-Player context, that script doesn't do anything,
+        // but it does tell us what the page is supposed to be, so we can just set the activityID
+        // to what it would be if that page was designed with the current activity api.
+        if (activityID === "" && this.hasLegacyQuizScriptTag(pageDiv)) {
+            activityID = radioRadioComprehensionQuizModule.dataActivityID;
+        }
+        return activityID;
+    }
     public processPage(
         bookUrlPrefix: string,
         // NOTE: this is not the same element we will get as a parameter in showingPage().
         // But it is clone of it, which is fine because we aren't storing it, we're only
         // looking for a data-activity attribute.
-        pageDiv: Element,
+        pageDiv: HTMLElement,
         legacyQuestionHandler: LegacyQuestionHandler
     ): void {
-        const name = pageDiv.getAttribute("data-activity");
-        // if it has a an activity that we haven't already loaded the code for
-        if (name && !this.loadedActivityScripts[name]) {
-            // First handle iframe activities which is special in that the "iframeActivity" module
-            // is built-in to bloom-player, rather than
-            // being loaded dynamically from the book's folder (currently just iframe)
-            if (name === "iframe") {
-                this.loadedActivityScripts[name] = {
-                    name,
-                    module: iframeModule as IActivityModule,
+        const activityID = this.getActivityIdOfPage(pageDiv);
+        //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
+        if (activityID && !this.loadedActivityScripts[activityID]) {
+            if (this.buildInActivities[activityID]) {
+                this.loadedActivityScripts[activityID] = {
+                    name: activityID,
+                    module: this.buildInActivities[activityID],
                     runningObject: undefined, // for now were just registering the module, not constructing the object
-                    requirements: iframeModule.activityRequirements()
-                };
-            } else if (name === "multiple-choice") {
-                this.loadedActivityScripts[name] = {
-                    name,
-                    module: multipleChoiceActivityModule as IActivityModule,
-                    runningObject: undefined, // for now were just registering the module, not constructing the object
-                    requirements: multipleChoiceActivityModule.activityRequirements()
+                    requirements: this.buildInActivities[
+                        activityID
+                    ].activityRequirements()
                 };
             }
+
             // Try to find the named activity js in the book's folder.
             else {
                 // Even though we won't use the script until we get to the page,
                 // at the moment we start loading them in the background. This
                 // probably isn't necessary, we could probably wait.
-                loadDynamically(bookUrlPrefix + "/" + name + ".js").then(
+                loadDynamically(bookUrlPrefix + "/" + activityID + ".js").then(
                     module => {
                         // if the same activity is encountered multiple times, we
                         // could still get here multiple times because the load
                         // is async
-                        if (!this.loadedActivityScripts[name]) {
-                            this.loadedActivityScripts[name] = {
-                                name,
+                        if (!this.loadedActivityScripts[activityID]) {
+                            this.loadedActivityScripts[activityID] = {
+                                name: activityID,
                                 module,
                                 runningObject: undefined, // for now were just registering the module, not constructing the object
                                 requirements: module.activityRequirements()
@@ -111,15 +129,19 @@ export class ActivityManager {
                     }
                 );
             }
-        } else {
-            legacyQuestionHandler.processPage(
-                pageDiv,
-                this.loadedActivityScripts
-            );
         }
     }
 
     public showingPage(bloomPageElement: HTMLElement) {
+        // At the moment bloom-player-core will always call us
+        // twice if the book is landscape. Probably that could
+        // be fixed but we might as well just protect ourselves
+        // from starting the same activity twice without stopping it.
+        if (this.previousPageElement === bloomPageElement) {
+            return;
+        }
+        this.previousPageElement = bloomPageElement;
+
         // Regardless of what we're showing now, first lets stop any activity that
         // was running on the previous page:
         if (this.currentActivity && this.currentActivity.module) {
@@ -129,16 +151,16 @@ export class ActivityManager {
         this.currentActivity = undefined;
 
         // OK, let's look at this page and see if has an activity:
-        const name = bloomPageElement.getAttribute("data-activity");
+        const activityID = this.getActivityIdOfPage(bloomPageElement);
 
-        if (name) {
+        if (activityID) {
             // We should have learned about this activity when the book
             // was first loaded, and dynamically loaded its javascript,
             // so that it is waiting now to be run
-            const activity = this.loadedActivityScripts[name];
+            const activity = this.loadedActivityScripts[activityID];
             console.assert(
                 activity,
-                `Trying to start activity "${name}" but it wasn't previously loaded.`
+                `Trying to start activity "${activityID}" but it wasn't previously loaded.`
             );
             if (activity) {
                 this.currentActivity = activity;
@@ -150,5 +172,17 @@ export class ActivityManager {
                 activity.runningObject!.start(this.soundPlayer);
             }
         }
+    }
+
+    private hasLegacyQuizScriptTag(pageDiv: Element): boolean {
+        const scripts = pageDiv.getElementsByTagName("script");
+        const urls: string[] = [];
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].getAttribute("src");
+            if (src && src.endsWith("simpleComprehensionQuiz.js")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

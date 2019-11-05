@@ -27,16 +27,6 @@ export class LegacyQuestionHandler {
             : null;
     }
 
-    private loadQuizScript(finished: (url: string) => void) {
-        // We want the reader's own version of this file. For one thing, if we generated
-        // the quiz pages from json, the book folder won't have it. Also, this means we
-        // always use the latest version of the quiz code rather than whatever was current
-        // when the book was published.
-        // In storybook, this will be found in it's source folder because of command-line arguments to storybook.
-        // In the distribution, it is found because wepack copies it into the dist file.
-        loadDynamically("simpleComprehensionQuiz.js");
-    }
-
     // Prior to Bloom 4.6, quizzes were done by writing out a json file,
     // rather than having the wysiwyg pages we have now.
     public generateQuizPagesFromLegacyJSON(
@@ -88,26 +78,40 @@ export class LegacyQuestionHandler {
         loadedActivityScripts: { [name: string]: IActivityInformation }
     ) {
         // The following is the 4.6 version, which used <script> tags and, as far as we know,
-        //  is just for simpleComprehensionQuiz.js.
-        // When a page loads, if it is an interactive page we want to execute any scripts embedded in it.
-        // This is potentially dangerous, so we make it less likely to happen through random attacks
-        // by only doing it in pages that are explicitly marked as bloom interactive pages.
+        // is just for simpleComprehensionQuiz.js. At the time of this writing, we don't know in which
+        // version we will stop using this approach for quizzes.
         if (pageDiv.classList.contains("bloom-interactive-page")) {
             LegacyQuestionHandler.getActivityScriptUrls(pageDiv).forEach(
                 src => {
-                    if (!loadedActivityScripts[src]) {
-                        if (src.endsWith("/simpleComprehensionQuiz.js")) {
-                            this.loadQuizScript(
-                                url =>
-                                    (loadedActivityScripts[url] = {
-                                        // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
-                                        name: src,
-                                        module: undefined,
-                                        runningObject: undefined,
-                                        requirements: { clicking: true }
-                                    })
-                            );
-                        }
+                    if (!src.endsWith("simpleComprehensionQuiz.js")) {
+                        console.error(
+                            "Only legacy SimpleComprehensionQuiz's are allowed to use the <script> tag. Newer code must use the data-activity attribute instead."
+                        );
+                        return;
+                    }
+                    if (
+                        !loadedActivityScripts["legacySimpleComprehensionQuiz"]
+                    ) {
+                        // We want the reader's own version of this file. For one thing, if we generated
+                        // the quiz pages from json, the book folder won't have it. Also, this means we
+                        // always use the latest version of the quiz code rather than whatever was current
+                        // when the book was published.
+
+                        // In storybook, this will be found in it's source folder because of command-line arguments to storybook.
+                        // In the distribution, it is found because webpack copies it into the dist file.
+
+                        loadDynamically("simpleComprehensionQuiz.js").then(
+                            () =>
+                                (loadedActivityScripts[
+                                    "legacySimpleComprehensionQuiz"
+                                ] = {
+                                    // simpleComprehensionQuiz isn't a module yet, doesn't use our API yet, so module is null
+                                    name: src,
+                                    module: undefined,
+                                    runningObject: undefined,
+                                    requirements: { clicking: true }
+                                })
+                        );
                     }
                 }
             );

@@ -11,6 +11,7 @@
 // and needs the associated JS to make them work.
 // Master function, called when document is ready, initializes CQ pages
 function init() {
+    console.log("simpleCQ init");
     ensureEditModeStyleSheet();
     initChoiceWidgets();
 }
@@ -42,10 +43,13 @@ var kwasSelectedAtOnePoint = "wasSelectedAtOnePoint";
 // and for maintaining the class that indicates empty choice.
 // Assumes the code that sets up the editMode class on the body element if appropriate has already been run.
 function initChoiceWidgets() {
+    console.log("initChoiceWidgets");
     markEmptyChoices();
     var observer = new MutationObserver(markEmptyChoices);
     observer.observe(document.body, { characterData: true, subtree: true });
     var list = document.getElementsByClassName("checkbox-and-textbox-choice");
+    console.log("list=" + JSON.stringify(list));
+    console.log(document.body.outerHTML);
     for (var i = 0; i < list.length; i++) {
         var x = list[i];
         var checkbox = getCheckBox(x);
@@ -57,6 +61,7 @@ function initChoiceWidgets() {
             // in reader mode.
             checkbox.checked = correct;
         } else {
+            console.log("aaaaaaaaa");
             // There are likely to be several copies of this code, one for each quiz page, each doing this.
             // But we only need to do it once per element. In particular, we don't want multiple handlers
             // trying to play the same sound on each click. They can get out of sync and make a horrible noise.
@@ -65,6 +70,7 @@ function initChoiceWidgets() {
             if (x.hasAttribute("data-simpleQuizInitComplete")) {
                 continue;
             }
+            console.log("bbbbbbbb");
             x.setAttribute("data-simpleQuizInitComplete", "true");
             x.addEventListener("click", handleReadModeClick, { capture: true });
             var key = getStorageKeyForChoice(x);
@@ -139,6 +145,7 @@ function handleReadModeClick(evt) {
 // and we need to make it look like it looked last time we were on this
 // page
 function choiceWasClicked(choice) {
+    console.log("choiceWasClicked");
     var classes = choice.classList;
     classes.add(kwasSelectedAtOnePoint);
     // Make the state of the hidden input conform. Only if the

@@ -11,7 +11,7 @@ export { receiveMessage } from "./externalContext";
 // here (along with some magic in our webpack config, the output/library and output/libraryTarget
 // and the fact that this file is specified as the exports entry)
 // makes them accessible to such code by calling e.g. window.BloomPlayer.reportScoreForCurrentPage(...)
-export * from "./page-api";
+//export * from "./page-api";
 
 // When the module is loaded we call this to kick everything off.
 InitBloomPlayerControls();

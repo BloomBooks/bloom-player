@@ -5,7 +5,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
 /* This API is for use by interactive pages */
 
 /*
-    Interactive pages call this in order to 
+    Interactive pages call this in order to
     1) update the score that someday we may display on each page, and ( <---- Not implemented yet )
     2) optionally contribute to one analytics score. The category/label for that analytics has to be
     given to this twice: first in a data-analyticsCategories attribute on the page, and secondly in the
@@ -20,7 +20,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
     * over and over. However, it might well make sense to update the score they see on screen. If ever we
     * have some analytics scale that *does* make sense to be updatable, e.g. a "Please rate this book", then
     * we can always add a new parameter to this method to control that.
-    * 
+    *
     * We don't currently (May 2019) have a way to tell the page "this is your last chance to report a score".
     * Rather, we send the analytics immediately when every page that has this analyticsCategory (in its
     * data-analyticsCategories list) has reported at least once.
@@ -28,6 +28,12 @@ import { TransientPageDataSingleton } from "./transientPageData";
     * of comprehension questions, both the event name and parameters of the event are modified (at least
     * by bloom-reader2; not here).
 */
+// Send the score and info for analytics.
+// Note: the Bloom Player is smart enough to only
+// record the analytics part the very first time we report a score for this page,
+// and only send it when it has been reported for all pages using the same
+// analyticsCategory as this page.
+// Note, it is up to the host of BloomPlayer whether it actually is sending the analytics to some server.
 export function reportScoreForCurrentPage(
     possiblePoints: number,
     actualPoints: number,
