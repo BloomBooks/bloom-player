@@ -8,13 +8,6 @@ const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
 // a data-activityRole of either "correct-answer" or "wrong-answer".
 
 export default class MultipleChoiceDomActivity {
-    private listeners = new Array<{
-        name: string;
-        target: Element;
-        listener: EventListener;
-    }>();
-
-    private pageElement: HTMLElement;
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -23,14 +16,12 @@ export default class MultipleChoiceDomActivity {
     // coming back to this page, or going to another instance of this activity
     // in a subsequent page.
     // eslint-disable-next-line no-unused-vars
-    constructor(pageElement: HTMLElement) {
-        this.pageElement = pageElement;
-    }
+    constructor(pageElement: HTMLElement) {}
 
     public start(activityContext: ActivityContext) {
         this.activityContext = activityContext;
-        activityContext.addActivityStylesForPage(this.pageElement, activityCss);
-        this.pageElement
+        activityContext.addActivityStylesForPage(activityCss);
+        activityContext.pageElement
             .querySelectorAll("[data-activityRole]")
             .forEach((choiceElement: HTMLElement) => {
                 // add a button around the translation group or image container
@@ -51,7 +42,7 @@ export default class MultipleChoiceDomActivity {
                 }
 
                 // wire up events
-                this.addEventListener(
+                this.activityContext.addEventListener(
                     "click",
                     button,
                     correct ? this.onCorrectClick : this.onWrongClick
@@ -67,21 +58,9 @@ export default class MultipleChoiceDomActivity {
         this.activityContext.playWrong();
     };
 
-    private addEventListener(
-        name: string,
-        target: Element,
-        listener: EventListener
-    ) {
-        this.listeners.push({ name, target, listener });
-        target.addEventListener(name, listener);
-    }
     // When our page is not the selected one, the bloom-player calls this.
-    // We need to disconnect any listeners.
-    public stop() {
-        this.listeners.forEach(l =>
-            l.target.removeEventListener(l.name, l.listener)
-        );
-    }
+    // It will also tell our context to stop, which will disconnect the listeners we registered with it
+    public stop() {}
 }
 
 export function activityRequirements() {

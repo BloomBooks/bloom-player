@@ -8,6 +8,15 @@ import {
 // a wrapper so that activities don't have direct knowledge of how parts outside
 // of them are arranged.
 export class ActivityContext {
+    public pageElement: any;
+    private listeners = new Array<{
+        name: string;
+        target: Element;
+        listener: EventListener;
+    }>();
+    constructor(pageDiv: HTMLElement) {
+        this.pageElement = pageDiv;
+    }
     public reportScore(
         possiblePoints: number,
         actualPoints: number,
@@ -23,15 +32,15 @@ export class ActivityContext {
             analyticsCategory
         );
     }
-    public getSessionPageData(page: Element, key: string): string {
-        return getPageData(page, key);
+    public getSessionPageData(key: string): string {
+        return getPageData(this.pageElement, key);
     }
-    public storeSessionPageData(page: Element, key: string, value: string) {
+    public storeSessionPageData(key: string, value: string) {
         // please leave this log in... if we could  make it only show in storybook, we would
         console.log(
             `ActivityContext.storePageData(<page>, '${key}', '${value}')`
         );
-        storePageData(page, key, value);
+        storePageData(this.pageElement, key, value);
     }
     public playCorrect() {
         // NB: if this stops working in storybook; the file should be found because the package.json
@@ -61,13 +70,40 @@ export class ActivityContext {
         player.play();
     }
 
-    public addActivityStylesForPage(pageElement: HTMLElement, css: string) {
-        if (!pageElement.querySelector("[data-activity-stylesheet]")) {
-            const style = pageElement.ownerDocument!.createElement("style");
+    public addActivityStylesForPage(css: string) {
+        if (!this.pageElement.querySelector("[data-activity-stylesheet]")) {
+            const style = this.pageElement.ownerDocument!.createElement(
+                "style"
+            );
             style.setAttribute("data-activity-stylesheet", ""); // value doesn't matter
             style.setAttribute("scoped", "true");
             style.innerText = css;
-            pageElement.parentNode!.insertBefore(style, pageElement); //NB: will be added even if firstChild is null
+            this.pageElement.parentNode!.insertBefore(style, this.pageElement); //NB: will be added even if firstChild is null
         }
+    }
+
+    public addEventListener(
+        name: string,
+        target: Element,
+        listener: EventListener,
+        options?: AddEventListenerOptions | undefined
+    ) {
+        const wrappedListener: EventListener = e => {
+            console.log(`event ${name}`);
+            listener(e);
+        };
+        // store the info we need in order to detach the listener when we are stop()ed
+        this.listeners.push({
+            name,
+            target,
+            listener: wrappedListener
+        });
+        target.addEventListener(name, wrappedListener, options);
+    }
+
+    public stop() {
+        this.listeners.forEach(l =>
+            l.target.removeEventListener(l.name, l.listener)
+        );
     }
 }

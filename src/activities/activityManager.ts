@@ -1,10 +1,9 @@
 import { loadDynamically } from "./loadDynamically";
 import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
-import RadioComprehensionQuiz from "./domActivities/RadioComprehensionQuiz";
 const iframeModule = require("./iframeActivity.ts");
 const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
-const radioRadioComprehensionQuizModule = require("./domActivities/RadioComprehensionQuiz.ts");
+const radioRadioButtonQuizModule = require("./domActivities/RadioButtonQuiz.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -17,7 +16,7 @@ export interface IActivityModule {
 // This is the class that the activity module has to implement
 export interface IActivityObject {
     new (HTMLElement): object;
-    start: (soundPlayer: ActivityContext) => void;
+    start: (context: ActivityContext) => void;
     stop: () => void;
 }
 
@@ -34,23 +33,21 @@ export interface IActivityInformation {
     module: IActivityModule | undefined; // the module of code we loaded from {name}.js
     runningObject: IActivityObject | undefined; // an instance of the default class exported by the module (but only if it's the current activity)
     requirements: IActivityRequirements; // returned by the module's activityRequirements() function
+    context: ActivityContext | undefined;
 }
 
 export class ActivityManager {
-    private soundPlayer: ActivityContext;
-
     private buildInActivities: { [id: string]: IActivityModule } = {};
     previousPageElement: HTMLElement;
 
     constructor() {
-        this.soundPlayer = new ActivityContext();
         this.buildInActivities["iframe"] = iframeModule as IActivityModule;
         this.buildInActivities[
             "multiple-choice"
         ] = multipleChoiceActivityModule as IActivityModule;
         this.buildInActivities[
-            radioRadioComprehensionQuizModule.dataActivityID
-        ] = radioRadioComprehensionQuizModule as IActivityModule;
+            radioRadioButtonQuizModule.dataActivityID
+        ] = radioRadioButtonQuizModule as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
         return (
@@ -82,7 +79,7 @@ export class ActivityManager {
         // but it does tell us what the page is supposed to be, so we can just set the activityID
         // to what it would be if that page was designed with the current activity api.
         if (activityID === "" && this.hasLegacyQuizScriptTag(pageDiv)) {
-            activityID = radioRadioComprehensionQuizModule.dataActivityID;
+            activityID = radioRadioButtonQuizModule.dataActivityID;
         }
         return activityID;
     }
@@ -102,6 +99,7 @@ export class ActivityManager {
                     name: activityID,
                     module: this.buildInActivities[activityID],
                     runningObject: undefined, // for now were just registering the module, not constructing the object
+                    context: undefined,
                     requirements: this.buildInActivities[
                         activityID
                     ].activityRequirements()
@@ -123,6 +121,7 @@ export class ActivityManager {
                                 name: activityID,
                                 module,
                                 runningObject: undefined, // for now were just registering the module, not constructing the object
+                                context: undefined,
                                 requirements: module.activityRequirements()
                             };
                         }
@@ -147,6 +146,8 @@ export class ActivityManager {
         if (this.currentActivity && this.currentActivity.module) {
             this.currentActivity.runningObject!.stop();
             this.currentActivity.runningObject = undefined;
+            this.currentActivity.context!.stop();
+            this.currentActivity.context = undefined;
         }
         this.currentActivity = undefined;
 
@@ -169,7 +170,8 @@ export class ActivityManager {
                 ) as IActivityObject;
                 // for use in styling things differently during playback versus book editing
                 bloomPageElement.classList.add("bloom-activityPlayback");
-                activity.runningObject!.start(this.soundPlayer);
+                activity.context = new ActivityContext(bloomPageElement);
+                activity.runningObject!.start(activity.context);
             }
         }
     }

@@ -109,6 +109,7 @@ export class LegacyQuestionHandler {
                                     name: src,
                                     module: undefined,
                                     runningObject: undefined,
+                                    context: undefined,
                                     requirements: { clicking: true }
                                 })
                         );

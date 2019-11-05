@@ -6,14 +6,7 @@ import { ActivityContext } from "../ActivityContext";
 // be consistent, in case we later add other options.
 const kChoiceWasSelectedAtOnePoint = "wasSelectedAtOnePoint";
 
-export default class RadioComprehensionQuiz {
-    private listeners = new Array<{
-        name: string;
-        target: Element;
-        listener: EventListener;
-    }>();
-
-    private pageElement: HTMLElement;
+export default class RadioButtonQuiz {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -22,17 +15,14 @@ export default class RadioComprehensionQuiz {
     // coming back to this page, or going to another instance of this activity
     // in a subsequent page.
     // eslint-disable-next-line no-unused-consts
-    constructor(pageElement: HTMLElement) {
-        this.pageElement = pageElement;
-    }
+    constructor(pageElement: HTMLElement) {}
 
     public start(activityContext: ActivityContext) {
-        console.log("RadioComprehensionQuiz.start()");
+        console.log("RadioButtonQuiz.start()");
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
         activityContext.addActivityStylesForPage(
-            this.pageElement,
-            require("!!raw-loader!./RadioComprehensionQuiz.css").default
+            require("!!raw-loader!./RadioButtonQuiz.css").default
         );
 
         //------------ Code for managing the choice radio buttons -------
@@ -43,7 +33,7 @@ export default class RadioComprehensionQuiz {
         //markEmptyChoices();
         //const observer = new MutationObserver(markEmptyChoices);
         //observer.observe(document.body, { characterData: true, subtree: true });
-        const choices = this.pageElement.getElementsByClassName(
+        const choices = this.activityContext.pageElement.getElementsByClassName(
             "checkbox-and-textbox-choice"
         );
         Array.from(choices).forEach((choice: HTMLElement) => {
@@ -64,19 +54,24 @@ export default class RadioComprehensionQuiz {
             //     // in reader mode.
             //     checkbox.checked = correct;
             // } else {
-            choice.addEventListener("click", e => this.handleReadModeClick(e), {
-                capture: true
-            });
+
+            this.activityContext.addEventListener(
+                "click",
+                choice,
+                e => this.handleReadModeClick(e),
+                {
+                    capture: true
+                }
+            );
             const key = this.getStorageKeyForChoice(choice);
             if (
-                activityContext.getSessionPageData(this.pageElement, key) ===
+                activityContext.getSessionPageData(key) ===
                 kChoiceWasSelectedAtOnePoint
             ) {
                 this.choiceWasClicked(choice);
             } else {
                 checkbox.checked = false; // just to make sure
             }
-            //}
         });
     }
     private handleReadModeClick(event: Event) {
@@ -96,7 +91,6 @@ export default class RadioComprehensionQuiz {
         const choiceKey = this.getStorageKeyForChoice(currentTarget);
 
         this.activityContext.storeSessionPageData(
-            this.pageElement,
             choiceKey,
             kChoiceWasSelectedAtOnePoint
         );
@@ -134,12 +128,8 @@ export default class RadioComprehensionQuiz {
         return holder.firstElementChild;
     }
     // When our page is not the selected one, the bloom-player calls this.
-    // We need to disconnect any listeners.
-    public stop() {
-        this.listeners.forEach(l =>
-            l.target.removeEventListener(l.name, l.listener)
-        );
-    }
+    // It will also tell our context to stop, which will disconnect the listeners we registered with it.
+    public stop() {}
 
     // Get a key for a checkbox. It only needs to be unique on this page.
     // Enhance: If a new version of the book is downloaded with a different
@@ -151,13 +141,13 @@ export default class RadioComprehensionQuiz {
     private getStorageKeyForChoice(choice: HTMLElement): string {
         // what is my index among the other choices on the page
         const choices = Array.from(
-            this.pageElement.getElementsByClassName(
+            this.activityContext.pageElement.getElementsByClassName(
                 "checkbox-and-textbox-choice"
             )
         );
-        const index = choices.indexOf(choice);
-        const id = this.pageElement.getAttribute("id");
-        return "cbstate_" + index;
+        const choiceIndex = choices.indexOf(choice);
+        const pageId = this.activityContext.pageElement.getAttribute("id");
+        return "cbstate_" + pageId + "_" + choiceIndex;
     }
 
     // ----- This whole file is never loaded in Bloom. For now it is bloom-player only.
@@ -180,7 +170,7 @@ export default class RadioComprehensionQuiz {
     //     }
     // }
 }
-export const dataActivityID = "radio-button-activity";
+export const dataActivityID = "radio-button-quiz";
 export function activityRequirements() {
     return {
         dragging: false,
