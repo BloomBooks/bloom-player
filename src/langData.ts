@@ -80,7 +80,7 @@ export default class LangData {
         metadataObject: object
     ): LangData[] {
         let languageArray: LangData[] = [];
-        const languageDisplayNames: object =
+        const languageDisplayNames: object | undefined =
             metadataObject["language-display-names"];
         // We are largely imitating the logic in the C# property Book.AllLanguages, so if changes
         // are needed here, we may need changes there too.
@@ -157,11 +157,11 @@ export default class LangData {
     // Reorder based on Collection settings. Put L1 at the top of the menu,
     // the rest alphabetically according to display name in current locale.
     private static reorderMenuItems(
-        languageDisplayNames: object,
+        languageDisplayNames: object | undefined,
         languageArray: LangData[]
     ) {
         languageArray = languageArray.sort(LangData.compare);
-        const keys = Object.keys(languageDisplayNames);
+        const keys = languageDisplayNames ? Object.keys(languageDisplayNames) : [];
         if (keys.length === 0) {
             return languageArray;
         }
