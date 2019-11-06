@@ -35,6 +35,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
 // analyticsCategory as this page.
 // Note, it is up to the host of BloomPlayer whether it actually is sending the analytics to some server.
 export function reportScoreForCurrentPage(
+    pageIndex: number,
     possiblePoints: number,
     actualPoints: number,
     analyticsCategory: string
@@ -53,13 +54,13 @@ export function reportScoreForCurrentPage(
         alert("inconsistent analyticsCategory in reportScoreForCurrentPage()");
     }
 
-    if (getPageData(BloomPlayerCore.getCurrentPage(), analyticsCategory)) {
+    if (getPageData(pageIndex, analyticsCategory)) {
         // not the first time called for this page.
         // Eventually we might store it under another key for purposes of tracking
         return;
     }
     storePageData(
-        BloomPlayerCore.getCurrentPage(),
+        pageIndex,
         analyticsCategory,
         JSON.stringify({ possiblePoints, actualPoints, analyticsCategory })
     );
@@ -74,7 +75,7 @@ export function reportScoreForCurrentPage(
     let totalActualPoints = 0;
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
-        const scoreObjectString = getPageData(page, analyticsCategory);
+        const scoreObjectString = getPageData(pageIndex, analyticsCategory);
         if (!scoreObjectString) {
             return; // don't have all the results yet, wait for more
         }
@@ -96,8 +97,12 @@ export function reportScoreForCurrentPage(
 // A page should call this with any state it needs to reconstitute the page.
 // Note that on in Bloom Reader Android, at least, this is needed even to preserve the
 // state when the user rotates the device.
-export function storePageData(page: Element, key: string, value: string): void {
-    const fullKey = getFullDataKey(page, key);
+export function storePageData(
+    pageIndex: number,
+    key: string,
+    value: string
+): void {
+    const fullKey = getFullDataKey(pageIndex, key);
     // Store so that a getPageData() will return this value (even if no parent window implements saving)
     TransientPageDataSingleton.getData()[fullKey] = value;
 
@@ -121,8 +126,8 @@ export function storePageData(page: Element, key: string, value: string): void {
 }
 
 // A page should call this to recover any state it needs to reconstitute the page.
-export function getPageData(page: Element, key: string): string {
-    return TransientPageDataSingleton.getData()[getFullDataKey(page, key)];
+export function getPageData(pageIndex: number, key: string): string {
+    return TransientPageDataSingleton.getData()[getFullDataKey(pageIndex, key)];
 }
 
 function doesPageHaveAnalyticsCategory(
@@ -136,8 +141,8 @@ function doesPageHaveAnalyticsCategory(
     );
 }
 
-function getFullDataKey(page: Element, key: string): string {
-    return "p" + getIndexOfPage(page) + "." + key;
+function getFullDataKey(pageIndex: number, key: string): string {
+    return "p" + pageIndex.toString() + "." + key;
 }
 
 function getIndexOfPage(page: Element): string {

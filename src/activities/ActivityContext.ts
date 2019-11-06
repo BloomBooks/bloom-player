@@ -9,14 +9,20 @@ import {
 // of them are arranged.
 export class ActivityContext {
     public pageElement: any;
+    public pageIndex: any;
+
     private listeners = new Array<{
         name: string;
         target: Element;
         listener: EventListener;
     }>();
-    constructor(pageDiv: HTMLElement) {
+
+    constructor(pageIndex: number, pageDiv: HTMLElement) {
+        this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
     }
+
+    // report a score that can be used for analytics
     public reportScore(
         possiblePoints: number,
         actualPoints: number,
@@ -27,20 +33,25 @@ export class ActivityContext {
             `ActivityContext.reportScoreForCurrentPage(<page>, ${possiblePoints}, ${actualPoints},${analyticsCategory})`
         );
         reportScoreForCurrentPage(
+            this.pageIndex,
             possiblePoints,
             actualPoints,
             analyticsCategory
         );
     }
+
+    // Get data used during this current reading of the book
     public getSessionPageData(key: string): string {
-        return getPageData(this.pageElement, key);
+        return getPageData(this.pageIndex, key);
     }
+    // Set data used during this current reading of the book that you can read if the
+    // they come back to this page.
     public storeSessionPageData(key: string, value: string) {
         // please leave this log in... if we could  make it only show in storybook, we would
         console.log(
             `ActivityContext.storePageData(<page>, '${key}', '${value}')`
         );
-        storePageData(this.pageElement, key, value);
+        storePageData(this.pageIndex, key, value);
     }
     public playCorrect() {
         // NB: if this stops working in storybook; the file should be found because the package.json

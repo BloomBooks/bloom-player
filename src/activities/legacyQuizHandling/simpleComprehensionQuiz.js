@@ -1,4 +1,6 @@
-"use strict";
+/* THIS ISN'T USED IN BLOOM-PLAYER ANYMORE, but we're not quite ready to delete it.
+
+use strict";
 // The js generated from this file is used in the template page generated from simpleComprehensionQuiz.pug.
 // It makes sure the body element has the editMode class (if the editMode stylesheet is loaded)
 // and installs appropriate click handlers (depending on edit mode) which manipulate the classes
@@ -228,3 +230,4 @@ if (document.readyState === "complete") {
         init();
     });
 }
+*/

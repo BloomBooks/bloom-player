@@ -131,7 +131,7 @@ export class ActivityManager {
         }
     }
 
-    public showingPage(bloomPageElement: HTMLElement) {
+    public showingPage(pageIndex: number, bloomPageElement: HTMLElement) {
         // At the moment bloom-player-core will always call us
         // twice if the book is landscape. Probably that could
         // be fixed but we might as well just protect ourselves
@@ -170,7 +170,10 @@ export class ActivityManager {
                 ) as IActivityObject;
                 // for use in styling things differently during playback versus book editing
                 bloomPageElement.classList.add("bloom-activityPlayback");
-                activity.context = new ActivityContext(bloomPageElement);
+                activity.context = new ActivityContext(
+                    pageIndex,
+                    bloomPageElement
+                );
                 activity.runningObject!.start(activity.context);
             }
         }

@@ -1390,7 +1390,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     hasVideo: Video.pageHasVideo(bloomPage)
                 });
             }
-            this.activityManager.showingPage(bloomPage);
+            this.activityManager.showingPage(index, bloomPage);
 
             this.reportedAudioOnCurrentPage = false;
             this.reportedVideoOnCurrentPage = false;

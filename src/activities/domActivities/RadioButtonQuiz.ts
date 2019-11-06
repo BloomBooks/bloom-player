@@ -146,8 +146,7 @@ export default class RadioButtonQuiz {
             )
         );
         const choiceIndex = choices.indexOf(choice);
-        const pageId = this.activityContext.pageElement.getAttribute("id");
-        return "cbstate_" + pageId + "_" + choiceIndex;
+        return "cbstate_" + choiceIndex;
     }
 
     // ----- This whole file is never loaded in Bloom. For now it is bloom-player only.
