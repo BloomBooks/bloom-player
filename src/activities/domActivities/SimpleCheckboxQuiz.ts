@@ -6,7 +6,7 @@ import { ActivityContext } from "../ActivityContext";
 // be consistent, in case we later add other options.
 const kChoiceWasSelectedAtOnePoint = "wasSelectedAtOnePoint";
 
-export default class RadioButtonQuiz {
+export default class SimpleCheckboxQuiz {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -18,11 +18,11 @@ export default class RadioButtonQuiz {
     constructor(pageElement: HTMLElement) {}
 
     public start(activityContext: ActivityContext) {
-        console.log("RadioButtonQuiz.start()");
+        console.log("SimpleCheckboxQuiz.start()");
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
         activityContext.addActivityStylesForPage(
-            require("!!raw-loader!./RadioButtonQuiz.css").default
+            require("!!raw-loader!./SimpleCheckboxQuiz.css").default
         );
 
         //------------ Code for managing the choice radio buttons -------
@@ -169,7 +169,7 @@ export default class RadioButtonQuiz {
     //     }
     // }
 }
-export const dataActivityID = "radio-button-quiz";
+export const dataActivityID = "simple-checkbox-quiz";
 export function activityRequirements() {
     return {
         dragging: false,

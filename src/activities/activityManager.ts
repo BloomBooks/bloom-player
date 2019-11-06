@@ -3,7 +3,7 @@ import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
 const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
-const radioRadioButtonQuizModule = require("./domActivities/RadioButtonQuiz.ts");
+const simpleCheckboxQuizModule = require("./domActivities/SimpleCheckboxQuiz.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -46,8 +46,8 @@ export class ActivityManager {
             "multiple-choice"
         ] = multipleChoiceActivityModule as IActivityModule;
         this.buildInActivities[
-            radioRadioButtonQuizModule.dataActivityID
-        ] = radioRadioButtonQuizModule as IActivityModule;
+            simpleCheckboxQuizModule.dataActivityID
+        ] = simpleCheckboxQuizModule as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
         return (
@@ -79,7 +79,7 @@ export class ActivityManager {
         // but it does tell us what the page is supposed to be, so we can just set the activityID
         // to what it would be if that page was designed with the current activity api.
         if (activityID === "" && this.hasLegacyQuizScriptTag(pageDiv)) {
-            activityID = radioRadioButtonQuizModule.dataActivityID;
+            activityID = simpleCheckboxQuizModule.dataActivityID;
         }
         return activityID;
     }
