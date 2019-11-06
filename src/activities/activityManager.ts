@@ -37,15 +37,15 @@ export interface IActivityInformation {
 }
 
 export class ActivityManager {
-    private buildInActivities: { [id: string]: IActivityModule } = {};
+    private builtInActivities: { [id: string]: IActivityModule } = {};
     previousPageElement: HTMLElement;
 
     constructor() {
-        this.buildInActivities["iframe"] = iframeModule as IActivityModule;
-        this.buildInActivities[
+        this.builtInActivities["iframe"] = iframeModule as IActivityModule;
+        this.builtInActivities[
             "multiple-choice"
         ] = multipleChoiceActivityModule as IActivityModule;
-        this.buildInActivities[
+        this.builtInActivities[
             simpleCheckboxQuizModule.dataActivityID
         ] = simpleCheckboxQuizModule as IActivityModule;
     }
@@ -94,13 +94,13 @@ export class ActivityManager {
         const activityID = this.getActivityIdOfPage(pageDiv);
         //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
         if (activityID && !this.loadedActivityScripts[activityID]) {
-            if (this.buildInActivities[activityID]) {
+            if (this.builtInActivities[activityID]) {
                 this.loadedActivityScripts[activityID] = {
                     name: activityID,
-                    module: this.buildInActivities[activityID],
+                    module: this.builtInActivities[activityID],
                     runningObject: undefined, // for now were just registering the module, not constructing the object
                     context: undefined,
-                    requirements: this.buildInActivities[
+                    requirements: this.builtInActivities[
                         activityID
                     ].activityRequirements()
                 };
