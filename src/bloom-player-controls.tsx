@@ -318,7 +318,7 @@ export const BloomPlayerControls: React.FunctionComponent<
     } = props;
     return (
         <div
-            {...rest} // Allow all standard div props
+        // gives an error when react sees `paused`, which isn't an HtmlElement attribute {...rest} // Allow all standard div props
         >
             <ControlBar
                 canGoBack={props.showBackButton}

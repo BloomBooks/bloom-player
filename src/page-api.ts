@@ -5,7 +5,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
 /* This API is for use by interactive pages */
 
 /*
-    Interactive pages call this in order to 
+    Interactive pages call this in order to
     1) update the score that someday we may display on each page, and ( <---- Not implemented yet )
     2) optionally contribute to one analytics score. The category/label for that analytics has to be
     given to this twice: first in a data-analyticsCategories attribute on the page, and secondly in the
@@ -20,7 +20,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
     * over and over. However, it might well make sense to update the score they see on screen. If ever we
     * have some analytics scale that *does* make sense to be updatable, e.g. a "Please rate this book", then
     * we can always add a new parameter to this method to control that.
-    * 
+    *
     * We don't currently (May 2019) have a way to tell the page "this is your last chance to report a score".
     * Rather, we send the analytics immediately when every page that has this analyticsCategory (in its
     * data-analyticsCategories list) has reported at least once.
@@ -28,7 +28,14 @@ import { TransientPageDataSingleton } from "./transientPageData";
     * of comprehension questions, both the event name and parameters of the event are modified (at least
     * by bloom-reader2; not here).
 */
+// Send the score and info for analytics.
+// Note: the Bloom Player is smart enough to only
+// record the analytics part the very first time we report a score for this page,
+// and only send it when it has been reported for all pages using the same
+// analyticsCategory as this page.
+// Note, it is up to the host of BloomPlayer whether it actually is sending the analytics to some server.
 export function reportScoreForCurrentPage(
+    pageIndex: number,
     possiblePoints: number,
     actualPoints: number,
     analyticsCategory: string
@@ -47,13 +54,13 @@ export function reportScoreForCurrentPage(
         alert("inconsistent analyticsCategory in reportScoreForCurrentPage()");
     }
 
-    if (getPageData(BloomPlayerCore.getCurrentPage(), analyticsCategory)) {
+    if (getPageData(pageIndex, analyticsCategory)) {
         // not the first time called for this page.
         // Eventually we might store it under another key for purposes of tracking
         return;
     }
     storePageData(
-        BloomPlayerCore.getCurrentPage(),
+        pageIndex,
         analyticsCategory,
         JSON.stringify({ possiblePoints, actualPoints, analyticsCategory })
     );
@@ -68,7 +75,7 @@ export function reportScoreForCurrentPage(
     let totalActualPoints = 0;
     for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
-        const scoreObjectString = getPageData(page, analyticsCategory);
+        const scoreObjectString = getPageData(pageIndex, analyticsCategory);
         if (!scoreObjectString) {
             return; // don't have all the results yet, wait for more
         }
@@ -90,8 +97,12 @@ export function reportScoreForCurrentPage(
 // A page should call this with any state it needs to reconstitute the page.
 // Note that on in Bloom Reader Android, at least, this is needed even to preserve the
 // state when the user rotates the device.
-export function storePageData(page: Element, key: string, value: string): void {
-    const fullKey = getFullDataKey(page, key);
+export function storePageData(
+    pageIndex: number,
+    key: string,
+    value: string
+): void {
+    const fullKey = getFullDataKey(pageIndex, key);
     // Store so that a getPageData() will return this value (even if no parent window implements saving)
     TransientPageDataSingleton.getData()[fullKey] = value;
 
@@ -115,8 +126,8 @@ export function storePageData(page: Element, key: string, value: string): void {
 }
 
 // A page should call this to recover any state it needs to reconstitute the page.
-export function getPageData(page: Element, key: string): string {
-    return TransientPageDataSingleton.getData()[getFullDataKey(page, key)];
+export function getPageData(pageIndex: number, key: string): string {
+    return TransientPageDataSingleton.getData()[getFullDataKey(pageIndex, key)];
 }
 
 function doesPageHaveAnalyticsCategory(
@@ -130,8 +141,8 @@ function doesPageHaveAnalyticsCategory(
     );
 }
 
-function getFullDataKey(page: Element, key: string): string {
-    return "p" + getIndexOfPage(page) + "." + key;
+function getFullDataKey(pageIndex: number, key: string): string {
+    return "p" + pageIndex.toString() + "." + key;
 }
 
 function getIndexOfPage(page: Element): string {
