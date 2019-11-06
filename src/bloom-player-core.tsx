@@ -435,11 +435,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             swiperContent.push(page.outerHTML);
 
             // look for activities on this page
-            this.activityManager.processPage(
-                this.urlPrefix,
-                page,
-                this.legacyQuestionHandler
-            );
+            this.activityManager.processPage(this.urlPrefix, page);
         }
         if (this.props.showContextPages) {
             swiperContent.push(""); // blank page to fill the space right of last.

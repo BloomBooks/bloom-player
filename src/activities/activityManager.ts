@@ -1,5 +1,4 @@
 import { loadDynamically } from "./loadDynamically";
-import { LegacyQuestionHandler } from "./legacyQuizHandling/LegacyQuizHandler";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
 const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
@@ -88,8 +87,7 @@ export class ActivityManager {
         // NOTE: this is not the same element we will get as a parameter in showingPage().
         // But it is clone of it, which is fine because we aren't storing it, we're only
         // looking for a data-activity attribute.
-        pageDiv: HTMLElement,
-        legacyQuestionHandler: LegacyQuestionHandler
+        pageDiv: HTMLElement
     ): void {
         const activityID = this.getActivityIdOfPage(pageDiv);
         //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
