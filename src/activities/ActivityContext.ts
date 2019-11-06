@@ -40,12 +40,15 @@ export class ActivityContext {
         );
     }
 
-    // Get data used during this current reading of the book
+    // Get data used during this current reading of the book. The `key` parameter only needs to be
+    // unique to the activity's page.
     public getSessionPageData(key: string): string {
         return getPageData(this.pageIndex, key);
     }
+
     // Set data used during this current reading of the book that you can read if the
-    // they come back to this page.
+    // they come back to this page. The `key` parameter only needs to be
+    // unique to the activity's page.
     public storeSessionPageData(key: string, value: string) {
         // please leave this log in... if we could  make it only show in storybook, we would
         console.log(
@@ -53,15 +56,18 @@ export class ActivityContext {
         );
         storePageData(this.pageIndex, key, value);
     }
+
     public playCorrect() {
         // NB: if this stops working in storybook; the file should be found because the package.json
         // script that starts storybook has a "--static-dir" option that should include the folder
         // containing the standard activity sounds.
         this.playSound("right_answer.mp3");
     }
+
     public playWrong() {
         this.playSound("wrong_answer.mp3");
     }
+
     private getPagePlayer(): any {
         let player = document.querySelector("#activity-sound-player") as any;
         if (player && !player.play) {
@@ -75,6 +81,7 @@ export class ActivityContext {
         }
         return player;
     }
+
     public playSound(url) {
         const player = this.getPagePlayer();
         player.setAttribute("src", url);
@@ -93,26 +100,26 @@ export class ActivityContext {
         }
     }
 
+    // Activities should use this to attach listeners so that we can detach them when the page is no longer
+    // showing. Among other things, this prevents double-attaching.
     public addEventListener(
         name: string,
         target: Element,
         listener: EventListener,
         options?: AddEventListenerOptions | undefined
     ) {
-        const wrappedListener: EventListener = e => {
-            console.log(`event ${name}`);
-            listener(e);
-        };
         // store the info we need in order to detach the listener when we are stop()ed
         this.listeners.push({
             name,
             target,
-            listener: wrappedListener
+            listener
         });
-        target.addEventListener(name, wrappedListener, options);
+        target.addEventListener(name, listener, options);
     }
 
+    // this is called by the activity manager after it stops the activity.
     public stop() {
+        // detach all the listeners
         this.listeners.forEach(l =>
             l.target.removeEventListener(l.name, l.listener)
         );
