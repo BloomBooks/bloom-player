@@ -110,5 +110,11 @@ body.editMode .bloom-page.simple-comprehension-quiz .checkbox-and-textbox-choice
 .bloom-page.simple-comprehension-quiz .checkbox-and-textbox-choice.wasSelectedAtOnePoint:not(.correct-answer) {
   opacity: 0.5;
 }
+.simple-comprehension-quiz .QuizQuestion-style,
+.simple-comprehension-quiz .checkbox-and-textbox-choice {
+  margin-left: 25px !important;
+  margin-right: 25px !important;
+  width: auto;
+}
 
 /*# sourceMappingURL=../../../../../output/browser/templates/template books/Special/Special.css.map */
