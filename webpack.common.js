@@ -50,17 +50,17 @@ module.exports = merge(core, {
         new CopyPlugin([
             { from: "src/bloomplayer.htm", to: "", flatten: true },
             { from: "src/activities/*.mp3", to: "", flatten: true },
-            {
-                from:
-                    "src/activities/legacyQuizHandling/simpleComprehensionQuiz.js",
-                to: "",
-                flatten: true
-            },
-            {
-                from: "src/activities/legacyQuizHandling/Special.css",
-                to: "",
-                flatten: true
-            },
+            // {
+            //     from:
+            //         "src/activities/legacyQuizHandling/simpleComprehensionQuiz.js",
+            //     to: "",
+            //     flatten: true
+            // },
+            // {
+            //     from: "src/activities/legacyQuizHandling/Special.css",
+            //     to: "",
+            //     flatten: true
+            // },
             { from: "src/iso639-autonyms.tsv", to: "", flatten: true }
         ])
     ],

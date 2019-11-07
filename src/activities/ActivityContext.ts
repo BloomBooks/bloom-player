@@ -10,6 +10,7 @@ import {
 export class ActivityContext {
     public pageElement: any;
     public pageIndex: any;
+    public editMode: boolean;
 
     private listeners = new Array<{
         name: string;
@@ -17,9 +18,10 @@ export class ActivityContext {
         listener: EventListener;
     }>();
 
-    constructor(pageIndex: number, pageDiv: HTMLElement) {
+    constructor(pageIndex: number, pageDiv: HTMLElement, editMode: boolean) {
         this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
+        this.editMode = editMode;
     }
 
     // report a score that can be used for analytics

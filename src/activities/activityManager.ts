@@ -87,7 +87,8 @@ export class ActivityManager {
         // NOTE: this is not the same element we will get as a parameter in showingPage().
         // But it is clone of it, which is fine because we aren't storing it, we're only
         // looking for a data-activity attribute.
-        pageDiv: HTMLElement
+        pageDiv: HTMLElement,
+        editMode: boolean
     ): void {
         const activityID = this.getActivityIdOfPage(pageDiv);
         //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
@@ -129,7 +130,11 @@ export class ActivityManager {
         }
     }
 
-    public showingPage(pageIndex: number, bloomPageElement: HTMLElement) {
+    public showingPage(
+        pageIndex: number,
+        bloomPageElement: HTMLElement,
+        editMode: boolean
+    ) {
         // At the moment bloom-player-core will always call us
         // twice if the book is landscape. Probably that could
         // be fixed but we might as well just protect ourselves
@@ -170,7 +175,8 @@ export class ActivityManager {
                 bloomPageElement.classList.add("bloom-activityPlayback");
                 activity.context = new ActivityContext(
                     pageIndex,
-                    bloomPageElement
+                    bloomPageElement,
+                    editMode
                 );
                 activity.runningObject!.start(activity.context);
             }

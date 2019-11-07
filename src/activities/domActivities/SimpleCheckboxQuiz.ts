@@ -1,4 +1,5 @@
 import { ActivityContext } from "../ActivityContext";
+import { setupForEditMode } from "./SimpleCheckboxQuizEditMode";
 
 // The value we store to indicate that at some point the user
 // chose this answer. We don't really need the value, because if the key for
@@ -30,31 +31,15 @@ export default class SimpleCheckboxQuiz {
         // and for maintaining the class that indicates empty choice.
         // Assumes the code that sets up the editMode class on the body element if appropriate has already been run.
 
-        //markEmptyChoices();
-        //const observer = new MutationObserver(markEmptyChoices);
-        //observer.observe(document.body, { characterData: true, subtree: true });
+        if (activityContext.editMode) {
+            setupForEditMode();
+            return;
+        }
         const choices = this.activityContext.pageElement.getElementsByClassName(
             "checkbox-and-textbox-choice"
         );
         Array.from(choices).forEach((choice: HTMLElement) => {
             const checkbox = this.getCheckBox(choice);
-
-            // ----- This whole file is never loaded in Bloom. For now it is bloom-player only.
-            // ------Therefore we don't need to handle these edit-time events.
-            // ------But it is handy to preserve here what that code needs to do, as we will
-            // ------eventually circle back to this, perhaps unifying all this with the
-            // ------MultipleChoiceDomActivity. That, too, needs a way to mark the correct
-            // ------answer in Bloom Edit Mode (but doesn't have it as of this writing).
-
-            //const correct = choice.classList.contains("correct-answer");
-            // if (this.pageElement.classList.contains("editMode")) {
-            //     checkbox.addEventListener("click", this.handleEditModeClick);
-            //     // Not sure why this doesn't get persisted along with the correct-answer class,
-            //     // but glad it doesn't, because we don't want it to show up even as a flash
-            //     // in reader mode.
-            //     checkbox.checked = correct;
-            // } else {
-
             this.activityContext.addEventListener(
                 "click",
                 choice,
@@ -148,26 +133,6 @@ export default class SimpleCheckboxQuiz {
         const choiceIndex = choices.indexOf(choice);
         return "cbstate_" + choiceIndex;
     }
-
-    // ----- This whole file is never loaded in Bloom. For now it is bloom-player only.
-    // ------Therefore we don't need to handle these edit-time events.
-    // ------But it is handy to preserve here what that code needs to do, as we will
-    // ------eventually circle back to this, perhaps unifying all this with the
-    // ------MultipleChoiceDomActivity. That, too, needs a way to mark the correct
-    // ------answer in Bloom Edit Mode (but doesn't have it as of this writing).
-
-    // private handleEditModeClick(evt) {
-    //     const target = evt.target;
-    //     if (!target) {
-    //         return;
-    //     }
-    //     const wrapper = evt.currentTarget.parentElement;
-    //     if (target.checked) {
-    //         wrapper.classList.add("correct-answer");
-    //     } else {
-    //         wrapper.classList.remove("correct-answer");
-    //     }
-    // }
 }
 export const dataActivityID = "simple-checkbox-quiz";
 export function activityRequirements() {
