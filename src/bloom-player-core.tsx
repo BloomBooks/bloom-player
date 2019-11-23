@@ -84,6 +84,8 @@ interface IProps {
     hideNextPrevButtons?: boolean;
 
     locationOfDistFolder: string;
+    // use for making a video
+    autoplay: boolean;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -109,6 +111,9 @@ enum BookFeatures {
     signLanguage = "signLanguage",
     motion = "motion"
 }
+
+//TODO so confused...
+let gSwiperInstance: SwiperInstance;
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static DEFAULT_CREATOR: string = "bloom";
@@ -473,6 +478,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.showingPage(0);
             }, 500);
         }
+
+        // tslint:disable-next-line: no-this-assignment
+
+        if (isNewBook) {
+            this.narration.PageNarrationComplete.subscribe(() => {
+                gSwiperInstance.slideNext();
+            });
+        }
     }
 
     private localizeOnce() {
@@ -497,7 +510,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         if (!this.narration) {
             this.narration = new Narration();
-            this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
+
             this.animation = new Animation();
             //this.narration.PageNarrationComplete.subscribe();
             this.narration.PageDurationAvailable.subscribe(pageElement => {
@@ -1137,6 +1150,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // },
             getSwiper: s => {
                 this.swiperInstance = s;
+                gSwiperInstance = s; // TODO so confused
             },
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
 

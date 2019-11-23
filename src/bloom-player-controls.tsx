@@ -33,6 +33,8 @@ interface IProps {
     // the server to be able to serve sample books from a directory that isn't in dist/,
     // e.g. src/activity-starter/
     locationOfDistFolder: string;
+    // use for making a video
+    autoAdvance?: boolean;
 }
 
 // This logic is not straightforward...
@@ -306,7 +308,9 @@ export const BloomPlayerControls: React.FunctionComponent<
         bookLanguages: LangData[]
     ): void => {
         setLanguageData(bookLanguages);
-        setActiveLanguageCode(bookLanguages.length > 0 ? bookLanguages[0].Code : "");
+        setActiveLanguageCode(
+            bookLanguages.length > 0 ? bookLanguages[0].Code : ""
+        );
     };
 
     const {
@@ -371,6 +375,7 @@ export const BloomPlayerControls: React.FunctionComponent<
                     }
                 }}
                 activeLanguageCode={activeLanguageCode}
+                autoplay={!!props.autoAdvance}
             />
         </div>
     );

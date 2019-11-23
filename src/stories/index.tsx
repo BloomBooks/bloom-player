@@ -105,7 +105,25 @@ AddBloomPlayerStory(
     "src/sample-canvas-activity/index.htm"
 );
 
+AddBloomPlayerStory("Simple audio book", "src/sample-book/sample.htm");
 AddBloomPlayerStory(
     "Book that isn't found",
     "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital/NOTTHERE.htm"
 );
+AddRecordBookStory("Auto Advance", "src/sample-book/sample.htm");
+
+function AddRecordBookStory(label: string, url: string) {
+    stories.add(label, () => {
+        return (
+            <BloomPlayerControls
+                showBackButton={false}
+                initiallyShowAppBar={false}
+                allowToggleAppBar={false}
+                paused={false}
+                url={url}
+                locationOfDistFolder={"/dist/"}
+                autoAdvance={true}
+            />
+        );
+    });
+}

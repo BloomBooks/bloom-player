@@ -36,6 +36,10 @@ export default class Narration {
 
     private audioPlayStartTime: number; // milliseconds (since 1970/01/01, from new Date().getTime())
 
+    constructor() {
+        this.PageNarrationComplete = new LiteEvent<HTMLElement>();
+        this.PageDurationAvailable = new LiteEvent<HTMLElement>();
+    }
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     // As long as there is audio on the page, this method will play it.
     public playAllSentences(page: HTMLElement | null): void {
@@ -51,9 +55,7 @@ export default class Narration {
         const stackSize = this.elementsToPlayConsecutivelyStack.length;
         if (stackSize === 0) {
             // Nothing to play
-            if (this.PageNarrationComplete) {
-                this.PageNarrationComplete.raise();
-            }
+            this.PageNarrationComplete.raise();
             return;
         }
 
@@ -404,10 +406,10 @@ export default class Narration {
                 this.subElementsWithTimings = [];
 
                 this.removeAudioCurrent();
-                if (this.PageNarrationComplete) {
-                    this.PageNarrationComplete.raise(this.playerPage);
-                }
             }
+        }
+        if (this.elementsToPlayConsecutivelyStack.length === 0) {
+            this.PageNarrationComplete.raise(this.playerPage);
         }
     }
 
@@ -553,9 +555,9 @@ export default class Narration {
         this.startPause = this.startPlay;
         if (this.segments.length === 0) {
             this.PageDuration = 3.0;
-            if (this.PageDurationAvailable) {
-                this.PageDurationAvailable.raise(page);
-            }
+
+            this.PageDurationAvailable.raise(page);
+
             // Since there is nothing to play, we will never get an 'ended' event
             // from the player. If we are going to advance pages automatically,
             // we need to raise PageNarrationComplete some other way.
@@ -595,9 +597,8 @@ export default class Narration {
             if (this.PageDuration < 3.0) {
                 this.PageDuration = 3.0;
             }
-            if (this.PageDurationAvailable) {
-                this.PageDurationAvailable.raise(this.playerPage);
-            }
+
+            this.PageDurationAvailable.raise(this.playerPage);
         }
     }
 
