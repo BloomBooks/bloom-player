@@ -25,7 +25,6 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
-import { loadDynamically } from "./activities/loadDynamically";
 
 // See related comments in controlBar.tsx
 //tslint:disable-next-line:no-submodule-imports
@@ -408,6 +407,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (isNewBook) {
             this.totalNumberedPages = 0;
             this.questionCount = 0;
+            this.activityManager.collectActivityContextForBook(pages);
         }
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;

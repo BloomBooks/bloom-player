@@ -8,8 +8,11 @@ import {
 // a wrapper so that activities don't have direct knowledge of how parts outside
 // of them are arranged.
 export class ActivityContext {
-    public pageElement: any;
-    public pageIndex: any;
+    public pageElement: HTMLElement;
+    public pageIndex: number;
+    // Typically, indices of all pages with the same analytics category.
+    // (This is necessary to be able to report analytics for this category as a group.)
+    public pagesToGroupForAnalytics: number[] | undefined;
 
     private listeners = new Array<{
         name: string;
@@ -17,9 +20,14 @@ export class ActivityContext {
         listener: EventListener;
     }>();
 
-    constructor(pageIndex: number, pageDiv: HTMLElement) {
+    constructor(
+        pageIndex: number,
+        pageDiv: HTMLElement,
+        pagesToGroupForAnalytics?: number[]
+    ) {
         this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
+        this.pagesToGroupForAnalytics = pagesToGroupForAnalytics;
     }
 
     // report a score that can be used for analytics
@@ -36,7 +44,8 @@ export class ActivityContext {
             this.pageIndex,
             possiblePoints,
             actualPoints,
-            analyticsCategory
+            analyticsCategory,
+            this.pagesToGroupForAnalytics
         );
     }
 
