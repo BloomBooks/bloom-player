@@ -67,6 +67,18 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2f6f6d82d5-e98d-445d-b4be-143df993c3c0/bloomdigital%2findex.htm"
 );
 
+// To make this work, replace the URL with one found by putting a breakpoint in Bloom at
+// PublishToAndroidApi.cs, in the event handler for updatePreview, right after PreviewUrl is set.
+AddBloomPlayerStory(
+    "Book currently previewd in Bloom",
+    "http://localhost:8089/bloom/C%3A/Users/thomson/AppData/Local/Temp/PlaceForStagingBook/Moon & ' {}/Moon & ' {}.htm"
+);
+
+AddBloomPlayerStory(
+    "Book not found",
+    "file:///aVery/Long/FileName/That/Will/Never/Be/Found/Anywhere/At/All/To/See/How/It/Wraps.htm"
+);
+
 AddBloomPlayerStory(
     "Overflowing pages (some)",
     "https://s3.amazonaws.com/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"

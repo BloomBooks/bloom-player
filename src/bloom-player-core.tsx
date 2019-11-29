@@ -366,7 +366,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         const errorMessage = axiosError.message as string;
         // Note: intentionally no bothering to add this to the l10n load, at this time.
         let msg = `<p>There was a problem displaying this book: ${errorMessage}<p>`; // just show the raw thing
-        if (axiosError.message.indexOf("404") >= 0) {
+        // If it's a file:/// url, we're probably on an Android, and something
+        // went wrong with unpacking it, or it is corrupt. This typically results in an error
+        // message that is NOT a 404 but IS reported, unhelpfully, as a "Network Error" (BL-7813).
+        // A file:/// url can't possibly be a network error, so the "part of the book is missing"
+        // error is at least a little more helpful, maybe to the user, and certainly to a developer
+        // trying to fix the problem, especially if the user reports the problem URL.
+        const localFileMissing =
+            axiosError.config &&
+            axiosError.config.url &&
+            axiosError.config.url.startsWith("file:///");
+        if (localFileMissing || axiosError.message.indexOf("404") >= 0) {
             msg = "<p>This book (or some part of it) was not found.<p>";
             if (axiosError.config && axiosError.config.url) {
                 msg += `<p class='errorDetails'>${encodeURI(
