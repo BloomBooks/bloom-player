@@ -169,7 +169,7 @@ export default class SimpleCheckboxQuiz {
     //     }
     // }
 }
-export const dataActivityID = "simple-checkbox-quiz";
+export const dataActivityID: string = "simple-checkbox-quiz";
 export function activityRequirements() {
     return {
         dragging: false,

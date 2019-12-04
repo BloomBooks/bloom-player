@@ -38,7 +38,8 @@ export function reportScoreForCurrentPage(
     pageIndex: number,
     possiblePoints: number,
     actualPoints: number,
-    analyticsCategory: string
+    analyticsCategory: string,
+    pagesToGroupForAnalytics: number[] | undefined
 ): void {
     if (!BloomPlayerCore.getCurrentPage()) {
         alert("null currentPage in reportScoreForCurrentPage()");
@@ -68,24 +69,36 @@ export function reportScoreForCurrentPage(
     // See if we now have a score from all pages of this analyticsCategory.
     // Note that if we've already sent this to analytics, it's not possible to get to this point, so we
     // won't be reporting it more than once.
-    const pages = Array.from(
-        document.getElementsByClassName("bloom-interactive-page")
-    ).filter(p => doesPageHaveAnalyticsCategory(p, analyticsCategory));
+    // We've had to change things here, because 'document' no longer has access to all the pages.
+    // The Swiper now only has at most 3 pages in it. (BL-7885)
     let totalPossiblePoints = 0;
     let totalActualPoints = 0;
-    for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        const scoreObjectString = getPageData(pageIndex, analyticsCategory);
-        if (!scoreObjectString) {
-            return; // don't have all the results yet, wait for more
+    if (pagesToGroupForAnalytics && pagesToGroupForAnalytics.length > 0) {
+        // Can't use foreach here, or the 'return' below only breaks out of the loop, it doesn't actually return.
+        for (let index = 0; index < pagesToGroupForAnalytics.length; index++) {
+            const scoreObjectString = getPageData(
+                pagesToGroupForAnalytics[index],
+                analyticsCategory
+            );
+            if (!scoreObjectString) {
+                return; // don't have all the results yet, wait for more
+            }
+            const score = JSON.parse(scoreObjectString);
+
+            totalPossiblePoints += score.possiblePoints;
+            totalActualPoints += score.actualPoints;
         }
+    } else {
+        // We aren't aware of other pages in this analytics group, so go ahead and report this page.
+        const scoreObjectString = getPageData(pageIndex, analyticsCategory);
         const score = JSON.parse(scoreObjectString);
 
         totalPossiblePoints += score.possiblePoints;
         totalActualPoints += score.actualPoints;
     }
-    // We didn't return in the middle of that last loop, so we found a score for every page with the same analytics key.
-    // Time to actually send the report!
+    // Either we didn't return in the middle of that last loop, meaning we found a score for every page
+    // with the same analytics key, or there is only this one page using this analytics key.
+    // Either way, it's time to actually send the report!
     const params = {
         possiblePoints: totalPossiblePoints,
         actualPoints: totalActualPoints,
@@ -143,13 +156,4 @@ function doesPageHaveAnalyticsCategory(
 
 function getFullDataKey(pageIndex: number, key: string): string {
     return "p" + pageIndex.toString() + "." + key;
-}
-
-function getIndexOfPage(page: Element): string {
-    const slider = page.closest(".swiper-slide");
-    if (!slider) {
-        alert("page not embedded as expected");
-        return "";
-    }
-    return slider.getAttribute("data-index") || "";
 }
