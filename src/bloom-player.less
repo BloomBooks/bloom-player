@@ -223,6 +223,12 @@ We just make them follow the main content normally. */
     .bloom-editable.bloom-visibility-code-on {
         overflow-y: auto !important; // unfortunately this needs !important to override 2 basePage.less rules
     }
+    // it would be more elegant to embed this rule in the one above, but I can't figure out
+    // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
+    // but INSIDE the .bloom-player that wraps around all this.
+    .bloom-textOverPicture .bloom-editable.bloom-visibility-code-on {
+        overflow-y: hidden !important; // but not in comical bubbles (BL-7911)
+    }
 
     // 2) for metadata pages, we (for now) risk changing the line-height. Experimentally, which works well:
     // Don't try and apply this to the book title: BookTitles have a good reason to have
