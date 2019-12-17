@@ -84,7 +84,10 @@ module.exports = merge(core, {
                 // version of FF we currently ship with.
                 test: /\.(js|jsx)$/,
                 exclude: [
-                    /node_modules/,
+                    // We need babel to transpile parts of swiper (swiper and dom7) because they require JS that GeckofX 45 doesn't support.
+                    // We can remove this exception when we are fully in gfx60.
+                    // See https://github.com/kidjp85/react-id-swiper/issues/332
+                    /node_modules\/(?!(swiper|dom7)\/).*/,
                     /ckeditor/,
                     /jquery-ui/,
                     /-min/,
@@ -98,12 +101,12 @@ module.exports = merge(core, {
                             presets: [
                                 // Target Bloom Desktop's current version of geckofx
                                 [
-                                    "babel-preset-env",
+                                    "@babel/preset-env",
                                     {
                                         targets: {
                                             browsers: [
                                                 "last 3 ChromeAndroid versions", // this is kind of bogus, it ignores the number
-                                                "Firefox >= 60", // what Bloom Desktop needs
+                                                "Firefox >= 45", // what Bloom Desktop 4.7 needs
                                                 ">1%" //don't support if the browser is <= 1% use
                                             ]
                                         }
