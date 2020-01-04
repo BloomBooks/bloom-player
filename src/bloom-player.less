@@ -400,6 +400,10 @@ that makes available to the control files more like Bloom Reader uses */
             .icon {
                 align-self: center; // aligns the audio icon vertically
             }
+            // ensure the radio check is inside the circle (BL-7960)
+            .MuiRadio-root svg {
+                left: 0;        // aligns radio button check dot horizontally in ff45
+            }
         }
     }
 }
