@@ -119,12 +119,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // This block of variables keep track of things we want to report in analytics
     private totalNumberedPages = 0; // found in book
+    private pagesShown: Set<number> = new Set<number>();        // collection of (non-xmatter) pages shown
+    private audioPagesShown: Set<number> = new Set<number>();   // collection of (non-xmatter) audio pages shown
+    private videoPagesShown: Set<number> = new Set<number>();   // collection of (non-xmatter) video pages shown
     private questionCount = 0; // comprehension questions found in book
     private features = "";
 
-    private audioPages = 0; // number of (non-xmatter) audio pages user has displayed
-    private totalPagesShown = 0; // number of (non-xmatter) pages of all kinds user has displayed
-    private videoPages = 0; // number of (non-xmatter) video pages user has displayed.
     private lastNumberedPageWasRead = false; // has user read to last numbered page?
 
     private totalAudioDuration = 0;
@@ -185,6 +185,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private isPagesLocalized: boolean = false;
 
     private static currentPage: HTMLElement;
+    private static currentPageIndex: number;
 
     private indexOflastNumberedPage: number;
 
@@ -408,6 +409,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.totalNumberedPages = 0;
             this.questionCount = 0;
             this.activityManager.collectActivityContextForBook(pages);
+            this.pagesShown.clear();
+            this.audioPagesShown.clear();
+            this.videoPagesShown.clear();
         }
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
@@ -808,9 +812,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // when the parent reader determines that the session reading this book is finished.
     private sendUpdateOfBookProgressReportToExternalContext() {
         const args = {
-            audioPages: this.audioPages,
-            nonAudioPages: this.totalPagesShown - this.audioPages,
-            videoPages: this.videoPages,
+            audioPages: this.audioPagesShown.size,
+            nonAudioPages: this.pagesShown.size - this.audioPagesShown.size,
+            videoPages: this.videoPagesShown.size,
             audioDuration: this.totalAudioDuration,
             videoDuration: this.totalVideoDuration,
             lastNumberedPageRead: this.lastNumberedPageWasRead
@@ -1371,6 +1375,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 return; // blank initial or final page?
             }
             BloomPlayerCore.currentPage = bloomPage;
+            BloomPlayerCore.currentPageIndex = index;
+
             // This is probably obsolete, since we update all the page sizes on rotate, and again in setIndex.
             // It's not expensive so leaving it in for robustness.
             if (this.canRotate) {
@@ -1382,7 +1388,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             if (!this.isXmatterPage()) {
-                this.totalPagesShown++;
+                this.pagesShown.add(index);
                 if (index === this.indexOflastNumberedPage) {
                     this.lastNumberedPageWasRead = true;
                 }
@@ -1430,8 +1436,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
 
         if (!player.reportedAudioOnCurrentPage) {
-            player.audioPages++;
             player.reportedAudioOnCurrentPage = true;
+            player.audioPagesShown.add(BloomPlayerCore.currentPageIndex);
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
     }
@@ -1446,7 +1452,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         player.totalVideoDuration += duration;
         if (!player.reportedVideoOnCurrentPage && !player.isXmatterPage()) {
             player.reportedVideoOnCurrentPage = true;
-            player.videoPages++;
+            player.videoPagesShown.add(BloomPlayerCore.currentPageIndex);
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
     }
