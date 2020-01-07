@@ -325,11 +325,9 @@ We just make them follow the main content normally. */
     }
 }
 
-// On devices where you can't hover (phones, tablets), hide the buttons completely.
-// Users will naturally expect to page by dragging.
-// (Firefox doesn't support this media query, but happily, we don't want any
-// special behavior on FF, so having it ignore the request is fine.)
-@media (hover: none) {
+// On devices where default pointing is coarse (touchscreens: phones, tablets),
+// hide the buttons completely.  Users will naturally expect to page by dragging.
+@media (pointer: coarse) {
     // We need these outer conditions for specificity
     .bloomPlayer {
         .swiper-button-next,
