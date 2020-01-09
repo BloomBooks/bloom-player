@@ -290,7 +290,7 @@ export const BloomPlayerControls: React.FunctionComponent<
             transform: scale(${scaleFactor});
             margin-left: ${leftMargin}px;
         }
-        .actual-page-preview {height: ${actualPageHeight /
+        .bloomPlayer-page {height: ${actualPageHeight /
             scaleFactor}px; overflow: hidden;}`;
     };
 
@@ -306,7 +306,9 @@ export const BloomPlayerControls: React.FunctionComponent<
         bookLanguages: LangData[]
     ): void => {
         setLanguageData(bookLanguages);
-        setActiveLanguageCode(bookLanguages.length > 0 ? bookLanguages[0].Code : "");
+        setActiveLanguageCode(
+            bookLanguages.length > 0 ? bookLanguages[0].Code : ""
+        );
     };
 
     const {

@@ -1229,7 +1229,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             {this.state.styleRules}
                                         </style>
                                         <div
-                                            className="actual-page-preview"
+                                            className="bloomPlayer-page"
                                             dangerouslySetInnerHTML={{
                                                 __html: slide
                                             }}
