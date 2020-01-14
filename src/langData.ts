@@ -137,9 +137,9 @@ export default class LangData {
                 languageArray.push(langData);
             }
         }
-        // Reorder based on Collection settings, then alphabetically.
+        // Reorder based on vernacular first, then alphabetically.
         languageArray = LangData.reorderMenuItems(
-            languageDisplayNames,
+            LangData.getLanguage1CodeOrEnglish(body),
             languageArray
         );
 
@@ -154,20 +154,16 @@ export default class LangData {
         return languageArray;
     }
 
-    // Reorder based on Collection settings. Put L1 at the top of the menu,
+    // Put L1 at the top of the menu,
     // the rest alphabetically according to display name in current locale.
     private static reorderMenuItems(
-        languageDisplayNames: object | undefined,
+        language1Code: string,
         languageArray: LangData[]
     ) {
         languageArray = languageArray.sort(LangData.compare);
-        const keys = languageDisplayNames ? Object.keys(languageDisplayNames) : [];
-        if (keys.length === 0) {
-            return languageArray;
-        }
-        const firstLanguage = keys[0];
-        if (LangData.getLangDataByCode(languageArray, firstLanguage)) {
-            LangData.moveToBeginning(languageArray, firstLanguage);
+
+        if (LangData.getLangDataByCode(languageArray, language1Code)) {
+            LangData.moveToBeginning(languageArray, language1Code);
         }
         return languageArray;
     }
@@ -197,22 +193,13 @@ export default class LangData {
 
     private static getMinimalFallbackL1(body: HTMLBodyElement): LangData {
         // This is now only used in the unlikely case that no language has text in the book!
-        const dataDivElement = body.ownerDocument!.getElementById(
-            "bloomDataDiv"
-        );
+        const dataDivElement = LangData.getBloomDataDiv(body);
         if (!dataDivElement) {
             // Not even a bloomDataDiv in the book!
             const totalFallBack = new LangData("English", "en");
             totalFallBack.IsSelected = true;
             return totalFallBack;
         }
-        const contentLangDiv = dataDivElement.ownerDocument!.evaluate(
-            "//div[@data-book='contentLanguage1' and @lang='*']",
-            dataDivElement,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
         const langsOfBookDiv = dataDivElement.ownerDocument!.evaluate(
             "//div[@data-book='languagesOfBook' and @lang='*']",
             dataDivElement,
@@ -220,17 +207,40 @@ export default class LangData {
             XPathResult.FIRST_ORDERED_NODE_TYPE,
             null
         ).singleNodeValue;
-        const code =
-            contentLangDiv === null ? "en" : contentLangDiv.textContent!.trim();
+        const language1Code: string = LangData.getLanguage1CodeOrEnglish(body);
         let name =
             langsOfBookDiv === null ? "" : langsOfBookDiv.textContent!.trim();
         // langsOfBookDiv could have a couple of comma separated language names,
         // but we only want the first for our fallback.
         name = name.split(",")[0];
-        name = LangData.getBestLanguageName(code, name);
-        const fallback = new LangData(name, code);
+        name = LangData.getBestLanguageName(language1Code, name);
+        const fallback = new LangData(name, language1Code);
         fallback.IsSelected = true;
         return fallback;
+    }
+
+    private static getBloomDataDiv(body: HTMLBodyElement): HTMLElement | null {
+        return body.ownerDocument!.getElementById("bloomDataDiv");
+    }
+
+    private static getLanguage1CodeOrEnglish(body: HTMLBodyElement): string {
+        const dataDivElement = this.getBloomDataDiv(body);
+        if (!dataDivElement) {
+            return "en";
+        }
+
+        const contentLanguage1Div = dataDivElement.ownerDocument!.evaluate(
+            "//div[@data-book='contentLanguage1' and @lang='*']",
+            dataDivElement,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+        const code =
+            contentLanguage1Div === null
+                ? "en"
+                : contentLanguage1Div.textContent!.trim();
+        return code;
     }
 
     private static getBestLanguageNameFromMetaData(
@@ -289,9 +299,7 @@ export default class LangData {
     ): boolean {
         const audioClass = "audio-sentence";
         const divsInLang = body.ownerDocument!.evaluate(
-            ".//div[@lang='" +
-                isoCode +
-                "']",
+            ".//div[@lang='" + isoCode + "']",
             body,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
