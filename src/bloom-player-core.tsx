@@ -239,6 +239,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             const newSourceUrl = this.calculateNewUrl();
+            // Inside of Bloom Publish Preview,
+            // this will be "" if we should just keep spinning, waiting for a render with different
+            // props once the bloomd is created.
 
             if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
                 // We're changing books; reset several variables including isLoading,
@@ -546,6 +549,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             throw new Error(
                 "The url parameter was empty. It should point to the url of a book."
             );
+        }
+        // Bloom Publish Preview uses this so that we get spinning wheel while working on making the bloomd
+        if (newSourceUrl === "working") {
+            return "";
         }
 
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get

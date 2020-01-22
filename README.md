@@ -24,6 +24,8 @@ So to embed a book in your website, you just need an iframe element that points 
 ></iframe>
 ```
 
+Advanced: if you want to just show a spinning wheel, you can supply `url=working` and then render it again when you have an actual url.
+
 # Optional Parameters
 
 You can customize some aspects of the bloom-player to fit your context. For example, if you never want to show the [app bar](https://material.io/design/components/app-bars-top.html),
