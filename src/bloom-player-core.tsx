@@ -119,9 +119,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // This block of variables keep track of things we want to report in analytics
     private totalNumberedPages = 0; // found in book
-    private pagesShown: Set<number> = new Set<number>();        // collection of (non-xmatter) pages shown
-    private audioPagesShown: Set<number> = new Set<number>();   // collection of (non-xmatter) audio pages shown
-    private videoPagesShown: Set<number> = new Set<number>();   // collection of (non-xmatter) video pages shown
+    private pagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) pages shown
+    private audioPagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) audio pages shown
+    private videoPagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) video pages shown
     private questionCount = 0; // comprehension questions found in book
     private features = "";
 
@@ -215,150 +215,164 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps) {
-        // contains conditions to limit this to one time only after assembleStyleSheets has completed.
-        this.localizeOnce();
-        // also one-time setup; only the first time through
-        this.initializeMedia();
-
-        if (
-            !this.state.isLoading &&
-            !this.state.loadFailed &&
-            prevProps.activeLanguageCode !== this.props.activeLanguageCode
-        ) {
-            // The usual case invoked by changing the language on the player menu.
-            if (this.htmlElement) {
-                this.updateDivVisibilityByLangCode(
-                    prevProps.activeLanguageCode
-                );
-                this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
+        try {
+            if (this.state.loadFailed) {
+                return; // otherwise we'll just be stuck in here forever trying to load
             }
-        }
+            // contains conditions to limit this to one time only after assembleStyleSheets has completed.
+            this.localizeOnce();
+            // also one-time setup; only the first time through
+            this.initializeMedia();
 
-        const newSourceUrl = this.calculateNewUrl();
-        if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
-            // We're changing books; reset several variables including isLoading,
-            // until we inform the controls which languages are available.
-            this.setState({ isLoading: true, loadFailed: false });
-            this.metaDataObject = undefined;
-            this.htmlElement = undefined;
-
-            this.sourceUrl = newSourceUrl;
-            // We support a two ways of interpreting URLs.
-            // If the url ends in .htm, it is assumed to be the URL of the htm file that
-            // is the book itself. The last slash indicates the folder in which all the
-            // other resources may be found.
-            // For compatibility with earlier versions of bloom-player, the url may be a folder
-            // ending in the book name, and the book is assumed to occur in that folder and have
-            // the same name as the folder.
-            // Note: In the future, we are thinking of limiting to
-            // a few domains (localhost, dev.blorg, blorg).
-            // Note: we don't currently look for .html files, only .htm. That's what
-            // Bloom has consistently created, both in .bloomd files and in
-            // book folders, so it doesn't seem worth complicating the code
-            // to look for the other as well.
-            const slashIndex = this.sourceUrl.lastIndexOf("/");
-            const encodedSlashIndex = this.sourceUrl.lastIndexOf("%2f");
-            let filename: string;
-            if (slashIndex > encodedSlashIndex) {
-                filename = this.sourceUrl.substring(
-                    slashIndex + 1,
-                    this.sourceUrl.length
-                );
-            } else {
-                filename = this.sourceUrl.substring(
-                    encodedSlashIndex + 3,
-                    this.sourceUrl.length
-                );
+            if (
+                !this.state.isLoading &&
+                !this.state.loadFailed &&
+                prevProps.activeLanguageCode !== this.props.activeLanguageCode
+            ) {
+                // The usual case invoked by changing the language on the player menu.
+                if (this.htmlElement) {
+                    this.updateDivVisibilityByLangCode(
+                        prevProps.activeLanguageCode
+                    );
+                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
+                }
             }
-            const fullPath = filename.endsWith(".htm");
-            const urlOfBookHtmlFile = fullPath
-                ? this.sourceUrl
-                : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
-            this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = fullPath
-                ? this.sourceUrl.substring(
-                      0,
-                      Math.max(slashIndex, encodedSlashIndex)
-                  )
-                : this.sourceUrl;
-            const htmlPromise = axios.get(urlOfBookHtmlFile);
-            const metadataPromise = axios.get(this.fullUrl("meta.json"));
-            Promise.all([htmlPromise, metadataPromise])
-                .then(result => {
-                    const [htmlResult, metadataResult] = result;
-                    this.metaDataObject = metadataResult.data;
-                    // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
-                    // and setting its innerHtml, since that leads to the browser trying to load all the
-                    // urls referenced in the book, which is a waste and also won't work because we
-                    // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
-                    const parser = new DOMParser();
-                    // we *think* bookDoc and bookHtmlElement get garbage collected
-                    const bookDoc = parser.parseFromString(
-                        htmlResult.data,
-                        "text/html"
-                    );
-                    const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
-                    const body = bookHtmlElement.getElementsByTagName(
-                        "body"
-                    )[0];
-                    this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
-                        body as HTMLBodyElement
-                    );
-                    this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
+            const newSourceUrl = this.calculateNewUrl();
 
-                    this.copyrightHolder = this.getCopyrightInfo(
-                        body,
-                        "copyright"
-                    );
-                    this.originalCopyrightHolder = this.getCopyrightInfo(
-                        body,
-                        "originalCopyright"
-                    );
+            if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
+                // We're changing books; reset several variables including isLoading,
+                // until we inform the controls which languages are available.
+                this.setState({ isLoading: true, loadFailed: false });
+                this.metaDataObject = undefined;
+                this.htmlElement = undefined;
 
-                    this.makeNonEditable(body);
-                    this.htmlElement = bookHtmlElement;
+                this.sourceUrl = newSourceUrl;
+                // We support a two ways of interpreting URLs.
+                // If the url ends in .htm, it is assumed to be the URL of the htm file that
+                // is the book itself. The last slash indicates the folder in which all the
+                // other resources may be found.
+                // For compatibility with earlier versions of bloom-player, the url may be a folder
+                // ending in the book name, and the book is assumed to occur in that folder and have
+                // the same name as the folder.
+                // Note: In the future, we are thinking of limiting to
+                // a few domains (localhost, dev.blorg, blorg).
+                // Note: we don't currently look for .html files, only .htm. That's what
+                // Bloom has consistently created, both in .bloomd files and in
+                // book folders, so it doesn't seem worth complicating the code
+                // to look for the other as well.
+                const slashIndex = this.sourceUrl.lastIndexOf("/");
+                const encodedSlashIndex = this.sourceUrl.lastIndexOf("%2f");
+                let filename: string;
+                if (slashIndex > encodedSlashIndex) {
+                    filename = this.sourceUrl.substring(
+                        slashIndex + 1,
+                        this.sourceUrl.length
+                    );
+                } else {
+                    filename = this.sourceUrl.substring(
+                        encodedSlashIndex + 3,
+                        this.sourceUrl.length
+                    );
+                }
+                const fullPath = filename.endsWith(".htm");
+                const urlOfBookHtmlFile = fullPath
+                    ? this.sourceUrl
+                    : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
+                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = fullPath
+                    ? this.sourceUrl.substring(
+                          0,
+                          Math.max(slashIndex, encodedSlashIndex)
+                      )
+                    : this.sourceUrl;
+                const htmlPromise = axios.get(urlOfBookHtmlFile);
+                const metadataPromise = axios.get(this.fullUrl("meta.json"));
+                Promise.all([htmlPromise, metadataPromise])
+                    .then(result => {
+                        const [htmlResult, metadataResult] = result;
+                        this.metaDataObject = metadataResult.data;
+                        // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
+                        // and setting its innerHtml, since that leads to the browser trying to load all the
+                        // urls referenced in the book, which is a waste and also won't work because we
+                        // haven't corrected them yet, so it can trigger yellow boxes in Bloom.
+                        const parser = new DOMParser();
+                        // we *think* bookDoc and bookHtmlElement get garbage collected
+                        const bookDoc = parser.parseFromString(
+                            htmlResult.data,
+                            "text/html"
+                        );
+                        const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
 
-                    const firstPage = bookHtmlElement.getElementsByClassName(
-                        "bloom-page"
-                    )[0];
-                    let pageClass = "Device16x9Portrait";
-                    if (firstPage) {
-                        pageClass = BloomPlayerCore.getPageSizeClass(firstPage);
-                    }
-                    // enhance: make this callback thing into a promise
-                    this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
-                        this.urlPrefix,
-                        body,
-                        pageClass,
-                        () => {
-                            this.finishUp();
+                        const body = bookHtmlElement.getElementsByTagName(
+                            "body"
+                        )[0];
+                        this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
+                            body as HTMLBodyElement
+                        );
+                        this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
+
+                        this.copyrightHolder = this.getCopyrightInfo(
+                            body,
+                            "copyright"
+                        );
+                        this.originalCopyrightHolder = this.getCopyrightInfo(
+                            body,
+                            "originalCopyright"
+                        );
+
+                        this.makeNonEditable(body);
+                        this.htmlElement = bookHtmlElement;
+
+                        const firstPage = bookHtmlElement.getElementsByClassName(
+                            "bloom-page"
+                        )[0];
+                        let pageClass = "Device16x9Portrait";
+                        if (firstPage) {
+                            pageClass = BloomPlayerCore.getPageSizeClass(
+                                firstPage
+                            );
                         }
-                    );
-                })
-                .catch(err => this.HandleLoadingError(err));
-        } else if (prevProps.landscape !== this.props.landscape) {
-            // rotating the phone...may need to switch the orientation class on each page.
-            const pages = document.getElementsByClassName("bloom-page");
-            for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                this.forceDevicePageSize(page);
+                        // enhance: make this callback thing into a promise
+                        this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
+                            this.urlPrefix,
+                            body,
+                            pageClass,
+                            () => {
+                                this.finishUp();
+                            }
+                        );
+                    })
+                    .catch(err => this.HandleLoadingError(err));
+            } else if (prevProps.landscape !== this.props.landscape) {
+                // rotating the phone...may need to switch the orientation class on each page.
+                const pages = document.getElementsByClassName("bloom-page");
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    this.forceDevicePageSize(page);
+                }
             }
-        }
 
-        if (prevProps.landscape !== this.props.landscape) {
-            // if there was a rotation, we may need to show the page differently (e.g. Motion books)
-            this.setIndex(this.state.currentSwiperIndex);
-            this.showingPage(this.state.currentSwiperIndex);
-        }
+            if (prevProps.landscape !== this.props.landscape) {
+                // if there was a rotation, we may need to show the page differently (e.g. Motion books)
+                this.setIndex(this.state.currentSwiperIndex);
+                this.showingPage(this.state.currentSwiperIndex);
+            }
 
-        if (prevProps.paused !== this.props.paused) {
-            this.handlePausePlay();
-        }
-        if (this.swiperInstance) {
-            // Other refactoring seems to have fixed an earlier problem with switching orientation,
-            // so that we no longer need either the Swiper update or even the setTimeout here.
-            // OTOH, we need to do a lazy.load(), otherwise all our pictures disappear when changing languages!
-            this.swiperInstance.lazy.load();
+            if (prevProps.paused !== this.props.paused) {
+                this.handlePausePlay();
+            }
+            if (this.swiperInstance) {
+                // Other refactoring seems to have fixed an earlier problem with switching orientation,
+                // so that we no longer need either the Swiper update or even the setTimeout here.
+                // OTOH, we need to do a lazy.load(), otherwise all our pictures disappear when changing languages!
+                this.swiperInstance.lazy.load();
+            }
+        } catch (error) {
+            this.setState({
+                isLoading: false,
+                loadFailed: true,
+                loadErrorHtml: error.message
+            });
         }
     }
 
@@ -528,6 +542,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private calculateNewUrl(): string {
         let newSourceUrl = this.props.url;
+        if (newSourceUrl === undefined || "" === newSourceUrl.trim()) {
+            throw new Error(
+                "The url parameter was empty. It should point to the url of a book."
+            );
+        }
+
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
         // an empty filename or double-slashes in derived URLs.
         if (newSourceUrl.endsWith("/")) {
