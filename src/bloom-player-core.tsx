@@ -181,6 +181,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private music: Music;
     private video: Video;
     private canRotate: boolean;
+    private autoAdvance: boolean;
 
     private isPagesLocalized: boolean = false;
 
@@ -313,6 +314,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             body as HTMLBodyElement
                         );
                         this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
+                        this.autoAdvance = body.hasAttribute(
+                            "data-bfautoadvance"
+                        ); // expect value landscape:bloomReader, should we check?
 
                         this.copyrightHolder = this.getCopyrightInfo(
                             body,
@@ -529,13 +533,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!this.narration) {
             this.narration = new Narration();
             this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
+            this.narration.PageNarrationComplete = new LiteEvent<HTMLElement>();
             this.animation = new Animation();
-            //this.narration.PageNarrationComplete.subscribe();
             this.narration.PageDurationAvailable.subscribe(pageElement => {
                 this.animation.HandlePageDurationAvailable(
                     pageElement!,
                     this.narration.PageDuration
                 );
+            });
+            this.narration.PageNarrationComplete.subscribe(pageElement => {
+                this.HandlePageNarrationComplete(pageElement);
             });
         }
         if (!this.music) {
@@ -577,6 +584,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.resetForNewPageAndPlay(BloomPlayerCore.currentPage);
             }
             this.narration.play();
+            this.animation.PlayAnimation();
             this.video.play();
             this.music.play();
         }
@@ -697,6 +705,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private pauseAllMultimedia() {
         this.narration.pause();
+        this.animation.PauseAnimation();
         this.video.pause();
         this.music.pause();
     }
@@ -1309,6 +1318,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
+    // What we need to do when the page narration is completed (if autoadvance, go to next page).
+    public HandlePageNarrationComplete(page: HTMLElement | undefined) {
+        // When we run this in Bloom, these variables are all present and accounted for and accurate.
+        // When it's run in Storybook, not so much.
+        if (!page) {
+            return;
+        }
+        if (this.autoAdvance && this.props.landscape) {
+            this.swiperInstance.slideNext();
+        }
+    }
+
     // Get a class to apply to a particular slide. This is used to apply the
     // contextPage class to the slides before and after the current one.
     private getSlideClass(itemIndex: number): string {
@@ -1332,6 +1353,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // - if we're animating motion or showing video, need to get the page into the start state
     // before we slide it in
     private setIndex(index: number) {
+        clearTimeout(this.narration.pageNarrationCompleteTimer);
         this.setState({ currentSwiperIndex: index });
         const bloomPage = this.getPageAtSwiperIndex(index);
         if (bloomPage) {
