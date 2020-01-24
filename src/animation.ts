@@ -59,7 +59,9 @@ export class Animation {
     // zoomed to the start position for the animation.
     public HandlePageBeforeVisible(page: HTMLElement) {
         if (this.shouldAnimate(page)) {
-            this.setupAnimation(page, true);
+            // We don't need to do anything. Either 'durationAvailable' or 'pageAvailable' will
+            // setup the animation, whichever event occurs second.
+            //this.setupAnimation(page, true);
         } else {
             // may have left-over wrappers from when page previously played.
             this.removeAnimationWrappers(page);

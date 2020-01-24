@@ -2,6 +2,7 @@ import LiteEvent from "./event";
 import { BloomPlayerCore } from "./bloom-player-core";
 
 const kSegmentClass = "bloom-highlightSegment";
+const kMinDuration = 3.0; // seconds
 const kAudioSentence = "audio-sentence"; // Even though these can now encompass more than strict sentences, we continue to use this class name for backwards compatability reasons
 
 // Handles implementation of narration, including playing the audio and
@@ -20,6 +21,8 @@ export default class Narration {
     private startPlay: Date;
     private startPause: Date;
     private fakeNarrationAborted: boolean = false;
+    private fakeNarrationTimer: number;
+    public pageNarrationCompleteTimer: number;
     private segmentIndex: number;
 
     private segments: HTMLElement[];
@@ -50,9 +53,11 @@ export default class Narration {
 
         const stackSize = this.elementsToPlayConsecutivelyStack.length;
         if (stackSize === 0) {
-            // Nothing to play
+            // Nothing to play. Wait the standard amount of time anyway, in case we're autoadvancing.
             if (this.PageNarrationComplete) {
-                this.PageNarrationComplete.raise();
+                this.pageNarrationCompleteTimer = window.setTimeout(() => {
+                    this.PageNarrationComplete.raise();
+                }, kMinDuration * 1000);
             }
             return;
         }
@@ -400,14 +405,18 @@ export default class Narration {
                 this.playCurrentInternal();
             } else {
                 // Nothing left to play
-                this.elementsToPlayConsecutivelyStack = [];
-                this.subElementsWithTimings = [];
-
-                this.removeAudioCurrent();
-                if (this.PageNarrationComplete) {
-                    this.PageNarrationComplete.raise(this.playerPage);
-                }
+                this.reportPlayEnded();
             }
+        }
+    }
+
+    private reportPlayEnded() {
+        this.elementsToPlayConsecutivelyStack = [];
+        this.subElementsWithTimings = [];
+
+        this.removeAudioCurrent();
+        if (this.PageNarrationComplete) {
+            this.PageNarrationComplete.raise(this.playerPage);
         }
     }
 
@@ -552,7 +561,7 @@ export default class Narration {
         // the pause duration from the beginning of this page.
         this.startPause = this.startPlay;
         if (this.segments.length === 0) {
-            this.PageDuration = 3.0;
+            this.PageDuration = kMinDuration;
             if (this.PageDurationAvailable) {
                 this.PageDurationAvailable.raise(page);
             }
@@ -561,7 +570,8 @@ export default class Narration {
             // we need to raise PageNarrationComplete some other way.
             // A timeout allows us to raise it after the arbitrary duration we have
             // selected. The tricky thing is to allow it to be paused.
-            setTimeout(
+            clearTimeout(this.fakeNarrationTimer);
+            this.fakeNarrationTimer = window.setTimeout(
                 () => this.fakePageNarrationTimedOut(page),
                 this.PageDuration * 1000
             );
@@ -592,8 +602,8 @@ export default class Narration {
             // this.getDurationPlayer().setAttribute("src",
             //     this.currentAudioUrl(this.segments[this.segmentIndex].getAttribute("id")));
         } else {
-            if (this.PageDuration < 3.0) {
-                this.PageDuration = 3.0;
+            if (this.PageDuration < kMinDuration) {
+                this.PageDuration = kMinDuration;
             }
             if (this.PageDurationAvailable) {
                 this.PageDurationAvailable.raise(this.playerPage);
@@ -604,6 +614,7 @@ export default class Narration {
     private fakePageNarrationTimedOut(page: HTMLElement) {
         if (this.paused) {
             this.fakeNarrationAborted = true;
+            clearTimeout(this.fakeNarrationTimer);
             return;
         }
         // It's possible we experienced one or more pauses and therefore this timeout
@@ -614,7 +625,8 @@ export default class Narration {
             (new Date().getTime() - this.startPlay.getTime()) / 1000;
         if (duration < this.PageDuration - 0.01) {
             // too soon; try again.
-            setTimeout(
+            clearTimeout(this.fakeNarrationTimer);
+            this.fakeNarrationTimer = window.setTimeout(
                 () => this.fakePageNarrationTimedOut(page),
                 (this.PageDuration - duration) * 1000
             );
