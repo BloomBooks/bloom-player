@@ -227,7 +227,9 @@ We just make them follow the main content normally. */
     // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
     // but INSIDE the .bloom-player that wraps around all this.
     .bloom-textOverPicture .bloom-editable.bloom-visibility-code-on {
-        overflow-y: hidden !important; // but not in comical bubbles (BL-7911)
+        // (BL-7911 -> BL-8076) The first fix made overflow hidden. Actually we want overflow to show,
+        // but not generate scroll bars (that's 'visible').
+        overflow-y: visible !important;
     }
 
     // 2) for metadata pages, we (for now) risk changing the line-height. Experimentally, which works well:
@@ -400,7 +402,7 @@ that makes available to the control files more like Bloom Reader uses */
             }
             // ensure the radio check is inside the circle (BL-7960)
             .MuiRadio-root svg {
-                left: 0;        // aligns radio button check dot horizontally in ff45
+                left: 0; // aligns radio button check dot horizontally in ff45
             }
         }
     }
