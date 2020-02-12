@@ -232,9 +232,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             ) {
                 // The usual case invoked by changing the language on the player menu.
                 if (this.htmlElement) {
-                    this.updateDivVisibilityByLangCode(
-                        prevProps.activeLanguageCode
-                    );
+                    this.updateDivVisibilityByLangCode();
                     this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
@@ -591,13 +589,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     // Go through all .bloom-editable divs turning visibility off/on based on the activeLanguage (isoCode).
-    private updateDivVisibilityByLangCode(previousLangCode: string): void {
+    // When using the language chooser, the activeLanguage should be treated as if it were the L1/Vernacular language
+    private updateDivVisibilityByLangCode(): void {
         if (
             this.props.activeLanguageCode === undefined ||
             this.htmlElement === undefined
         ) {
             return; // shouldn't happen, just a precaution
         }
+
+        // The newly selected language will be treated as the new, current vernacular language.
+        // (It may or may not be the same as the original vernacular language at the time of publishing)
+        const langVernacular = this.props.activeLanguageCode;
+
+        // Update all the bloom-editables inside the translation group to take into account the new vernacular language
         const translationGroupDivs = this.htmlElement.ownerDocument!.evaluate(
             ".//div[contains(@class, 'bloom-translationGroup')]",
             this.htmlElement,
@@ -619,9 +624,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const dataDefaultLangsAttr = groupElement.getAttribute(
                 "data-default-languages"
             );
-            if (this.skipGroupByDefaultLangs(dataDefaultLangsAttr)) {
-                continue;
-            }
+
+            // Split the string into array form instead, using delimiters "," or " "
+            const dataDefaultLangs = dataDefaultLangsAttr
+                ? dataDefaultLangsAttr.split(/,| /)
+                : [];
+
             const childElts = groupElement.childNodes;
             for (let iedit = 0; iedit < childElts.length; iedit++) {
                 const divElement = childElts.item(iedit) as HTMLDivElement;
@@ -632,68 +640,90 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 ) {
                     continue;
                 }
-                if (
-                    this.skipDivByDefaultLangs(
-                        dataDefaultLangsAttr,
-                        divElement.classList
-                    )
-                ) {
-                    continue;
-                }
+
                 const divLang = divElement.getAttribute("lang");
-                if (
-                    divLang !== previousLangCode &&
-                    divLang !== this.props.activeLanguageCode
-                ) {
-                    continue;
-                }
-                // Find the right div to remove visibility from
-                // We don't want to remove visibility from bi-/tri-lingual divs that were already visible.
-                if (
-                    divLang === previousLangCode &&
-                    !(
-                        divElement.classList.contains("bloom-content2") ||
-                        divElement.classList.contains("bloom-content3")
-                    )
-                ) {
-                    divElement.classList.remove(visibilityClass);
-                }
-                if (divLang === this.props.activeLanguageCode) {
+
+                const shouldShow = BloomPlayerCore.shouldNormallyShowEditable(
+                    divLang || "",
+                    dataDefaultLangs,
+                    langVernacular,
+                    divElement
+                );
+
+                if (shouldShow) {
                     divElement.classList.add(visibilityClass);
+
+                    // Note: Well, the BloomDesktop C# code technically removes anything beginning with "bloom-visibility-code"
+                    // before checking if should show,
+                    // but handling just the "-on" and "-off" suffixes seems sufficient and makes the code simpler.
+                    divElement.classList.remove("bloom-visibility-code-off");
+                } else {
+                    divElement.classList.remove(visibilityClass);
                 }
             }
         }
     }
 
-    private skipDivByDefaultLangs(
-        dataDefaultLangsAttr: string | null,
-        divClassList: DOMTokenList
-    ) {
-        if (!dataDefaultLangsAttr || dataDefaultLangsAttr === "auto") {
-            return false;
-        }
-        // The case that's left is data-default-languages contains something like 'V1, N1' or 'L1, L2'
+    // Returns true if the editable should be visible.
+    // The "Normally" means ignoring user overrides via .bloom-visibility-user-on/off
+    //   Note: Even though there were some plans for user overrides, it doesn't seem like it's actually really supported / working.
+    //   So, this function be responsible for basically entirely determining the visibility.
+    //
+    // This function is modeled as much as possible on BloomDesktop's src/BloomExe/Book/TranslationGroupManager.cs ShouldNormallyShowEditable()
+    private static shouldNormallyShowEditable(
+        lang: string, // The language of the editable in question
+        dataDefaultLanguages: string[] | null | undefined,
+        settingsLang1: string,
+        divElement: HTMLElement
+    ): boolean {
+        const matchesContent2 = divElement.classList.contains("bloom-content2");
+        const matchesContent3 = divElement.classList.contains("bloom-content3");
+
         if (
-            divClassList.contains("bloom-contentNational1") ||
-            divClassList.contains("bloom-contentNational2")
+            dataDefaultLanguages == null ||
+            dataDefaultLanguages.length === 0 ||
+            !dataDefaultLanguages[0] ||
+            this.areStringsEqualInvariantCultureIgnoreCase(
+                dataDefaultLanguages[0],
+                "auto"
+            )
         ) {
-            return true;
+            return lang === settingsLang1 || matchesContent2 || matchesContent3;
+        } else {
+            // Note there are (perhaps unfortunately) two different labelling systems, but they have a 1-to-1 correspondence:
+            // The V/N1/N2 system feels natural in vernacular book contexts
+            // The L1/L2/L3 system is more natural in source book contexts.
+            return (
+                (lang === settingsLang1 &&
+                    dataDefaultLanguages.includes("V")) ||
+                (lang === settingsLang1 &&
+                    dataDefaultLanguages.includes("L1")) ||
+                (this.isDivInL2(divElement) &&
+                    dataDefaultLanguages.includes("N1")) ||
+                (this.isDivInL2(divElement) &&
+                    dataDefaultLanguages.includes("L2")) ||
+                (this.isDivInL3(divElement) &&
+                    dataDefaultLanguages.includes("N2")) ||
+                (this.isDivInL3(divElement) &&
+                    dataDefaultLanguages.includes("L3")) ||
+                dataDefaultLanguages.includes(lang) // a literal language id, e.g. "en" (used by template starter)
+            );
         }
-        return false;
     }
 
-    private skipGroupByDefaultLangs(
-        dataDefaultLangsAttr: string | null
-    ): boolean {
-        if (
-            !dataDefaultLangsAttr ||
-            dataDefaultLangsAttr === "auto" ||
-            dataDefaultLangsAttr.indexOf("V") > -1 ||
-            dataDefaultLangsAttr.indexOf("L1") > -1
-        ) {
-            return false;
-        }
-        return true;
+    private static areStringsEqualInvariantCultureIgnoreCase(
+        a: string,
+        b: string
+    ) {
+        return a.localeCompare(b, "en-US", { sensitivity: "accent" }) === 0;
+    }
+
+    private static isDivInL2(divElement: HTMLElement): boolean {
+        return divElement.classList.contains("bloom-contentNational1");
+    }
+
+    private static isDivInL3(divElement: HTMLElement): boolean {
+        return divElement.classList.contains("bloom-contentNational2");
     }
 
     public componentWillUnmount() {
