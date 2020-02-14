@@ -660,6 +660,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 } else {
                     divElement.classList.remove(visibilityClass);
                 }
+
+                // Since we potentially change the Language1 (aka Vernacular language), we should ideally update which divs have bloom-content1
+                // In addition to maintaining consistency, it also allows divs in the new L1 to receive L1-specific CSS.
+                //     e.g. the title receives special formatting if it contains "bloom-content1" class
+                // Another benefit is that if the old L3 becomes the new L1, then having "bloom-content1" applied
+                //     allows the new L1 divs to appear above the L2 in diglot books, whereas if not then the new L1 would be below old L2
+                if (divLang === langVernacular) {
+                    divElement.classList.add("bloom-content1");
+                } else {
+                    divElement.classList.remove("bloom-content1");
+                }
             }
         }
     }
@@ -667,7 +678,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Returns true if the editable should be visible.
     // The "Normally" means ignoring user overrides via .bloom-visibility-user-on/off
     //   Note: Even though there were some plans for user overrides, it doesn't seem like it's actually really supported / working.
-    //   So, this function be responsible for basically entirely determining the visibility.
+    //   So, this function should be responsible for basically entirely determining the visibility.
     //
     // This function is modeled as much as possible on BloomDesktop's src/BloomExe/Book/TranslationGroupManager.cs ShouldNormallyShowEditable()
     private static shouldNormallyShowEditable(
