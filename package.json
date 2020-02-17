@@ -13,6 +13,7 @@
     "private": false,
     "// Might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working": "",
     "sideEffects": false,
+    "types": "bloom-player.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/BloomBooks/bloom-player.git"
@@ -79,6 +80,7 @@
         "jquery": "^3.4.1",
         "less": "^3.9.0",
         "less-loader": "^4.1.0",
+        "lodash": "^4.17.15",
         "prettier": "^1.16.4",
         "raw-loader": "^3.1.0",
         "react": "^16.8.5",

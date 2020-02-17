@@ -9,9 +9,10 @@
         "alwaysStrict": true,
         "noImplicitReturns": true,
         "strictNullChecks": true,
-        "outDir": "lib",
+        "outDir": "dist",
         "resolveJsonModule": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "declaration": true
     },
     "exclude": ["node_modules", "typings", "lib"]
 }

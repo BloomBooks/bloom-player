@@ -2,10 +2,20 @@ const merge = require("webpack-merge");
 const common = require("./webpack.common.js");
 const TerserPlugin = require("terser-webpack-plugin");
 
-module.exports = merge(common, {
+const baseExport = merge(common, {
     mode: "production",
     devtool: "source-map",
-    output: { filename: "[name].min.js" },
+    output: {
+        filename: "[name].min.js",
+        // Exporting the library in umd format allows its various classes to
+        // be imported in typescript using import (rather than only by
+        // using require on the whole library) in a way that is consistent
+        // with the d.ts files we are generating. Using various other formats
+        // we found that a client could import the classes apparently successfully,
+        // but they were undefined at runtime.
+        // UMD is also a good universal library format that supports both AMD and commonjs.
+        libraryTarget: "umd"
+    },
     // This is an attempt at tree shaking. I don't think I got it working.
     // https://webpack.js.org/guides/tree-shaking#minify-the-output seems
     // to indicate that as long as package.json indicates our module is
@@ -32,3 +42,29 @@ module.exports = merge(common, {
         // sideEffects: true
     }
 });
+
+/* We want two different kinds of libraries.
+1) The "window" to support how Bloom Desktop uses it, with "window.BloomPlayer"
+2) A nice moder UMD library for Bloom Reader desktop
+3) (and of course there is the iframe mode, used by Bloom Library, which uses the bloomplayer.htm)
+*/
+const clonedeep = require("lodash/clonedeep");
+var assign = require("lodash/assign");
+const windowExport = clonedeep(baseExport);
+const umdExport = clonedeep(baseExport);
+assign(umdExport, {
+    output: {
+        filename: "bloom-player.umd.min.js",
+        library: "bloom-player",
+        // Exporting the library in umd format allows its various classes to
+        // be imported in typescript using import (rather than only by
+        // using require on the whole library) in a way that is consistent
+        // with the d.ts files we are generating. Using various other formats
+        // we found that a client could import the classes apparently successfully,
+        // but they were undefined at runtime.
+        // UMD is also a good universal library format that supports both AMD and commonjs.
+        libraryTarget: "umd"
+    }
+});
+
+module.exports = [windowExport, umdExport];
