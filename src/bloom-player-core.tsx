@@ -48,6 +48,9 @@ import { CircularProgress } from "@material-ui/core";
 
 interface IProps {
     url: string; // of the bloom book (folder)
+    // contents of meta.json. Include this if the url is a file:/// one (served from a nodejs environment),
+    // and so http://....meta.json would not work.
+    meta?: string;
     landscape: boolean; // whether viewing as landscape or portrait
     showContextPages?: boolean;
     // ``paused`` allows the parent to control pausing of audio. We expect we may supply
@@ -288,11 +291,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                       )
                     : this.sourceUrl;
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
-                const metadataPromise = axios.get(this.fullUrl("meta.json"));
-                Promise.all([htmlPromise, metadataPromise])
+
+                let metadataPromise;
+                if (this.props.meta) {
+                    metadataPromise = undefined;
+                } else {
+                    metadataPromise = axios.get(this.fullUrl("meta.json"));
+                }
+
+                // the filter here will remove metadataPromise if it is undefined
+                Promise.all([htmlPromise, metadataPromise].filter(p => p))
                     .then(result => {
                         const [htmlResult, metadataResult] = result;
-                        this.metaDataObject = metadataResult.data;
+                        if (this.props.meta) {
+                            this.metaDataObject = this.props.meta;
+                        } else {
+                            this.metaDataObject = metadataResult.data;
+                        }
                         // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
                         // and setting its innerHtml, since that leads to the browser trying to load all the
                         // urls referenced in the book, which is a waste and also won't work because we
