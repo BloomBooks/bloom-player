@@ -2,6 +2,8 @@
 import autonymData from "raw-loader!./iso639-autonyms.tsv";
 
 // This class handles retrieving data from the 'iso639-autonyms.tsv' file.
+// iso639-autonyms.tsv originally came from https://github.com/bbqsrc/iso639-autonyms.
+// We removed the final column and got rid of the '\r's to save quite a few KB.
 export class AutonymHandler {
     private static singleton: AutonymHandler;
     private autonymArray: object;
