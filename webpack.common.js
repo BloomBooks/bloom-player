@@ -3,6 +3,7 @@ var node_modules = path.resolve(__dirname, "node_modules");
 const core = require("./webpack.core.js");
 const merge = require("webpack-merge");
 const CopyPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 var outputDir = "dist";
 
 // From Bloom's webpack, it seems this is needed
@@ -45,23 +46,33 @@ module.exports = merge(core, {
     },
 
     plugins: [
+        // Inserts the script tag for the main JS bundle (in production builds, with a hash
+        // in the name) into the template bloomplayer.htm, while copying it to the output.
+        new HtmlWebpackPlugin({
+            title: "Bloom Player",
+            filename: "bloomplayer.htm",
+            template: "src/bloomplayer.htm"
+        }),
         // Note: CopyPlugin says to use forward slashes.
         // Note: the empty "to" options mean to just go to the output folder, which is "dist/"
+        // We're not actually using this any more...keeping in case we resurrect
+        // simpleComprehensionQuiz.js.
         new CopyPlugin([
-            { from: "src/bloomplayer.htm", to: "", flatten: true },
-            { from: "src/activities/*.mp3", to: "", flatten: true },
-            {
-                from:
-                    "src/activities/legacyQuizHandling/simpleComprehensionQuiz.js",
-                to: "",
-                flatten: true
-            },
-            {
-                from: "src/activities/legacyQuizHandling/Special.css",
-                to: "",
-                flatten: true
-            },
-            { from: "src/iso639-autonyms.tsv", to: "", flatten: true }
+            // These are more-or-less obsolete. If they're needed at all it's for json
+            // comprehension questions from pre-4.6 Bloom. If we decide to reinstate this
+            // using the same mechanism, we have to uncomment the content of simpleComprehensionQuiz.js
+            // and figure out what to do about hashing names.
+            // {
+            //     from:
+            //         "src/activities/legacyQuizHandling/simpleComprehensionQuiz.js",
+            //     to: "",
+            //     flatten: true
+            // },
+            // {
+            //     from: "src/activities/legacyQuizHandling/Special.css",
+            //     to: "",
+            //     flatten: true
+            // },
         ])
     ],
 
@@ -136,9 +147,14 @@ module.exports = merge(core, {
             {
                 // this allows things like background-image: url("myComponentsButton.svg") and have the resulting path look for the svg in the stylesheet's folder
                 // the last few seem to be needed for (at least) slick-carousel to build. We're no longer using that, so maybe we could shorten it...
-                test: /\.(svg|jpg|png|ttf|eot|gif)$/,
+                // it also allows us to import mp3s files and get them copied to output with a hashed name
+                // that we can safely put a long cache control time on, because a later version of the player will use a different hash.
+                test: /\.(svg|jpg|png|ttf|eot|gif|mp3)$/,
                 use: {
-                    loader: "file-loader"
+                    loader: "file-loader",
+                    options: {
+                        name: "[name]-[contenthash].[ext]"
+                    }
                 }
             }
         ]

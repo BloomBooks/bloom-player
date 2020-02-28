@@ -5,7 +5,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 module.exports = merge(common, {
     mode: "production",
     devtool: "source-map",
-    output: { filename: "[name].min.js" },
+    output: { filename: "[name]-[contenthash].min.js" },
     // This is an attempt at tree shaking. I don't think I got it working.
     // https://webpack.js.org/guides/tree-shaking#minify-the-output seems
     // to indicate that as long as package.json indicates our module is

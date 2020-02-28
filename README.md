@@ -80,7 +80,7 @@ Both `yarn storybook` and `yarn start` do this for you.
 
 ### Testing with a book hosted by Bloom
 
-Note that while testing, one option is to run Bloom, select your book, go to the publish tab, and choose Bloom Reader. Bloom will make the book available through its local fileserver. Modify index.html to use a path list this
+Note that while testing, one option is to run Bloom, select your book, go to the publish tab, and choose Bloom Reader. Bloom will make the book available through its local fileserver. Modify index.html to use a path like this
 
     <iframe src="bloomplayer.htm?url=http://localhost:8089/bloom/C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle"/>
 

@@ -3,6 +3,11 @@ import {
     getPageData,
     storePageData
 } from "../page-api";
+// import doesn't work here...if we really want it to
+// https://stackoverflow.com/questions/56782452/how-to-fix-module-not-found-for-audio-files-using-file-loader-images-css-an
+// has some ideas.
+const rightAnswer = require("./right_answer.mp3");
+const wrongAnswer = require("./wrong_answer.mp3");
 
 // This is passed to an activity to give it things that it needs. It's mostly
 // a wrapper so that activities don't have direct knowledge of how parts outside
@@ -70,11 +75,11 @@ export class ActivityContext {
         // NB: if this stops working in storybook; the file should be found because the package.json
         // script that starts storybook has a "--static-dir" option that should include the folder
         // containing the standard activity sounds.
-        this.playSound("right_answer.mp3");
+        this.playSound(rightAnswer);
     }
 
     public playWrong() {
-        this.playSound("wrong_answer.mp3");
+        this.playSound(wrongAnswer);
     }
 
     private getPagePlayer(): any {
