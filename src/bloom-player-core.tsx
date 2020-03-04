@@ -1124,8 +1124,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         axios
             .all(
-                promises.map(p =>
-                    p.catch(
+                promises.map(promise =>
+                    promise.catch(
                         // if one stylesheet doesn't exist or whatever, keep going
                         () => undefined
                     )
