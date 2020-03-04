@@ -192,7 +192,7 @@ export class Animation {
                     this.animationView.setAttribute("style", "");
                     movingDiv.setAttribute("style", styleData);
                     imageSrc = styleData.replace(
-                        /.*url\((['"])([^)]*)\1\).*/i,
+                        /.*url\((['"])(.*?)\1\).*/i,
                         "$2"
                     );
                 }
