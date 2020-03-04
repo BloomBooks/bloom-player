@@ -1458,7 +1458,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // (In a large book, still somewhat inexplicably, the stuff checking for audio was slow).
         // Even though the new page was already computed, we found that this blocked the ui from
         // scrolling it into view. So now we allow that to finish, then do this stuff.
-        console.log(`ShowingPage(${index})`);
+        //console.log(`ShowingPage(${index})`);
         window.setTimeout(() => {
             const bloomPage = this.getPageAtSwiperIndex(index);
             if (!bloomPage) {
