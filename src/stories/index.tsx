@@ -96,7 +96,7 @@ AddBloomPlayerStory(
 
 AddBloomPlayerStory(
     "Multilingual motion book",
-    "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital%2findex.htm"
+    "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
 );
 
 AddBloomPlayerStory(

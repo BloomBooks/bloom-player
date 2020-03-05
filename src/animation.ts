@@ -1,3 +1,5 @@
+import { DomHelper } from "./utilities/domHelper";
+
 // class Animation captures the logic needed to produce the Ken Burns effect
 // of panning an zooming as specified in Bloom's motion tool.
 
@@ -178,22 +180,19 @@ export class Animation {
             // hide it until we can set its size and the transform rule for its child properly.
             wrapDiv.setAttribute("style", "visibility: hidden;");
 
-            const styleData = this.animationView.getAttribute("style");
+            const styleAttr = this.animationView.style;
             const img = this.animationView.getElementsByTagName("img")[0];
             let imageSrc: string | null = null;
-            if (img || styleData) {
+            if (img || styleAttr) {
                 if (img) {
                     // I don't think this branch has been tested, since export to bloom reader
                     // converts all images to the background-image approach.
                     imageSrc = img.getAttribute("src");
-                } else if (styleData) {
-                    // This somewhat assumes the ONLY style attribute is the background image.
-                    // I think we can improve that when and if it becomes an issue.
-                    this.animationView.setAttribute("style", "");
-                    movingDiv.setAttribute("style", styleData);
-                    imageSrc = styleData.replace(
-                        /.*url\((['"])(.*?)\1\).*/i,
-                        "$2"
+                } else if (styleAttr) {
+                    movingDiv.style.backgroundImage = styleAttr.backgroundImage;
+                    styleAttr.backgroundImage = "";
+                    imageSrc = DomHelper.getActualUrlFromCSSPropertyValue(
+                        movingDiv.style.backgroundImage
                     );
                 }
                 const image = new Image();
