@@ -314,7 +314,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
                         this.autoAdvance = body.hasAttribute(
                             "data-bfautoadvance"
-                        ); // expect value landscape:bloomReader, should we check?
+                        ); // expect value landscape;bloomReader, should we check?
+                        this.animation.PlayAnimations = body.hasAttribute(
+                            "data-bfplayanimations"
+                        ); // expect value landscape;bloomReader, should we check?
 
                         this.copyrightHolder = this.getCopyrightInfo(
                             body,

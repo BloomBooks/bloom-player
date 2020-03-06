@@ -37,6 +37,7 @@ export class Animation {
             .find(v => !!(v.dataset as IAnimation).initialrect) as HTMLElement;
     }
 
+    public PlayAnimations: boolean; // true if animation should occur
     private currentPage: HTMLElement; // one we're currently showing
     private lastDurationPage: HTMLElement; // one we most recently obtained a duration for
     private animationView: HTMLElement; // clone of imageContainer, hides page and contains moving parts.
@@ -90,6 +91,10 @@ export class Animation {
     // Only applicable to resuming paused animation (by removing the pause CSS rule)
     // May be called when we are not paused; should do nothing if so.
     public PlayAnimation() {
+        if (!this.PlayAnimations) {
+            return;
+        }
+
         const stylesheet = this.getAnimationStylesheet().sheet;
         for (
             let i = 0;
@@ -110,6 +115,10 @@ export class Animation {
     // May be called when already paused; if so do nothing.
     // Not yet tested in bloom preview context; have not yet decided affordance for pausing
     public PauseAnimation() {
+        if (!this.PlayAnimations) {
+            return;
+        }
+
         const stylesheet = this.getAnimationStylesheet().sheet;
         // tslint:disable-next-line:prefer-for-of (cssRules is not an array)
         for (
@@ -132,6 +141,10 @@ export class Animation {
     }
 
     public setupAnimation(page: HTMLElement, beforeVisible: boolean): void {
+        if (!this.PlayAnimations) {
+            return;
+        }
+
         if (!beforeVisible) {
             this.pageJustMadeVisible = page;
         }
@@ -552,6 +565,9 @@ export class Animation {
     }
 
     private shouldAnimate(page: HTMLElement): boolean {
-        return page.classList.contains("Device16x9Landscape");
+        return (
+            this.PlayAnimations &&
+            page.classList.contains("Device16x9Landscape")
+        );
     }
 }
