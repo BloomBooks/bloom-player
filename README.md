@@ -60,6 +60,14 @@ Example: `showBackButton=true`
 
 Default: `false`
 
+#### lang
+
+If set, determines the initial language to be displayed. The user can still change the display language using the language picker.
+
+Example: `lang=fr`
+
+Default: none (The initial language will be the vernacular language when the book was published.)
+
 # Development
 
 Run `yarn` to get the dependencies.
