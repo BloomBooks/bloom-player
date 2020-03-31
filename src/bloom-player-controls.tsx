@@ -23,11 +23,13 @@ import LangData from "./langData";
 // for testing the BloomPlayer narration functions.
 
 interface IProps {
-    url: string; // of the bloom book (folder)
+    url: string; // url of the bloom book (folder)
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
     showContextPages?: boolean;
+    // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
+    initialLanguageCode?: string;
     paused: boolean;
     // in production, this is just "". But during testing, we need
     // the server to be able to serve sample books from a directory that isn't in dist/,
@@ -44,9 +46,8 @@ interface IProps {
 // * We want to return the user to the state he was in when he left (playing or paused)
 let canExternallyResume: boolean = false;
 
-export const BloomPlayerControls: React.FunctionComponent<
-    IProps & React.HTMLProps<HTMLDivElement>
-> = props => {
+export const BloomPlayerControls: React.FunctionComponent<IProps &
+    React.HTMLProps<HTMLDivElement>> = props => {
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
     setExternalControlCallback(data => {
         if (data.pause) {
@@ -305,10 +306,26 @@ export const BloomPlayerControls: React.FunctionComponent<
     const updateLanguagesDataWhenOpeningNewBook = (
         bookLanguages: LangData[]
     ): void => {
+        let languageCode: string;
+
+        // This is the case where the url specified an initial language
+        if (
+            props.initialLanguageCode &&
+            bookLanguages.map(l => l.Code).includes(props.initialLanguageCode)
+        ) {
+            languageCode = props.initialLanguageCode;
+            LangData.selectNewLanguageCode(
+                bookLanguages,
+                props.initialLanguageCode
+            );
+        }
+        // this is the case where no initial language was specified in the url
+        else {
+            languageCode =
+                bookLanguages.length > 0 ? bookLanguages[0].Code : "";
+        }
+        setActiveLanguageCode(languageCode);
         setLanguageData(bookLanguages);
-        setActiveLanguageCode(
-            bookLanguages.length > 0 ? bookLanguages[0].Code : ""
-        );
     };
 
     const {

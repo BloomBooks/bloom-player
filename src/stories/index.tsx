@@ -30,19 +30,27 @@ const initiallyShowAppBar = () =>
     booleanKnob("Initially Show App Bar", true, KNOB_TABS.PROPS) as boolean;
 const paused = () => booleanKnob("Paused", false, KNOB_TABS.PROPS) as boolean;
 
-function AddBloomPlayerStory(label: string, url: string) {
+function AddBloomPlayerStory(
+    label: string,
+    url: string,
+    languageCode?: string
+) {
     stories.add(label, () => {
+        // The tab order is determined by the order in which the code here uses them.
+        // So back button is defined first to make the Props tab show first.
+        const showBackButtonKnob = showBackButton();
         button("Pause", pause, KNOB_TABS.EXTERNAL);
         button("Resume", resume, KNOB_TABS.EXTERNAL);
         button("Play", play, KNOB_TABS.EXTERNAL);
         return (
             <BloomPlayerControls
-                showBackButton={showBackButton()}
+                showBackButton={showBackButtonKnob}
                 initiallyShowAppBar={initiallyShowAppBar()}
                 allowToggleAppBar={allowToggleAppBar()}
                 paused={paused()}
                 url={url}
                 locationOfDistFolder={"/dist/"}
+                initialLanguageCode={languageCode}
             />
         );
     });
@@ -95,8 +103,13 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Multilingual motion book",
+    "Multilingual motion book - default language",
     "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
+);
+AddBloomPlayerStory(
+    "Multilingual motion book - intial language set to 'ko'",
+    "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm",
+    "ko"
 );
 
 AddBloomPlayerStory(

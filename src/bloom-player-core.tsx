@@ -199,7 +199,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         document.addEventListener("keydown", e =>
             this.handleDocumentLevelKeyDown(e)
         );
-        this.componentDidUpdate(this.props);
+        // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
+        // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
+        // everything still works (but there could well be some state that we didn't test). So we're leaving
+        // it in.
+        this.componentDidUpdate(this.props, this.state);
     }
 
     private handleDocumentLevelKeyDown = e => {
@@ -215,7 +219,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
-    public componentDidUpdate(prevProps: IProps) {
+    public componentDidUpdate(prevProps: IProps, prevState: IState) {
         try {
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
@@ -225,14 +229,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // also one-time setup; only the first time through
             this.initializeMedia();
 
+            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
+            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
             if (
-                !this.state.isLoading &&
-                !this.state.loadFailed &&
+                // First time after loaded - at this point, we know we are ready to get at the dom
+                (prevState.isLoading && !this.state.isLoading) ||
+                // If the user changes the language code in the picker
                 prevProps.activeLanguageCode !== this.props.activeLanguageCode
             ) {
-                // The usual case invoked by changing the language on the player menu.
-                if (this.htmlElement) {
-                    this.updateDivVisibilityByLangCode();
+                this.updateDivVisibilityByLangCode();
+                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
+                // If we haven't called it, it will get called subsequently.
+                if (this.finishUpCalled) {
                     this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
@@ -413,11 +421,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         });
     }
 
+    private finishUpCalled = false;
+
     // This function, the rest of the work we need to do, will be executed after we attempt
     // to retrieve questions.json and either get it and convert it into extra pages,
     // or fail to get it and make no changes.
     // We also call this method when changing the language, but we only want it to update the swiper content
     private finishUp(isNewBook: boolean = true) {
+        this.finishUpCalled = true;
+
         // assemble the page content list
         if (!this.htmlElement) {
             return;
@@ -594,10 +606,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Go through all .bloom-editable divs turning visibility off/on based on the activeLanguage (isoCode).
     // When using the language chooser, the activeLanguage should be treated as if it were the L1/Vernacular language
     private updateDivVisibilityByLangCode(): void {
-        if (
-            this.props.activeLanguageCode === undefined ||
-            this.htmlElement === undefined
-        ) {
+        if (!this.props.activeLanguageCode || !this.htmlElement) {
             return; // shouldn't happen, just a precaution
         }
 
@@ -1220,7 +1229,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </>
             );
         }
-        const params: any = {
+        const swiperParams: any = {
             // This is how we'd expect to make the next/prev buttons show up.
             // However, swiper puts them inside the swiper-container div, which has position:relative
             // and overflow:hidden. This hides the buttons when we want them to be outside the book
@@ -1278,7 +1287,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
-                <Swiper {...params}>
+                <Swiper {...swiperParams}>
                     {this.state.pages.map((slide, index) => {
                         return (
                             <div
