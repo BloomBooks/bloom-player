@@ -436,6 +436,7 @@ export function InitBloomPlayerControls() {
                     "initiallyShowAppBar",
                     true
                 )}
+                initialLanguageCode={getUrlParam("lang")}
                 paused={false}
                 locationOfDistFolder={""}
             />
