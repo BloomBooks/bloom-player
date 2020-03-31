@@ -29,6 +29,8 @@ const showBackButton = () =>
 const initiallyShowAppBar = () =>
     booleanKnob("Initially Show App Bar", true, KNOB_TABS.PROPS) as boolean;
 const paused = () => booleanKnob("Paused", false, KNOB_TABS.PROPS) as boolean;
+const useOriginalPageSize = () =>
+    booleanKnob("Original page size", false, KNOB_TABS.PROPS) as boolean;
 
 function AddBloomPlayerStory(
     label: string,
@@ -51,6 +53,7 @@ function AddBloomPlayerStory(
                 url={url}
                 locationOfDistFolder={"/dist/"}
                 initialLanguageCode={languageCode}
+                useOriginalPageSize={useOriginalPageSize()}
             />
         );
     });
@@ -79,7 +82,7 @@ AddBloomPlayerStory(
 // PublishToAndroidApi.cs, in the event handler for updatePreview, right after PreviewUrl is set.
 AddBloomPlayerStory(
     "Book currently previewed in Bloom",
-    "http://localhost:8089/bloom/C%3A/Users/thomson/AppData/Local/Temp/PlaceForStagingBook/Moon & ' {}/Moon & ' {}.htm"
+    "http://localhost:8089/bloom/C%3A/Users/thomson/AppData/Local/Temp/PlaceForStagingBook/motion demo"
 );
 
 AddBloomPlayerStory(

@@ -31,6 +31,7 @@ interface IProps {
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
     initialLanguageCode?: string;
     paused: boolean;
+    useOriginalPageSize?: boolean;
     // in production, this is just "". But during testing, we need
     // the server to be able to serve sample books from a directory that isn't in dist/,
     // e.g. src/activity-starter/
@@ -66,6 +67,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     // When we're in storybook we won't get a new page when we change the book,
     // so we need to be able to detect that the book changed and thus do new size calculations.
     const [previousUrl, setPreviousUrl] = useState<string>("");
+    const [previousPageClass, setPreviousPageClass] = useState(
+        "Device16x9Portrait"
+    );
 
     // while the initiallyShowAppBar prop won't change in production, it can change
     // when we're tinkering with storybook. The statement above won't re-run if
@@ -97,6 +101,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const [hasVideo, setHasVideo] = useState(false);
     const [pageStylesInstalled, setPageStylesInstalled] = useState(false);
     const [maxPageDimension, setMaxPageDimension] = useState(0);
+    // The factor we multiply maxPageDimension by to get the smaller dimension.
+    const [pageAspectRatio, setPageAspectRatio] = useState(9 / 16);
     const emptyLangDataArray: LangData[] = [];
     const [languageData, setLanguageData] = useState(emptyLangDataArray);
     const [activeLanguageCode, setActiveLanguageCode] = useState("");
@@ -113,7 +119,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     useEffect(() => {
         scalePageToWindow();
-    }, [pageStylesInstalled, scalePageToWindowTrigger, windowLandscape]);
+    }, [
+        pageStylesInstalled,
+        scalePageToWindowTrigger,
+        windowLandscape,
+        props.useOriginalPageSize
+    ]);
 
     // One-time cleanup when this component is being removed
     useEffect(() => {
@@ -168,10 +179,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             document.head!.appendChild(scaleStyleSheet);
         }
         // The first time through, we compute this, afterwards we get it from the state.
-        // There has to be a better way to do this, probably a separate useEffect to compute maxPageDimension.
+        // There has to be a better way to do this, probably a separate useEffect to compute
+        // maxPageDimension and pageAspecRatio.
+        // But then we get into duplicating the logic for retrying if the page isn't ready,
+        // and have to make sure the resulting timeouts occur in the right order...
         let localMaxPageDimension = maxPageDimension;
-        if (props.url !== previousUrl) {
+        let localAspectRatio = pageAspectRatio;
+        const pageClass = BloomPlayerCore.getPageSizeClass(page);
+        if (props.url !== previousUrl || pageClass !== previousPageClass) {
             setPreviousUrl(props.url);
+            setPreviousPageClass(pageClass);
             // Some other one-time stuff:
             // Arrange for this to keep being called when the window size changes.
             window.onresize = () => {
@@ -183,10 +200,17 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
             // I'm not sure if this is necessary, but capturing the page size in pixels on this
             // device before we start scaling and rotating it seems to make things more stable.
+            // (If useOriginalPageSize changes, we won't quite be capturing the original
+            // dimensions, but currently changing that only happens in storybook, and at least
+            // we won't get variation on every page.)
             localMaxPageDimension = Math.max(
                 page.offsetHeight,
                 page.offsetWidth
             );
+            localAspectRatio =
+                Math.min(page.offsetHeight, page.offsetWidth) /
+                localMaxPageDimension;
+            setPageAspectRatio(localAspectRatio);
             // save for future use
             setMaxPageDimension(localMaxPageDimension);
         }
@@ -210,7 +234,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const landscape = page.getAttribute("class")!.indexOf("Landscape") >= 0;
 
         const pageHeight = landscape
-            ? (localMaxPageDimension * 9) / 16
+            ? localMaxPageDimension * localAspectRatio
             : localMaxPageDimension;
         // The current height of whatever must share the page with the adjusted document
         // At one point this could include some visible controls.
@@ -236,15 +260,15 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // Not currently trying to allow for controls left or right of page.
         const pageWidth = landscape
             ? localMaxPageDimension
-            : (localMaxPageDimension * 9) / 16;
+            : localMaxPageDimension * localAspectRatio;
         const desiredPageWidth = document.body.offsetWidth;
         const horizontalScaleFactor = desiredPageWidth / pageWidth;
         scaleFactor = Math.min(scaleFactor, horizontalScaleFactor);
         const actualPageHeight = pageHeight * scaleFactor;
 
-        let width = (actualPageHeight * 9) / 16 / scaleFactor;
+        let width = (actualPageHeight * localAspectRatio) / scaleFactor;
         if (landscape) {
-            width = (actualPageHeight * 16) / 9 / scaleFactor;
+            width = actualPageHeight / localAspectRatio / scaleFactor;
         }
 
         // how much horizontal space do we have to spare, in the scaled pixels
@@ -390,6 +414,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     }
                 }}
                 activeLanguageCode={activeLanguageCode}
+                useOriginalPageSize={props.useOriginalPageSize}
             />
         </div>
     );
@@ -439,6 +464,10 @@ export function InitBloomPlayerControls() {
                 initialLanguageCode={getUrlParam("lang")}
                 paused={false}
                 locationOfDistFolder={""}
+                useOriginalPageSize={getBooleanUrlParam(
+                    "useOriginalPageSize",
+                    false
+                )}
             />
         </ThemeProvider>,
         document.getElementById("root")

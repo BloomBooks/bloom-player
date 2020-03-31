@@ -74,6 +74,8 @@ interface IProps {
     // Changing this should modify bloom-visibility-code-on stuff in the DOM.
     activeLanguageCode: string;
 
+    useOriginalPageSize?: boolean;
+
     reportPageProperties?: (properties: {
         hasAudio: boolean;
         hasMusic: boolean;
@@ -116,6 +118,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private readonly initialPages: string[] = ["loading..."];
     private readonly initialStyleRules: string = "";
+    private originalPageClass = "Device16x9Portrait";
 
     // This block of variables keep track of things we want to report in analytics
     private totalNumberedPages = 0; // found in book
@@ -342,9 +345,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         const firstPage = bookHtmlElement.getElementsByClassName(
                             "bloom-page"
                         )[0];
-                        let pageClass = "Device16x9Portrait";
+                        this.originalPageClass = "Device16x9Portrait";
                         if (firstPage) {
-                            pageClass = BloomPlayerCore.getPageSizeClass(
+                            this.originalPageClass = BloomPlayerCore.getPageSizeClass(
                                 firstPage
                             );
                         }
@@ -352,19 +355,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
                             this.urlPrefix,
                             body,
-                            pageClass,
+                            this.originalPageClass,
                             () => {
                                 this.finishUp();
                             }
                         );
                     })
                     .catch(err => this.HandleLoadingError(err));
-            } else if (prevProps.landscape !== this.props.landscape) {
+            } else if (
+                prevProps.landscape !== this.props.landscape ||
+                prevProps.useOriginalPageSize !== this.props.useOriginalPageSize
+            ) {
                 // rotating the phone...may need to switch the orientation class on each page.
                 const pages = document.getElementsByClassName("bloom-page");
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
-                    this.forceDevicePageSize(page);
+                    this.setPageSizeClass(page);
                 }
             }
 
@@ -449,7 +455,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
-            const landscape = this.forceDevicePageSize(page);
+            const landscape = this.setPageSizeClass(page);
             // this used to be done for us by react-slick, but swiper does not.
             // Since it's used by at least page-api code, it's easiest to just stick it in.
             page.setAttribute("data-index", i.toString(10));
@@ -956,11 +962,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private forceDevicePageSize(page: Element): boolean {
-        return BloomPlayerCore.forceDevicePageSize(
+    private setPageSizeClass(page: Element): boolean {
+        return BloomPlayerCore.setPageSizeClass(
             page,
             this.canRotate,
-            this.props.landscape
+            this.props.landscape,
+            this.props.useOriginalPageSize || false,
+            this.originalPageClass
         );
     }
 
@@ -976,10 +984,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // Force size class to be one of the device classes
     // return true if we determine that the book is landscape
-    public static forceDevicePageSize(
+    public static setPageSizeClass(
         page: Element,
         bookCanRotate: boolean,
-        showLandscape: boolean
+        showLandscape: boolean,
+        useOriginalPageSize: boolean,
+        originalPageClass: string
     ): boolean {
         let landscape = false;
         const sizeClass = this.getPageSizeClass(page);
@@ -987,9 +997,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             landscape = bookCanRotate
                 ? showLandscape
                 : (sizeClass as any).endsWith("Landscape");
-            const desiredClass = landscape
-                ? "Device16x9Landscape"
-                : "Device16x9Portrait";
+
+            let desiredClass = "";
+            if (useOriginalPageSize) {
+                desiredClass = landscape
+                    ? originalPageClass.replace("Portrait", "Landscape")
+                    : originalPageClass.replace("Landscape", "Portrait");
+            } else {
+                desiredClass = landscape
+                    ? "Device16x9Landscape"
+                    : "Device16x9Portrait";
+            }
             if (sizeClass !== desiredClass) {
                 page.classList.remove(sizeClass);
                 page.classList.add(desiredClass);
@@ -1410,11 +1428,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.setState({ currentSwiperIndex: index });
         const bloomPage = this.getPageAtSwiperIndex(index);
         if (bloomPage) {
-            // This is probably obsolete, since we update all the page sizes on rotate.
-            // It's not expensive so leaving it in for robustness.
-            if (this.canRotate) {
-                this.forceDevicePageSize(bloomPage);
-            }
+            // We need this in case the page size class has changed since we built
+            // the page list, e.g., because of useOriginalPageSize changing, or possibly rotation.
+            this.setPageSizeClass(bloomPage);
             this.animation.HandlePageBeforeVisible(bloomPage);
             // Don't need to be playing a video that's off-screen,
             // and definitely don't want to be reporting analytics on
@@ -1479,11 +1495,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             BloomPlayerCore.currentPage = bloomPage;
             BloomPlayerCore.currentPageIndex = index;
 
-            // This is probably obsolete, since we update all the page sizes on rotate, and again in setIndex.
+            // This is probably redundant, since we update all the page sizes on rotate, and again in setIndex.
             // It's not expensive so leaving it in for robustness.
-            if (this.canRotate) {
-                this.forceDevicePageSize(bloomPage);
-            }
+            this.setPageSizeClass(bloomPage);
 
             if (!this.props.paused) {
                 this.resetForNewPageAndPlay(bloomPage);
