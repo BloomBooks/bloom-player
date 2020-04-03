@@ -360,25 +360,64 @@ to separate the pages in a continuous scrolling view. Unfortunately that rule is
     border-bottom: initial !important;
 }
 
+// Less can't do arithmetic with pixels and mm, and most of our page
+// dimensions are in mm, so I'm doing everything related to page dimensions
+// that way, on the (print) assumption of 96px/inch.
+@pageNumberBottomMargin: 0.529mm; // 2px
+
 /* we're giving pages in this control less margin than in regular previews,
-so we need the page number further down to reduce the chance of overlap. */
-.bloomPlayer .numberedPage::after {
-    bottom: 2px;
+so we need the page number further down to reduce the chance of overlap.
+For an online reader we're also going for centered page numbers.
+We need the repeated .bloomPlayer class to make the rule take precedence
+over anything in our standard stylesheets, though still allowing for
+!important in a custom CSS to beat us. */
+.bloomPlayer.bloomPlayer.bloomPlayer .numberedPage::after {
+    bottom: @pageNumberBottomMargin;
+    left: calc(50% - 10px);
+    right: unset;
+    text-align: left;
 }
 
-/* the reduced margin means we need to adjust the horizontal position to
-align the page number with the margin, too. */
-.bloomPlayer .numberedPage:nth-of-type(2n + 1)::after {
-    left: 5%;
-}
+// For A5 pages read online, we want to keep the size of the marginBox
+// the same as when we lay out for a real printed A5 page, so that books
+// formatted for that will be sure to look right (though in some reader
+// contexts, text might be too small).
+// However, we typically don't need much margin, either on a device or
+// in a web browser. The reduced page size allows for a 10px margin
+// on left, right, and top, with a little more at the bottom to fit
+// the page number in. When the page is then scaled to fit the viewport,
+// we make the content as big as it can reasonably be.
+// We need a lot of .bloomPlayer repeats to beat some rather complex
+// rules, especially for marginBox width, which is usually slightly
+// increased on the cover where there is no gutter margin. Since our
+// cover page has pretty smart automatic layout, we think we can get
+// away with forcing everything to the usual width of a content page.
+// We also need to beat various rules for different left positioning
+// on cover, left, and right pages.
+// Enhance: we may eventually want to do this for more page sizes,
+// but A5Portrait is by far the most important.
+@A5MarginBoxWidth: 108mm; // standard size from other stylesheets
+@A5MarginBoxHeight: 180mm;
+@bloomPlayerMargin: 2.64mm; // 10px for top/left/right
+@pageNumberHeight: 7.93mm; // 30px, typical height for Bloom page number
+@pageNumberMargin: 1.77mm; // measured in existing page
+@totalHorizontalMargin: @bloomPlayerMargin * 2;
+@totalVerticalMargin: @bloomPlayerMargin + @pageNumberMargin + @pageNumberHeight +
+    @pageNumberBottomMargin;
+@A5DevicePageWidth: @A5MarginBoxWidth + @totalHorizontalMargin;
+@A5DevicePageHeight: @A5MarginBoxHeight + @totalVerticalMargin;
 
-/* logically we would need this to override the rule for right pages,
-but actually in this control the pages don't have a common direct parent,
-so nth-of-type doesn't do what we want and all the pages come out as left.
-Not trying to solve this for now as we want an architectural solution
-that makes available to the control files more like Bloom Reader uses */
-.bloomPlayer .numberedPage:nth-of-type(2n)::after {
-    right: 5%;
+.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer
+    .bloom-page.A5Portrait {
+    min-height: @A5DevicePageHeight;
+    max-height: @A5DevicePageHeight;
+    min-width: @A5DevicePageWidth;
+    max-width: @A5DevicePageWidth;
+    .marginBox {
+        left: @bloomPlayerMargin;
+        width: @A5MarginBoxWidth;
+        top: @bloomPlayerMargin;
+    }
 }
 
 .control-bar .button.disabled {
