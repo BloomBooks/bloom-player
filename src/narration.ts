@@ -1,5 +1,6 @@
 import LiteEvent from "./event";
 import { BloomPlayerCore } from "./bloom-player-core";
+import { sortAudioElements } from "./narrationUtils";
 
 const kSegmentClass = "bloom-highlightSegment";
 const kMinDuration = 3.0; // seconds
@@ -49,7 +50,11 @@ export default class Narration {
             this.playerPage = page;
         }
 
-        this.elementsToPlayConsecutivelyStack = this.getPageAudioElements().reverse();
+        // Sorted into the order we want to play them, then reversed so we
+        // can more conveniently pop the next one to play from the end of the stack.
+        this.elementsToPlayConsecutivelyStack = sortAudioElements(
+            this.getPageAudioElements()
+        ).reverse();
 
         const stackSize = this.elementsToPlayConsecutivelyStack.length;
         if (stackSize === 0) {
