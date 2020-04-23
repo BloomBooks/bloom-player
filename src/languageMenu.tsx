@@ -18,11 +18,14 @@ interface ILanguageMenuProps {
     onClose: (value: string) => void;
 }
 
-export const LanguageMenu: React.FunctionComponent<
-    ILanguageMenuProps
-> = props => {
+export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = props => {
+    // the || case makes it robust against the possibility that no language is selected,
+    // though this ought not to be.
     const [selectedLanguage, setSelectedLanguage] = useState(
-        props.languages.filter(lang => lang.IsSelected)[0].Code
+        (
+            props.languages.filter(lang => lang.IsSelected)[0] ||
+            props.languages[0]
+        ).Code
     );
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
