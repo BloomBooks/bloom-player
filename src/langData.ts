@@ -50,7 +50,7 @@ export default class LangData {
         if (languageData.length < 1) {
             return "";
         }
-        return languageData.filter(lang => lang.IsSelected)[0].Code;
+        return languageData.filter(lang => lang.IsSelected)[0]?.Code;
     };
 
     // Assumes caller has already verified that there is a change in code.
@@ -58,14 +58,18 @@ export default class LangData {
         languageData: LangData[],
         newActiveLanguageCode: string
     ) => {
-        const oldActiveLangCode = LangData.getActiveCodeFromLangData(
-            languageData
-        );
         const newActiveLangData = LangData.getLangDataByCode(
             languageData,
             newActiveLanguageCode
         );
-        newActiveLangData.IsSelected = true;
+        if (newActiveLangData.IsSelected) {
+            return; // nothing to do.
+        }
+        // Unselect the old one first (as a belt-and-braces guard
+        // against it being the same one we are about to select)
+        const oldActiveLangCode = LangData.getActiveCodeFromLangData(
+            languageData
+        );
         if (oldActiveLangCode !== undefined) {
             const oldActiveLangData = LangData.getLangDataByCode(
                 languageData,
@@ -73,6 +77,7 @@ export default class LangData {
             );
             oldActiveLangData.IsSelected = false;
         }
+        newActiveLangData.IsSelected = true;
     };
 
     public static createLangDataArrayFromDomAndMetadata(
