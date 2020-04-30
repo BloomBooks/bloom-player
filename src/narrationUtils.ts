@@ -6,12 +6,9 @@
 // I was not able to import the narration file into the test suite because
 // MutationObserver is not emulated in the test environment.
 // It's not obvious what should happen to TGs with no tabindex when others have it.
-// Currently, in Bloom, new text-over-picture elements get added at the start of the parent
-// div and thus come first in document order; Bloom Desktop playback keeps them before
-// ones that have a tabindex.
-// It's a case that probably won't occur. Hopefully Bloom will soon be improved to
-// give every translationGroup a sensible tabindex. So we're going with a simple
-// approach: no tabindex is equivalent to tabindex zero.
+// At this point we're going with the approach that no tabindex is equivalent to tabindex 999.
+// This should cause text with no tabindex to sort to the bottom, if other text has a tabindex;
+// It should also not affect order in situations where no text has a tabindex
 // (An earlier algorithm attempted to preserve document order for the no-tab-index case
 // by comparing any two elements using document order if either lacks tabindex.
 // This works well for many cases, but if there's a no-tabindex element between two
@@ -41,7 +38,7 @@ function getTgTabIndex(input: HTMLElement): string | null {
         tg = tg.parentElement;
     }
     if (!tg) {
-        return "0";
+        return "999";
     }
-    return tg.getAttribute("tabindex") || "0";
+    return tg.getAttribute("tabindex") || "999";
 }
