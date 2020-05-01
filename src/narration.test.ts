@@ -62,11 +62,11 @@ test("sortAudioElements with no tabindexes preserves order", () => {
     expect(output[3]).toEqual(be3A);
 });
 
-test("sortAudioElements with some tabindexes put missing ones first", () => {
+test("sortAudioElements with some tabindexes put missing ones last", () => {
     const input = document.createElement("div");
     const tg1 = createDiv({
         id: "tg1",
-        classAttr: "bloom-translationGroup",
+        classAttr: "bloom-translationGroup", // no tabindex, should be last
         parent: input
     });
     const be1A = createDiv({
@@ -119,10 +119,10 @@ test("sortAudioElements with some tabindexes put missing ones first", () => {
 
     const toSort = [be1A, s2A1A, s2A1B, be3A];
     const output = sortAudioElements(toSort);
-    expect(output[0]).toEqual(be1A); // no tabindex, first in doc order
-    expect(output[1]).toEqual(be3A); // no tabindex so before ones that do, after be1A in doc order
-    expect(output[2]).toEqual(s2A1A); // first in doc order of item with tabindex.
-    expect(output[3]).toEqual(s2A1B);
+    expect(output[0]).toEqual(s2A1A); // first in doc order of item with tabindex.
+    expect(output[1]).toEqual(s2A1B);
+    expect(output[2]).toEqual(be1A); // no tabindex, sorted to end, first in doc order of those without tabindex
+    expect(output[3]).toEqual(be3A); // no tabindex, sorted to end, after be1A in doc order
 });
 
 test("sortAudioElements re-orders sentences and blocks", () => {
@@ -130,21 +130,21 @@ test("sortAudioElements re-orders sentences and blocks", () => {
     const tg1 = createDiv({
         id: "tg1",
         classAttr: "bloom-translationGroup",
-        tabindex: "1001",
+        tabindex: "101",
         parent: input
     });
     const be1A = createDiv({
         id: "be1A",
         classAttr: "bloom-editable audio-sentence",
         content: "<p>The first block (read fifth)</p>",
-        tabindex: "1000", // should be ignored
+        tabindex: "100", // should be ignored
         parent: tg1
     });
 
     const tg2 = createDiv({
         id: "tg2",
         classAttr: "bloom-translationGroup",
-        tabindex: "101",
+        tabindex: "100",
         parent: input
     });
     const be2A = createDiv({
