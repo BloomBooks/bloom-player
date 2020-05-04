@@ -86,6 +86,11 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
+    "Messed up A5 comic",
+    "https://s3.amazonaws.com/bloomharvest/hannah_hudson%40sil-lead.org%2f8ec6f115-a508-45e1-b820-bd560fdd5b3b/bloomdigital%2findex.htm"
+);
+
+AddBloomPlayerStory(
     "Book not found",
     "file:///aVery/Long/FileName/That/Will/Never/Be/Found/Anywhere/At/All/To/See/How/It/Wraps.htm"
 );

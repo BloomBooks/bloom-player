@@ -407,18 +407,20 @@ over anything in our standard stylesheets, though still allowing for
 @A5DevicePageWidth: @A5MarginBoxWidth + @totalHorizontalMargin;
 @A5DevicePageHeight: @A5MarginBoxHeight + @totalVerticalMargin;
 
-.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer
-    .bloom-page.A5Portrait {
-    min-height: @A5DevicePageHeight;
-    max-height: @A5DevicePageHeight;
-    min-width: @A5DevicePageWidth;
-    max-width: @A5DevicePageWidth;
-    .marginBox {
-        left: @bloomPlayerMargin;
-        width: @A5MarginBoxWidth;
-        top: @bloomPlayerMargin;
-    }
-}
+// Disabled for now because it messes up books made with our new comic template,
+// which has pages with no margin at all.
+// .bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer
+//     .bloom-page.A5Portrait {
+//     min-height: @A5DevicePageHeight;
+//     max-height: @A5DevicePageHeight;
+//     min-width: @A5DevicePageWidth;
+//     max-width: @A5DevicePageWidth;
+//     .marginBox {
+//         left: @bloomPlayerMargin;
+//         width: @A5MarginBoxWidth;
+//         top: @bloomPlayerMargin;
+//     }
+// }
 
 .control-bar .button.disabled {
     color: @disabledButton;
