@@ -70,6 +70,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const [previousPageClass, setPreviousPageClass] = useState(
         "Device16x9Portrait"
     );
+    const [previousShrinkMargins, setPreviousShrinkMargins] = useState(false);
+
+    // This state keeps track of whether the current page should be shrunk
+    // (by adding a class bp-shrink-page) and margins decreased so that it can
+    // be zoomed larger without changing the layout of page content.
+    // bloom-player-core deals with deciding whether to add the class to
+    // the page element and actually doing so, but this component needs to
+    // know when it changes from one page to another so the scale can be
+    // adjusted.
+    const [shrinkMargins, setShrinkMargins] = useState(false);
 
     // while the initiallyShowAppBar prop won't change in production, it can change
     // when we're tinkering with storybook. The statement above won't re-run if
@@ -123,7 +133,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         pageStylesInstalled,
         scalePageToWindowTrigger,
         windowLandscape,
-        props.useOriginalPageSize
+        props.useOriginalPageSize,
+        shrinkMargins
     ]);
 
     // One-time cleanup when this component is being removed
@@ -186,9 +197,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         let localMaxPageDimension = maxPageDimension;
         let localAspectRatio = pageAspectRatio;
         const pageClass = BloomPlayerCore.getPageSizeClass(page);
-        if (props.url !== previousUrl || pageClass !== previousPageClass) {
+        if (
+            props.url !== previousUrl ||
+            pageClass !== previousPageClass ||
+            shrinkMargins !== previousShrinkMargins
+        ) {
             setPreviousUrl(props.url);
             setPreviousPageClass(pageClass);
+            setPreviousShrinkMargins(shrinkMargins);
             // Some other one-time stuff:
             // Arrange for this to keep being called when the window size changes.
             window.onresize = () => {
@@ -415,6 +431,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 }}
                 activeLanguageCode={activeLanguageCode}
                 useOriginalPageSize={props.useOriginalPageSize}
+                shrinkMargins={shrinkMargins}
+                setShrinkMargins={setShrinkMargins}
             />
         </div>
     );

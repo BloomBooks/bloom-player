@@ -85,6 +85,14 @@ interface IProps {
     hideNextPrevButtons?: boolean;
 
     locationOfDistFolder: string;
+
+    // See the comment on wantShrinkMargins for more about this.
+    // The shrinkMargins state needs to be kept in the outermost
+    // component that cares about it, but it is this component that
+    // really decides, so we need a callback to allow the parent state
+    // to be correctly set.
+    shrinkMargins: boolean;
+    setShrinkMargins: (shrink: boolean) => void;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -963,12 +971,63 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private setPageSizeClass(page: Element): boolean {
-        return BloomPlayerCore.setPageSizeClass(
+        const result = BloomPlayerCore.setPageSizeClass(
             page,
             this.canRotate,
             this.props.landscape,
             this.props.useOriginalPageSize || false,
             this.originalPageClass
+        );
+        return result;
+    }
+
+    private setPageShrinkClass(page: Element) {
+        const wantShrinkMargins = BloomPlayerCore.wantShrinkMargins(page);
+        if (wantShrinkMargins !== page.classList.contains("bp-shrink-page")) {
+            if (wantShrinkMargins) {
+                page.classList.add("bp-shrink-page");
+            } else {
+                page.classList.remove("bp-shrink-page");
+            }
+        }
+        if (wantShrinkMargins !== this.props.shrinkMargins) {
+            this.props.setShrinkMargins(wantShrinkMargins);
+        }
+    }
+
+    // As a special case, we MAY add a class "bp-shrink-page",
+    // which triggers shrinking the page size and margins while keeping the
+    // size of the margin box the same. This allows us to zoom in more
+    // while keeping the expected layout of the page content.
+    // This function determines whether we ought to do it for the specified page.
+    private static wantShrinkMargins(page: Element): boolean {
+        // Currently we only do this for A5Portrait pages.
+        if (!page.classList.contains("A5Portrait")) {
+            return false;
+        }
+        const marginBox = page.getElementsByClassName("marginBox")[0];
+        if (!marginBox) {
+            return false; // no sort of familiar page we can mess with!
+        }
+        // The various settings on a standard A5 page make the margin box 108x180mm.
+        // We only do margin-shrinking on pages that don't mess with that size.
+        // Assuming clientWidth and clientHeight are 96ths of an inch seems to work
+        // though I don't think the spec guarantees it. Fortunately scaling does NOT
+        // affect clientWidth and Height.
+        // Note: currently this algorithm does not allow the front and back covers
+        // to be shrunk, since they have a different size of marginBox because of
+        // not having a gutter margin. We may want to reinstate that somehow, since
+        // our cover pages usually resize pretty well, especially for a small adjusment.
+        const expectedMbWidth = (108 * 96) / 25.4;
+        const expectedMbHeight = (180 * 96) / 25.4;
+        const actualWidth = marginBox.clientWidth;
+        const actualHeight = marginBox.clientHeight;
+        // Allow a bit of fudge factor for various rounding errors and scaling effects.
+        return (
+            actualWidth <= expectedMbWidth + 2 &&
+            actualWidth >= expectedMbWidth - 2 &&
+            actualHeight <= expectedMbHeight + 2 &&
+            actualHeight >= expectedMbHeight - 2
         );
     }
 
@@ -1013,6 +1072,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 page.classList.add(desiredClass);
             }
         }
+
         return landscape;
     }
 
@@ -1431,6 +1491,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // We need this in case the page size class has changed since we built
             // the page list, e.g., because of useOriginalPageSize changing, or possibly rotation.
             this.setPageSizeClass(bloomPage);
+            this.setPageShrinkClass(bloomPage);
             this.animation.HandlePageBeforeVisible(bloomPage);
             // Don't need to be playing a video that's off-screen,
             // and definitely don't want to be reporting analytics on
@@ -1498,6 +1559,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This is probably redundant, since we update all the page sizes on rotate, and again in setIndex.
             // It's not expensive so leaving it in for robustness.
             this.setPageSizeClass(bloomPage);
+            this.setPageShrinkClass(bloomPage);
 
             if (!this.props.paused) {
                 this.resetForNewPageAndPlay(bloomPage);

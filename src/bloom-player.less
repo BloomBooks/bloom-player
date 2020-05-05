@@ -381,17 +381,21 @@ over anything in our standard stylesheets, though still allowing for
 // For A5 pages read online, we want to keep the size of the marginBox
 // the same as when we lay out for a real printed A5 page, so that books
 // formatted for that will be sure to look right (though in some reader
-// contexts, text might be too small).
+// contexts, text might be too small). This is especially important for
+// comics, where any change in layout can cause the text to get out of
+// alignment with the bubbles.
 // However, we typically don't need much margin, either on a device or
 // in a web browser. The reduced page size allows for a 10px margin
 // on left, right, and top, with a little more at the bottom to fit
 // the page number in. When the page is then scaled to fit the viewport,
 // we make the content as big as it can reasonably be.
-// We need a lot of .bloomPlayer repeats to beat some rather complex
+// We need a lot of .bp-shrink-page repeats to beat some rather complex
 // rules, especially for marginBox width, which is usually slightly
 // increased on the cover where there is no gutter margin. Since our
-// cover page has pretty smart automatic layout, we think we can get
-// away with forcing everything to the usual width of a content page.
+// cover page has pretty smart automatic layout, we think we could get
+// away with forcing everything to the usual width of a content page,
+// though currently the JS code is not setting this class for outside
+// cover pages.
 // We also need to beat various rules for different left positioning
 // on cover, left, and right pages.
 // Enhance: we may eventually want to do this for more page sizes,
@@ -407,20 +411,18 @@ over anything in our standard stylesheets, though still allowing for
 @A5DevicePageWidth: @A5MarginBoxWidth + @totalHorizontalMargin;
 @A5DevicePageHeight: @A5MarginBoxHeight + @totalVerticalMargin;
 
-// Disabled for now because it messes up books made with our new comic template,
-// which has pages with no margin at all.
-// .bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer
-//     .bloom-page.A5Portrait {
-//     min-height: @A5DevicePageHeight;
-//     max-height: @A5DevicePageHeight;
-//     min-width: @A5DevicePageWidth;
-//     max-width: @A5DevicePageWidth;
-//     .marginBox {
-//         left: @bloomPlayerMargin;
-//         width: @A5MarginBoxWidth;
-//         top: @bloomPlayerMargin;
-//     }
-// }
+// the .bp-shrink-page class is added by BP when it determines it is safe.
+.bloom-page.A5Portrait.bp-shrink-page.bp-shrink-page.bp-shrink-page.bp-shrink-page.bp-shrink-page {
+    min-height: @A5DevicePageHeight;
+    max-height: @A5DevicePageHeight;
+    min-width: @A5DevicePageWidth;
+    max-width: @A5DevicePageWidth;
+    .marginBox {
+        left: @bloomPlayerMargin;
+        width: @A5MarginBoxWidth;
+        top: @bloomPlayerMargin;
+    }
+}
 
 .control-bar .button.disabled {
     color: @disabledButton;
