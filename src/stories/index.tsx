@@ -86,7 +86,7 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Messed up A5 comic",
+    "Comic - A5Portrait",
     "https://s3.amazonaws.com/bloomharvest/hannah_hudson%40sil-lead.org%2f8ec6f115-a508-45e1-b820-bd560fdd5b3b/bloomdigital%2findex.htm"
 );
 
