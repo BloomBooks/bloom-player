@@ -967,7 +967,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             page,
             this.canRotate,
             this.props.landscape,
-            this.props.useOriginalPageSize || false,
+            this.props.useOriginalPageSize ||
+                this.features.indexOf("comic") > -1,
             this.originalPageClass
         );
     }
