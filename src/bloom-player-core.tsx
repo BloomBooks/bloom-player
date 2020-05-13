@@ -89,6 +89,7 @@ interface IProps {
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
     styleRules: string; // concatenated stylesheets the book references or embeds.
+    importedBodyClasses: string;
     // indicates current page, though typically not corresponding to the page
     // numbers actually on the page. This is an index into pages, and in context
     // mode it's the index of the left context page, not the main page.
@@ -156,6 +157,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     public readonly state: IState = {
         pages: this.initialPages,
         styleRules: this.initialStyleRules,
+        importedBodyClasses: "",
         currentSwiperIndex: 0,
         isLoading: true,
         loadFailed: false,
@@ -339,6 +341,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             "originalCopyright"
                         );
 
+                        this.setBodyClasses(body);
                         this.makeNonEditable(body);
                         this.htmlElement = bookHtmlElement;
 
@@ -396,6 +399,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 loadErrorHtml: error.message
             });
         }
+    }
+
+    private setBodyClasses(originalBodyElement: HTMLBodyElement) {
+        // When working on the ABC-BARMM branding/XMatter pack, we discovered that the classes on the
+        // Desktop body element were not getting passed into bloom-player.
+        // Unfortunately, just putting them on the body element doesn't work because we are using
+        // scoped styles. So we put them on the div.bloomPlayer-page (and then we have to adjust the rules
+        // so they'll work there).
+        this.setState({
+            importedBodyClasses: originalBodyElement.className
+        });
     }
 
     private HandleLoadingError(axiosError: any) {
@@ -1337,7 +1351,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             {this.state.styleRules}
                                         </style>
                                         <div
-                                            className="bloomPlayer-page"
+                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
                                             dangerouslySetInnerHTML={{
                                                 __html: slide
                                             }}
