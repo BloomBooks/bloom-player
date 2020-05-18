@@ -109,7 +109,9 @@ module.exports = merge(core, {
                                                 "Firefox >= 45", // what Bloom Desktop 4.7 needs
                                                 ">1%" //don't support if the browser is <= 1% use
                                             ]
-                                        }
+                                        },
+                                        useBuiltIns: "usage",
+                                        corejs: 3
                                     }
                                 ]
                                 //"babel-preset-react" this leads to an error if we export from raw .js, and we aren't doing react with js

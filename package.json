@@ -115,6 +115,7 @@
         "testEnvironment": "jsdom"
     },
     "dependencies": {
+        "core-js": "3",
         "dynamic-import-polyfill": "^0.1.1"
     }
 }

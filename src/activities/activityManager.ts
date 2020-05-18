@@ -1,4 +1,4 @@
-import { loadDynamically } from "./loadDynamically";
+// import { loadDynamically } from "./loadDynamically";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
 const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
@@ -115,7 +115,7 @@ export class ActivityManager {
                 // Even though we won't use the script until we get to the page,
                 // at the moment we start loading them in the background. This
                 // probably isn't necessary, we could probably wait.
-                loadDynamically(bookUrlPrefix + "/" + activityID + ".js").then(
+                import(bookUrlPrefix + "/" + activityID + ".js").then(
                     module => {
                         // if the same activity is encountered multiple times, we
                         // could still get here multiple times because the load
