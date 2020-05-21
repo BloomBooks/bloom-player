@@ -1497,16 +1497,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            return; // blank initial or final page?
+        }
+        // Values this sets are used in the render of the new page, so it must NOT
+        // be postponed like the other actions below.
+        this.activityManager.showingPage(index, bloomPage);
         // While working on performance, we found that (at least some of) the following was slow.
         // (In a large book, still somewhat inexplicably, the stuff checking for audio was slow).
         // Even though the new page was already computed, we found that this blocked the ui from
         // scrolling it into view. So now we allow that to finish, then do this stuff.
         //console.log(`ShowingPage(${index})`);
         window.setTimeout(() => {
-            const bloomPage = this.getPageAtSwiperIndex(index);
-            if (!bloomPage) {
-                return; // blank initial or final page?
-            }
             BloomPlayerCore.currentPage = bloomPage;
             BloomPlayerCore.currentPageIndex = index;
 
@@ -1533,7 +1536,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     hasVideo: Video.pageHasVideo(bloomPage)
                 });
             }
-            this.activityManager.showingPage(index, bloomPage);
 
             this.reportedAudioOnCurrentPage = false;
             this.reportedVideoOnCurrentPage = false;
