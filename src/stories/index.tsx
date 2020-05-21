@@ -82,7 +82,7 @@ AddBloomPlayerStory(
 // PublishToAndroidApi.cs, in the event handler for updatePreview, right after PreviewUrl is set.
 AddBloomPlayerStory(
     "Book currently previewed in Bloom",
-    "http://localhost:8089/bloom/C%3A/Users/thomson/AppData/Local/Temp/PlaceForStagingBook/motion demo"
+    "http://localhost:8089/bloom/C%3A/Users/thomson/AppData/Local/Temp/PlaceForStagingBook/02 widgets"
 );
 
 AddBloomPlayerStory(
