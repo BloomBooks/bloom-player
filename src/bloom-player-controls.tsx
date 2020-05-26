@@ -117,6 +117,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         setScalePageToWindowTrigger(currentValue => currentValue + 1);
     };
 
+    const [outsideButtonPageClass, setOutsideButtonPageClass] = useState("");
+
     useEffect(() => {
         scalePageToWindow();
     }, [
@@ -277,17 +279,19 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const player = document.getElementsByClassName("bloomPlayer")[0];
         // To put the buttons outside, we need twice @navigationButtonWidth,
         // as defined in bloom-player.less.
-        player.classList.remove("largeOutsideButtons");
-        player.classList.remove("smallOutsideButtons");
+        let newOutsideButtonPageClass = "";
 
         // should match that defined in bloom-player.less
         const smallNavigationButtonWidth = 30;
         const largeNavigationButtonWidth = 100;
         if (widthMargin > largeNavigationButtonWidth * 2) {
             // We have two button widths to spare; can put buttons outside phone
-            player.classList.add("largeOutsideButtons");
+            newOutsideButtonPageClass = "largeOutsideButtons";
         } else if (widthMargin > smallNavigationButtonWidth * 2) {
-            player.classList.add("smallOutsideButtons");
+            newOutsideButtonPageClass = "smallOutsideButtons";
+        }
+        if (newOutsideButtonPageClass != outsideButtonPageClass) {
+            setOutsideButtonPageClass(newOutsideButtonPageClass);
         }
 
         const leftMargin = Math.max(
@@ -415,6 +419,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 }}
                 activeLanguageCode={activeLanguageCode}
                 useOriginalPageSize={props.useOriginalPageSize}
+                outsideButtonPageClass={outsideButtonPageClass}
             />
         </div>
     );

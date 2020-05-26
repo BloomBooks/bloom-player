@@ -85,6 +85,9 @@ interface IProps {
     hideNextPrevButtons?: boolean;
 
     locationOfDistFolder: string;
+
+    // may be "largeOutsideButtons" or "smallOutsideButtons" or empty.
+    outsideButtonPageClass: string;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -1304,20 +1307,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             shouldSwiperUpdate: true
         };
 
+        let bloomPlayerClass = "bloomPlayer";
+        if (this.props.outsideButtonPageClass) {
+            // there's room for buttons outside the page; show them.
+            bloomPlayerClass += " " + this.props.outsideButtonPageClass;
+        } else if (showNavigationButtonsEvenOnTouchDevices) {
+            bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
+        } else if (this.props.hideNextPrevButtons) {
+            bloomPlayerClass += " hideNextPrevButtons";
+        }
+
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
         // only one of these components on a page.
         return (
             <div
-                className={
-                    "bloomPlayer" +
-                    (showNavigationButtonsEvenOnTouchDevices
-                        ? " showNavigationButtonsEvenOnTouchDevices"
-                        : this.props.hideNextPrevButtons
-                        ? " hideNextPrevButtons"
-                        : "")
-                }
+                className={bloomPlayerClass}
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
                 <Swiper {...swiperParams}>
