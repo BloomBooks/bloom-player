@@ -1,4 +1,5 @@
 import { sortAudioElements } from "./narrationUtils";
+import { createDiv, createPara, createSpan } from "./test/testHelper";
 
 test("sortAudioElements with no tabindexes preserves order", () => {
     const input = document.createElement("div");
@@ -255,82 +256,3 @@ test("sortAudioElements re-orders blocks", () => {
     expect(output[1]).toEqual(be2A);
     expect(output[2]).toEqual(be1A);
 });
-
-function createDiv({
-    id,
-    classAttr,
-    content,
-    tabindex,
-    parent
-}: {
-    id: string;
-    classAttr: string;
-    content?: string;
-    tabindex?: string;
-    parent?: HTMLElement;
-}): HTMLElement {
-    return createElement({
-        tag: "div",
-        id,
-        classAttr,
-        content,
-        tabindex,
-        parent
-    });
-}
-
-function createSpan(params: {
-    id: string;
-    classAttr: string;
-    content?: string;
-    tabindex?: string;
-    parent?: HTMLElement;
-}): HTMLElement {
-    return createElement({
-        tag: "span",
-        ...params
-    });
-}
-
-function createPara(params: {
-    id: string;
-    classAttr: string;
-    content?: string;
-    tabindex?: string;
-    parent?: HTMLElement;
-}): HTMLElement {
-    return createElement({
-        tag: "p",
-        ...params
-    });
-}
-
-function createElement({
-    tag,
-    id,
-    classAttr,
-    content,
-    tabindex,
-    parent
-}: {
-    tag: string;
-    id: string;
-    classAttr: string;
-    content?: string;
-    tabindex?: string;
-    parent?: HTMLElement;
-}): HTMLElement {
-    const result = document.createElement(tag);
-    result.setAttribute("id", id);
-    result.setAttribute("class", classAttr);
-    if (tabindex) {
-        result.setAttribute("tabindex", tabindex);
-    }
-    if (content) {
-        result.innerHTML = content;
-    }
-    if (parent) {
-        parent.appendChild(result);
-    }
-    return result;
-}
