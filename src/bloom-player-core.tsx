@@ -18,7 +18,6 @@ import { Animation } from "./animation";
 import { Video } from "./video";
 import { Music } from "./music";
 import { LocalizationManager } from "./l10n/localizationManager";
-import { LocalizationUtils } from "./l10n/localizationUtils";
 import {
     reportAnalytics,
     setAmbientAnalyticsProperties,
@@ -39,6 +38,8 @@ import LoadFailedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
 import { ActivityManager } from "./activities/activityManager";
 import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQuizHandler";
 import { CircularProgress } from "@material-ui/core";
+import { BookInfo } from "./bookInfo";
+import { BookInteraction } from "./bookInteraction";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -108,15 +109,7 @@ interface IState {
     ignorePhonyClick: boolean;
 }
 
-enum BookFeatures {
-    talkingBook = "talkingBook",
-    blind = "blind",
-    signLanguage = "signLanguage",
-    motion = "motion"
-}
-
 export class BloomPlayerCore extends React.Component<IProps, IState> {
-    private static DEFAULT_CREATOR: string = "bloom";
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
 
@@ -124,26 +117,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly initialStyleRules: string = "";
     private originalPageClass = "Device16x9Portrait";
 
-    // This block of variables keep track of things we want to report in analytics
-    private totalNumberedPages = 0; // found in book
-    private pagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) pages shown
-    private audioPagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) audio pages shown
-    private videoPagesShown: Set<number> = new Set<number>(); // collection of (non-xmatter) video pages shown
-    private questionCount = 0; // comprehension questions found in book
-    private features = "";
-
-    private lastNumberedPageWasRead = false; // has user read to last numbered page?
-
-    private totalAudioDuration = 0;
-    private totalVideoDuration = 0;
-    private reportedAudioOnCurrentPage = false;
-    private reportedVideoOnCurrentPage = false;
-    private brandingProjectName = "";
-    private bookTitle = "";
-    private copyrightHolder = "";
-    private originalCopyrightHolder = "";
-    private sessionId = this.generateUUID();
-    private creator = BloomPlayerCore.DEFAULT_CREATOR; // If we find a head/meta element, we will replace this.
+    private bookInfo: BookInfo = new BookInfo();
+    private bookInteraction: BookInteraction = new BookInteraction();
 
     private static currentPagePlayer: BloomPlayerCore;
 
@@ -177,10 +152,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // The folder containing the html file.
     private urlPrefix: string;
 
-    private bookLanguage1: string | undefined;
-    private bookLanguage2: string | undefined;
-    private bookLanguage3: string | undefined;
-
     private metaDataObject: any | undefined;
     private htmlElement: HTMLHtmlElement | undefined;
 
@@ -188,8 +159,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private animation: Animation;
     private music: Music;
     private video: Video;
-    private canRotate: boolean;
-    private autoAdvance: boolean;
 
     private isPagesLocalized: boolean = false;
 
@@ -324,25 +293,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         const body = bookHtmlElement.getElementsByTagName(
                             "body"
                         )[0];
-                        this.bookLanguage1 = LocalizationUtils.getBookLanguage1(
-                            body as HTMLBodyElement
-                        );
-                        this.canRotate = body.hasAttribute("data-bfcanrotate"); // expect value allOrientations;bloomReader, should we check?
-                        this.autoAdvance = body.hasAttribute(
-                            "data-bfautoadvance"
-                        ); // expect value landscape;bloomReader, should we check?
-                        this.animation.PlayAnimations = body.hasAttribute(
-                            "data-bfplayanimations"
-                        ); // expect value landscape;bloomReader, should we check?
 
-                        this.copyrightHolder = this.getCopyrightInfo(
-                            body,
-                            "copyright"
-                        );
-                        this.originalCopyrightHolder = this.getCopyrightInfo(
-                            body,
-                            "originalCopyright"
-                        );
+                        this.bookInfo.setSomeBookInfoFromBody(body);
+
+                        this.animation.PlayAnimations = this.bookInfo.playAnimations;
 
                         this.setBodyClasses(body);
                         this.makeNonEditable(body);
@@ -463,12 +417,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             swiperContent.push(""); // blank page to fill the space left of first.
         }
         if (isNewBook) {
-            this.totalNumberedPages = 0;
-            this.questionCount = 0;
+            this.bookInfo.totalNumberedPages = 0;
+            this.bookInfo.questionCount = 0;
             this.activityManager.collectActivityContextForBook(pages);
-            this.pagesShown.clear();
-            this.audioPagesShown.clear();
-            this.videoPagesShown.clear();
+            this.bookInteraction.clearPagesShown();
         }
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
@@ -481,7 +433,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Informs containing react controls (in the same frame)
                 this.props.reportBookProperties({
                     landscape,
-                    canRotate: this.canRotate
+                    canRotate: this.bookInfo.canRotate
                 });
             }
             if (isNewBook) {
@@ -492,7 +444,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (hasPageNum) {
                     this.indexOflastNumberedPage =
                         i + (this.props.showContextPages ? 1 : 0);
-                    this.totalNumberedPages++;
+                    this.bookInfo.totalNumberedPages++;
                 }
                 if (
                     page.getAttribute("data-analyticscategories") ===
@@ -500,7 +452,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 ) {
                     // Note that this will count both new-style question pages,
                     // and ones generated from old-style json.
-                    this.questionCount++;
+                    this.bookInfo.questionCount++;
                 }
             }
             swiperContent.push(page.outerHTML);
@@ -513,9 +465,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         if (isNewBook) {
             const head = this.htmlElement.getElementsByTagName("head")[0];
-            this.creator = this.getCreator(head); // prep for reportBookOpened()
+            this.bookInfo.setSomeBookInfoFromHead(head); // prep for reportBookOpened()
             const body = this.htmlElement.getElementsByTagName("body")[0];
-            this.reportBookOpened(body);
+            if (this.metaDataObject) {
+                this.bookInfo.setSomeBookInfoFromMetadata(
+                    this.metaDataObject,
+                    body
+                );
+                this.reportBookOpened(body);
+            }
             if (this.props.controlsCallback) {
                 const languages = LangData.createLangDataArrayFromDomAndMetadata(
                     body,
@@ -555,7 +513,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ) {
             LocalizationManager.localizePages(
                 document.body,
-                this.getPreferredTranslationLanguages()
+                this.bookInfo.getPreferredTranslationLanguages()
             );
             this.isPagesLocalized = true;
         }
@@ -786,180 +744,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.music.pause();
     }
 
-    private getCreator(head: HTMLHeadElement): string {
-        const metaElements = head.getElementsByTagName("meta");
-        if (metaElements.length === 0) {
-            return BloomPlayerCore.DEFAULT_CREATOR;
-        }
-        const creatorElement = metaElements.namedItem("bloom-digital-creator");
-        if (creatorElement === null) {
-            return BloomPlayerCore.DEFAULT_CREATOR;
-        }
-        return creatorElement.content;
-    }
-
-    private getCopyrightInfo(
-        body: HTMLBodyElement,
-        dataDivValue: string
-    ): string {
-        const copyrightNoticeRE = /^Copyright © \d\d\d\d, /;
-        const copyrightElement = body.ownerDocument!.evaluate(
-            ".//div[@data-book='" + dataDivValue + "']",
-            body,
-            null,
-            XPathResult.ANY_UNORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
-        return copyrightElement
-            ? (this.copyrightHolder = (copyrightElement.textContent || "")
-                  .trim()
-                  .replace(copyrightNoticeRE, ""))
-            : "";
-    }
-
     private reportBookOpened(body: HTMLBodyElement) {
-        // this metaDataObject comes already parsed into a js object
-        if (!this.metaDataObject) {
-            return;
-        }
-        this.brandingProjectName = this.metaDataObject.brandingProjectName;
-        this.bookTitle = this.metaDataObject.title;
-        const bloomdVersion = this.metaDataObject.bloomdVersion
-            ? this.metaDataObject.bloomdVersion
-            : 0;
-
-        this.features =
-            bloomdVersion > 0
-                ? this.metaDataObject.features
-                : this.guessFeatures(body);
-
         // Some facts about the book will go out with not just this event,
         // but also subsequent events. We call these "ambient" properties.
-        const ambientAnalyticsProps: any = {
-            totalNumberedPages: this.totalNumberedPages,
-            questionCount: this.questionCount,
-            contentLang: this.bookLanguage1,
-            features: this.features,
-            sessionId: this.sessionId,
-            title: this.bookTitle,
-            creator: this.creator
-        };
-        if (this.brandingProjectName) {
-            ambientAnalyticsProps.brandingProjectName = this.brandingProjectName;
-        }
-        if (this.originalCopyrightHolder) {
-            ambientAnalyticsProps.originalCopyrightHolder = this.originalCopyrightHolder;
-        }
-        if (this.copyrightHolder) {
-            ambientAnalyticsProps.copyrightHolder = this.copyrightHolder;
-        }
-        setAmbientAnalyticsProperties(ambientAnalyticsProps);
+        setAmbientAnalyticsProperties(this.bookInfo.getAmbientAnalyticsProps());
         reportAnalytics("BookOrShelf opened", {});
-    }
-
-    // In July 2019, Bloom Desktop added a bloomdVersion to meta.json and at the same
-    // time, started to report features more fully/reliably in meta.json:features.
-    private guessFeatures(body: HTMLBodyElement): string {
-        const features: BookFeatures[] = [];
-        // An obsolete .bloomd (won't happen on BL). Guess the features.
-        // The only feature that we haven't already figured out is talkingBook.
-        // Enhance: we could use a series of axios requests to see whether
-        // any of the audio-sentece blocks actually has audio files.
-        // Or, since obsolete bloomd's will only be found by BR, we could
-        // send a request for BR to check the audio folder.
-
-        // initially tried starts-with(@src, 'video') since we use that constraint in BR1.3.
-        // It never matched. I suspect Android WebView doesn't support starts-with (XPath 1.0.4.2),
-        // though I can't find any definite documentation saying so. Could use contains, but on
-        // second thought this query (looking for video/source) is already superior to the 1.3
-        // regular expression approach.
-        const signLanguage =
-            body.ownerDocument!.evaluate(
-                ".//video/source[@src]",
-                body,
-                null,
-                XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
-            ).singleNodeValue != null;
-        const motion =
-            (body.getAttribute("data-bffullscreenpicture") || "").indexOf(
-                "landscape;bloomReader"
-            ) >= 0;
-        const blind =
-            body.ownerDocument!.evaluate(
-                ".//div[contains(@class, 'bloom-page') and not(@data-xmatter-page)]//div[contains(@class, 'bloom-imageDescription')]",
-                body,
-                null,
-                XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
-            ).singleNodeValue != null;
-        const isTalkingBook =
-            body.ownerDocument!.evaluate(
-                ".//*[contains(@class, 'audio-sentence')]",
-                body,
-                null,
-                XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
-            ).singleNodeValue != null;
-        // Note: the order of features here matches Bloom's BookMetaData.Features getter,
-        // so the features will be in the same order as when output from there.
-        // Not sure whether this matters, but it may make analysis of the data easier.
-        if (blind) {
-            features.push(BookFeatures.blind);
-        }
-        if (signLanguage) {
-            features.push(BookFeatures.signLanguage);
-        }
-        if (isTalkingBook) {
-            features.push(BookFeatures.talkingBook);
-        }
-        if (motion) {
-            features.push(BookFeatures.motion);
-        }
-        return features.join(",");
     }
 
     // Update the analytics report that will be sent (if not updated again first)
     // by our external container (Bloom Reader, Bloom Library, etc.)
     // when the parent reader determines that the session reading this book is finished.
     private sendUpdateOfBookProgressReportToExternalContext() {
-        const args = {
-            audioPages: this.audioPagesShown.size,
-            nonAudioPages: this.pagesShown.size - this.audioPagesShown.size,
-            videoPages: this.videoPagesShown.size,
-            audioDuration: this.totalAudioDuration,
-            videoDuration: this.totalVideoDuration,
-            lastNumberedPageRead: this.lastNumberedPageWasRead
-        };
+        const properties = this.bookInteraction.getProgressReportPropertiesForAnalytics();
         // Pass the completed report to the externalContext version of this method which actually sends it.
-        updateBookProgressReport("Pages Read", args);
-    }
-
-    private generateUUID() {
-        // Public Domain/MIT (stackoverflow)
-        let d = new Date().getTime();
-
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-            // tslint:disable-next-line: no-bitwise
-            const r = (d + Math.random() * 16) % 16 | 0;
-            d = Math.floor(d / 16);
-            // tslint:disable-next-line: no-bitwise
-            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-        });
-    }
-
-    private getPreferredTranslationLanguages(): string[] {
-        const languages: string[] = [];
-        if (this.bookLanguage1) {
-            languages.push(this.bookLanguage1);
-        }
-        if (this.bookLanguage2) {
-            languages.push(this.bookLanguage2);
-        }
-        if (this.bookLanguage3) {
-            languages.push(this.bookLanguage3);
-        }
-        return languages;
+        updateBookProgressReport("Pages Read", properties);
     }
 
     private makeNonEditable(body: HTMLBodyElement): void {
@@ -982,10 +780,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private setPageSizeClass(page: Element): boolean {
         return BloomPlayerCore.setPageSizeClass(
             page,
-            this.canRotate,
+            this.bookInfo.canRotate,
             this.props.landscape,
-            this.props.useOriginalPageSize ||
-                this.features.indexOf("comic") > -1,
+            this.props.useOriginalPageSize || this.bookInfo.hasFeature("comic"),
             this.originalPageClass
         );
     }
@@ -1208,12 +1005,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 "/settingsCollectionStyles.css"
                             )
                         ) {
-                            [
-                                this.bookLanguage2,
-                                this.bookLanguage3
-                            ] = LocalizationUtils.getNationalLanguagesFromCssStyles(
-                                result.data
-                            );
+                            this.bookInfo.setLanguage2And3(result.data);
                         }
                     }
                 });
@@ -1417,7 +1209,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!page) {
             return;
         }
-        if (this.autoAdvance && this.props.landscape) {
+        if (this.bookInfo.autoAdvance && this.props.landscape) {
             this.swiperInstance.slideNext();
         }
     }
@@ -1528,9 +1320,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             if (!this.isXmatterPage()) {
-                this.pagesShown.add(index);
+                this.bookInteraction.pageShown(index);
                 if (index === this.indexOflastNumberedPage) {
-                    this.lastNumberedPageWasRead = true;
+                    this.bookInteraction.lastNumberedPageWasRead = true;
                 }
             }
 
@@ -1543,8 +1335,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 });
             }
 
-            this.reportedAudioOnCurrentPage = false;
-            this.reportedVideoOnCurrentPage = false;
+            this.bookInteraction.reportedAudioOnCurrentPage = false;
+            this.bookInteraction.reportedVideoOnCurrentPage = false;
             this.sendUpdateOfBookProgressReportToExternalContext();
 
             // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
@@ -1567,16 +1359,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             return;
         }
         const player = BloomPlayerCore.currentPagePlayer;
-        player.totalAudioDuration += duration;
+        player.bookInteraction.totalAudioDuration += duration;
 
         if (player.isXmatterPage()) {
             // Our policy is only to count non-xmatter audio pages. BL-7334.
             return;
         }
 
-        if (!player.reportedAudioOnCurrentPage) {
-            player.reportedAudioOnCurrentPage = true;
-            player.audioPagesShown.add(BloomPlayerCore.currentPageIndex);
+        if (!player.bookInteraction.reportedAudioOnCurrentPage) {
+            player.bookInteraction.reportedAudioOnCurrentPage = true;
+            player.bookInteraction.audioPageShown(
+                BloomPlayerCore.currentPageIndex
+            );
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
     }
@@ -1588,10 +1382,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             return;
         }
         const player = BloomPlayerCore.currentPagePlayer;
-        player.totalVideoDuration += duration;
-        if (!player.reportedVideoOnCurrentPage && !player.isXmatterPage()) {
-            player.reportedVideoOnCurrentPage = true;
-            player.videoPagesShown.add(BloomPlayerCore.currentPageIndex);
+        player.bookInteraction.totalVideoDuration += duration;
+        if (
+            !player.bookInteraction.reportedVideoOnCurrentPage &&
+            !player.isXmatterPage()
+        ) {
+            player.bookInteraction.reportedVideoOnCurrentPage = true;
+            player.bookInteraction.videoPageShown(
+                BloomPlayerCore.currentPageIndex
+            );
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
     }
