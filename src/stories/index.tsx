@@ -115,7 +115,7 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
 );
 AddBloomPlayerStory(
-    "Multilingual motion book - intial language set to 'ko'",
+    "Multilingual motion book - initial language set to 'ko'",
     "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm",
     "ko"
 );
@@ -141,4 +141,9 @@ AddBloomPlayerStory(
 AddBloomPlayerStory(
     "Book that isn't found",
     "https://s3.amazonaws.com/bloomharvest-sandbox/colin_suggett%40sil.org%2fe88a5f3f-b769-4af7-a05f-1b3a0a417c30/bloomdigital/NOTTHERE.htm"
+);
+AddBloomPlayerStory(
+    "Encoding test with # and &",
+    // note, I could not test :, /, or ? because they are not allowed as part of the filename anyways.
+    "src/testbook/test #1/test & play#2.htm"
 );

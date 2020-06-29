@@ -222,7 +222,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
 
-            const newSourceUrl = this.calculateNewUrl();
+            const newSourceUrl = this.preprocessUrl();
             // Inside of Bloom Publish Preview,
             // this will be "" if we should just keep spinning, waiting for a render with different
             // props once the bloomd is created.
@@ -262,18 +262,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.sourceUrl.length
                     );
                 }
-                const fullPath = filename.endsWith(".htm");
-                const urlOfBookHtmlFile = fullPath
+                // Note, The current best practice is actually to have the htm file always be "index.htm".
+                // Most (all?) bloom-player hosts are already looking for that, then looking for a name
+                // matching the zip file's name, then going with the first
+                const haveFullPath = filename.endsWith(".htm");
+                let urlOfBookHtmlFile = haveFullPath
                     ? this.sourceUrl
-                    : this.sourceUrl + "/" + filename + ".htm"; // enhance: search directory if name doesn't match?
-                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = fullPath
+                    : this.sourceUrl + "/" + filename + ".htm";
+
+                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
                           0,
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
-                const htmlPromise = axios.get(urlOfBookHtmlFile);
-                const metadataPromise = axios.get(this.fullUrl("meta.json"));
+                const htmlPromise = httpget(urlOfBookHtmlFile);
+                const metadataPromise = httpget(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise])
                     .then(result => {
                         const [htmlResult, metadataResult] = result;
@@ -544,28 +548,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private calculateNewUrl(): string {
-        let newSourceUrl = this.props.url;
-        if (newSourceUrl === undefined || "" === newSourceUrl.trim()) {
+    // a collection of things for cleaning up the url
+    private preprocessUrl(): string {
+        let url = this.props.url;
+        if (url === undefined || "" === url.trim()) {
             throw new Error(
                 "The url parameter was empty. It should point to the url of a book."
             );
         }
         // Bloom Publish Preview uses this so that we get spinning wheel while working on making the bloomd
-        if (newSourceUrl === "working") {
+        if (url === "working") {
             return "";
         }
 
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
         // an empty filename or double-slashes in derived URLs.
-        if (newSourceUrl.endsWith("/")) {
-            newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 1);
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length - 1);
         }
         // Or we might get a url-encoded slash.
-        if (newSourceUrl.endsWith("%2f")) {
-            newSourceUrl = newSourceUrl.substring(0, newSourceUrl.length - 3);
+        if (url.endsWith("%2f")) {
+            url = url.substring(0, url.length - 3);
         }
-        return newSourceUrl;
+        return url;
     }
 
     private handlePausePlay() {
@@ -914,7 +919,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // a corresponding woff font in a standard location. We may even be able to pay to
     // provide some fonts there for book previewing that are NOT embeddable.
     private makeFontStylesheet(href: string): void {
-        axios.get(href).then(result => {
+        httpget(href).then(result => {
             let stylesheet = document.getElementById(
                 "fontCssStyleSheet"
             ) as HTMLStyleElement;
@@ -959,7 +964,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (fullHref.endsWith("/fonts.css")) {
                 this.makeFontStylesheet(fullHref);
             } else {
-                promises.push(axios.get(fullHref));
+                promises.push(httpget(fullHref));
             }
         }
         const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
@@ -1414,7 +1419,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 }
 
 function htmlEncode(str: string): string {
-    return str.replace(/[\u00A0-\u9999<>\&]/gim, i => {
+    return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, i => {
         return "&#" + i.charCodeAt(0) + ";";
     });
+}
+
+function httpget(url: string) {
+    // If we have, e.g. "Guitar #1", axios does not encode that #, presumably because it could be an html "anchor".
+    const fixedUrl = url.replace(/#/gi, "%23");
+    return axios.get(fixedUrl);
 }
