@@ -2,7 +2,7 @@
 
 This project, _bloom-player_, lets users view and interact with [Bloom](bloomlibrary.org) books in any browser.
 
-Specifically, the books must be in _Bloom Digital_ format (.bloomd files are zipped Bloom Digital books).
+Specifically, the books must be in _BloomPub_ format (.bloompub or .bloomd, which are files are zipped Bloom Digital books).
 
 The Bloom project uses _bloom-player_ is used in the following places:
 

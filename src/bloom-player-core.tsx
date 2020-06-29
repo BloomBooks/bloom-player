@@ -386,7 +386,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (localFileMissing || axiosError.message.indexOf("404") >= 0) {
             msg = "<p>This book (or some part of it) was not found.<p>";
             if (axiosError.config && axiosError.config.url) {
-                msg += `<p class='errorDetails'>${encodeURI(
+                msg += `<p class='errorDetails'>${htmlEncode(
                     axiosError.config.url
                 )}</p>`;
             }
@@ -1411,4 +1411,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.animation.HandlePageVisible(bloomPage);
         this.music.HandlePageVisible(bloomPage);
     }
+}
+
+function htmlEncode(str: string): string {
+    return str.replace(/[\u00A0-\u9999<>\&]/gim, i => {
+        return "&#" + i.charCodeAt(0) + ";";
+    });
 }
