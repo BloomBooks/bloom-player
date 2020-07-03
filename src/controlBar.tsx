@@ -91,15 +91,17 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 <div
                     className="filler" // this is set to flex-grow, making the following icons right-aligned.
                 />
-                <IconButton
-                    className={controlButtonClass}
-                    color={"secondary"}
-                    onClick={() => {
-                        setLanguageMenuOpen(true);
-                    }}
-                >
-                    <Language />
-                </IconButton>
+                {props.bookLanguages.length > 1 && (
+                    <IconButton
+                        className={controlButtonClass}
+                        color={"secondary"}
+                        onClick={() => {
+                            setLanguageMenuOpen(true);
+                        }}
+                    >
+                        <Language />
+                    </IconButton>
+                )}
                 {languageMenuOpen && (
                     <LanguageMenu
                         languages={props.bookLanguages}
