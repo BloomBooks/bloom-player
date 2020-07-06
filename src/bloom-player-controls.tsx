@@ -312,11 +312,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // though we're looking at it in landscape, resulting in scroll bars and misplaced
         // page turning buttons. So we force all the actual page previews to be no bigger than
         // the height we expect and hide their overflow to fix
+        // BL-8458: The 'translate' after the 'scale' in the transform rule should center the page vertically.
 
         scaleStyleSheet.innerText = `.bloomPlayer {
             width: ${width}px;
             transform-origin: left top 0;
-            transform: scale(${scaleFactor});
+            transform: scale(${scaleFactor}) translate(0, ${((winHeight -
+            controlsHeight -
+            actualPageHeight) /
+            2) *
+            scaleFactor}px);
             margin-left: ${leftMargin}px;
         }
         .bloomPlayer-page {height: ${actualPageHeight /
