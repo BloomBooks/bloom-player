@@ -66,15 +66,22 @@ export class AutonymHandler {
     }
 
     private getThreeLetterIsoCode(code: string): string | undefined {
-        if (code.length < 3) {
-            // If the two-letter code is not in our index, this returns 'undefined'
-            return this.twoLetterTothreeLetterIndex[code];
+        const baseLanguageCode = code.split("-")[0]; // in case of Regional, Script, Variant codes
+        if (baseLanguageCode.length === 3) {
+            return baseLanguageCode; // The majority of cases
         }
-        const splitCode = code.split("-")[0]; // in case of some complicated Regional, Script, Variant stuff
-        if (splitCode.length < 4) {
-            return splitCode;
+        if (baseLanguageCode.length > 3) {
+            // An unknown odd situation! We failed to get a decent iso639 code.
+            return undefined;
         }
-        return undefined; // failed to get a decent iso639 code
+        // BL-8268: In some cases, such as 'zh-CN', we got here with a two letter code, but previously
+        // we didn't handle it well. Now, we use our 2 -> 3 letter index to get 'zho' from 'zh' (e.g.).
+        // In that particular case, our database has [english: 'Chinese' and autonym: 中文].
+
+        // If the two-letter code (after splitting off Regional, Script, Variant codes), is not in our
+        // index, or if we somehow arrive here with a defective code (length 0 or 1!),
+        // this line returns 'undefined'.
+        return this.twoLetterTothreeLetterIndex[baseLanguageCode];
     }
 }
 

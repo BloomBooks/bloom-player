@@ -276,7 +276,7 @@ export default class LangData {
                 return autonym;
             } else {
                 if (english === "") {
-                    return `${code} ("unknown")`;
+                    return code;
                 }
                 return english;
             }
