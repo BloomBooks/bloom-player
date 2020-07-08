@@ -27,6 +27,7 @@ interface IProps {
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
+    centerVertically?: boolean;
     showContextPages?: boolean;
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
     initialLanguageCode?: string;
@@ -49,6 +50,8 @@ let canExternallyResume: boolean = false;
 
 export const BloomPlayerControls: React.FunctionComponent<IProps &
     React.HTMLProps<HTMLDivElement>> = props => {
+    const doVerticalCentering = props.centerVertically || false;
+
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
     setExternalControlCallback(data => {
         if (data.pause) {
@@ -311,17 +314,34 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // That can leave the overall height of the carousel determined by a portrait page even
         // though we're looking at it in landscape, resulting in scroll bars and misplaced
         // page turning buttons. So we force all the actual page previews to be no bigger than
-        // the height we expect and hide their overflow to fix
-        // BL-8458: The 'translate' after the 'scale' in the transform rule should center the page vertically.
+        // the height we expect and hide their overflow to fix this problem.
+        //
+        // BL-8458: The 'translate' before the 'scale' in the transform rule should center the page
+        // vertically after it is scaled (composite transforms are effectively applied in order from right
+        // to left, according to 'https://developer.mozilla.org/en-US/docs/Web/CSS/transform').
+        // So first the page is scaled, then moved down, though that is the opposite of the reading order.
+
+        let translateString = "";
+        if (doVerticalCentering) {
+            const amountToMoveDown =
+                (winHeight - actualPageHeight) / 2 - controlsHeight; // don't count controlsHeight in what we move down
+            if (amountToMoveDown > 0) {
+                translateString = `translate(0, ${amountToMoveDown.toFixed(
+                    0
+                )}px) `;
+                // console.log(`** translating down ${amountToMoveDown}px`);
+                // console.log(`   winHeight ${winHeight}px`);
+                // console.log(`   desiredPageHeight ${desiredPageHeight}px`);
+                // console.log(`   actualPageHeight ${actualPageHeight}px`);
+                // console.log(`   controlsHeight ${controlsHeight}px`);
+                // console.log(`   scaleFactor ${scaleFactor}`);
+            }
+        }
 
         scaleStyleSheet.innerText = `.bloomPlayer {
             width: ${width}px;
             transform-origin: left top 0;
-            transform: scale(${scaleFactor}) translate(0, ${((winHeight -
-            controlsHeight -
-            actualPageHeight) /
-            2) *
-            scaleFactor}px);
+            transform: ${translateString}scale(${scaleFactor});
             margin-left: ${leftMargin}px;
         }
         .bloomPlayer-page {height: ${actualPageHeight /
@@ -471,6 +491,7 @@ export function InitBloomPlayerControls() {
                     "initiallyShowAppBar",
                     true
                 )}
+                centerVertically={getBooleanUrlParam("centerVertically", false)}
                 initialLanguageCode={getUrlParam("lang")}
                 paused={false}
                 locationOfDistFolder={""}
