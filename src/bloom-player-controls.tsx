@@ -50,7 +50,10 @@ let canExternallyResume: boolean = false;
 
 export const BloomPlayerControls: React.FunctionComponent<IProps &
     React.HTMLProps<HTMLDivElement>> = props => {
-    const doVerticalCentering = props.centerVertically || false;
+    // default is to center BP vertically; various versions of blorg should pass this as false.
+    const doVerticalCentering = props.centerVertically
+        ? props.centerVertically
+        : true;
 
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
     setExternalControlCallback(data => {
