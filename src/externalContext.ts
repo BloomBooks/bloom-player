@@ -3,12 +3,15 @@ import { TransientPageDataSingleton } from "./transientPageData";
 /* Functions
  * For getting information about our url parameters
  * For sending and receving messages with our container.
- *       These messages are currently only being exchanged with the Bloom Reader
+ *       Some of these messages are currently only being exchanged with the Bloom Reader
  *       app that is showing us in the webview; if we are showing in an iframe in
- *       a browser or Bloom Publish preview, there's no one listening and that's fine.
+ *       a browser or Bloom Publish preview, some are ignored and that's fine.
  */
 
-function postMessage(messageObj: object) {
+// Must have messageType, may have anything else desired.
+type WithMessageType = any & { messageType: string };
+
+export function sendMessageToHost(messageObj: WithMessageType) {
     const message = JSON.stringify(messageObj);
     // If we're in a native Android WebView or similar, we could not get it to receive postMessage
     // messages, so instead it has to inject an object called ParentProxy to receive the message.
@@ -28,7 +31,7 @@ function postMessage(messageObj: object) {
 
 // Ask the parent window, if any, to store this key/value pair persistently.
 export function storePageDataExternally(key: string, value: string) {
-    postMessage({ messageType: "storePageData", key, value });
+    sendMessageToHost({ messageType: "storePageData", key, value });
 }
 
 let ambientAnalyticsProps = {};
@@ -37,7 +40,7 @@ export function setAmbientAnalyticsProperties(properties: any) {
 }
 
 export function reportAnalytics(event: string, properties: any) {
-    postMessage({
+    sendMessageToHost({
         messageType: "sendAnalytics",
         event,
         params: { ...ambientAnalyticsProps, ...properties }
@@ -45,7 +48,7 @@ export function reportAnalytics(event: string, properties: any) {
 }
 
 export function reportBookProperties(properties: any) {
-    postMessage({
+    sendMessageToHost({
         messageType: "reportBookProperties",
         params: { ...properties }
     });
@@ -56,7 +59,7 @@ export function reportBookProperties(properties: any) {
 // this book was read, it will send the latest version of these props.
 // That's why we call this "update" rather than "send".
 export function updateBookProgressReport(event: string, properties: any) {
-    postMessage({
+    sendMessageToHost({
         messageType: "updateBookProgressReport",
         event,
         params: { ...ambientAnalyticsProps, ...properties }
@@ -66,19 +69,19 @@ export function updateBookProgressReport(event: string, properties: any) {
 let gotCapabilities = false;
 
 export function onBackClicked() {
-    postMessage({ messageType: "backButtonClicked" });
+    sendMessageToHost({ messageType: "backButtonClicked" });
 }
 
 // For now anyway, this refers to the Android bottom navigation bar
 export function showNavBar() {
-    postMessage({ messageType: "showNavBar" });
+    sendMessageToHost({ messageType: "showNavBar" });
 }
 export function hideNavBar() {
-    postMessage({ messageType: "hideNavBar" });
+    sendMessageToHost({ messageType: "hideNavBar" });
 }
 
 export function logError(logMessage: string) {
-    postMessage({ messageType: "logError", message: logMessage });
+    sendMessageToHost({ messageType: "logError", message: logMessage });
 }
 
 let externalControlCallback: ((data: any) => void) | null = null;
@@ -90,7 +93,7 @@ let capabilitiesCallback: ((data: any) => void) | null = null;
 
 function requestCapabilitiesOnce(callback: (data: any) => void) {
     capabilitiesCallback = callback;
-    postMessage({ messageType: "requestCapabilities" });
+    sendMessageToHost({ messageType: "requestCapabilities" });
 }
 
 // Request the container to report what it's capable of doing.

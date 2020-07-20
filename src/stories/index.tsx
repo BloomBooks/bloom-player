@@ -31,6 +31,26 @@ const initiallyShowAppBar = () =>
 const paused = () => booleanKnob("Paused", false, KNOB_TABS.PROPS) as boolean;
 const useOriginalPageSize = () =>
     booleanKnob("Original page size", false, KNOB_TABS.PROPS) as boolean;
+const showExtraButtons = () =>
+    booleanKnob("Show extra buttons", false, KNOB_TABS.PROPS) as boolean;
+
+// Setting one of these as the ParentProxy of the window allows us to receive
+// messages BP usually sends to a host window, without actually embedding it in an iframe.
+class MessageReceiver {
+    // data is what would be the data property of the event in a host window
+    public receiveMessage(data: string) {
+        try {
+            const r = JSON.parse(data);
+            if (r.messageType === "takePhoto") {
+                alert("photo taken");
+            } else if (r.messageType === "fullScreen") {
+                alert("full screen request");
+            }
+        } catch (err) {
+            console.log(`Got error with message: ${err}`);
+        }
+    }
+}
 
 function AddBloomPlayerStory(
     label: string,
@@ -44,6 +64,26 @@ function AddBloomPlayerStory(
         button("Pause", pause, KNOB_TABS.EXTERNAL);
         button("Resume", resume, KNOB_TABS.EXTERNAL);
         button("Play", play, KNOB_TABS.EXTERNAL);
+        const extraButtons = showExtraButtons()
+            ? [
+                  {
+                      id: "takePhoto",
+                      iconUrl:
+                          "https://img.icons8.com/plasticine/100/000000/camera.png",
+                      description: "take a photo!"
+                  },
+                  {
+                      id: "fullScreen",
+                      iconUrl:
+                          "https://s3.amazonaws.com/share.bloomlibrary.org/assets/Ic_fullscreen_48px_red.svg",
+                      description: "go to full screen"
+                  }
+              ]
+            : undefined;
+        if (extraButtons) {
+            // we're not making a real iframe, so we have to simulate receiving the message
+            (window as any).ParentProxy = new MessageReceiver();
+        }
         return (
             <BloomPlayerControls
                 showBackButton={showBackButtonKnob}
@@ -54,6 +94,7 @@ function AddBloomPlayerStory(
                 locationOfDistFolder={"/dist/"}
                 initialLanguageCode={languageCode}
                 useOriginalPageSize={useOriginalPageSize()}
+                extraButtons={extraButtons}
             />
         );
     });

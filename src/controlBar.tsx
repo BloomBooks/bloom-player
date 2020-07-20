@@ -32,8 +32,16 @@ import Language from "@material-ui/icons/Language";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
+import { sendMessageToHost } from "./externalContext";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
+
+export interface IExtraButton {
+    id: string; // passed as messageType param to postMessage when button is clicked
+    iconUrl: string; // URL for displaying the button icon
+    description?: string; // title to show with the icon; also aria attribute
+    // enhance as needed: location:"farRight|nearRight|farLeft"; // default: farRight
+}
 
 interface IControlBarProps {
     visible: boolean; // will slide into / out of view based on this
@@ -44,6 +52,7 @@ interface IControlBarProps {
     canGoBack: boolean;
     bookLanguages: LangData[];
     onLanguageChanged: (language: string) => void;
+    extraButtons?: IExtraButton[];
 }
 
 export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
@@ -66,6 +75,22 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     ) : (
         <PauseCircleOutline />
     );
+
+    const extraButtons = props.extraButtons
+        ? props.extraButtons.map(eb => (
+              <IconButton
+                  key={eb.id}
+                  color="secondary"
+                  title={eb.description}
+                  onClick={() => sendMessageToHost({ messageType: eb.id })}
+              >
+                  <img
+                      style={{ maxHeight: "24px", maxWidth: "24px" }}
+                      src={eb.iconUrl}
+                  />
+              </IconButton>
+          ))
+        : undefined;
 
     return (
         <AppBar
@@ -118,6 +143,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 >
                     {props.showPlayPause ? playOrPause : null}
                 </IconButton>
+                {extraButtons}
             </Toolbar>
         </AppBar>
     );
