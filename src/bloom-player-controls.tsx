@@ -9,9 +9,10 @@ import {
     showNavBar,
     hideNavBar,
     reportBookProperties,
-    setExternalControlCallback
+    setExternalControlCallback,
+    logError
 } from "./externalContext";
-import { ControlBar } from "./controlBar";
+import { ControlBar, IExtraButton } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
 import React, { useState, useEffect } from "react";
@@ -37,6 +38,7 @@ interface IProps {
     // the server to be able to serve sample books from a directory that isn't in dist/,
     // e.g. src/activity-starter/
     locationOfDistFolder: string;
+    extraButtons?: IExtraButton[];
 }
 
 // This logic is not straightforward...
@@ -405,6 +407,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 onLanguageChanged={(isoCode: string) =>
                     handleLanguageChanged(isoCode)
                 }
+                extraButtons={props.extraButtons}
             />
             <BloomPlayerCore
                 url={props.url}
@@ -474,11 +477,29 @@ export function getBooleanUrlParam(
 ): boolean {
     return getUrlParam(paramName, defaultValue ? "true" : "false") === "true";
 }
+
+// The content of the extraButtons url param should be a string, created like:
+// const extraButtonsObj = [{id:"fullScreen",
+//    iconUrl: "https://s3.amazonaws.com/share.bloomlibrary.org/assets/Ic_fullscreen_48px_red.svg",
+//    description: "full screen"}];
+// extraButtonsParam = "extraButtons=" + encodeURIComponent(JSON.stringify(extraButtonsObj));
+function getExtraButtons(): IExtraButton[] {
+    const ebStringEncoded = getUrlParam("extraButtons");
+    const ebString = decodeURIComponent(ebStringEncoded);
+    try {
+        return JSON.parse(ebString) as IExtraButton[];
+    } catch (e) {
+        console.error(e);
+        logError(
+            "error decoding extraButtons param " + ebStringEncoded + ": " + e
+        );
+        return [];
+    }
+}
 // a bit goofy...we need some way to get react called when this code is loaded into an HTML
 // document (as part of bloomPlayerControlBundle.js). When that module is loaded, any
-// not-in-a-class code gets called. So we arrange here for a bit of it to turn any element
-// with class bloom-player-controls into a React element of that type.
-
+// not-in-a-class code gets called. So we arrange in bloom-player-root.ts to call this
+// function which turns the element with id 'root' into a BloomPlayerControls.
 export function InitBloomPlayerControls() {
     ReactDOM.render(
         <ThemeProvider theme={theme}>
@@ -501,6 +522,7 @@ export function InitBloomPlayerControls() {
                     "useOriginalPageSize",
                     false
                 )}
+                extraButtons={getExtraButtons()}
             />
         </ThemeProvider>,
         document.getElementById("root")
