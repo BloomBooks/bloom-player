@@ -49,6 +49,11 @@ export default class Narration {
         if (page) {
             this.playerPage = page;
         }
+        const mediaPlayer = this.getPlayer();
+        if (mediaPlayer) {
+            mediaPlayer.pause();
+            mediaPlayer.currentTime = 0;
+        }
 
         // Sorted into the order we want to play them, then reversed so we
         // can more conveniently pop the next one to play from the end of the stack.
@@ -237,9 +242,9 @@ export default class Narration {
     // Equivalent of removeAudioCurrentFromPageDocBody() in BloomDesktop.
     private removeAudioCurrent() {
         // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
-        const audioCurrentCollection: HTMLCollectionOf<
-            Element
-        > = document.getElementsByClassName("ui-audioCurrent");
+        const audioCurrentCollection: HTMLCollectionOf<Element> = document.getElementsByClassName(
+            "ui-audioCurrent"
+        );
 
         // Convert to an array whose length won't be changed
         const audioCurrentArray: Element[] = Array.from(audioCurrentCollection);
