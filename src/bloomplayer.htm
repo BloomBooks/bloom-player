@@ -9,4 +9,6 @@
     <body>
         <div id="root">Loading Bloom Player...</div>
     </body>
+    <!-- At build time, we insert a script tag pointing at bloomPlayer.min.js but with a hash created at build time,
+        to avoid getting a stale version from a cache (while allowing us to cache it for a long time). -->
 </html>
