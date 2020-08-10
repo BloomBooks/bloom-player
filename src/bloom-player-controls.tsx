@@ -24,7 +24,7 @@ import LangData from "./langData";
 // for testing the BloomPlayer narration functions.
 
 interface IProps {
-    url: string; // url of the bloom book (folder)
+    unencodedUrl: string; // url of the bloom book (folder)
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
@@ -195,8 +195,11 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         let localMaxPageDimension = maxPageDimension;
         let localAspectRatio = pageAspectRatio;
         const pageClass = BloomPlayerCore.getPageSizeClass(page);
-        if (props.url !== previousUrl || pageClass !== previousPageClass) {
-            setPreviousUrl(props.url);
+        if (
+            props.unencodedUrl !== previousUrl ||
+            pageClass !== previousPageClass
+        ) {
+            setPreviousUrl(props.unencodedUrl);
             setPreviousPageClass(pageClass);
             // Some other one-time stuff:
             // Arrange for this to keep being called when the window size changes.
@@ -410,7 +413,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 extraButtons={props.extraButtons}
             />
             <BloomPlayerCore
-                url={props.url}
+                url={props.unencodedUrl}
                 landscape={windowLandscape}
                 showContextPages={props.showContextPages}
                 paused={paused}
@@ -455,27 +458,48 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     );
 };
 
-export function getUrlParam(paramName: string, defaultValue?: any): string {
-    const vars = {}; // deceptive, we don't change the ref, but do change the content
+export function getQueryStringParam(
+    paramName: string,
+    defaultValue?: any
+): string {
+    // const values = {}; // deceptive, we don't change the ref, but do change the content
     //  if this runs into edge cases, try an npm library like https://www.npmjs.com/package/qs
-    window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m, key, value) => {
-        vars[key] = value;
-        return "";
-    });
+    // window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, (m, key, value) => {
+    //     vars[key] = value;
+    //     return "";
+    // });
+
+    const values = parseUriComponent(window.location.href);
     if (
         defaultValue !== undefined &&
-        (vars[paramName] === undefined || vars[paramName] === null)
+        (values[paramName] === undefined || values[paramName] === null)
     ) {
         return defaultValue;
     }
-    return vars[paramName];
+    return values[paramName];
+}
+function parseUriComponent(str): object {
+    return (str + "")
+        .replace(/\+/g, " ")
+        .split("&")
+        .filter(Boolean)
+        .reduce((values, item) => {
+            const ref = item.split("=");
+            const key = decodeURIComponent(ref[0] || "");
+            const val = decodeURIComponent(ref[1] || "");
+            values[key] = val;
+            return values;
+        }, {});
 }
 
 export function getBooleanUrlParam(
     paramName: string,
     defaultValue: boolean
 ): boolean {
-    return getUrlParam(paramName, defaultValue ? "true" : "false") === "true";
+    return (
+        getQueryStringParam(paramName, defaultValue ? "true" : "false") ===
+        "true"
+    );
 }
 
 // The content of the extraButtons url param should be a string, created like:
@@ -484,7 +508,7 @@ export function getBooleanUrlParam(
 //    description: "full screen"}];
 // extraButtonsParam = "extraButtons=" + encodeURIComponent(JSON.stringify(extraButtonsObj));
 function getExtraButtons(): IExtraButton[] {
-    const ebStringEncoded = getUrlParam("extraButtons");
+    const ebStringEncoded = getQueryStringParam("extraButtons");
     const ebString = decodeURIComponent(ebStringEncoded);
     try {
         return JSON.parse(ebString) as IExtraButton[];
@@ -504,7 +528,7 @@ export function InitBloomPlayerControls() {
     ReactDOM.render(
         <ThemeProvider theme={theme}>
             <BloomPlayerControls
-                url={getUrlParam("url")}
+                unencodedUrl={getQueryStringParam("url")}
                 allowToggleAppBar={getBooleanUrlParam(
                     "allowToggleAppBar",
                     false
@@ -515,7 +539,7 @@ export function InitBloomPlayerControls() {
                     true
                 )}
                 centerVertically={getBooleanUrlParam("centerVertically", true)}
-                initialLanguageCode={getUrlParam("lang")}
+                initialLanguageCode={getQueryStringParam("lang")}
                 paused={false}
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(

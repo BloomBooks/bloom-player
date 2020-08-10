@@ -54,7 +54,7 @@ class MessageReceiver {
 
 function AddBloomPlayerStory(
     label: string,
-    url: string,
+    unencodedUrl: string,
     languageCode?: string
 ) {
     stories.add(label, () => {
@@ -90,7 +90,7 @@ function AddBloomPlayerStory(
                 initiallyShowAppBar={initiallyShowAppBar()}
                 allowToggleAppBar={allowToggleAppBar()}
                 paused={paused()}
-                url={url}
+                unencodedUrl={unencodedUrl}
                 locationOfDistFolder={"/dist/"}
                 initialLanguageCode={languageCode}
                 useOriginalPageSize={useOriginalPageSize()}

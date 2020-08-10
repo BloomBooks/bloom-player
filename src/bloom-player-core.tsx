@@ -264,9 +264,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 // Note, The current best practice is actually to have the htm file always be "index.htm".
                 // Most (all?) bloom-player hosts are already looking for that, then looking for a name
-                // matching the zip file's name, then going with the first
+                // matching the zip file's name, then going with the first.
                 const haveFullPath = filename.endsWith(".htm");
-                let urlOfBookHtmlFile = haveFullPath
+                const urlOfBookHtmlFile = haveFullPath
                     ? this.sourceUrl
                     : this.sourceUrl + "/" + filename + ".htm";
 
@@ -386,7 +386,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         const localFileMissing =
             axiosError.config &&
             axiosError.config.url &&
-            axiosError.config.url.startsWith("file:///");
+            axiosError.config.url.startsWith("file://");
         if (localFileMissing || axiosError.message.indexOf("404") >= 0) {
             msg = "<p>This book (or some part of it) was not found.<p>";
             if (axiosError.config && axiosError.config.url) {
