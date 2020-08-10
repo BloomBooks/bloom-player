@@ -458,7 +458,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     );
 };
 
-export function getQueryStringParam(
+export function getQueryStringParamAndUnencode(
     paramName: string,
     defaultValue?: any
 ): string {
@@ -497,8 +497,10 @@ export function getBooleanUrlParam(
     defaultValue: boolean
 ): boolean {
     return (
-        getQueryStringParam(paramName, defaultValue ? "true" : "false") ===
-        "true"
+        getQueryStringParamAndUnencode(
+            paramName,
+            defaultValue ? "true" : "false"
+        ) === "true"
     );
 }
 
@@ -508,7 +510,7 @@ export function getBooleanUrlParam(
 //    description: "full screen"}];
 // extraButtonsParam = "extraButtons=" + encodeURIComponent(JSON.stringify(extraButtonsObj));
 function getExtraButtons(): IExtraButton[] {
-    const ebStringEncoded = getQueryStringParam("extraButtons");
+    const ebStringEncoded = getQueryStringParamAndUnencode("extraButtons");
     const ebString = decodeURIComponent(ebStringEncoded);
     try {
         return JSON.parse(ebString) as IExtraButton[];
@@ -528,7 +530,7 @@ export function InitBloomPlayerControls() {
     ReactDOM.render(
         <ThemeProvider theme={theme}>
             <BloomPlayerControls
-                unencodedUrl={getQueryStringParam("url")}
+                unencodedUrl={getQueryStringParamAndUnencode("url")}
                 allowToggleAppBar={getBooleanUrlParam(
                     "allowToggleAppBar",
                     false
@@ -539,7 +541,7 @@ export function InitBloomPlayerControls() {
                     true
                 )}
                 centerVertically={getBooleanUrlParam("centerVertically", true)}
-                initialLanguageCode={getQueryStringParam("lang")}
+                initialLanguageCode={getQueryStringParamAndUnencode("lang")}
                 paused={false}
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(
