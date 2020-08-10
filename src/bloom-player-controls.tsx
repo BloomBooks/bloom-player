@@ -469,7 +469,7 @@ export function getQueryStringParamAndUnencode(
     //     return "";
     // });
 
-    const values = parseUriComponent(window.location.href);
+    const values = parseUriComponent(window.location.search);
     if (
         defaultValue !== undefined &&
         (values[paramName] === undefined || values[paramName] === null)
@@ -478,8 +478,9 @@ export function getQueryStringParamAndUnencode(
     }
     return values[paramName];
 }
-function parseUriComponent(str): object {
-    return (str + "")
+function parseUriComponent(searchPortionOfLocation: string): object {
+    const afterQuestionMark = searchPortionOfLocation.substring(1);
+    return afterQuestionMark
         .replace(/\+/g, " ")
         .split("&")
         .filter(Boolean)
