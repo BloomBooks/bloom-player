@@ -24,6 +24,8 @@ import IconButton from "@material-ui/core/IconButton";
 //tslint:disable-next-line:no-submodule-imports
 import ArrowBack from "@material-ui/icons/ArrowBack";
 //tslint:disable-next-line:no-submodule-imports
+import MoreHoriz from "@material-ui/icons/MoreHoriz";
+//tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 //tslint:disable-next-line:no-submodule-imports
 import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
@@ -101,7 +103,15 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
             position="relative" // Keeps the AppBar from floating
         >
             <Toolbar>
-                {props.canGoBack && (
+                {// The logic here is:
+                // - Bloom reader: window === window.top, canGoBack true => Arrow
+                // - Bloom Library, came from detail view: don't need a button at all,
+                // (use browser back button), canGoBack will be passed false.
+                // - Bloom library, not from detail view: canGoBack is true, but not really going back;
+                // it will go to detail view ("more") which in this case is not 'back'.
+                // We may eventually want separate canShowMore and moreClicked props
+                // but for now it feels like more complication than we need.
+                props.canGoBack && (
                     <IconButton
                         color="secondary"
                         onClick={() => {
@@ -110,7 +120,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             }
                         }}
                     >
-                        <ArrowBack />
+                        {window === window.top ? <ArrowBack /> : <MoreHoriz />}
                     </IconButton>
                 )}
                 <div
