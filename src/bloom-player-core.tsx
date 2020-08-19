@@ -1108,6 +1108,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.outsideButtonPageClass) {
             // there's room for buttons outside the page; show them.
             bloomPlayerClass += " " + this.props.outsideButtonPageClass;
+            // Bloom Reader on Android can have states where the page display
+            // area is smaller than the screen area, and the buttons could
+            // display outside the page if needed.
+            // See https://issues.bloomlibrary.org/youtrack/issue/BL-8680.
+            // See also https://issues.bloomlibrary.org/youtrack/issue/BL-8806.
+            if (showNavigationButtonsEvenOnTouchDevices) {
+                bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
+            }
         } else if (showNavigationButtonsEvenOnTouchDevices) {
             bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
         } else if (this.props.hideNextPrevButtons) {
