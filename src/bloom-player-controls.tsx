@@ -28,6 +28,7 @@ interface IProps {
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
+    hideFullScreenButton: boolean;
     centerVertically?: boolean;
     showContextPages?: boolean;
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
@@ -393,6 +394,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         showBackButton,
         initiallyShowAppBar,
         locationOfDistFolder,
+        hideFullScreenButton,
         ...rest
     } = props;
     return (
@@ -410,6 +412,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 onLanguageChanged={(isoCode: string) =>
                     handleLanguageChanged(isoCode)
                 }
+                canShowFullScreen={!props.hideFullScreenButton}
                 extraButtons={props.extraButtons}
             />
             <BloomPlayerCore
@@ -547,6 +550,10 @@ export function InitBloomPlayerControls() {
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(
                     "useOriginalPageSize",
+                    false
+                )}
+                hideFullScreenButton={getBooleanUrlParam(
+                    "hideFullScreenButton",
                     false
                 )}
                 extraButtons={getExtraButtons()}
