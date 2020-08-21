@@ -94,6 +94,11 @@ export default class Narration {
                     return;
                 }
 
+                // Regardless of whether we end up using timingsStr or not,
+                // we should reset this now in case the previous page used it and was still playing
+                // when the user flipped to the next page.
+                this.subElementsWithTimings = [];
+
                 const timingsStr: string | null = element.getAttribute(
                     "data-audioRecordingEndTimes"
                 );
@@ -107,7 +112,6 @@ export default class Narration {
                         childSpanElements.length
                     );
 
-                    this.subElementsWithTimings = [];
                     for (let i = subElementCount - 1; i >= 0; --i) {
                         const durationSecs: number = Number(fields[i]);
                         if (isNaN(durationSecs)) {
