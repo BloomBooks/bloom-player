@@ -28,6 +28,8 @@ const showBackButton = () =>
     booleanKnob("Show Back Button", true, KNOB_TABS.PROPS) as boolean;
 const initiallyShowAppBar = () =>
     booleanKnob("Initially Show App Bar", true, KNOB_TABS.PROPS) as boolean;
+const hideFullScreenButton = () =>
+    booleanKnob("Hide Full Screen Button", false, KNOB_TABS.PROPS) as boolean;
 const paused = () => booleanKnob("Paused", false, KNOB_TABS.PROPS) as boolean;
 const useOriginalPageSize = () =>
     booleanKnob("Original page size", false, KNOB_TABS.PROPS) as boolean;
@@ -71,12 +73,6 @@ function AddBloomPlayerStory(
                       iconUrl:
                           "https://img.icons8.com/plasticine/100/000000/camera.png",
                       description: "take a photo!"
-                  },
-                  {
-                      id: "fullScreen",
-                      iconUrl:
-                          "https://s3.amazonaws.com/share.bloomlibrary.org/assets/Ic_fullscreen_48px_red.svg",
-                      description: "go to full screen"
                   }
               ]
             : undefined;
@@ -92,6 +88,7 @@ function AddBloomPlayerStory(
                 paused={paused()}
                 unencodedUrl={unencodedUrl}
                 locationOfDistFolder={"/dist/"}
+                hideFullScreenButton={hideFullScreenButton()}
                 initialLanguageCode={languageCode}
                 useOriginalPageSize={useOriginalPageSize()}
                 extraButtons={extraButtons}

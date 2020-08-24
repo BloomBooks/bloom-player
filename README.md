@@ -68,6 +68,14 @@ Example: `lang=fr`
 
 Default: none (The initial language will be the vernacular language when the book was published.)
 
+#### hideFullScreenButton
+
+If true, the Full Screen icon button will not appear in the upper right hand corner of the window.  Otherwise, a Full Screen icon button is displayed and allows the user to toggle between full screen and window mode.
+
+Example: `hideFullScreenButton=true`
+
+Default: `false`
+
 # Development
 
 Run `yarn` to get the dependencies.

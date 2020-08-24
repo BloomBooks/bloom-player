@@ -31,6 +31,10 @@ import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
 //tslint:disable-next-line:no-submodule-imports
 import Language from "@material-ui/icons/Language";
+//tslint:disable-next-line:no-submodule-imports
+import Fullscreen from "@material-ui/icons/Fullscreen";
+//tslint:disable-next-line:no-submodule-imports
+import FullscreenExit from "@material-ui/icons/FullscreenExit";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
@@ -50,6 +54,7 @@ interface IControlBarProps {
     paused: boolean;
     pausedChanged?: (b: boolean) => void;
     showPlayPause: boolean;
+    canShowFullScreen: boolean;
     backClicked?: () => void;
     canGoBack: boolean;
     bookLanguages: LangData[];
@@ -69,6 +74,15 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         setLanguageMenuOpen(false);
         if (isoCode !== "") {
             props.onLanguageChanged(isoCode);
+        }
+    };
+
+    const toggleFullScreen = () => {
+        // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API.
+        if (document.fullscreenElement != null) {
+            document.exitFullscreen();
+        } else {
+            document.documentElement.requestFullscreen();
         }
     };
 
@@ -154,6 +168,18 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     {props.showPlayPause ? playOrPause : null}
                 </IconButton>
                 {extraButtons}
+                {document.fullscreenEnabled && props.canShowFullScreen && (
+                    <IconButton
+                        color="secondary"
+                        onClick={() => toggleFullScreen()}
+                    >
+                        {document.fullscreenElement == null ? (
+                            <Fullscreen />
+                        ) : (
+                            <FullscreenExit />
+                        )}
+                    </IconButton>
+                )}
             </Toolbar>
         </AppBar>
     );
