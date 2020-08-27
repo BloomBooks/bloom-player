@@ -150,6 +150,25 @@ export default class Narration {
 
                         console.log("could not play sound: " + reason);
 
+                        if (
+                            reason &&
+                            reason
+                                .toString()
+                                .includes(
+                                    "The play() request was interrupted by a call to pause()."
+                                )
+                        ) {
+                            // We were getting this error Aug 2020. I tried wrapping the line above which calls mediaPlayer.play()
+                            // (currently `promise = medaiPlayer.play();`) in a setTimeout with 0ms. This seemed to fix the bug (with
+                            // landscape books not having audio play initially -- BL-8887). But the root cause was actually that
+                            // we ended up calling playAllSentences twice when the book first loaded.
+                            // I fixed that in bloom-player-core. But I wanted to document the possible setTimeout fix here
+                            // in case this issue ever comes up for a different reason.
+                            console.log(
+                                "See comment in narration.ts for possibly useful information regarding this error."
+                            );
+                        }
+
                         // Don't call removeAudioCurrent() here. The HTMLMediaElement's error handler will call playEnded() and calling removeAudioCurrent() here will mess up playEnded().
                         // this.removeAudioCurrent();
 
