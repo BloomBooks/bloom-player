@@ -1,6 +1,7 @@
 import LiteEvent from "./event";
 import { BloomPlayerCore } from "./bloom-player-core";
-import { sortAudioElements } from "./narrationUtils";
+import { sortAudioElements, ISetHighlightParams } from "./narrationUtils";
+import { SwiperInstance } from "react-id-swiper";
 
 const kSegmentClass = "bloom-highlightSegment";
 const kMinDuration = 3.0; // seconds
@@ -16,6 +17,7 @@ const kAudioSentence = "audio-sentence"; // Even though these can now encompass 
 // let us play until the user interacts with the page.
 export default class Narration {
     public playerPage: HTMLElement;
+    public swiperInstance: SwiperInstance | null = null;
     private paused: boolean = false;
     public urlPrefix: string;
     // The time we started to play the current page (set in computeDuration, adjusted for pauses)
@@ -40,6 +42,10 @@ export default class Narration {
 
     private audioPlayStartTime: number; // milliseconds (since 1970/01/01, from new Date().getTime())
 
+    public setSwiper(newSwiperInstance: SwiperInstance | null) {
+        this.swiperInstance = newSwiperInstance;
+    }
+
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     // As long as there is audio on the page, this method will play it.
     public playAllSentences(page: HTMLElement | null): void {
@@ -54,6 +60,9 @@ export default class Narration {
             mediaPlayer.pause();
             mediaPlayer.currentTime = 0;
         }
+
+        // Reset audioPlayStartTime too, even if there's no audio to play
+        this.audioPlayStartTime = Number.NaN;
 
         // Sorted into the order we want to play them, then reversed so we
         // can more conveniently pop the next one to play from the end of the stack.
@@ -130,7 +139,7 @@ export default class Narration {
 
                 const promise = mediaPlayer.play();
                 this.audioPlayStartTime = new Date().getTime();
-                this.highlightNextSubElement(this.audioPlayStartTime);
+                this.highlightNextSubElement(this.audioPlayStartTime, true);
 
                 // In newer browsers, play() returns a promise which fails
                 // if the browser disobeys the command to play, as some do
@@ -172,6 +181,7 @@ export default class Narration {
     // startTimeInSecs is an optional fallback that will be used in case the currentTime cannot be determined from the audio player element.
     private highlightNextSubElement(
         audioPlayStartTime: number,
+        isFirstSubElement: boolean,
         startTimeInSecs: number = 0
     ) {
         // the item should not be popped off the stack until it's completely done with.
@@ -185,7 +195,11 @@ export default class Narration {
         const element = topTuple[0];
         const endTimeInSecs: number = topTuple[1];
 
-        this.setHighlightTo(element, false);
+        this.setHighlightTo({
+            newElement: element,
+            shouldScrollToElement: true,
+            disableHighlightIfNoAudio: false
+        });
 
         const mediaPlayer: HTMLMediaElement = document.getElementById(
             "bloom-audio-player"
@@ -257,7 +271,11 @@ export default class Narration {
 
         this.subElementsWithTimings.pop();
 
-        this.highlightNextSubElement(audioPlayStartTime, nextStartTimeInSecs);
+        this.highlightNextSubElement(
+            audioPlayStartTime,
+            false,
+            nextStartTimeInSecs
+        );
     }
 
     // Removes the .ui-audioCurrent class from all elements (also ui-audioCurrentImg)
@@ -287,15 +305,32 @@ export default class Narration {
         disableHighlightIfNoAudio: boolean,
         oldElement?: Element | null | undefined
     ) {
-        this.setHighlightTo(newElement, disableHighlightIfNoAudio, oldElement);
+        this.setHighlightTo({
+            newElement,
+            shouldScrollToElement: true, // Always true in bloom-player version
+            disableHighlightIfNoAudio,
+            oldElement
+        });
         this.setSoundFrom(newElement);
     }
 
-    private setHighlightTo(
-        newElement: Element,
-        disableHighlightIfNoAudio: boolean,
-        oldElement?: Element | null | undefined // Optional. Provides some minor optimization if set.
-    ) {
+    private setHighlightTo({
+        newElement,
+        shouldScrollToElement,
+        disableHighlightIfNoAudio,
+        oldElement
+    }: ISetHighlightParams) {
+        // This should happen even if oldElement and newElement are the same.
+        if (shouldScrollToElement) {
+            // Wrap it in a try/catch so that if something breaks with this minor/nice-to-have feature of scrolling,
+            // the main responsibilities of this method can still proceed
+            try {
+                this.scrollElementIntoView(newElement);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         if (oldElement === newElement) {
             // No need to do much, and better not to, so that we can avoid any temporary flashes as the highlight is removed and re-applied
             return;
@@ -335,6 +370,51 @@ export default class Narration {
             if (imgContainer) {
                 imgContainer.classList.add("ui-audioCurrentImg");
             }
+        }
+    }
+
+    // Scrolls an element into view.
+    private scrollElementIntoView(element: Element) {
+        // In Bloom Player, scrollIntoView can interfere with page swipes,
+        // so Bloom Player needs some smarts about when to call it...
+        if (this.isSwipeInProgress()) {
+            // This alternative implementation doesn't use scrollIntoView (Which interferes with swiper).
+            // Since swiping is only active at the beginning (usually while the 1st element is playing)
+            // it should generally be good enough just to reset the scroll of the scroll parent to the top.
+
+            // Assumption: Assumes the editable is the scrollbox.
+            // If this is not the case, you can use JQuery's scrollParent() function or other equivalent
+            const scrollAncestor = this.getEditable(element);
+            if (scrollAncestor) {
+                scrollAncestor.scrollTop = 0;
+            }
+            return;
+        }
+
+        element.scrollIntoView({
+            // Animated instead of sudden
+            behavior: "smooth",
+
+            // "nearest" setting does lots of smarts for us (compared to us deciding when to use "start" or "end")
+            // Seems to reduce unnecessary scrolling compared to start (aka true) or end (aka false).
+            // Refer to https://drafts.csswg.org/cssom-view/#scroll-an-element-into-view,
+            // which seems to imply that it won't do any scrolling if the two relevant edges are already inside.
+            block: "nearest"
+
+            // horizontal alignment is controlled by "inline". We'll leave it as its default ("nearest")
+        });
+    }
+
+    // Returns true if swiping to this page is still in progress.
+    private isSwipeInProgress(): boolean {
+        return this.swiperInstance && this.swiperInstance.animating;
+    }
+
+    private getEditable(element: Element): Element | null {
+        if (element.classList.contains("bloom-editable")) {
+            return element;
+        } else {
+            return element.closest(".bloom-editable"); // Might be null
         }
     }
 

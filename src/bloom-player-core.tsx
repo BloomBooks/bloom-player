@@ -1413,6 +1413,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.paused) {
             return; // shouldn't call when paused
         }
+        this.narration.setSwiper(this.swiperInstance);
         // When we have computed it, this will raise PageDurationComplete,
         // which calls an animation method to start the image animation.
         this.narration.computeDuration(bloomPage);

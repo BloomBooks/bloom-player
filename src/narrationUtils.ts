@@ -1,3 +1,10 @@
+export interface ISetHighlightParams {
+    newElement: Element;
+    shouldScrollToElement: boolean;
+    disableHighlightIfNoAudio?: boolean;
+    oldElement?: Element | null | undefined; // Optional. Provides some minor optimization if set.
+}
+
 // We need to sort these by the tabindex of the containing bloom-translationGroup element.
 // We need a stable sort, which array.sort() does not provide: elements in the same
 // bloom-translationGroup, or where the translationGroup does not have a tabindex,
