@@ -107,6 +107,13 @@ interface IState {
     //toggle the app bar. So we have onTouchStart() set this to true and then set to
     // false in the onClick handler. Sigh.
     ignorePhonyClick: boolean;
+
+    // True if finishUp has completed when isNewBook is true.
+    // I couldn't find any other way to know if the change in the landscape prop
+    // should trigger a load of the current slide. Without this, we were trying
+    // to load the initial slide multiple times when a book was landscape when
+    // it was loaded the first time.
+    isFinishUpForNewBookComplete: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -140,7 +147,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         isLoading: true,
         loadFailed: false,
         loadErrorHtml: "",
-        ignorePhonyClick: false
+        ignorePhonyClick: false,
+
+        isFinishUpForNewBookComplete: false
     };
 
     // The book url we were passed as a URL param.
@@ -338,7 +347,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
 
-            if (prevProps.landscape !== this.props.landscape) {
+            if (
+                this.state.isFinishUpForNewBookComplete &&
+                prevProps.landscape !== this.props.landscape
+            ) {
                 // if there was a rotation, we may need to show the page differently (e.g. Motion books)
                 this.setIndex(this.state.currentSwiperIndex);
                 this.showingPage(this.state.currentSwiperIndex);
@@ -502,6 +514,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // of a rule that the user must interact with the document first.
         if (isNewBook) {
             window.setTimeout(() => {
+                this.setState({ isFinishUpForNewBookComplete: true });
                 this.setIndex(0);
                 this.showingPage(0);
             }, 500);
