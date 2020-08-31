@@ -76,6 +76,22 @@ Example: `hideFullScreenButton=true`
 
 Default: `false`
 
+#### independent
+
+If true, bloom-player reports its own analytics directly to segment.  If false, bloom-player sends messages to its host, and the host is responsible for reporting analytics.
+
+Example: `independent=false`
+
+Default: `true`
+
+#### host
+
+If set, provides a host value for analytics.  If not set, bloom-player attempts to derive a value from the available information if independent is `true` (information can be limited in an iframe) and does nothing otherwise.
+
+Examples: `host=bloomlibrary` or `host=bloomreader` or `host=bloompubviewer` or `host=readingapp` or `host=embed@xyzzy.org`
+
+Default: nothing/undefined ??
+
 # Development
 
 Run `yarn` to get the dependencies.
