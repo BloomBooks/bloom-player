@@ -1368,9 +1368,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // called by narration.ts
     public static storeAudioAnalytics(duration: number): void {
-        if (duration < 0.001) {
+        if (duration < 0.001 || Number.isNaN(duration)) {
             return;
         }
+
         const player = BloomPlayerCore.currentPagePlayer;
         player.bookInteraction.totalAudioDuration += duration;
 

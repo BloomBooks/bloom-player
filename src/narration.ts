@@ -40,7 +40,13 @@ export default class Narration {
     public PageDurationAvailable: LiteEvent<HTMLElement>;
     public PageDuration: number;
 
-    private audioPlayStartTime: number; // milliseconds (since 1970/01/01, from new Date().getTime())
+    // This represents the original time when the audio started. Even if the user presses pause/play, it doesn't change.
+    // This is used to determine whether the page has been changed or not.
+    private audioPlayOriginalStartTime: number | null = null; // milliseconds (since 1970/01/01, from new Date().getTime())
+
+    // This represents the start time of the current playing of the audio. If the user presses pause/play, it will be reset.
+    // This is used for analytics reporting purposes
+    private audioPlayCurrentStartTime: number | null = null; // milliseconds (since 1970/01/01, from new Date().getTime())
 
     public setSwiper(newSwiperInstance: SwiperInstance | null) {
         this.swiperInstance = newSwiperInstance;
@@ -62,7 +68,8 @@ export default class Narration {
         }
 
         // Reset audioPlayStartTime too, even if there's no audio to play
-        this.audioPlayStartTime = Number.NaN;
+        this.audioPlayOriginalStartTime = null;
+        this.audioPlayCurrentStartTime = null;
 
         // Sorted into the order we want to play them, then reversed so we
         // can more conveniently pop the next one to play from the end of the stack.
@@ -138,8 +145,8 @@ export default class Narration {
                 }
 
                 const promise = mediaPlayer.play();
-                this.audioPlayStartTime = new Date().getTime();
-                this.highlightNextSubElement(this.audioPlayStartTime, true);
+                this.audioPlayOriginalStartTime = this.audioPlayCurrentStartTime = new Date().getTime();
+                this.highlightNextSubElement(this.audioPlayOriginalStartTime);
 
                 // In newer browsers, play() returns a promise which fails
                 // if the browser disobeys the command to play, as some do
@@ -174,14 +181,13 @@ export default class Narration {
     }
 
     // Moves the highlight to the next sub-element
-    // audioPlayStartTime: The value of this.audioPlayStartTime at the time when the audio file was started.
-    //     This is used to check in the future if the timeouts we started are still applicable,
-    //     Or if the user has navigated to another page already.
+    // originalStartTime: The value of this.audioPlayOriginalStartTime at the time when the audio file started playing.
+    //     This is used to check in the future if the timeouts we started are still applicable or not
+    //     (e.g. navigating to another page invalidates them).
     //     Note: the timestamp is of the whole audio file, not the start of each of the sub-elements corresponding to that audio file
     // startTimeInSecs is an optional fallback that will be used in case the currentTime cannot be determined from the audio player element.
     private highlightNextSubElement(
-        audioPlayStartTime: number,
-        isFirstSubElement: boolean,
+        originalStartTime: number,
         startTimeInSecs: number = 0
     ) {
         // the item should not be popped off the stack until it's completely done with.
@@ -215,21 +221,21 @@ export default class Narration {
         const durationInSecs = Math.max(endTimeInSecs - currentTimeInSecs, 0.1);
 
         setTimeout(() => {
-            this.onSubElementHighlightTimeEnded(audioPlayStartTime);
+            this.onSubElementHighlightTimeEnded(originalStartTime);
         }, durationInSecs * 1000);
     }
 
     // Handles a timeout indicating that the expected time for highlighting the current subElement has ended.
     // If we've really played to the end of that subElement, highlight the next one (if any).
-    // audioPlayStartTime: The value of this.audioPlayStartTime at the time when the audio file was started.
-    //     This is used to check in the future if the timeouts we started are still applicable,
-    //     Or if the user has navigated to another page already.
+    // originalStartTime: The value of this.audioPlayOriginalStartTime at the time when the audio file started playing.
+    //     This is used to check in the future if the timeouts we started are still applicable or not
+    //     (e.g. navigating to another page invalidates them).
     //     Note: the timestamp is of the whole audio file, not the start of each of the sub-elements corresponding to that audio file
-    private onSubElementHighlightTimeEnded(audioPlayStartTime: number) {
+    private onSubElementHighlightTimeEnded(originalStartTime: number) {
         // Check if the user has changed pages since the original audio for this started playing.
         // Note: Using the timestamp allows us to detect switching to the next page and then back to this page.
         //       Using this.playerPage (HTMLElement) does not detect that.
-        if (audioPlayStartTime !== this.audioPlayStartTime) {
+        if (originalStartTime !== this.audioPlayOriginalStartTime) {
             return;
         }
 
@@ -263,7 +269,7 @@ export default class Narration {
             const minRemainingDurationInSecs =
                 nextStartTimeInSecs - playedDurationInSecs;
             setTimeout(() => {
-                this.onSubElementHighlightTimeEnded(audioPlayStartTime);
+                this.onSubElementHighlightTimeEnded(originalStartTime);
             }, minRemainingDurationInSecs * 1000);
 
             return;
@@ -271,11 +277,7 @@ export default class Narration {
 
         this.subElementsWithTimings.pop();
 
-        this.highlightNextSubElement(
-            audioPlayStartTime,
-            false,
-            nextStartTimeInSecs
-        );
+        this.highlightNextSubElement(originalStartTime, nextStartTimeInSecs);
     }
 
     // Removes the .ui-audioCurrent class from all elements (also ui-audioCurrentImg)
@@ -533,8 +535,11 @@ export default class Narration {
     }
 
     private reportPlayDuration() {
+        if (!this.audioPlayCurrentStartTime) {
+            return;
+        }
         const currentTime = new Date().getTime();
-        const duration = (currentTime - this.audioPlayStartTime) / 1000;
+        const duration = (currentTime - this.audioPlayCurrentStartTime) / 1000;
         BloomPlayerCore.storeAudioAnalytics(duration);
     }
 
@@ -619,7 +624,9 @@ export default class Narration {
         if (this.segments.length && this.getPlayer()) {
             if (this.elementsToPlayConsecutivelyStack.length) {
                 this.getPlayer().play();
-                this.audioPlayStartTime = new Date().getTime();
+
+                // Resuming play. Only currentStartTime needs to be adjusted, but originalStartTime shouldn't be changed.
+                this.audioPlayCurrentStartTime = new Date().getTime();
             } else {
                 // Pressing the play button in this case is triggering a replay of the current page,
                 // so we need to reset the highlighting.
