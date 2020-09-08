@@ -1,5 +1,5 @@
 import { LocalizationUtils } from "./l10n/localizationUtils";
-import { getQueryStringParamAndUnencode } from "./bloom-player-controls";
+import { getQueryStringParamAndUnencode } from "./utilities/urlUtils";
 
 enum BookFeatures {
     talkingBook = "talkingBook",
