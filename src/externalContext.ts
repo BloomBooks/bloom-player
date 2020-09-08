@@ -1,4 +1,10 @@
 import { TransientPageDataSingleton } from "./transientPageData";
+import { getBooleanUrlParam } from "./bloom-player-controls";
+
+import {
+    track,
+    /*useTrack,*/ updateBookProgress
+} from "./bloomPlayerAnalytics";
 
 /* Functions
  * For getting information about our url parameters
@@ -40,11 +46,15 @@ export function setAmbientAnalyticsProperties(properties: any) {
 }
 
 export function reportAnalytics(event: string, properties: any) {
-    sendMessageToHost({
-        messageType: "sendAnalytics",
-        event,
-        params: { ...ambientAnalyticsProps, ...properties }
-    });
+    if (getBooleanUrlParam("independent", true)) {
+        track(event, { ...ambientAnalyticsProps, ...properties });
+    } else {
+        sendMessageToHost({
+            messageType: "sendAnalytics",
+            event,
+            params: { ...ambientAnalyticsProps, ...properties }
+        });
+    }
 }
 
 export function reportBookProperties(properties: any) {
@@ -59,11 +69,15 @@ export function reportBookProperties(properties: any) {
 // this book was read, it will send the latest version of these props.
 // That's why we call this "update" rather than "send".
 export function updateBookProgressReport(event: string, properties: any) {
-    sendMessageToHost({
-        messageType: "updateBookProgressReport",
-        event,
-        params: { ...ambientAnalyticsProps, ...properties }
-    });
+    if (getBooleanUrlParam("independent", true)) {
+        updateBookProgress(event, { ...ambientAnalyticsProps, ...properties });
+    } else {
+        sendMessageToHost({
+            messageType: "updateBookProgressReport",
+            event,
+            params: { ...ambientAnalyticsProps, ...properties }
+        });
+    }
 }
 
 let gotCapabilities = false;

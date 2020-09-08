@@ -1,4 +1,5 @@
 import { LocalizationUtils } from "./l10n/localizationUtils";
+import { getQueryStringParamAndUnencode } from "./bloom-player-controls";
 
 enum BookFeatures {
     talkingBook = "talkingBook",
@@ -81,7 +82,7 @@ export class BookInfo {
     // Some facts about the book will go out with all events.
     // We call these "ambient" properties.
     public getAmbientAnalyticsProps(): any {
-        return {
+        const ambient: any = {
             bookInstanceId: this.bookInstanceId,
             totalNumberedPages: this.totalNumberedPages,
             questionCount: this.questionCount,
@@ -97,6 +98,14 @@ export class BookInfo {
             publisher: this.publisher,
             originalPublisher: this.originalPublisher
         };
+        // BloomLibrary2 and BloomReader both set this query parameter appropriately.
+        const host = getQueryStringParamAndUnencode("host", null);
+        if (host != null) {
+            ambient["host"] = host;
+        } else if (window.location.hostname === "localhost") {
+            ambient["host"] = "testing"; // handles case of testing during development
+        }
+        return ambient;
     }
 
     public getPreferredTranslationLanguages(): string[] {
