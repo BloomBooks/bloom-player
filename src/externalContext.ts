@@ -1,5 +1,5 @@
 import { TransientPageDataSingleton } from "./transientPageData";
-import { getBooleanUrlParam } from "./bloom-player-controls";
+import { getBooleanUrlParam } from "./utilities/urlUtils";
 
 import {
     track,
