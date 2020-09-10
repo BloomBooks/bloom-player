@@ -336,11 +336,28 @@ We just make them follow the main content normally. */
         .swiper-button-prev {
             visibility: hidden;
         }
+        // Reverse the extra scaling on touch devices, since we don't need it if
+        // not showing the buttons. (For more, search for extraScalingForChrome85Bug.)
+        // Basically we're scaling up this box to make up for an extra amount its
+        // parent was scaled down. We can't just make a rule to modify the scaling on
+        // the parent, because the exact amount of scaling there is computed.
+        &.extraScalingForChrome85Bug {
+            .swiper-container {
+                transform: scale(1.11111);
+            }
+        }
     }
     .bloomPlayer.showNavigationButtonsEvenOnTouchDevices {
         .swiper-button-next,
         .swiper-button-prev {
             visibility: visible;
+        }
+        // If we need the buttons, we are back to possibly needing extra scaling
+        // to have room for them. See above and search for extraScalingForChrome85Bug.
+        &.extraScalingForChrome85Bug {
+            .swiper-container {
+                transform: scale(1);
+            }
         }
     }
 }
@@ -486,28 +503,6 @@ body,
 // See https://issues.bloomlibrary.org/youtrack/issue/BL-7452 for details.
 .hidePage ~ * {
     z-index: 1;
-}
-
-// These two rules are hopefully temporary. They work around a bug in Chrome 85.
-// In browsers based on that engine, when the next-page button is overlaid on
-// the page and the window is more than 700px wide, it disappears (BL-8936; see also BL-8944).
-// The workaround is to shrink the swiper-container so that the buttons get
-// drawn outside the page. We only need this if the width is more than 700px
-// (below that, the bug doesn't happen, and screen space is more precious).
-// Also, we only need it if we're actually showing the buttons, which we usually
-// only do on fine-pointer (non-touch) devices. The second rule covers the
-// one case where we show the buttons on coarse-pointer devices.
-@media (min-width: 700px) and (pointer: fine) {
-    .swiper-container {
-        transform: scale(0.9);
-    }
-}
-@media (min-width: 700px) {
-    .bloomPlayer.showNavigationButtonsEvenOnTouchDevices {
-        .swiper-container {
-            transform: scale(0.9);
-        }
-    }
 }
 
 .loadingSpinner {
