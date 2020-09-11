@@ -304,8 +304,20 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             newOutsideButtonPageClass = "largeOutsideButtons";
         } else if (widthMargin > smallNavigationButtonWidth * 2) {
             newOutsideButtonPageClass = "smallOutsideButtons";
+        } else if (window.innerWidth > 587) {
+            // This nasty kludge is to work around a bug in Chrome 85.
+            // In browsers based on that engine, when the next-page button is overlaid on
+            // the page and the window is more than 587px wide, it disappears (BL-8936; see also BL-8944).
+            // The workaround is to shrink the swiper-container so that the buttons get
+            // drawn outside the page. We only need this if the width is more than 587px
+            // (below that, the bug doesn't happen, and screen space is more precious).
+            // Some style rules suppress the shrinking on touch devices except for activity pages,
+            // since we don't need to show the buttons at all.
+            scaleFactor *= 0.9;
+            newOutsideButtonPageClass =
+                "smallOutsideButtons extraScalingForChrome85Bug";
         }
-        if (newOutsideButtonPageClass != outsideButtonPageClass) {
+        if (newOutsideButtonPageClass !== outsideButtonPageClass) {
             setOutsideButtonPageClass(newOutsideButtonPageClass);
         }
 
