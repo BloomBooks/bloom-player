@@ -517,6 +517,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 this.setIndex(0);
                 this.showingPage(0);
+                // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
+                const nextButton = document.getElementsByClassName(
+                    "swiper-button-next"
+                )[0] as HTMLElement;
+                const prevButton = document.getElementsByClassName(
+                    "swiper-button-prev"
+                )[0] as HTMLElement;
+
+                prevButton?.setAttribute("tabindex", "4");
+                nextButton?.setAttribute("tabindex", "5");
+                // The most likely thing the user wants to do next, but also,
+                // we need to focus something in the reader to make the arrow keys
+                // work immediately.
+                nextButton?.focus();
             }, 500);
         }
     }
