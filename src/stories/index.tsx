@@ -56,7 +56,11 @@ class MessageReceiver {
 
 function AddBloomPlayerStory(
     label: string,
-    unencodedUrl: string,
+    // The URL should be a valid, well-formed URL, i.e. one you can copy/paste straight into your browser.
+    // If the URL contains special chars, those should be encoded, but the additional encoding that is needed
+    // to pass this URL into a query parameter of another URL should be decoded.
+    // e.g. "Test #1" should be "src/test %231", not "src/test #1" nor "src%2ftest %231"
+    url: string,
     languageCode?: string
 ) {
     stories.add(label, () => {
@@ -86,7 +90,7 @@ function AddBloomPlayerStory(
                 initiallyShowAppBar={initiallyShowAppBar()}
                 allowToggleAppBar={allowToggleAppBar()}
                 paused={paused()}
-                unencodedUrl={unencodedUrl}
+                url={url}
                 locationOfDistFolder={"/dist/"}
                 hideFullScreenButton={hideFullScreenButton()}
                 initialLanguageCode={languageCode}
@@ -183,5 +187,5 @@ AddBloomPlayerStory(
 AddBloomPlayerStory(
     "Encoding test with # and &",
     // note, I could not test :, /, or ? because they are not allowed as part of the filename anyways.
-    "src/testbook/test #1/test & play#2.htm"
+    "src/testbook/test %231/test %26 play%232.htm"
 );

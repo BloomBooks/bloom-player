@@ -48,7 +48,10 @@ import { BookInteraction } from "./bookInteraction";
 // beside the current one.
 
 interface IProps {
-    url: string; // of the bloom book (folder)
+    // Url of the bloom book (folder). Should be a valid, well-formed URL
+    // e.g. any special chars in the path or book title should be appropriately encoded
+    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
+    url: string;
     landscape: boolean; // whether viewing as landscape or portrait
     showContextPages?: boolean;
     // ``paused`` allows the parent to control pausing of audio. We expect we may supply
@@ -285,8 +288,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
-                const htmlPromise = httpget(urlOfBookHtmlFile);
-                const metadataPromise = httpget(this.fullUrl("meta.json"));
+                const htmlPromise = axios.get(urlOfBookHtmlFile);
+                const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise])
                     .then(result => {
                         const [htmlResult, metadataResult] = result;
@@ -946,7 +949,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // a corresponding woff font in a standard location. We may even be able to pay to
     // provide some fonts there for book previewing that are NOT embeddable.
     private makeFontStylesheet(href: string): void {
-        httpget(href).then(result => {
+        axios.get(href).then(result => {
             let stylesheet = document.getElementById(
                 "fontCssStyleSheet"
             ) as HTMLStyleElement;
@@ -991,7 +994,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (fullHref.endsWith("/fonts.css")) {
                 this.makeFontStylesheet(fullHref);
             } else {
-                promises.push(httpget(fullHref));
+                promises.push(axios.get(fullHref));
             }
         }
         const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
@@ -1459,10 +1462,4 @@ function htmlEncode(str: string): string {
     return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, i => {
         return "&#" + i.charCodeAt(0) + ";";
     });
-}
-
-function httpget(url: string) {
-    // If we have, e.g. "Guitar #1", axios does not encode that #, presumably because it could be an html "anchor".
-    const fixedUrl = url.replace(/#/gi, "%23");
-    return axios.get(fixedUrl);
 }
