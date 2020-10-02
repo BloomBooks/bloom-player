@@ -28,7 +28,11 @@ import {
 // for testing the BloomPlayer narration functions.
 
 interface IProps {
-    unencodedUrl: string; // url of the bloom book (folder)
+    // Url of the bloom book (folder). Should be a valid, well-formed URL
+    // e.g. any special chars in the path or book title should be appropriately encoded using URL (percent) encoding
+    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
+    // (Not "[...]/C#" nor "[...]%2FC%2523", and most certainly not with any XML (entity) encoding)
+    url: string;
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
@@ -200,11 +204,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         let localMaxPageDimension = maxPageDimension;
         let localAspectRatio = pageAspectRatio;
         const pageClass = BloomPlayerCore.getPageSizeClass(page);
-        if (
-            props.unencodedUrl !== previousUrl ||
-            pageClass !== previousPageClass
-        ) {
-            setPreviousUrl(props.unencodedUrl);
+        if (props.url !== previousUrl || pageClass !== previousPageClass) {
+            setPreviousUrl(props.url);
             setPreviousPageClass(pageClass);
             // Some other one-time stuff:
             // Arrange for this to keep being called when the window size changes.
@@ -432,7 +433,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 extraButtons={props.extraButtons}
             />
             <BloomPlayerCore
-                url={props.unencodedUrl}
+                url={props.url}
                 landscape={windowLandscape}
                 showContextPages={props.showContextPages}
                 paused={paused}
@@ -503,7 +504,7 @@ export function InitBloomPlayerControls() {
     ReactDOM.render(
         <ThemeProvider theme={theme}>
             <BloomPlayerControls
-                unencodedUrl={getQueryStringParamAndUnencode("url")}
+                url={getQueryStringParamAndUnencode("url")}
                 allowToggleAppBar={getBooleanUrlParam(
                     "allowToggleAppBar",
                     false
