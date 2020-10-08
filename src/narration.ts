@@ -38,6 +38,7 @@ export default class Narration {
 
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
+    public PlayFailed: LiteEvent<HTMLElement>;
     public PageDuration: number;
 
     // A Session Number that keeps track of each time playAllSentences started.
@@ -194,6 +195,11 @@ export default class Narration {
                         // if (this.Pause) {
                         //     this.Pause.raise();
                         // }
+
+                        // Get all the state (and UI) set correctly again
+                        if (this.PlayFailed) {
+                            this.PlayFailed.raise();
+                        }
                     });
                 }
             }

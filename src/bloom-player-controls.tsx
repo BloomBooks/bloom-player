@@ -451,6 +451,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     reportBookProperties(bookPropsObj);
                 }}
                 controlsCallback={updateLanguagesDataWhenOpeningNewBook}
+                setPausedCallback={p => setPaused(p)}
                 reportPageProperties={pageProps => {
                     setHasAudio(pageProps.hasAudio);
                     setHasMusic(pageProps.hasMusic);
