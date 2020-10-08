@@ -74,6 +74,12 @@ interface IProps {
     // controlsCallback feeds the book's languages up to BloomPlayerControls for the LanguageMenu to use.
     controlsCallback?: (bookLanguages: LangData[]) => void;
 
+    // Allows the core to inform the controls of what our actual play/pause state is.
+    // Currently, we use this when trying to play initially and that playback fails,
+    // usually because the browser doesn't think the user has interacted with the page.
+    // See BL-8864.
+    setPausedCallback?: (paused: boolean) => void;
+
     // Set by BloomPlayerControls -> ControlBar -> LanguageMenu
     // Changing this should modify bloom-visibility-code-on stuff in the DOM.
     activeLanguageCode: string;
@@ -117,6 +123,11 @@ interface IState {
     // to load the initial slide multiple times when a book was landscape when
     // it was loaded the first time.
     isFinishUpForNewBookComplete: boolean;
+
+    // Works in tandem with props.setPausedCallback. If true, we need to call the callback.
+    // True represents a state where we want to be playing but cannot (see setPausedCallback).
+    // We still want to play as soon as we can, which is when the slide changes.
+    isPlayUponPageChange: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -151,8 +162,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         loadFailed: false,
         loadErrorHtml: "",
         ignorePhonyClick: false,
-
-        isFinishUpForNewBookComplete: false
+        isFinishUpForNewBookComplete: false,
+        isPlayUponPageChange: false
     };
 
     // The book url we were passed as a URL param.
@@ -562,6 +573,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.narration = new Narration();
             this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
             this.narration.PageNarrationComplete = new LiteEvent<HTMLElement>();
+            this.narration.PlayFailed = new LiteEvent<HTMLElement>();
             this.animation = new Animation();
             this.narration.PageDurationAvailable.subscribe(pageElement => {
                 this.animation.HandlePageDurationAvailable(
@@ -571,6 +583,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             });
             this.narration.PageNarrationComplete.subscribe(pageElement => {
                 this.HandlePageNarrationComplete(pageElement);
+            });
+            this.narration.PlayFailed.subscribe(() => {
+                this.state.isPlayUponPageChange = true;
+                if (this.props.setPausedCallback) {
+                    this.props.setPausedCallback(true);
+                }
             });
         }
         if (!this.music) {
@@ -1107,8 +1125,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
 
             on: {
-                slideChange: () =>
-                    this.showingPage(this.swiperInstance.activeIndex),
+                slideChange: () => {
+                    if (
+                        this.state.isPlayUponPageChange &&
+                        this.props.setPausedCallback
+                    ) {
+                        this.props.setPausedCallback(false);
+                    }
+                    this.state.isPlayUponPageChange = false;
+
+                    this.showingPage(this.swiperInstance.activeIndex);
+                },
                 slideChangeTransitionStart: () =>
                     this.setIndex(this.swiperInstance.activeIndex)
             },
