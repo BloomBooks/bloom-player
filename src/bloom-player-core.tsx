@@ -69,6 +69,7 @@ interface IProps {
     reportBookProperties?: (properties: {
         landscape: boolean;
         canRotate: boolean;
+        preferredLanguages: string[];
     }) => void;
 
     // controlsCallback feeds the book's languages up to BloomPlayerControls for the LanguageMenu to use.
@@ -224,8 +225,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
             }
-            // contains conditions to limit this to one time only after assembleStyleSheets has completed.
-            this.localizeOnce();
             // also one-time setup; only the first time through
             this.initializeMedia();
 
@@ -322,6 +321,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         )[0];
 
                         this.bookInfo.setSomeBookInfoFromBody(body);
+                        // contains conditions to limit this to one time only after assembleStyleSheets has completed.
+                        // Requires bookInfo data, so we must do it after we initialize that.
+                        this.localizeOnce();
 
                         this.animation.PlayAnimations = this.bookInfo.playAnimations;
 
@@ -463,7 +465,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Informs containing react controls (in the same frame)
                 this.props.reportBookProperties({
                     landscape,
-                    canRotate: this.bookInfo.canRotate
+                    canRotate: this.bookInfo.canRotate,
+                    preferredLanguages: this.bookInfo.getPreferredTranslationLanguages()
                 });
             }
             if (isNewBook) {
@@ -1250,7 +1253,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     focus, but it isn't placed correctly on our buttons for
                     some reason */}
                     <IconButton disableRipple={true}>
-                        <ArrowBack />
+                        <ArrowBack
+                            titleAccess={LocalizationManager.getTranslation(
+                                "Button.Prev",
+                                this.bookInfo.getPreferredTranslationLanguages(),
+                                "Previous Page"
+                            )}
+                        />
                     </IconButton>
                 </div>
                 <div
@@ -1265,7 +1274,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     onTouchStart={() => this.swiperInstance.slideNext()}
                 >
                     <IconButton disableRipple={true}>
-                        <ArrowForward />
+                        <ArrowForward
+                            titleAccess={LocalizationManager.getTranslation(
+                                "Button.Next",
+                                this.bookInfo.getPreferredTranslationLanguages(),
+                                "Next Page"
+                            )}
+                        />
                     </IconButton>
                 </div>
             </div>

@@ -21,6 +21,10 @@ import {
     getQueryStringParamAndUnencode,
     getBooleanUrlParam
 } from "./utilities/urlUtils";
+import { IconButton } from "@material-ui/core";
+//tslint:disable-next-line:no-submodule-imports
+import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
+import { LocalizationManager } from "./l10n/localizationManager";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -58,6 +62,13 @@ interface IProps {
 // * Bloom Reader comes back to the foreground (sending an external "resume" event)
 // * We want to return the user to the state he was in when he left (playing or paused)
 let canExternallyResume: boolean = false;
+
+let keydownFunction = (ev: KeyboardEvent) => {};
+function listenForKeydown(ev: KeyboardEvent) {
+    if (keydownFunction) {
+        keydownFunction(ev);
+    }
+}
 
 export const BloomPlayerControls: React.FunctionComponent<IProps &
     React.HTMLProps<HTMLDivElement>> = props => {
@@ -104,6 +115,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     }, [props.paused]);
 
     const [paused, setPaused] = useState(false);
+    const [browserForcedPaused, setBrowserForcedPaused] = useState(false);
+    const [preferredLanguages, setPreferredLanguages] = useState(["en"]);
     useEffect(() => {
         if (!paused) {
             // When we change from paused to playing, reset this to the initial state (false)
@@ -373,6 +386,44 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             scaleFactor}px; overflow: hidden;}`;
     };
 
+    useEffect(() => {
+        if (browserForcedPaused && !paused) {
+            setBrowserForcedPaused(false); // never show the big play button if not paused!
+        }
+        const root = document.getElementById("root");
+        if (!root) {
+            return; // try again some later render
+        }
+        // We don't want multiple functions listening for keydown
+        // and doing the same thing. AddEventListener will not repeatedly
+        // add the SAME function, but it will add new instances of a local
+        // function. So we make a global, fixed function to use as the
+        // event listener, but here we update what it really does
+        // to use the necessary variables of the current render.
+        // (It ought to be possible to accomplish this by returning a function
+        // that removes the event listener, but I could not make it work
+        // reliably. This would need another solution if we ever had two
+        // instances of this control in the same browser window.)
+        keydownFunction = (ev: KeyboardEvent) => {
+            if (
+                // Space always toggles pause. Right only does it in one
+                // special case, when we're initially showing the big play
+                // button because the browser wouldn't let us play.
+                ev.key === " " ||
+                (ev.key === "ArrowRight" && browserForcedPaused)
+            ) {
+                // space and right-arrow both advance to the next page by
+                // swiper default. To prevent this we need to capture the event
+                // and prevent other handling of it.
+                ev.preventDefault();
+                ev.stopImmediatePropagation();
+                setPaused(!paused);
+                setBrowserForcedPaused(false);
+            }
+        };
+        root.addEventListener("keydown", listenForKeydown, { capture: true });
+    });
+
     const handleLanguageChanged = (newActiveLanguageCode: string): void => {
         if (activeLanguageCode === newActiveLanguageCode) {
             return; // shouldn't happen now; leaving the check to be sure
@@ -406,6 +457,18 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         setLanguageData(bookLanguages);
     };
 
+    const playString = LocalizationManager.getTranslation(
+        "Audio.Play",
+        preferredLanguages,
+        "Play"
+    );
+    const readAloudString = LocalizationManager.getTranslation(
+        "Audio.ReadAloud",
+        preferredLanguages,
+        "Read Aloud"
+    );
+    const playLabel = hasAudio ? readAloudString : playString;
+
     const {
         allowToggleAppBar,
         showBackButton,
@@ -418,11 +481,30 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         <div
         // gives an error when react sees `paused`, which isn't an HtmlElement attribute {...rest} // Allow all standard div props
         >
+            {// If present, this needs to be the very first element so that,
+            // without messing with tabindex, it will be the first thing a
+            // screen reader comes to, since it's the most likely thing for
+            // a blind reader to want to do when it's present.
+            browserForcedPaused && (
+                <div className="bigButtonOverlay">
+                    <IconButton
+                        color="secondary"
+                        onClick={() => {
+                            setBrowserForcedPaused(false);
+                            setPaused(false);
+                        }}
+                    >
+                        <PlayCircleOutline titleAccess={playLabel} />
+                    </IconButton>
+                </div>
+            )}
             <ControlBar
                 canGoBack={props.showBackButton}
                 visible={showAppBar}
                 paused={paused}
                 pausedChanged={(p: boolean) => setPaused(p)}
+                playLabel={playLabel}
+                preferredLanguages={preferredLanguages}
                 backClicked={() => onBackClicked()}
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
@@ -449,9 +531,20 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     // This method uses externalContext which handles both possible contexts:
                     // Android WebView and html iframe
                     reportBookProperties(bookPropsObj);
+                    setPreferredLanguages(bookProps.preferredLanguages);
                 }}
                 controlsCallback={updateLanguagesDataWhenOpeningNewBook}
-                setPausedCallback={p => setPaused(p)}
+                setPausedCallback={p => {
+                    setPaused(p);
+                    if (p) {
+                        // This assumes that the only reason the core control pauses
+                        // play is because the browser wouldn't let us play. If we start
+                        // to have other reasons, such as letting a tap anywhere pause
+                        // things, we'll need to distinguish a human-requested pause
+                        // from a browser-forced one.
+                        setBrowserForcedPaused(true);
+                    }
+                }}
                 reportPageProperties={pageProps => {
                     setHasAudio(pageProps.hasAudio);
                     setHasMusic(pageProps.hasMusic);
