@@ -596,6 +596,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         if (!this.music) {
             this.music = new Music();
+            this.music.PlayFailed = new LiteEvent<HTMLElement>();
+            this.music.PlayFailed.subscribe(() => {
+                this.state.isPlayUponPageChange = true;
+                if (this.props.setPausedCallback) {
+                    this.props.setPausedCallback(true);
+                }
+            });
         }
     }
 
