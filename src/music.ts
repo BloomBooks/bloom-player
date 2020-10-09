@@ -1,9 +1,11 @@
-import { BloomPlayerCore } from "./bloom-player-core";
+import LiteEvent from "./event";
 
 // class Music contains functionality to get background music to play properly in bloom-player
 
 export class Music {
     public urlPrefix: string;
+    public PlayFailed: LiteEvent<HTMLElement>;
+
     private paused: boolean = false;
     private currentPage: HTMLDivElement;
     private playingBackgroundAudio: string; // data-backgroundaudio currently playing
@@ -35,7 +37,7 @@ export class Music {
         if (this.paused) {
             this.getPlayer().pause();
         } else {
-            this.getPlayer().play();
+            this.playerPlay();
         }
     }
 
@@ -43,7 +45,7 @@ export class Music {
         if (!this.currentPage) {
             return;
         }
-        this.getPlayer().play();
+        this.playerPlay();
         this.paused = false;
     }
 
@@ -158,5 +160,29 @@ export class Music {
         // just start playing all over again.
         this.getPlayer().currentTime = 0;
         this.play();
+    }
+
+    private playerPlay() {
+        const promise = this.getPlayer().play();
+
+        // In newer browsers, play() returns a promise which fails
+        // if the browser disobeys the command to play, as some do
+        // if the user hasn't 'interacted' with the page in some
+        // way that makes the browser think they are OK with it
+        // playing audio. In Gecko45, the return value is undefined,
+        // so we mustn't call catch.
+        if (promise && promise.catch) {
+            promise.catch((reason: any) => {
+                console.log("could not play music: " + reason);
+
+                // With some kinds of invalid sound file it keeps trying and plays over and over.
+                this.getPlayer().pause();
+
+                // Get all the state (and UI) set correctly again
+                if (this.PlayFailed) {
+                    this.PlayFailed.raise();
+                }
+            });
+        }
     }
 }
