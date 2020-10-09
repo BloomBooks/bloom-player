@@ -39,6 +39,7 @@ import FullscreenExit from "@material-ui/icons/FullscreenExit";
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
 import { sendMessageToHost } from "./externalContext";
+import { LocalizationManager } from "./l10n/localizationManager";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
@@ -54,6 +55,8 @@ interface IControlBarProps {
     paused: boolean;
     pausedChanged?: (b: boolean) => void;
     showPlayPause: boolean;
+    playLabel: string;
+    preferredLanguages: string[];
     canShowFullScreen: boolean;
     backClicked?: () => void;
     canGoBack: boolean;
@@ -86,10 +89,16 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         }
     };
 
+    const pauseLabel = LocalizationManager.getTranslation(
+        "Audio.Pause",
+        props.preferredLanguages,
+        "Pause"
+    );
+
     const playOrPause = props.paused ? (
-        <PlayCircleOutline />
+        <PlayCircleOutline titleAccess={props.playLabel} />
     ) : (
-        <PauseCircleOutline />
+        <PauseCircleOutline titleAccess={pauseLabel} />
     );
 
     const extraButtons = props.extraButtons
@@ -134,7 +143,23 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             }
                         }}
                     >
-                        {window === window.top ? <ArrowBack /> : <MoreHoriz />}
+                        {window === window.top ? (
+                            <ArrowBack
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.Back",
+                                    props.preferredLanguages,
+                                    "Back"
+                                )}
+                            />
+                        ) : (
+                            <MoreHoriz
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.More",
+                                    props.preferredLanguages,
+                                    "More"
+                                )}
+                            />
+                        )}
                     </IconButton>
                 )}
                 <div
@@ -148,7 +173,13 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             setLanguageMenuOpen(true);
                         }}
                     >
-                        <Language />
+                        <Language
+                            titleAccess={LocalizationManager.getTranslation(
+                                "Button.Language",
+                                props.preferredLanguages,
+                                "Choose Language"
+                            )}
+                        />
                     </IconButton>
                 )}
                 {languageMenuOpen && (
@@ -174,9 +205,21 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         onClick={() => toggleFullScreen()}
                     >
                         {document.fullscreenElement == null ? (
-                            <Fullscreen />
+                            <Fullscreen
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.FullScreen",
+                                    props.preferredLanguages,
+                                    "Full Screen"
+                                )}
+                            />
                         ) : (
-                            <FullscreenExit />
+                            <FullscreenExit
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.ExitFullScreen",
+                                    props.preferredLanguages,
+                                    "Exit Full Screen"
+                                )}
+                            />
                         )}
                     </IconButton>
                 )}

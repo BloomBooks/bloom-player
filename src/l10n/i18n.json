@@ -11,5 +11,35 @@
         "mam": "Ka'yima tnab'il",
         "pbu": "خپله پوهه وګوره",
         "es": "Compruebe su comprensión"
+    },
+    "Audio.Play": {
+        "en": "Play"
+    },
+    "Audio.ReadAloud": {
+        "en": "Read Aloud"
+    },
+    "Audio.Pause": {
+        "en": "Pause"
+    },
+    "Button.Back": {
+        "en": "Back"
+    },
+    "Button.More": {
+        "en": "More"
+    },
+    "Button.FullScreen": {
+        "en": "Full Screen"
+    },
+    "Button.ExitFullScreen": {
+        "en": "Exit Full Screen"
+    },
+    "Button.ChooseLanguage": {
+        "en": "Choose Language"
+    },
+    "Button.Next": {
+        "en": "Next Page"
+    },
+    "Button.Prev": {
+        "en": "Previous Page"
     }
 }

@@ -362,6 +362,31 @@ We just make them follow the main content normally. */
     }
 }
 
+.bigButtonOverlay {
+    position: absolute;
+    // These numbers are tuned to keep it inside the book area,
+    // even when there's a lot of black around it, and a little
+    // towards the top left of center. I have not yet succeeded
+    // in getting the hover shadow to be circular, but decided not
+    // to focus on the problem as JohnH is likely to want to tweak
+    // things anyway. If you mess with this, make sure things work
+    // in landscape as well as portrait.
+    top: 10%;
+    left: 20%;
+    width: 60%;
+    height: 60%;
+    display: flex;
+    z-index: 1;
+    svg {
+        width: 80%;
+        height: 80%;
+        opacity: 50%;
+    }
+    button {
+        width: 80%;
+    }
+}
+
 .bloomPlayer.hideNextPrevButtons {
     .swiper-button-next,
     .swiper-button-prev {

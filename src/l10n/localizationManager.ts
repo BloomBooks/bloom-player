@@ -107,6 +107,15 @@ class LocalizationManagerImplementation {
         }
         return [undefined, undefined];
     }
+
+    public getTranslation(
+        id: string,
+        preferredLanguages: string[],
+        defaultVal: string
+    ): string {
+        const [result] = this.getTranslationAndLanguage(id, preferredLanguages);
+        return result || defaultVal;
+    }
 }
 
 // This is the one instance of this class.
