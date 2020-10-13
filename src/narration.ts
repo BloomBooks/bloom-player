@@ -196,8 +196,15 @@ export default class Narration {
                         //     this.Pause.raise();
                         // }
 
-                        // Get all the state (and UI) set correctly again
-                        if (this.PlayFailed) {
+                        // Get all the state (and UI) set correctly again.
+                        // Not entirely sure about limiting this to NotAllowedError, but that's
+                        // the one kind of play error that is fixed by the user just interacting.
+                        // If there's some other reason we can't play, showing as paused may not
+                        // be useful. See comments on the similar code in music.ts
+                        if (
+                            reason.name === "NotAllowedError" &&
+                            this.PlayFailed
+                        ) {
                             this.PlayFailed.raise();
                         }
                     });
