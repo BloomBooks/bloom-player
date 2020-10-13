@@ -364,19 +364,23 @@ We just make them follow the main content normally. */
 
 .bigButtonOverlay {
     position: absolute;
-    // These numbers are tuned to keep it inside the book area,
-    // even when there's a lot of black around it, and a little
-    // towards the top left of center. I have not yet succeeded
+    // Did a lot of fiddling here to try to get the button centered,
+    // large, and scaling with the book. I have not yet succeeded
     // in getting the hover shadow to be circular, but decided not
     // to focus on the problem as JohnH is likely to want to tweak
     // things anyway. If you mess with this, make sure things work
-    // in landscape as well as portrait.
+    // in landscape as well as portrait and with black bars on
+    // the top as well as the sides and with a very short, wide
+    // viewport.
     top: 10%;
-    left: 20%;
-    width: 60%;
-    height: 60%;
+    left: 10%;
+    bottom: 10%;
+    right: 10%;
+    padding-top: 48px; // same as control bar
     display: flex;
     z-index: 1;
+    justify-content: center;
+    justify-items: center;
     svg {
         width: 80%;
         height: 80%;
@@ -384,6 +388,14 @@ We just make them follow the main content normally. */
     }
     button {
         width: 80%;
+    }
+    .MuiIconButton-label {
+        // without this the icon can overflow vertically, with the button bigger than parent.
+        // But this makes the shadow very tall in some situations.
+        // Seems like max-height should work, but although it produces a .MuiIconButton-label
+        // element which is the same height as using height:, the icon grows vertically as
+        // if the label were much larger, despite being set to preserveAspectRatio="xMidYMid meet"
+        height: 100%;
     }
 }
 
