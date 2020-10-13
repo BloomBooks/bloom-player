@@ -179,7 +179,11 @@ export class Music {
                 this.getPlayer().pause();
 
                 // Get all the state (and UI) set correctly again
-                if (this.PlayFailed) {
+                // Note that we don't want to do this if, for example, we asked the player to play
+                // but hadn't actually configured any music to play, as easily happens when the
+                // user clicks Play but the book has no music. We only want to do it if the thing
+                // stopping us is the lack of user interaction.
+                if (reason.name === "NotAllowedError" && this.PlayFailed) {
                     this.PlayFailed.raise();
                 }
             });
