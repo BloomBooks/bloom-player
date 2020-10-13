@@ -494,7 +494,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                             setPaused(false);
                         }}
                     >
-                        <PlayCircleOutline titleAccess={playLabel} />
+                        <PlayCircleOutline
+                            titleAccess={playLabel}
+                            preserveAspectRatio="xMidYMid meet"
+                        />
                     </IconButton>
                 </div>
             )}
