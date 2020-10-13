@@ -1,5 +1,11 @@
 import LiteEvent from "./event";
 
+interface ISelection {
+    id: number;
+    src: string;
+    volume: string;
+}
+
 // class Music contains functionality to get background music to play properly in bloom-player
 
 export class Music {
@@ -8,23 +14,26 @@ export class Music {
 
     private paused: boolean = false;
     private currentPage: HTMLDivElement;
-    private playingBackgroundAudio: string; // data-backgroundaudio currently playing
-    private playingBackgroundAudioPage: string; // corresponding data-page-number or data-xmatter-page
+    private selectionPlaying: ISelection | undefined;
+    private pageIdToSelectionMap: Map<string, ISelection> = new Map<
+        string,
+        ISelection
+    >();
 
-    public static documentHasMusic(): boolean {
-        return [].slice
-            .call(document.body.getElementsByClassName("bloom-page"))
-            .find((p: HTMLElement) => Music.pageHasMusic(p));
-    }
-
-    public static pageHasMusic(page: HTMLElement): boolean {
-        return page.attributes["data-backgroundaudio"];
+    public pageHasMusic(page: HTMLElement): boolean {
+        return this.pageIdToSelectionMap.has(this.getPageId(page));
     }
 
     public HandlePageVisible(bloomPage: HTMLElement) {
         this.currentPage = bloomPage as HTMLDivElement;
-        if (this.currentPage && Music.pageHasMusic(this.currentPage)) {
+        if (!this.currentPage) {
+            return; // should never happen
+        }
+
+        if (this.pageHasMusic(this.currentPage)) {
             this.listen();
+        } else {
+            this.getPlayer().pause();
         }
     }
 
@@ -57,23 +66,51 @@ export class Music {
         this.paused = true;
     }
 
+    // Create the mapping of pages to music files so we know what to play
+    // no matter how the user gets to the current page.
+    public processAllMusicForBook(pages: HTMLCollectionOf<Element>) {
+        this.pageIdToSelectionMap = new Map<string, ISelection>();
+        let iSelection = -1;
+        let selection: ISelection | undefined;
+        for (let iPage = 0; iPage < pages.length; iPage++) {
+            const page = pages[iPage];
+            // The data-backgroundaudio attribute works like this:
+            // If data-backgroundaudio is present and has a value, that page starts the music;
+            // If data-backgroundaudio is NOT present, that page continues the music;
+            // if data-backgroundaudio is present and has NO value, that page has no music.
+            const attrValue = page.getAttribute("data-backgroundaudio");
+            if (attrValue !== null && attrValue !== "") {
+                // Music starts on this page
+                selection = {
+                    id: ++iSelection,
+                    src: attrValue,
+                    volume: this.getMusicVolume(page)
+                };
+                this.pageIdToSelectionMap.set(this.getPageId(page), selection);
+            } else if (attrValue === null) {
+                if (selection) {
+                    // Music continues on this page
+                    this.pageIdToSelectionMap.set(
+                        this.getPageId(page),
+                        selection
+                    );
+                }
+            } else {
+                // No music on this page
+            }
+        }
+    }
+
+    private getPageId(page: Element): string {
+        return page.getAttribute("id") || "";
+    }
+
     private getPlayer(): HTMLAudioElement {
         let player = document.querySelector(
             "#music-player"
         ) as HTMLAudioElement;
         if (!player) {
             player = document.createElement("audio") as HTMLAudioElement;
-            if (!this.currentPage) {
-                console.log(
-                    "Music.getPlayer() called when currentPage wasn't set."
-                );
-                player.volume = 1;
-            } else {
-                const volume = this.currentPage.attributes[
-                    "data-backgroundaudiovolume"
-                ];
-                player.volume = volume && volume.value ? volume.value : 1;
-            }
             player.setAttribute("id", "music-player");
             document.body.appendChild(player);
 
@@ -83,73 +120,45 @@ export class Music {
         return player as HTMLAudioElement;
     }
 
-    // Gecko has no way of knowing that we've created or modified the audio file,
-    // so it will cache the previous content of the file or
-    // remember if no such file previously existed. So we add a bogus query string
-    // based on the current time so that it asks the server for the file again.
     private setMusicSourceAndVolume(): void {
-        const music = this.currentPage.attributes["data-backgroundaudio"].value;
-        const page = this.getPageNumberOrLabel();
-        if (
-            music === this.playingBackgroundAudio &&
-            page === this.playingBackgroundAudioPage
-        ) {
-            // We've returned to the page that established the currently playing
-            // background audio.  We don't want to reset the audio src because that
-            // starts over from the beginning.  Once started we want a continuous
-            // stream until another source is chosen in the book.  On the other hand,
-            // if the user explicitly uses the same audio file again then presumably
-            // the desire is to start from the beginning again.
+        const selection = this.pageIdToSelectionMap.get(
+            this.getPageId(this.currentPage)
+        );
+        if (selection === undefined) {
+            this.selectionPlaying = undefined;
+            return; // should never happen
+        }
+        if (selection === this.selectionPlaying) {
             return;
         }
+        this.selectionPlaying = selection;
+
+        const music = selection.src;
+        const volume = selection.volume;
+
+        // Gecko has no way of knowing that we've created or modified the audio file,
+        // so it will cache the previous content of the file or
+        // remember if no such file previously existed. So we add a bogus query string
+        // based on the current time so that it asks the server for the file again.
         const url = this.currentMusicUrl(
             music + "?nocache=" + new Date().getTime()
         );
-        // console.log(
-        //     "DEBUG: Music.setMusicSource() src = '" +
-        //         (music ? url : music) +
-        //         "'"
-        // );
         const player = this.getPlayer();
         player.setAttribute("src", music ? url : "");
-        this.playingBackgroundAudio = music;
-        this.playingBackgroundAudioPage = page;
-        const volume = this.getMusicVolume();
         if (volume.length) {
             player.volume = Number(volume);
         }
     }
 
-    private getMusicVolume(): string {
-        if (!this.currentPage) {
+    private getMusicVolume(page: Element): string {
+        if (!page) {
             return "";
         }
-        const volume = this.currentPage.getAttribute(
-            "data-backgroundaudiovolume"
-        );
+        const volume = page.getAttribute("data-backgroundaudiovolume");
         if (!volume) {
             return "";
         }
         return volume;
-    }
-
-    private getPageNumberOrLabel(): string {
-        if (!this.currentPage) {
-            return "";
-        }
-        const dataPageNumber = this.currentPage.getAttribute(
-            "data-page-number"
-        );
-        if (dataPageNumber) {
-            return dataPageNumber;
-        }
-        const dataXmatterPage = this.currentPage.getAttribute(
-            "data-xmatter-page"
-        );
-        if (dataXmatterPage) {
-            return dataXmatterPage;
-        }
-        return "";
     }
 
     private currentMusicUrl(filename: string): string {

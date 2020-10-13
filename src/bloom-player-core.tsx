@@ -453,6 +453,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.bookInfo.questionCount = 0;
             this.activityManager.collectActivityContextForBook(pages);
             this.bookInteraction.clearPagesShown();
+            this.music.processAllMusicForBook(pages);
         }
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
@@ -1422,7 +1423,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Informs containing react controls (in the same frame)
                 this.props.reportPageProperties({
                     hasAudio: this.narration.pageHasAudio(bloomPage),
-                    hasMusic: Music.pageHasMusic(bloomPage),
+                    hasMusic: this.music.pageHasMusic(bloomPage),
                     hasVideo: Video.pageHasVideo(bloomPage)
                 });
             }
