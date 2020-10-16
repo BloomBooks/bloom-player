@@ -267,6 +267,11 @@ export default class Narration {
         if (originalSessionNum !== this.currentAudioSessionNum) {
             return;
         }
+        // Seems to be needed to prevent jumping to the next subelement when not permitted to play by browser.
+        // Not sure why the check below on mediaPlayer.currentTime does not prevent this.
+        if (this.paused) {
+            return;
+        }
 
         const subElementCount = this.subElementsWithTimings.length;
         if (subElementCount <= 0) {
@@ -523,12 +528,21 @@ export default class Narration {
         return this.urlPrefix + "/audio/" + id + ".mp3";
     }
 
+    private playEndedFunction = () => {
+        this.playEnded();
+    };
+
     private getPlayer(): HTMLMediaElement {
-        return this.getAudio("bloom-audio-player", audio => {
-            // if we just pass the function, it has the wrong "this"
-            audio.addEventListener("ended", () => this.playEnded());
-            audio.addEventListener("error", () => this.playEnded());
-        });
+        const audio = this.getAudio("bloom-audio-player", audio => {});
+        // We used to do this in the init call, but sometimes the function didn't get called.
+        // Suspecting that there are cases, maybe just in storybook, where a new instance
+        // of the narration object gets created, but the old audio element still exists.
+        // Make sure the current instance has our end function.
+        // Because it is a fixed function for the lifetime of this object, addEventListener
+        // will not add it repeatedly.
+        audio.addEventListener("ended", this.playEndedFunction);
+        audio.addEventListener("error", this.playEndedFunction);
+        return audio;
     }
 
     public playEnded(): void {
@@ -679,6 +693,8 @@ export default class Narration {
             this.fakeNarrationAborted = false;
             this.fakePageNarrationTimedOut(this.playerPage);
         }
+        // in case we're resuming play, we need a new timout when the current subelement is finished
+        this.highlightNextSubElement(this.currentAudioSessionNum);
     }
 
     public pause() {
