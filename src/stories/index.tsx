@@ -172,6 +172,10 @@ AddBloomPlayerStory(
     "src/sample-dom-activity/Simple Activities.htm"
 );
 AddBloomPlayerStory(
+    "Book with two audio sentences on cover",
+    "https://s3.amazonaws.com/bloomharvest/namitaj%40chetana.org.in/78c7e561-ce24-4e5d-ad0a-6af141d9d0af/bloomdigital%2findex.htm"
+);
+AddBloomPlayerStory(
     "Activity - IFrame - Construct Runtime Game",
     "src/sample-iframe-activity/index.htm"
 );
