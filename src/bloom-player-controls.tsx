@@ -582,11 +582,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 // extraButtonsParam = "extraButtons=" + encodeURIComponent(JSON.stringify(extraButtonsObj));
 function getExtraButtons(): IExtraButton[] {
     const ebStringEncoded = getQueryStringParamAndUnencode("extraButtons");
+    if (!ebStringEncoded) {
+        return []; // if there are none it may well return undefined; don't need spurious errors in console.
+    }
     const ebString = decodeURIComponent(ebStringEncoded);
     try {
         return JSON.parse(ebString) as IExtraButton[];
     } catch (e) {
-        console.error(e);
+        console.error("Failed to parse extra button info " + JSON.stringify(e));
         logError(
             "error decoding extraButtons param " + ebStringEncoded + ": " + e
         );
