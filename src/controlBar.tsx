@@ -82,10 +82,23 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
 
     const toggleFullScreen = () => {
         // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API.
-        if (document.fullscreenElement != null) {
-            document.exitFullscreen();
-        } else {
-            document.documentElement.requestFullscreen();
+        try {
+            // Doc suggests also trying prefixes ms and moz; but I can't find any current browsers that require this
+            if (document.fullscreenElement != null || (document as any).webkitFullscreenElement != null) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if ((document as any).webkitExitFullScreen) {
+                    (document as any).webkitExitFullScreen(); // Safari, maybe Chrome on IOS?
+                }
+            } else {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if ((document.documentElement as any).webkitRequestFullscreen) {
+                    (document.documentElement as any).webkitRequestFullscreen();
+                }
+            }
+        } catch(e) {
+            console.error("RequestFullScreen failed: ",e);
         }
     };
 
