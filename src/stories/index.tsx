@@ -161,6 +161,10 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm",
     "ko"
 );
+AddBloomPlayerStory(
+    "Bilingual book, both recorded",
+    "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
+);
 
 AddBloomPlayerStory(
     "Requires custom font",

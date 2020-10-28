@@ -186,7 +186,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private isPagesLocalized: boolean = false;
 
-    private static currentPage: HTMLElement;
+    private static currentPage: HTMLElement|null;
     private static currentPageIndex: number;
 
     private indexOflastNumberedPage: number;
@@ -550,6 +550,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // work immediately.
                 nextButton?.focus();
             }, 500);
+        } else {
+            if (BloomPlayerCore.currentPage) {
+                // We need to replace the old currentPage with the corresponding one created from the updated content.
+                window.setTimeout(() => {
+                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
+                }, 200);
+            }
         }
     }
 
@@ -636,10 +643,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.paused) {
             this.pauseAllMultimedia();
         } else {
+
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
             if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
-                this.resetForNewPageAndPlay(BloomPlayerCore.currentPage);
+                this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
             }
             this.narration.play();
             this.animation.PlayAnimation();
@@ -1362,7 +1370,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public static getCurrentPage(): HTMLElement {
-        return BloomPlayerCore.currentPage;
+        return BloomPlayerCore.currentPage!;
     }
 
     private isXmatterPage(): boolean {
