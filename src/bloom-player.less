@@ -378,13 +378,17 @@ We just make them follow the main content normally. */
     right: 10%;
     padding-top: 48px; // same as control bar
     display: flex;
-    z-index: 1;
+    z-index: 2;
     justify-content: center;
     justify-items: center;
+    // pass through clicks outside the actual play icon (e.g., on next page button)
+    pointer-events: none;
     svg {
         width: 80%;
         height: 80%;
         opacity: 50%;
+        // But the actual icon wants them
+        pointer-events: all;
     }
     button {
         width: 80%;
@@ -397,6 +401,18 @@ We just make them follow the main content normally. */
         // if the label were much larger, despite being set to preserveAspectRatio="xMidYMid meet"
         height: 100%;
     }
+}
+// This covers the whole page and dims it, to make the bigButtonOverlay more conspicuous.
+.behindBigButtonOverlay {
+    position: absolute;
+    top: 48px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    background-color: black;
+    opacity: 50%;
+    pointer-events: none;
 }
 
 .bloomPlayer.hideNextPrevButtons {
