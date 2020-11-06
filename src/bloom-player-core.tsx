@@ -75,11 +75,14 @@ interface IProps {
     // controlsCallback feeds the book's languages up to BloomPlayerControls for the LanguageMenu to use.
     controlsCallback?: (bookLanguages: LangData[]) => void;
 
-    // Allows the core to inform the controls of what our actual play/pause state is.
-    // Currently, we use this when trying to play initially and that playback fails,
+    // Allows the core to inform the controls that we have been forced to pause.
+    // We use this when trying to play initially and that playback fails,
     // usually because the browser doesn't think the user has interacted with the page.
+    // We set it false if we can detect that the user interacted, e.g., by clicking next.
+    // Though we are no longer forced to be paused, we will stay paused unless the user
+    // indicates he wants sound.
     // See BL-8864.
-    setPausedCallback?: (paused: boolean) => void;
+    setForcedPausedCallback?: (paused: boolean) => void;
 
     // Set by BloomPlayerControls -> ControlBar -> LanguageMenu
     // Changing this should modify bloom-visibility-code-on stuff in the DOM.
@@ -125,10 +128,12 @@ interface IState {
     // it was loaded the first time.
     isFinishUpForNewBookComplete: boolean;
 
-    // Works in tandem with props.setPausedCallback. If true, we need to call the callback.
-    // True represents a state where we want to be playing but cannot (see setPausedCallback).
-    // We still want to play as soon as we can, which is when the slide changes.
-    isPlayUponPageChange: boolean;
+    // Works in tandem with props.setForcedPausedCallback. If true, we need to call the callback
+    // whenever something happens that would end the forced pause.
+    // True represents a state where we wanted to be playing but cannot (see setPausedCallback).
+    // If the user interacts, which we detect as anything that makes us change page,
+    // we're no longer in a FORCED pause, though we may still be paused.
+    inPauseForced: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -164,7 +169,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         loadErrorHtml: "",
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
-        isPlayUponPageChange: false
+        inPauseForced: false
     };
 
     // The book url we were passed as a URL param.
@@ -596,9 +601,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.HandlePageNarrationComplete(pageElement);
             });
             this.narration.PlayFailed.subscribe(() => {
-                this.state.isPlayUponPageChange = true;
-                if (this.props.setPausedCallback) {
-                    this.props.setPausedCallback(true);
+                this.setState({inPauseForced: true});
+                if (this.props.setForcedPausedCallback) {
+                    this.props.setForcedPausedCallback(true);
                 }
             });
         }
@@ -606,9 +611,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.music = new Music();
             this.music.PlayFailed = new LiteEvent<HTMLElement>();
             this.music.PlayFailed.subscribe(() => {
-                this.state.isPlayUponPageChange = true;
-                if (this.props.setPausedCallback) {
-                    this.props.setPausedCallback(true);
+                this.setState({inPauseForced: true});
+                if (this.props.setForcedPausedCallback) {
+                    this.props.setForcedPausedCallback(true);
                 }
             });
         }
@@ -1146,12 +1151,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             on: {
                 slideChange: () => {
                     if (
-                        this.state.isPlayUponPageChange &&
-                        this.props.setPausedCallback
+                        this.state.inPauseForced &&
+                        this.props.setForcedPausedCallback
                     ) {
-                        this.props.setPausedCallback(false);
+                        this.props.setForcedPausedCallback(false);
                     }
-                    this.state.isPlayUponPageChange = false;
+                    this.setState({inPauseForced: false});
 
                     this.showingPage(this.swiperInstance.activeIndex);
                 },

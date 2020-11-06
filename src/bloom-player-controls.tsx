@@ -21,7 +21,7 @@ import {
     getQueryStringParamAndUnencode,
     getBooleanUrlParam
 } from "./utilities/urlUtils";
-import { IconButton } from "@material-ui/core";
+import { createMuiTheme, IconButton } from "@material-ui/core";
 //tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 import { LocalizationManager } from "./l10n/localizationManager";
@@ -477,6 +477,15 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         hideFullScreenButton,
         ...rest
     } = props;
+    // We can do a stylesheet trick to make the icon itself white, but the only way I can find
+    // to also affect the hover shadow is to make a very local theme that just applies to the
+    // overlay button.
+    const bigButtonOverlayTheme = createMuiTheme({
+    palette: {
+        primary: { main: "#000", contrastText: "#FFF" },
+        secondary: { main: "#FFF" }
+    }
+});
     return (
         <div
         // gives an error when react sees `paused`, which isn't an HtmlElement attribute {...rest} // Allow all standard div props
@@ -486,20 +495,25 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             // screen reader comes to, since it's the most likely thing for
             // a blind reader to want to do when it's present.
             browserForcedPaused && (
+                <React.Fragment>
                 <div className="bigButtonOverlay">
-                    <IconButton
-                        color="secondary"
-                        onClick={() => {
-                            setBrowserForcedPaused(false);
-                            setPaused(false);
-                        }}
-                    >
-                        <PlayCircleOutline
-                            titleAccess={playLabel}
-                            preserveAspectRatio="xMidYMid meet"
-                        />
-                    </IconButton>
+                    <ThemeProvider theme={bigButtonOverlayTheme}>
+                        <IconButton
+                            color="secondary"
+                            onClick={() => {
+                                setBrowserForcedPaused(false);
+                                setPaused(false);
+                            }}
+                        >
+                            <PlayCircleOutline
+                                titleAccess={playLabel}
+                                preserveAspectRatio="xMidYMid meet"
+                            />
+                        </IconButton>
+                    </ThemeProvider>
                 </div>
+                <div className= "behindBigButtonOverlay"/>
+                </React.Fragment>
             )}
             <ControlBar
                 canGoBack={props.showBackButton}
@@ -537,15 +551,23 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     setPreferredLanguages(bookProps.preferredLanguages);
                 }}
                 controlsCallback={updateLanguagesDataWhenOpeningNewBook}
-                setPausedCallback={p => {
-                    setPaused(p);
+                setForcedPausedCallback={p => {
                     if (p) {
+                        setPaused(p);
                         // This assumes that the only reason the core control pauses
                         // play is because the browser wouldn't let us play. If we start
                         // to have other reasons, such as letting a tap anywhere pause
                         // things, we'll need to distinguish a human-requested pause
                         // from a browser-forced one.
                         setBrowserForcedPaused(true);
+                    } else {
+                        // We're choosing NOT to end the paused state here. It was a forced
+                        // pause where we would normally auto-play, but now the book is clearly
+                        // in a paused state and it's not obvious that moving to a new page
+                        // should end the pause. The user has several ways to start playback
+                        // if that is wanted. However, we do need to hide the overlays that
+                        // encourage the user to start the narration.
+                        setBrowserForcedPaused(false);
                     }
                 }}
                 reportPageProperties={pageProps => {
