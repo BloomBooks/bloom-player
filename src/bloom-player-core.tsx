@@ -233,28 +233,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // also one-time setup; only the first time through
             this.initializeMedia();
 
-            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
-            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
-            if (
-                // First time after loaded - at this point, we know we are ready to get at the dom
-                (prevState.isLoading && !this.state.isLoading) ||
-                // If the user changes the language code in the picker
-                prevProps.activeLanguageCode !== this.props.activeLanguageCode
-            ) {
-                this.updateDivVisibilityByLangCode();
-                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
-                // If we haven't called it, it will get called subsequently.
-                if (this.finishUpCalled) {
-                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
-                }
-            }
-
             const newSourceUrl = this.preprocessUrl();
             // Inside of Bloom Publish Preview,
             // this will be "" if we should just keep spinning, waiting for a render with different
             // props once the bloomd is created.
 
             if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
+                this.finishUpCalled = false;
                 // We're changing books; reset several variables including isLoading,
                 // until we inform the controls which languages are available.
                 this.setState({ isLoading: true, loadFailed: false });
@@ -365,6 +350,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
                     this.setPageSizeClass(page);
+                }
+            }
+
+            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
+            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
+            if (
+                (!this.state.isLoading) &&
+                // If the user changes the language code in the picker
+                prevProps.activeLanguageCode !== this.props.activeLanguageCode
+            ) {
+                this.updateDivVisibilityByLangCode();
+                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
+                // If we haven't called it, it will get called subsequently.
+                if (this.finishUpCalled) {
+                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
 
@@ -522,47 +522,52 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.controlsCallback(languages);
             }
         }
-        this.assembleStyleSheets(this.htmlElement);
-        // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
-        // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
-        // change it when it is done.
-        this.setState({
-            pages: swiperContent
-        });
-        // A pause hopefully allows the document to become visible before we
-        // start playing any audio or movement on the first page.
-        // Also gives time for the first page
-        // element to actually get created in the document.
-        // Note: typically in Chrome we won't actually start playing, because
-        // of a rule that the user must interact with the document first.
-        if (isNewBook) {
-            window.setTimeout(() => {
-                this.setState({ isFinishUpForNewBookComplete: true });
-                this.setIndex(0);
-                this.showingPage(0);
-                // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
-                const nextButton = document.getElementsByClassName(
-                    "swiper-button-next"
-                )[0] as HTMLElement;
-                const prevButton = document.getElementsByClassName(
-                    "swiper-button-prev"
-                )[0] as HTMLElement;
-
-                prevButton?.setAttribute("tabindex", "4");
-                nextButton?.setAttribute("tabindex", "5");
-                // The most likely thing the user wants to do next, but also,
-                // we need to focus something in the reader to make the arrow keys
-                // work immediately.
-                nextButton?.focus();
-            }, 500);
-        } else {
-            if (BloomPlayerCore.currentPage) {
-                // We need to replace the old currentPage with the corresponding one created from the updated content.
+        this.assembleStyleSheets(this.htmlElement, (combinedStyle) => {
+            // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
+            // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
+            // change it when it is done.
+            console.log("setting state with all data");
+            this.setState({
+                pages: swiperContent,
+                styleRules: combinedStyle,
+                isLoading: false
+            });
+            this.props.pageStylesAreNowInstalled();
+            // A pause hopefully allows the document to become visible before we
+            // start playing any audio or movement on the first page.
+            // Also gives time for the first page element and the buttons we want
+            // to mess with here to actually get created in the document.
+            // Note: typically in Chrome we won't actually start playing, because
+            // of a rule that the user must interact with the document first.
+            if (isNewBook) {
                 window.setTimeout(() => {
-                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
-                }, 200);
+                    this.setState({ isFinishUpForNewBookComplete: true });
+                    this.setIndex(0);
+                    this.showingPage(0);
+                    // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
+                    const nextButton = document.getElementsByClassName(
+                        "swiper-button-next"
+                    )[0] as HTMLElement;
+                    const prevButton = document.getElementsByClassName(
+                        "swiper-button-prev"
+                    )[0] as HTMLElement;
+
+                    prevButton?.setAttribute("tabindex", "4");
+                    nextButton?.setAttribute("tabindex", "5");
+                    // The most likely thing the user wants to do next, but also,
+                    // we need to focus something in the reader to make the arrow keys
+                    // work immediately.
+                    nextButton?.focus();
+                }, 500);
+            } else {
+                if (BloomPlayerCore.currentPage) {
+                    // We need to replace the old currentPage with the corresponding one created from the updated content.
+                    window.setTimeout(() => {
+                        BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
+                    }, 200);
+                }
             }
-        }
+        });
     }
 
     private localizeOnce() {
@@ -582,6 +587,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private initializeMedia() {
         // The conditionals guarantee that each type of media will only be created once.
+        console.log("initializeMedia");
         if (!this.video) {
             this.video = new Video();
         }
@@ -1020,7 +1026,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
     // of the main document, since it contains @font-face declarations that don't work
     // in the <scoped> element.
-    private assembleStyleSheets(doc: HTMLHtmlElement) {
+    private assembleStyleSheets(doc: HTMLHtmlElement, gotStyleSheet: (styles:string) => void) {
         const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
@@ -1086,11 +1092,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         }
                     }
                 });
-                this.setState({
-                    styleRules: combinedStyle,
-                    isLoading: false
-                });
-                this.props.pageStylesAreNowInstalled();
+                gotStyleSheet(combinedStyle);
             })
             .catch(err => this.HandleLoadingError(err));
     }
