@@ -1060,8 +1060,54 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 )
             )
             .then(results => {
-                let combinedStyle = "";
+                const fileUrlOk = this.urlPrefix.startsWith("file:");
+                // The Andika New Basic font might be found already installed. Failing that,
+                // if we're inside BloomReader or RAB, we should be able to get it at the standard
+                // URL for assets embedded in the program. If instead we're embedded in a web
+                // page like BloomLibrary.org, we need to download from the web.
+                // Note that currently that last option will only work when the page origin
+                // is *bloomlibrary.org. This helps limit our exposure to large charges from
+                // people using our font arbitrarily. This does include, however, books
+                // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+                // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
+                // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
+                // we leave it out. This is also why these rules are here rather than in bloom-player.less.
+                let combinedStyle = `
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: normal;
+    src: local("Andika New Basic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff");
+}
 
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: normal;
+    src: local("Andika New Basic Bold"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: italic;
+    src: local("Andika New Basic Italic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: italic;
+    src: local("Andika New Basic Bold Italic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff");
+}`;
                 // start with embedded styles (typically before links in a bloom doc...)
                 const styleElts = doc.ownerDocument!.evaluate(
                     ".//style[@type='text/css']",
