@@ -191,7 +191,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private isPagesLocalized: boolean = false;
 
-    private static currentPage: HTMLElement|null;
+    private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
 
     private indexOflastNumberedPage: number;
@@ -284,9 +284,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                 this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
-                          0,
-                          Math.max(slashIndex, encodedSlashIndex)
-                      )
+                        0,
+                        Math.max(slashIndex, encodedSlashIndex)
+                    )
                     : this.sourceUrl;
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
@@ -532,7 +532,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 styleRules: combinedStyle,
                 isLoading: false
             });
+            //alert("setting state with all data");
             this.props.pageStylesAreNowInstalled();
+            //alert("called pageStylesInstalled");
             // A pause hopefully allows the document to become visible before we
             // start playing any audio or movement on the first page.
             // Also gives time for the first page element and the buttons we want
@@ -607,7 +609,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.HandlePageNarrationComplete(pageElement);
             });
             this.narration.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -617,7 +619,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.music = new Music();
             this.music.PlayFailed = new LiteEvent<HTMLElement>();
             this.music.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -1026,7 +1028,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
     // of the main document, since it contains @font-face declarations that don't work
     // in the <scoped> element.
-    private assembleStyleSheets(doc: HTMLHtmlElement, gotStyleSheet: (styles:string) => void) {
+    private assembleStyleSheets(doc: HTMLHtmlElement, gotStyleSheet: (styles: string) => void) {
         const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
@@ -1204,7 +1206,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ) {
                         this.props.setForcedPausedCallback(false);
                     }
-                    this.setState({inPauseForced: false});
+                    this.setState({ inPauseForced: false });
 
                     this.showingPage(this.swiperInstance.activeIndex);
                 },
@@ -1286,21 +1288,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 {Math.abs(
                                     index - this.state.currentSwiperIndex
                                 ) < 2 ? (
-                                    <>
-                                        <style scoped={true}>
-                                            {this.state.styleRules}
-                                        </style>
-                                        <div
-                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
-                                            dangerouslySetInnerHTML={{
-                                                __html: slide
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    // All other pages are just empty strings
-                                    ""
-                                )}
+                                        <>
+                                            <style scoped={true}>
+                                                {this.state.styleRules}
+                                            </style>
+                                            <div
+                                                className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: slide
+                                                }}
+                                            />
+                                        </>
+                                    ) : (
+                                        // All other pages are just empty strings
+                                        ""
+                                    )}
                             </div>
                         );
                     })}
@@ -1335,7 +1337,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     className={
                         "swiper-button-next" +
                         (this.state.currentSwiperIndex >=
-                        this.state.pages.length - 1
+                            this.state.pages.length - 1
                             ? " swiper-button-disabled"
                             : "")
                     }
