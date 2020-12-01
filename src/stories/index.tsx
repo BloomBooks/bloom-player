@@ -148,6 +148,11 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
+    "Difficult book for IOS",
+    "https://s3.amazonaws.com/share.bloomlibrary.org/debug/9144p2/bloomdigital/index.htm"
+);
+
+AddBloomPlayerStory(
     "Music",
     "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
 );

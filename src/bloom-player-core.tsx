@@ -191,7 +191,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private isPagesLocalized: boolean = false;
 
-    private static currentPage: HTMLElement|null;
+    private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
 
     private indexOflastNumberedPage: number;
@@ -233,28 +233,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // also one-time setup; only the first time through
             this.initializeMedia();
 
-            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
-            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
-            if (
-                // First time after loaded - at this point, we know we are ready to get at the dom
-                (prevState.isLoading && !this.state.isLoading) ||
-                // If the user changes the language code in the picker
-                prevProps.activeLanguageCode !== this.props.activeLanguageCode
-            ) {
-                this.updateDivVisibilityByLangCode();
-                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
-                // If we haven't called it, it will get called subsequently.
-                if (this.finishUpCalled) {
-                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
-                }
-            }
-
             const newSourceUrl = this.preprocessUrl();
             // Inside of Bloom Publish Preview,
             // this will be "" if we should just keep spinning, waiting for a render with different
             // props once the bloomd is created.
 
             if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
+                this.finishUpCalled = false;
                 // We're changing books; reset several variables including isLoading,
                 // until we inform the controls which languages are available.
                 this.setState({ isLoading: true, loadFailed: false });
@@ -299,9 +284,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                 this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
-                          0,
-                          Math.max(slashIndex, encodedSlashIndex)
-                      )
+                        0,
+                        Math.max(slashIndex, encodedSlashIndex)
+                    )
                     : this.sourceUrl;
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
@@ -365,6 +350,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
                     this.setPageSizeClass(page);
+                }
+            }
+
+            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
+            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
+            if (
+                (!this.state.isLoading) &&
+                // If the user changes the language code in the picker
+                prevProps.activeLanguageCode !== this.props.activeLanguageCode
+            ) {
+                this.updateDivVisibilityByLangCode();
+                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
+                // If we haven't called it, it will get called subsequently.
+                if (this.finishUpCalled) {
+                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
 
@@ -522,47 +522,51 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.controlsCallback(languages);
             }
         }
-        this.assembleStyleSheets(this.htmlElement);
-        // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
-        // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
-        // change it when it is done.
-        this.setState({
-            pages: swiperContent
-        });
-        // A pause hopefully allows the document to become visible before we
-        // start playing any audio or movement on the first page.
-        // Also gives time for the first page
-        // element to actually get created in the document.
-        // Note: typically in Chrome we won't actually start playing, because
-        // of a rule that the user must interact with the document first.
-        if (isNewBook) {
-            window.setTimeout(() => {
-                this.setState({ isFinishUpForNewBookComplete: true });
-                this.setIndex(0);
-                this.showingPage(0);
-                // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
-                const nextButton = document.getElementsByClassName(
-                    "swiper-button-next"
-                )[0] as HTMLElement;
-                const prevButton = document.getElementsByClassName(
-                    "swiper-button-prev"
-                )[0] as HTMLElement;
-
-                prevButton?.setAttribute("tabindex", "4");
-                nextButton?.setAttribute("tabindex", "5");
-                // The most likely thing the user wants to do next, but also,
-                // we need to focus something in the reader to make the arrow keys
-                // work immediately.
-                nextButton?.focus();
-            }, 500);
-        } else {
-            if (BloomPlayerCore.currentPage) {
-                // We need to replace the old currentPage with the corresponding one created from the updated content.
+        this.assembleStyleSheets(this.htmlElement, (combinedStyle) => {
+            // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
+            // we get them, so we wait for the results and then make all the state changes in one go
+            // to minimize renderings.
+            this.setState({
+                pages: swiperContent,
+                styleRules: combinedStyle,
+                isLoading: false
+            });
+            this.props.pageStylesAreNowInstalled();
+            // A pause hopefully allows the document to become visible before we
+            // start playing any audio or movement on the first page.
+            // Also gives time for the first page element and the buttons we want
+            // to mess with here to actually get created in the document.
+            // Note: typically in Chrome we won't actually start playing, because
+            // of a rule that the user must interact with the document first.
+            if (isNewBook) {
                 window.setTimeout(() => {
-                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
-                }, 200);
+                    this.setState({ isFinishUpForNewBookComplete: true });
+                    this.setIndex(0);
+                    this.showingPage(0);
+                    // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
+                    const nextButton = document.getElementsByClassName(
+                        "swiper-button-next"
+                    )[0] as HTMLElement;
+                    const prevButton = document.getElementsByClassName(
+                        "swiper-button-prev"
+                    )[0] as HTMLElement;
+
+                    prevButton?.setAttribute("tabindex", "4");
+                    nextButton?.setAttribute("tabindex", "5");
+                    // The most likely thing the user wants to do next, but also,
+                    // we need to focus something in the reader to make the arrow keys
+                    // work immediately.
+                    nextButton?.focus();
+                }, 500);
+            } else {
+                if (BloomPlayerCore.currentPage) {
+                    // We need to replace the old currentPage with the corresponding one created from the updated content.
+                    window.setTimeout(() => {
+                        BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
+                    }, 200);
+                }
             }
-        }
+        });
     }
 
     private localizeOnce() {
@@ -582,6 +586,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private initializeMedia() {
         // The conditionals guarantee that each type of media will only be created once.
+        console.log("initializeMedia");
         if (!this.video) {
             this.video = new Video();
         }
@@ -601,7 +606,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.HandlePageNarrationComplete(pageElement);
             });
             this.narration.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -611,7 +616,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.music = new Music();
             this.music.PlayFailed = new LiteEvent<HTMLElement>();
             this.music.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -1020,7 +1025,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
     // of the main document, since it contains @font-face declarations that don't work
     // in the <scoped> element.
-    private assembleStyleSheets(doc: HTMLHtmlElement) {
+    private assembleStyleSheets(doc: HTMLHtmlElement, gotStyleSheet: (styles: string) => void) {
         const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
@@ -1054,8 +1059,54 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 )
             )
             .then(results => {
-                let combinedStyle = "";
+                const fileUrlOk = this.urlPrefix.startsWith("file:");
+                // The Andika New Basic font might be found already installed. Failing that,
+                // if we're inside BloomReader or RAB, we should be able to get it at the standard
+                // URL for assets embedded in the program. If instead we're embedded in a web
+                // page like BloomLibrary.org, we need to download from the web.
+                // Note that currently that last option will only work when the page origin
+                // is *bloomlibrary.org. This helps limit our exposure to large charges from
+                // people using our font arbitrarily. This does include, however, books
+                // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+                // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
+                // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
+                // we leave it out. This is also why these rules are here rather than in bloom-player.less.
+                let combinedStyle = `
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: normal;
+    src: local("Andika New Basic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff");
+}
 
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: normal;
+    src: local("Andika New Basic Bold"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: normal;
+    font-style: italic;
+    src: local("Andika New Basic Italic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff");
+}
+
+@font-face {
+    font-family: "Andika New Basic";
+    font-weight: bold;
+    font-style: italic;
+    src: local("Andika New Basic Bold Italic"),
+        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),' : ''}
+        url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff");
+}`;
                 // start with embedded styles (typically before links in a bloom doc...)
                 const styleElts = doc.ownerDocument!.evaluate(
                     ".//style[@type='text/css']",
@@ -1086,11 +1137,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         }
                     }
                 });
-                this.setState({
-                    styleRules: combinedStyle,
-                    isLoading: false
-                });
-                this.props.pageStylesAreNowInstalled();
+                gotStyleSheet(combinedStyle);
             })
             .catch(err => this.HandleLoadingError(err));
     }
@@ -1156,7 +1203,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ) {
                         this.props.setForcedPausedCallback(false);
                     }
-                    this.setState({inPauseForced: false});
+                    this.setState({ inPauseForced: false });
 
                     this.showingPage(this.swiperInstance.activeIndex);
                 },
@@ -1238,21 +1285,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 {Math.abs(
                                     index - this.state.currentSwiperIndex
                                 ) < 2 ? (
-                                    <>
-                                        <style scoped={true}>
-                                            {this.state.styleRules}
-                                        </style>
-                                        <div
-                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
-                                            dangerouslySetInnerHTML={{
-                                                __html: slide
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    // All other pages are just empty strings
-                                    ""
-                                )}
+                                        <>
+                                            <style scoped={true}>
+                                                {this.state.styleRules}
+                                            </style>
+                                            <div
+                                                className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: slide
+                                                }}
+                                            />
+                                        </>
+                                    ) : (
+                                        // All other pages are just empty strings
+                                        ""
+                                    )}
                             </div>
                         );
                     })}
@@ -1287,7 +1334,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     className={
                         "swiper-button-next" +
                         (this.state.currentSwiperIndex >=
-                        this.state.pages.length - 1
+                            this.state.pages.length - 1
                             ? " swiper-button-disabled"
                             : "")
                     }
