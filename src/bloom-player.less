@@ -292,16 +292,6 @@ We just make them follow the main content normally. */
         .swiper-button-prev {
             visibility: hidden;
         }
-        // Reverse the extra scaling on touch devices, since we don't need it if
-        // not showing the buttons. (For more, search for extraScalingForChrome85Bug.)
-        // Basically we're scaling up this box to make up for an extra amount its
-        // parent was scaled down. We can't just make a rule to modify the scaling on
-        // the parent, because the exact amount of scaling there is computed.
-        &.extraScalingForChrome85Bug {
-            .swiper-container {
-                transform: scale(1.11111);
-            }
-        }
     }
     .bloomPlayer.showNavigationButtonsEvenOnTouchDevices {
         .swiper-button-next,

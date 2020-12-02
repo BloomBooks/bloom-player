@@ -352,6 +352,17 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             // as defined in bloom-player.less.
             let newOutsideButtonPageClass = "";
 
+            let leftMargin = Math.max(
+                (winWidth - pageWidth * scaleFactor) / 2,
+                0
+            );
+
+            // We may need to adjust scaleFactor and leftMargin to leave extra space for buttons;
+            // see below. But on touch devices we usually don't need buttons and can use the
+            // unadjusted values. Save them before adjusting.
+            const leftMarginDevice = leftMargin;
+            const scaleFactorDevice = scaleFactor;
+
             // should match that defined in bloom-player.less
             const smallNavigationButtonWidth = 30;
             const largeNavigationButtonWidth = 100;
@@ -370,6 +381,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 // Some style rules suppress the shrinking on touch devices except for activity pages,
                 // since we don't need to show the buttons at all.
                 scaleFactor *= 0.9;
+                leftMargin = Math.max(
+                    (winWidth - pageWidth * scaleFactor) / 2,
+                    0
+                );
                 newOutsideButtonPageClass =
                     "smallOutsideButtons extraScalingForChrome85Bug";
             }
@@ -377,10 +392,6 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 setOutsideButtonPageClass(newOutsideButtonPageClass);
             }
 
-            const leftMargin = Math.max(
-                (winWidth - pageWidth * scaleFactor) / 2,
-                0
-            );
             // OK, this is a bit tricky.
             // First, we want to scale the whole bloomPlayer control by the scaleFactor we just computed
             // (relative to the top left). That's the two 'transform' rules.
@@ -404,7 +415,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             let translateString = "";
             if (doVerticalCentering) {
                 const amountToMoveDown =
-                    (winHeight - actualPageHeight) / 2 - controlsHeight; // don't count controlsHeight in what we move down
+                    (winHeight - actualPageHeight - controlsHeight) / 2; // don't count controlsHeight in what we move down
                 if (amountToMoveDown > 0) {
                     translateString = `translate(0, ${amountToMoveDown.toFixed(
                         0
@@ -423,6 +434,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             transform-origin: left top 0;
             transform: ${translateString}scale(${scaleFactor});
             margin-left: ${leftMargin}px;
+        }
+        @media (pointer: coarse) {
+            .bloomPlayer.extraScalingForChrome85Bug:not(.showNavigationButtonsEvenOnTouchDevices) {
+                margin-left:${leftMarginDevice}px;
+                transform: ${translateString}scale(${scaleFactorDevice});
+            }
         }
         .bloomPlayer-page {height: ${actualPageHeight /
                 scaleFactor}px; overflow: hidden;}`;
