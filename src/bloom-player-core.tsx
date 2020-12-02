@@ -40,6 +40,8 @@ import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQui
 import { CircularProgress } from "@material-ui/core";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
+import OverlayScrollbars from "overlayscrollbars";
+import "./overlayScrollbars-bloom.css"; // The CSS for the OverlayScrollbars plugin. This is a modified version for bloom-player that fixes CSS conflicts due to specificity.
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -1147,6 +1149,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance = s;
             },
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
+            touchStartPreventDefault: false,    // If true, would prevent the default, which would cause overlayScrollbars not to receive mousedown events.
 
             on: {
                 slideChange: () => {
@@ -1455,6 +1458,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance.keyboard.disable();
             } else {
                 this.swiperInstance.keyboard.enable();
+            }
+
+            const options = OverlayScrollbars.defaultOptions();
+
+            // Ignore the cover page, the title one doesn't work well..
+            // ENHANCE: Figure out why it sets the title height to 0 when you attach OverlayScrolbars to it.
+            if (!bloomPage.classList.contains("cover")) {
+                // Ignore editables that are under a bloom-textOverPicture... This isn't working too well for them right now.
+                // The ignored ones are comic bubbles.  Comic bubbles usually shouldn't need a scrollbar because the size auto-grows in Bloom,
+                // so the only way you're supposed to be able to get an overflow is if the there is if the bubble can't grow anymore
+                // (because it's already reached the bottom of the image container).
+                const editables = bloomPage.querySelectorAll(":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on");
+                OverlayScrollbars(editables, options);
             }
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
     }

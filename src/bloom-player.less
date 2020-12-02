@@ -212,6 +212,18 @@ We just make them follow the main content normally. */
         }
     }
 
+    // Make it so the text isn't selectable
+    // (This was added because when we set swiper's touchStartPreventDefault to false,
+    // the clicks were allowed to go through again and a double-click on text was capable of selecting it)
+    .bloom-editable {
+        -ms-user-select:none;
+        -moz-user-select:none;
+        -webkit-user-select:none;
+        -webkit-touch-callout: none;
+        -khtml-user-select: none;
+        user-select:none;
+    }
+
     // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
     // However this can actually make stuff that used to fit stop fitting.
     // Where "line-height:normal" is ok, it largely fixes it. But just imposing that everywhere
@@ -221,7 +233,7 @@ We just make them follow the main content normally. */
     // 1) In the interior we are conservative and just let scrolls appear, even at the risk of sometimes showing one
     // (and thus pushing something off the bottom that would otherwise have been visible):
     .bloom-editable.bloom-visibility-code-on {
-        overflow-y: auto !important; // unfortunately this needs !important to override 2 basePage.less rules
+        overflow-y: hidden !important; // unfortunately this needs !important to override 2 basePage.less rules
     }
     // it would be more elegant to embed this rule in the one above, but I can't figure out
     // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
