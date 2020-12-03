@@ -191,7 +191,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private isPagesLocalized: boolean = false;
 
-    private static currentPage: HTMLElement|null;
+    private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
 
     private indexOflastNumberedPage: number;
@@ -233,28 +233,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // also one-time setup; only the first time through
             this.initializeMedia();
 
-            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
-            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
-            if (
-                // First time after loaded - at this point, we know we are ready to get at the dom
-                (prevState.isLoading && !this.state.isLoading) ||
-                // If the user changes the language code in the picker
-                prevProps.activeLanguageCode !== this.props.activeLanguageCode
-            ) {
-                this.updateDivVisibilityByLangCode();
-                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
-                // If we haven't called it, it will get called subsequently.
-                if (this.finishUpCalled) {
-                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
-                }
-            }
-
             const newSourceUrl = this.preprocessUrl();
             // Inside of Bloom Publish Preview,
             // this will be "" if we should just keep spinning, waiting for a render with different
             // props once the bloomd is created.
 
             if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
+                this.finishUpCalled = false;
                 // We're changing books; reset several variables including isLoading,
                 // until we inform the controls which languages are available.
                 this.setState({ isLoading: true, loadFailed: false });
@@ -299,9 +284,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                 this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
-                          0,
-                          Math.max(slashIndex, encodedSlashIndex)
-                      )
+                        0,
+                        Math.max(slashIndex, encodedSlashIndex)
+                    )
                     : this.sourceUrl;
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
@@ -365,6 +350,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
                     this.setPageSizeClass(page);
+                }
+            }
+
+            // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
+            // on the initial pass. But the complexity was overwhelming, so we settled for what works.
+            if (
+                (!this.state.isLoading) &&
+                // If the user changes the language code in the picker
+                prevProps.activeLanguageCode !== this.props.activeLanguageCode
+            ) {
+                this.updateDivVisibilityByLangCode();
+                // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
+                // If we haven't called it, it will get called subsequently.
+                if (this.finishUpCalled) {
+                    this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
 
@@ -441,7 +441,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // to retrieve questions.json and either get it and convert it into extra pages,
     // or fail to get it and make no changes.
     // We also call this method when changing the language, but we only want it to update the swiper content
-    private finishUp(isNewBook: boolean = true) {
+    private async finishUp(isNewBook: boolean = true) {
         this.finishUpCalled = true;
 
         // assemble the page content list
@@ -522,17 +522,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.controlsCallback(languages);
             }
         }
-        this.assembleStyleSheets(this.htmlElement);
-        // assembleStyleSheets takes a while, fetching stylesheets. So even though we're letting
-        // the dom start getting loaded here, we'll leave state.isLoading as true and let assembleStyleSheets
-        // change it when it is done.
+        const combinedStyle = await this.assembleStyleSheets(this.htmlElement);
+        // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
+        // we get them, so we wait for the results and then make all the state changes in one go
+        // to minimize renderings. (Because all this is happening asynchronously, not within the
+        // original componentDidUpdate method call, each setState results in an immediate render.)
         this.setState({
-            pages: swiperContent
+            pages: swiperContent,
+            styleRules: combinedStyle,
+            isLoading: false
         });
+        this.props.pageStylesAreNowInstalled();
         // A pause hopefully allows the document to become visible before we
         // start playing any audio or movement on the first page.
-        // Also gives time for the first page
-        // element to actually get created in the document.
+        // Also gives time for the first page element and the buttons we want
+        // to mess with here to actually get created in the document.
         // Note: typically in Chrome we won't actually start playing, because
         // of a rule that the user must interact with the document first.
         if (isNewBook) {
@@ -601,7 +605,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.HandlePageNarrationComplete(pageElement);
             });
             this.narration.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -611,7 +615,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.music = new Music();
             this.music.PlayFailed = new LiteEvent<HTMLElement>();
             this.music.PlayFailed.subscribe(() => {
-                this.setState({inPauseForced: true});
+                this.setState({ inPauseForced: true });
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
@@ -1015,12 +1019,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     // Assemble all the style rules from all the stylesheets the book contains or references.
-    // When we finish (not before this method returns), the result will be set as
-    // our state.styles with setState().
+    // When the async completes, the result will be set as our state.styles with setState().
     // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
     // of the main document, since it contains @font-face declarations that don't work
     // in the <scoped> element.
-    private assembleStyleSheets(doc: HTMLHtmlElement) {
+    private async assembleStyleSheets(doc: HTMLHtmlElement): Promise<string> {
         const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
@@ -1044,55 +1047,103 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             promises.push(p);
         }
 
-        axios
-            .all(
-                promises.map(promise =>
-                    promise.catch(
-                        // if one stylesheet doesn't exist or whatever, keep going
-                        () => undefined
+        try {
+            const results = await axios
+                .all(
+                    promises.map(promise =>
+                        promise.catch(
+                            // if one stylesheet doesn't exist or whatever, keep going
+                            () => undefined
+                        )
                     )
-                )
-            )
-            .then(results => {
-                let combinedStyle = "";
-
-                // start with embedded styles (typically before links in a bloom doc...)
-                const styleElts = doc.ownerDocument!.evaluate(
-                    ".//style[@type='text/css']",
-                    doc,
-                    null,
-                    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                    null
                 );
-                for (let k = 0; k < styleElts.snapshotLength; k++) {
-                    const styleElt = styleElts.snapshotItem(k) as HTMLElement;
-                    combinedStyle += styleElt.innerText;
+
+            const fileUrlOk = this.urlPrefix.startsWith("file:");
+            // The Andika New Basic font might be found already installed. Failing that,
+            // if we're inside BloomReader or RAB, we should be able to get it at the standard
+            // URL for assets embedded in the program. If instead we're embedded in a web
+            // page like BloomLibrary.org, we need to download from the web.
+            // Note that currently that last option will only work when the page origin
+            // is *bloomlibrary.org. This helps limit our exposure to large charges from
+            // people using our font arbitrarily. This does include, however, books
+            // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+            // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
+            // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
+            // we leave it out. This is also why these rules are here rather than in bloom-player.less.
+            // (If we ARE on Android, we shouldn't need the web url, so in the interestes of
+            // failing fast if anything goes wrong with loading the font from the android asset
+            // folder, we leave it out in that case.)
+            let combinedStyle = `
+                @font-face {
+                    font-family: "Andika New Basic";
+                    font-weight: normal;
+                    font-style: normal;
+                    src: local("Andika New Basic"),
+                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),'
+                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'};
                 }
 
-                // then add the stylesheet contents we just retrieved
-                results.forEach(result => {
-                    if (result && result.data) {
-                        combinedStyle += result.data;
+                @font-face {
+                    font-family: "Andika New Basic";
+                    font-weight: bold;
+                    font-style: normal;
+                    src: local("Andika New Basic Bold"),
+                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),'
+                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'};
+                }
 
-                        // It is somewhat awkward to do this in a method called assembleStyleSheets,
-                        // but this is the best way to access the information currently.
-                        // See further comments in getNationalLanguagesFromCssStyles.
-                        if (
-                            result.config!.url!.endsWith(
-                                "/settingsCollectionStyles.css"
-                            )
-                        ) {
-                            this.bookInfo.setLanguage2And3(result.data);
-                        }
+                @font-face {
+                    font-family: "Andika New Basic";
+                    font-weight: normal;
+                    font-style: italic;
+                    src: local("Andika New Basic Italic"),
+                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),'
+                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'};
+                }
+
+                @font-face {
+                    font-family: "Andika New Basic";
+                    font-weight: bold;
+                    font-style: italic;
+                    src: local("Andika New Basic Bold Italic"),
+                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
+                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'};
+                }`;
+            // start with embedded styles (typically before links in a bloom doc...)
+            const styleElts = doc.ownerDocument!.evaluate(
+                ".//style[@type='text/css']",
+                doc,
+                null,
+                XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                null
+            );
+            for (let k = 0; k < styleElts.snapshotLength; k++) {
+                const styleElt = styleElts.snapshotItem(k) as HTMLElement;
+                combinedStyle += styleElt.innerText;
+            }
+
+            // then add the stylesheet contents we just retrieved
+            results.forEach(result => {
+                if (result && result.data) {
+                    combinedStyle += result.data;
+
+                    // It is somewhat awkward to do this in a method called assembleStyleSheets,
+                    // but this is the best way to access the information currently.
+                    // See further comments in getNationalLanguagesFromCssStyles.
+                    if (
+                        result.config!.url!.endsWith(
+                            "/settingsCollectionStyles.css"
+                        )
+                    ) {
+                        this.bookInfo.setLanguage2And3(result.data);
                     }
-                });
-                this.setState({
-                    styleRules: combinedStyle,
-                    isLoading: false
-                });
-                this.props.pageStylesAreNowInstalled();
-            })
-            .catch(err => this.HandleLoadingError(err));
+                }
+            });
+            return combinedStyle;
+        } catch (err) {
+            this.HandleLoadingError(err);
+            return "";
+        };
     }
 
     private fullUrl(url: string | null): string {
@@ -1156,7 +1207,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ) {
                         this.props.setForcedPausedCallback(false);
                     }
-                    this.setState({inPauseForced: false});
+                    this.setState({ inPauseForced: false });
 
                     this.showingPage(this.swiperInstance.activeIndex);
                 },
@@ -1238,21 +1289,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 {Math.abs(
                                     index - this.state.currentSwiperIndex
                                 ) < 2 ? (
-                                    <>
-                                        <style scoped={true}>
-                                            {this.state.styleRules}
-                                        </style>
-                                        <div
-                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
-                                            dangerouslySetInnerHTML={{
-                                                __html: slide
-                                            }}
-                                        />
-                                    </>
-                                ) : (
-                                    // All other pages are just empty strings
-                                    ""
-                                )}
+                                        <>
+                                            <style scoped={true}>
+                                                {this.state.styleRules}
+                                            </style>
+                                            <div
+                                                className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
+                                                dangerouslySetInnerHTML={{
+                                                    __html: slide
+                                                }}
+                                            />
+                                        </>
+                                    ) : (
+                                        // All other pages are just empty strings
+                                        ""
+                                    )}
                             </div>
                         );
                     })}
@@ -1287,7 +1338,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     className={
                         "swiper-button-next" +
                         (this.state.currentSwiperIndex >=
-                        this.state.pages.length - 1
+                            this.state.pages.length - 1
                             ? " swiper-button-disabled"
                             : "")
                     }

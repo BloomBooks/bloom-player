@@ -149,67 +149,71 @@ export default class Narration {
                 ++this.currentAudioSessionNum;
                 this.audioPlayCurrentStartTime = new Date().getTime();
                 this.highlightNextSubElement(this.currentAudioSessionNum);
-
-                // In newer browsers, play() returns a promise which fails
-                // if the browser disobeys the command to play, as some do
-                // if the user hasn't 'interacted' with the page in some
-                // way that makes the browser think they are OK with it
-                // playing audio. In Gecko45, the return value is undefined,
-                // so we mustn't call catch.
-                if (promise && promise.catch) {
-                    promise.catch((reason: any) => {
-                        // There is an error handler here, but the HTMLMediaElement also has an error handler (which will end up calling playEnded()).
-                        // This promise.catch error handler is the only one that handles NotAllowedException (that is, playback not started because user has not interacted with the page yet).
-                        // However, older versions of browsers don't support promise from HTMLMediaElement.play(). So this cannot be the only error handler.
-                        // Thus we need both the promise.catch error handler as well as the HTMLMediaElement's error handler.
-                        //
-                        // In many cases (such as NotSupportedError, which happens when the audio file isn't found), both error handlers will run.
-                        // That is a little annoying but if the two don't conflict with each other it's not problematic.
-
-                        console.log("could not play sound: " + reason);
-
-                        if (
-                            reason &&
-                            reason
-                                .toString()
-                                .includes(
-                                    "The play() request was interrupted by a call to pause()."
-                                )
-                        ) {
-                            // We were getting this error Aug 2020. I tried wrapping the line above which calls mediaPlayer.play()
-                            // (currently `promise = medaiPlayer.play();`) in a setTimeout with 0ms. This seemed to fix the bug (with
-                            // landscape books not having audio play initially -- BL-8887). But the root cause was actually that
-                            // we ended up calling playAllSentences twice when the book first loaded.
-                            // I fixed that in bloom-player-core. But I wanted to document the possible setTimeout fix here
-                            // in case this issue ever comes up for a different reason.
-                            console.log(
-                                "See comment in narration.ts for possibly useful information regarding this error."
-                            );
-                        }
-
-                        // Don't call removeAudioCurrent() here. The HTMLMediaElement's error handler will call playEnded() and calling removeAudioCurrent() here will mess up playEnded().
-                        // this.removeAudioCurrent();
-
-                        // With some kinds of invalid sound file it keeps trying and plays over and over.
-                        this.getPlayer().pause();
-                        // if (this.Pause) {
-                        //     this.Pause.raise();
-                        // }
-
-                        // Get all the state (and UI) set correctly again.
-                        // Not entirely sure about limiting this to NotAllowedError, but that's
-                        // the one kind of play error that is fixed by the user just interacting.
-                        // If there's some other reason we can't play, showing as paused may not
-                        // be useful. See comments on the similar code in music.ts
-                        if (
-                            reason.name === "NotAllowedError" &&
-                            this.PlayFailed
-                        ) {
-                            this.PlayFailed.raise();
-                        }
-                    });
-                }
+                this.handlePlayPromise(promise);
             }
+        }
+    }
+
+    private handlePlayPromise(promise: Promise<void>) {
+
+        // In newer browsers, play() returns a promise which fails
+        // if the browser disobeys the command to play, as some do
+        // if the user hasn't 'interacted' with the page in some
+        // way that makes the browser think they are OK with it
+        // playing audio. In Gecko45, the return value is undefined,
+        // so we mustn't call catch.
+        if (promise && promise.catch) {
+            promise.catch((reason: any) => {
+                // There is an error handler here, but the HTMLMediaElement also has an error handler (which will end up calling playEnded()).
+                // This promise.catch error handler is the only one that handles NotAllowedException (that is, playback not started because user has not interacted with the page yet).
+                // However, older versions of browsers don't support promise from HTMLMediaElement.play(). So this cannot be the only error handler.
+                // Thus we need both the promise.catch error handler as well as the HTMLMediaElement's error handler.
+                //
+                // In many cases (such as NotSupportedError, which happens when the audio file isn't found), both error handlers will run.
+                // That is a little annoying but if the two don't conflict with each other it's not problematic.
+
+                console.log("could not play sound: " + reason);
+
+                if (
+                    reason &&
+                    reason
+                        .toString()
+                        .includes(
+                            "The play() request was interrupted by a call to pause()."
+                        )
+                ) {
+                    // We were getting this error Aug 2020. I tried wrapping the line above which calls mediaPlayer.play()
+                    // (currently `promise = medaiPlayer.play();`) in a setTimeout with 0ms. This seemed to fix the bug (with
+                    // landscape books not having audio play initially -- BL-8887). But the root cause was actually that
+                    // we ended up calling playAllSentences twice when the book first loaded.
+                    // I fixed that in bloom-player-core. But I wanted to document the possible setTimeout fix here
+                    // in case this issue ever comes up for a different reason.
+                    console.log(
+                        "See comment in narration.ts for possibly useful information regarding this error."
+                    );
+                }
+
+                // Don't call removeAudioCurrent() here. The HTMLMediaElement's error handler will call playEnded() and calling removeAudioCurrent() here will mess up playEnded().
+                // this.removeAudioCurrent();
+
+                // With some kinds of invalid sound file it keeps trying and plays over and over.
+                this.getPlayer().pause();
+                // if (this.Pause) {
+                //     this.Pause.raise();
+                // }
+
+                // Get all the state (and UI) set correctly again.
+                // Not entirely sure about limiting this to NotAllowedError, but that's
+                // the one kind of play error that is fixed by the user just interacting.
+                // If there's some other reason we can't play, showing as paused may not
+                // be useful. See comments on the similar code in music.ts
+                if (
+                    reason.name === "NotAllowedError" &&
+                    this.PlayFailed
+                ) {
+                    this.PlayFailed.raise();
+                }
+            });
         }
     }
 
@@ -519,8 +523,8 @@ export default class Narration {
         player.setAttribute(
             "src",
             this.currentAudioUrl(this.currentAudioId) +
-                "?nocache=" +
-                new Date().getTime()
+            "?nocache=" +
+            new Date().getTime()
         );
     }
 
@@ -533,7 +537,7 @@ export default class Narration {
     };
 
     private getPlayer(): HTMLMediaElement {
-        const audio = this.getAudio("bloom-audio-player", audio => {});
+        const audio = this.getAudio("bloom-audio-player", audio => { });
         // We used to do this in the init call, but sometimes the function didn't get called.
         // Suspecting that there are cases, maybe just in storybook, where a new instance
         // of the narration object gets created, but the old audio element still exists.
@@ -666,7 +670,7 @@ export default class Narration {
         // typically when doing something odd like trying to go back from the first page.
         if (this.segments.length && this.getPlayer()) {
             if (this.elementsToPlayConsecutivelyStack.length) {
-                this.getPlayer().play();
+                this.handlePlayPromise(this.getPlayer().play());
 
                 // Resuming play. Only currentStartTime needs to be adjusted, but originalStartTime shouldn't be changed.
                 this.audioPlayCurrentStartTime = new Date().getTime();
