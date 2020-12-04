@@ -136,6 +136,8 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
+
+    usingDefaultLang: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -171,7 +173,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         loadErrorHtml: "",
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
-        inPauseForced: false
+        inPauseForced: false,
+        usingDefaultLang:true,
     };
 
     // The book url we were passed as a URL param.
@@ -471,10 +474,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // Now we have all the information we need to call reportBookProps if it is set.
             if (i === 0 && this.props.reportBookProperties) {
                 // Informs containing react controls (in the same frame)
+                const preferredLanguages = this.bookInfo.getPreferredTranslationLanguages();
+                const usingDefaultLang = preferredLanguages[0] === this.props.activeLanguageCode || !this.props.activeLanguageCode;
+                if (usingDefaultLang !== this.state.usingDefaultLang) {
+                    this.setState({usingDefaultLang});
+                }
                 this.props.reportBookProperties({
                     landscape,
                     canRotate: this.bookInfo.canRotate,
-                    preferredLanguages: this.bookInfo.getPreferredTranslationLanguages()
+                    preferredLanguages
                 });
             }
             if (isNewBook) {
@@ -1111,6 +1119,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
                         : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'};
                 }`;
+            // If a book is displayed in its original language, the author may well want to also see a title
+            // in the corresponding national language. Typically default rules or author styles will make
+            // the two titles appropriate sizes.
+            // When the user selects a different language, showing the published national language as well is
+            // less appropriate. It may not be the national language of any country where the chosen language
+            // is spoken. Worse, the book may have been published in a monolingual collection, where the
+            // vernacular and national languages are the same. When a different langauge is chosen,
+            // what was originally a single, possibly very large, title in the book's only language
+            // suddenly becomes a (possibly smaller) title in the chosen language followed by a possibly
+            // larger one in the original language (previously marked both bloom-content1 and
+            // bloom-contentNational1, now with just the second class making it visible).
+            // We decided (BL-9256) that Title-On-Cover should not display in the national language
+            // unless we are displaying the book's default language or unless the national langauge IS
+            // the main one we're showing (that is, it has bloom-content1 as well as bloom-contentNational1).
+            if (!this.state.usingDefaultLang) {
+                combinedStyle += `
+                .Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1) {
+                    display:none !important;
+                }
+                `;
+            }
             // start with embedded styles (typically before links in a bloom doc...)
             const styleElts = doc.ownerDocument!.evaluate(
                 ".//style[@type='text/css']",

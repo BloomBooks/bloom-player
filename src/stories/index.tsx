@@ -153,6 +153,11 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
+    "Book with forced large title in one language",
+    "https://s3.amazonaws.com/bloomharvest/lorrie%40blind.org.ph%2f5723926d-f75b-4b59-b2a6-578188e07e80/bloomdigital%2findex.htm"
+);
+
+AddBloomPlayerStory(
     "Music",
     "https://s3.amazonaws.com/bloomharvest-sandbox/bloom.bible.stories%40gmail.com/a70f135b-07b0-4bfb-962e-0aabb82f87ec/bloomdigital%2findex.htm"
 );
