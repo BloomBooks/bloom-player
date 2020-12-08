@@ -104,6 +104,8 @@ interface IProps {
 
     // may be "largeOutsideButtons" or "smallOutsideButtons" or empty.
     outsideButtonPageClass: string;
+
+    extraClassNames?: string;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -1292,7 +1294,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // only one of these components on a page.
         return (
             <div
-                className={bloomPlayerClass}
+                className={bloomPlayerClass + (this.props.extraClassNames ? " " + this.props.extraClassNames : "")}
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
                 <Swiper {...swiperParams}>
