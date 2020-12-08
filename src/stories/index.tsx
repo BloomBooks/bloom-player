@@ -197,6 +197,10 @@ AddBloomPlayerStory(
     "Activity - Canvas Game - Snake",
     "src/sample-canvas-activity/index.htm"
 );
+AddBloomPlayerStory(
+    "Sign language with talking",
+    "src/sign-language-with-talking-book/sign-language-with-talking-book.htm"
+);
 
 AddBloomPlayerStory(
     "Book that isn't found",
