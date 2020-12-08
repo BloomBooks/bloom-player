@@ -1138,6 +1138,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 .Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1) {
                     display:none !important;
                 }
+                .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1) {
+                    display:none !important;
+                }
                 `;
             }
             // start with embedded styles (typically before links in a bloom doc...)
