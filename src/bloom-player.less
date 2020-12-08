@@ -31,6 +31,12 @@ above the page so that page numbers will increment.*/
     background-color: @contextPageBackground;
 }
 
+// The player is hidden until it is scaled. Note that we want to make measurements
+// of its original size, so it has to be present in the DOM, just not showing on the screen.
+.hidePlayer {
+    visibility: hidden;
+}
+
 // For chrome and safari, we can deal with highlighting overlapping lines. See BL-7442.
 // This media query is supposed to be a way to detect Chrome/Safari.
 // Actually: this did not prevent it from applying in Firefox,: @media screen and (-webkit-min-device-pixel-ratio: 0) {
@@ -172,12 +178,12 @@ We just make them follow the main content normally. */
     // (This was added because when we set swiper's touchStartPreventDefault to false,
     // the clicks were allowed to go through again and a double-click on text was capable of selecting it)
     .bloom-editable {
-        -ms-user-select:none;
-        -moz-user-select:none;
-        -webkit-user-select:none;
+        -ms-user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
         -webkit-touch-callout: none;
         -khtml-user-select: none;
-        user-select:none;
+        user-select: none;
     }
 
     // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
@@ -407,8 +413,8 @@ over anything in our standard stylesheets, though still allowing for
 }
 
 .reactRoot {
-    height:100%;
-    width:100%;
+    height: 100%;
+    width: 100%;
 }
 
 // For A5 pages read online, we want to keep the size of the marginBox

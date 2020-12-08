@@ -120,6 +120,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             }
         });
 
+        const [pageScaled, setPageScaled] = useState(false);
+
         const [showAppBar, setShowAppBar] = useState<boolean>(
             props.initiallyShowAppBar
         );
@@ -444,6 +446,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         .bloomPlayer-page {height: ${actualPageHeight /
                 scaleFactor}px; overflow: hidden;}`;
             //alert("scale page to window completed");
+            if (!pageScaled) {
+                setPageScaled(true);
+            }
         };
 
         useEffect(() => {
@@ -652,6 +657,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     activeLanguageCode={activeLanguageCode}
                     useOriginalPageSize={props.useOriginalPageSize}
                     outsideButtonPageClass={outsideButtonPageClass}
+                    // We can helpfully reduce flicker if we don't actually show the real content until we
+                    // have scaled the player to fit the window. This doesn't hide the loading spinner.
+                    extraClassNames={pageScaled ? "" : "hidePlayer"}
                 />
             </div>
         );
