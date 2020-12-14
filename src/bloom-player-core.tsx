@@ -176,7 +176,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
         inPauseForced: false,
-        usingDefaultLang:true,
+        usingDefaultLang: true
     };
 
     // The book url we were passed as a URL param.
@@ -291,9 +291,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                 this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
-                        0,
-                        Math.max(slashIndex, encodedSlashIndex)
-                    )
+                          0,
+                          Math.max(slashIndex, encodedSlashIndex)
+                      )
                     : this.sourceUrl;
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
@@ -363,7 +363,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This is likely not the most efficient way to do this. Ideally, we would set the initial language code
             // on the initial pass. But the complexity was overwhelming, so we settled for what works.
             if (
-                (!this.state.isLoading) &&
+                !this.state.isLoading &&
                 // If the user changes the language code in the picker
                 prevProps.activeLanguageCode !== this.props.activeLanguageCode
             ) {
@@ -477,9 +477,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (i === 0 && this.props.reportBookProperties) {
                 // Informs containing react controls (in the same frame)
                 const preferredLanguages = this.bookInfo.getPreferredTranslationLanguages();
-                const usingDefaultLang = preferredLanguages[0] === this.props.activeLanguageCode || !this.props.activeLanguageCode;
+                const usingDefaultLang =
+                    preferredLanguages[0] === this.props.activeLanguageCode ||
+                    !this.props.activeLanguageCode;
                 if (usingDefaultLang !== this.state.usingDefaultLang) {
-                    this.setState({usingDefaultLang});
+                    this.setState({ usingDefaultLang });
                 }
                 this.props.reportBookProperties({
                     landscape,
@@ -575,7 +577,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (BloomPlayerCore.currentPage) {
                 // We need to replace the old currentPage with the corresponding one created from the updated content.
                 window.setTimeout(() => {
-                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(BloomPlayerCore.currentPageIndex);
+                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(
+                        BloomPlayerCore.currentPageIndex
+                    );
                 }, 200);
             }
         }
@@ -664,7 +668,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.paused) {
             this.pauseAllMultimedia();
         } else {
-
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
             if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
@@ -1060,15 +1063,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
 
         try {
-            const results = await axios
-                .all(
-                    promises.map(promise =>
-                        promise.catch(
-                            // if one stylesheet doesn't exist or whatever, keep going
-                            () => undefined
-                        )
+            const results = await axios.all(
+                promises.map(promise =>
+                    promise.catch(
+                        // if one stylesheet doesn't exist or whatever, keep going
+                        () => undefined
                     )
-                );
+                )
+            );
 
             const fileUrlOk = this.urlPrefix.startsWith("file:");
             // The Andika New Basic font might be found already installed. Failing that,
@@ -1091,8 +1093,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     font-weight: normal;
                     font-style: normal;
                     src: local("Andika New Basic"),
-                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),'
-                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'};
+                        ${
+                            fileUrlOk
+                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),'
+                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'
+                        };
                 }
 
                 @font-face {
@@ -1100,8 +1105,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     font-weight: bold;
                     font-style: normal;
                     src: local("Andika New Basic Bold"),
-                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),'
-                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'};
+                        ${
+                            fileUrlOk
+                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),'
+                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'
+                        };
                 }
 
                 @font-face {
@@ -1109,8 +1117,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     font-weight: normal;
                     font-style: italic;
                     src: local("Andika New Basic Italic"),
-                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),'
-                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'};
+                        ${
+                            fileUrlOk
+                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),'
+                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'
+                        };
                 }
 
                 @font-face {
@@ -1118,8 +1129,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     font-weight: bold;
                     font-style: italic;
                     src: local("Andika New Basic Bold Italic"),
-                        ${fileUrlOk ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
-                        : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'};
+                        ${
+                            fileUrlOk
+                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
+                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'
+                        };
                 }`;
             // If a book is displayed in its original language, the author may well want to also see a title
             // in the corresponding national language. Typically default rules or author styles will make
@@ -1179,7 +1193,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         } catch (err) {
             this.HandleLoadingError(err);
             return "";
-        };
+        }
     }
 
     private fullUrl(url: string | null): string {
@@ -1234,7 +1248,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance = s;
             },
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
-            touchStartPreventDefault: false,    // If true, would prevent the default, which would cause overlayScrollbars not to receive mousedown events.
+            touchStartPreventDefault: false, // If true, would prevent the default, which would cause overlayScrollbars not to receive mousedown events.
 
             on: {
                 slideChange: () => {
@@ -1297,7 +1311,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // only one of these components on a page.
         return (
             <div
-                className={bloomPlayerClass + (this.props.extraClassNames ? " " + this.props.extraClassNames : "")}
+                className={
+                    bloomPlayerClass +
+                    (this.props.extraClassNames
+                        ? " " + this.props.extraClassNames
+                        : "")
+                }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
                 <Swiper {...swiperParams}>
@@ -1326,21 +1345,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 {Math.abs(
                                     index - this.state.currentSwiperIndex
                                 ) < 2 ? (
-                                        <>
-                                            <style scoped={true}>
-                                                {this.state.styleRules}
-                                            </style>
-                                            <div
-                                                className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
-                                                dangerouslySetInnerHTML={{
-                                                    __html: slide
-                                                }}
-                                            />
-                                        </>
-                                    ) : (
-                                        // All other pages are just empty strings
-                                        ""
-                                    )}
+                                    <>
+                                        <style scoped={true}>
+                                            {this.state.styleRules}
+                                        </style>
+                                        <div
+                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
+                                            dangerouslySetInnerHTML={{
+                                                __html: slide
+                                            }}
+                                        />
+                                    </>
+                                ) : (
+                                    // All other pages are just empty strings
+                                    ""
+                                )}
                             </div>
                         );
                     })}
@@ -1375,7 +1394,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     className={
                         "swiper-button-next" +
                         (this.state.currentSwiperIndex >=
-                            this.state.pages.length - 1
+                        this.state.pages.length - 1
                             ? " swiper-button-disabled"
                             : "")
                     }
@@ -1554,7 +1573,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // The ignored ones are comic bubbles.  Comic bubbles usually shouldn't need a scrollbar because the size auto-grows in Bloom,
                 // so the only way you're supposed to be able to get an overflow is if the there is if the bubble can't grow anymore
                 // (because it's already reached the bottom of the image container).
-                const editables = bloomPage.querySelectorAll(":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on");
+                const editables = bloomPage.querySelectorAll(
+                    ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
+                );
                 OverlayScrollbars(editables, options);
             }
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
