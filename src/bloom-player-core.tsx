@@ -364,8 +364,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // on the initial pass. But the complexity was overwhelming, so we settled for what works.
             if (
                 !this.state.isLoading &&
-                // If the user changes the language code in the picker
-                prevProps.activeLanguageCode !== this.props.activeLanguageCode
+                // First time after loaded - at this point, we know we are ready to get at the dom
+                // BL-9307 we lost this case in a refactor, by the time we are loaded
+                // prevProps.activeLanguageCode has already been setup, so we never hit the initial run.
+                // See Storybook story: "Multilingual motion book - initial language set to 'ko'"
+                (prevState.isLoading ||
+                    // If the user changes the language code in the picker
+                    prevProps.activeLanguageCode !==
+                        this.props.activeLanguageCode)
             ) {
                 this.updateDivVisibilityByLangCode();
                 // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
