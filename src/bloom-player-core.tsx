@@ -1572,9 +1572,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
             const options = OverlayScrollbars.defaultOptions();
 
-            // Ignore the cover page, the title one doesn't work well..
-            // ENHANCE: Figure out why it sets the title height to 0 when you attach OverlayScrolbars to it.
-            if (!bloomPage.classList.contains("cover")) {
+            // Ignore xmatter (where this doesn't work too well due to more complex layouts)
+            if (
+                !bloomPage.classList.contains("bloom-frontMatter") &&
+                !bloomPage.classList.contains("bloom-backMatter")
+            ) {
                 // Ignore editables that are under a bloom-textOverPicture... This isn't working too well for them right now.
                 // The ignored ones are comic bubbles.  Comic bubbles usually shouldn't need a scrollbar because the size auto-grows in Bloom,
                 // so the only way you're supposed to be able to get an overflow is if the there is if the bubble can't grow anymore
