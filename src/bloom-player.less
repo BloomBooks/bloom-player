@@ -414,7 +414,13 @@ over anything in our standard stylesheets, though still allowing for
 
 .reactRoot {
     height: 100%;
-    width: 100%;
+    // The natural thing to do here would be width:100%, which is what we want.
+    // But IOS browsers mess this up on IOS 10-12 (BL-9296). This trick
+    // (thanks to https://stackoverflow.com/questions/23083462/how-to-get-an-iframe-to-be-responsive-in-ios-safari)
+    // works around it.
+    width: 1px;
+    min-width: 100%;
+    *width: 100%; // IE6
 }
 
 // For A5 pages read online, we want to keep the size of the marginBox
