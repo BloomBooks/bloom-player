@@ -43,6 +43,10 @@ import { BookInteraction } from "./bookInteraction";
 import OverlayScrollbars from "overlayscrollbars";
 import "./overlayScrollbars-bloom.css"; // The CSS for the OverlayScrollbars plugin. This is a modified version for bloom-player that fixes CSS conflicts due to specificity.
 
+enum PlaybackMode {
+    Video,
+    Audio
+}
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -200,6 +204,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
+    private static currentPageHasVideo: boolean;
+    private static currentPlaybackMode: PlaybackMode;
 
     private indexOflastNumberedPage: number;
 
@@ -610,12 +616,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // The conditionals guarantee that each type of media will only be created once.
         if (!this.video) {
             this.video = new Video();
+            this.video.PageVideoComplete = new LiteEvent<HTMLElement>();
+            this.video.PageVideoComplete.subscribe(pageElement => {
+                this.playAudioAndAnimation(pageElement);
+            });
         }
         if (!this.narration) {
             this.narration = new Narration();
             this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
             this.narration.PageNarrationComplete = new LiteEvent<HTMLElement>();
             this.narration.PlayFailed = new LiteEvent<HTMLElement>();
+            this.narration.PlayCompleted = new LiteEvent<HTMLElement>();
             this.animation = new Animation();
             this.narration.PageDurationAvailable.subscribe(pageElement => {
                 this.animation.HandlePageDurationAvailable(
@@ -631,6 +642,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (this.props.setForcedPausedCallback) {
                     this.props.setForcedPausedCallback(true);
                 }
+            });
+            this.narration.PlayCompleted.subscribe(() => {
+                BloomPlayerCore.setVideoModeIfAppropriate();
             });
         }
         if (!this.music) {
@@ -678,11 +692,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // since the narration object won't yet be updated.
             if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
                 this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
+            } else {
+                if (
+                    BloomPlayerCore.currentPlaybackMode === PlaybackMode.Video
+                ) {
+                    this.video.play();
+                } else {
+                    this.narration.play();
+                    this.animation.PlayAnimation();
+                    this.music.play();
+                }
             }
-            this.narration.play();
-            this.animation.PlayAnimation();
-            this.video.play();
-            this.music.play();
         }
     }
 
@@ -840,10 +860,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private pauseAllMultimedia() {
-        this.narration.pause();
-        this.animation.PauseAnimation();
-        this.video.pause();
-        this.music.pause();
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.Video) {
+            this.video.pause();
+        } else {
+            this.narration.pause();
+            this.animation.PauseAnimation();
+            this.music.pause();
+        }
     }
 
     private reportBookOpened(body: HTMLBodyElement) {
@@ -1428,6 +1451,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!page) {
             return;
         }
+        BloomPlayerCore.setVideoModeIfAppropriate();
         if (this.bookInfo.autoAdvance && this.props.landscape) {
             this.swiperInstance.slideNext();
         }
@@ -1529,6 +1553,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         window.setTimeout(() => {
             BloomPlayerCore.currentPage = bloomPage;
             BloomPlayerCore.currentPageIndex = index;
+            BloomPlayerCore.currentPageHasVideo = Video.pageHasVideo(bloomPage);
 
             // This is probably redundant, since we update all the page sizes on rotate, and again in setIndex.
             // It's not expensive so leaving it in for robustness.
@@ -1550,7 +1575,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.reportPageProperties({
                     hasAudio: this.narration.pageHasAudio(bloomPage),
                     hasMusic: this.music.pageHasMusic(bloomPage),
-                    hasVideo: Video.pageHasVideo(bloomPage)
+                    hasVideo: BloomPlayerCore.currentPageHasVideo
                 });
             }
 
@@ -1637,6 +1662,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.paused) {
             return; // shouldn't call when paused
         }
+        if (BloomPlayerCore.currentPageHasVideo) {
+            BloomPlayerCore.currentPlaybackMode = PlaybackMode.Video;
+            this.video.HandlePageVisible(bloomPage);
+        } else {
+            this.playAudioAndAnimation(bloomPage);
+        }
+    }
+
+    public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.Audio;
+        if (!bloomPage) return;
         this.narration.setSwiper(this.swiperInstance);
         // When we have computed it, this will raise PageDurationComplete,
         // which calls an animation method to start the image animation.
@@ -1645,9 +1681,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
             this.animation.HandlePageBeforeVisible(bloomPage);
         }
-        this.video.HandlePageVisible(bloomPage);
         this.animation.HandlePageVisible(bloomPage);
         this.music.HandlePageVisible(bloomPage);
+    }
+
+    public static setVideoModeIfAppropriate() {
+        if (BloomPlayerCore.currentPageHasVideo) {
+            BloomPlayerCore.currentPlaybackMode = PlaybackMode.Video; // start over with video for replay
+        }
     }
 }
 

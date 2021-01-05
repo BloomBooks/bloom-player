@@ -36,8 +36,11 @@ export default class Narration {
     private elementsToPlayConsecutivelyStack: HTMLElement[] = []; // The audio-sentence elements (ie those with actual audio files associated with them) that should play one after the other
     private subElementsWithTimings: Array<[Element, number]> = [];
 
+    // delay responding if there is no narration to play (to give animation fixed time to display)
     public PageNarrationComplete: LiteEvent<HTMLElement>;
     public PageDurationAvailable: LiteEvent<HTMLElement>;
+    // respond immediately if there is no narration to play.
+    public PlayCompleted: LiteEvent<HTMLElement>;
     public PlayFailed: LiteEvent<HTMLElement>;
     public PageDuration: number;
 
@@ -85,6 +88,9 @@ export default class Narration {
                 this.pageNarrationCompleteTimer = window.setTimeout(() => {
                     this.PageNarrationComplete.raise();
                 }, kMinDuration * 1000);
+            }
+            if (this.PlayCompleted) {
+                this.PlayCompleted.raise();
             }
             return;
         }
@@ -155,7 +161,6 @@ export default class Narration {
     }
 
     private handlePlayPromise(promise: Promise<void>) {
-
         // In newer browsers, play() returns a promise which fails
         // if the browser disobeys the command to play, as some do
         // if the user hasn't 'interacted' with the page in some
@@ -207,10 +212,7 @@ export default class Narration {
                 // the one kind of play error that is fixed by the user just interacting.
                 // If there's some other reason we can't play, showing as paused may not
                 // be useful. See comments on the similar code in music.ts
-                if (
-                    reason.name === "NotAllowedError" &&
-                    this.PlayFailed
-                ) {
+                if (reason.name === "NotAllowedError" && this.PlayFailed) {
                     this.PlayFailed.raise();
                 }
             });
@@ -523,8 +525,8 @@ export default class Narration {
         player.setAttribute(
             "src",
             this.currentAudioUrl(this.currentAudioId) +
-            "?nocache=" +
-            new Date().getTime()
+                "?nocache=" +
+                new Date().getTime()
         );
     }
 
@@ -537,7 +539,7 @@ export default class Narration {
     };
 
     private getPlayer(): HTMLMediaElement {
-        const audio = this.getAudio("bloom-audio-player", audio => { });
+        const audio = this.getAudio("bloom-audio-player", audio => {});
         // We used to do this in the init call, but sometimes the function didn't get called.
         // Suspecting that there are cases, maybe just in storybook, where a new instance
         // of the narration object gets created, but the old audio element still exists.
@@ -578,6 +580,9 @@ export default class Narration {
         this.removeAudioCurrent();
         if (this.PageNarrationComplete) {
             this.PageNarrationComplete.raise(this.playerPage);
+        }
+        if (this.PlayCompleted) {
+            this.PlayCompleted.raise();
         }
     }
 

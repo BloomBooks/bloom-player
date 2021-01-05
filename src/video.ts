@@ -1,3 +1,4 @@
+import LiteEvent from "./event";
 import { BloomPlayerCore } from "./bloom-player-core";
 
 // class Video contains functionality to get videos to play properly in bloom-player
@@ -6,6 +7,8 @@ export class Video {
     private paused: boolean = false;
     private currentPage: HTMLDivElement;
     private currentVideoElement: HTMLVideoElement | undefined;
+
+    public PageVideoComplete: LiteEvent<HTMLElement>;
 
     public static pageHasVideo(page: HTMLElement): boolean {
         return !!page.getElementsByTagName("video").length;
@@ -50,6 +53,9 @@ export class Video {
                 (ev.target as HTMLVideoElement).currentTime -
                     this.videoStartTime
             );
+            if (this.PageVideoComplete) {
+                this.PageVideoComplete.raise(bloomPage);
+            }
         };
         if (this.paused) {
             this.currentVideoElement.pause();
@@ -59,7 +65,12 @@ export class Video {
                 this.videoStartTime = videoElement.currentTime;
                 const promise = videoElement.play();
                 if (promise) {
-                    promise.catch(reason => console.log(reason));
+                    promise.catch(reason => {
+                        console.log(reason);
+                        if (this.PageVideoComplete) {
+                            this.PageVideoComplete.raise(bloomPage);
+                        }
+                    });
                 }
             }, 1000);
         }
