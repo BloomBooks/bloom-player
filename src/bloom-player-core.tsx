@@ -2,6 +2,7 @@
 bloom-player-core is responsible for all the behavior of working through a book, but without any UI controls
 (other than page turning).
 */
+/// <reference path="../node_modules/@types/jquery.nicescroll/index.d.ts" />
 import * as React from "react";
 import axios, { AxiosPromise } from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
@@ -40,8 +41,8 @@ import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQui
 import { CircularProgress } from "@material-ui/core";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
-import OverlayScrollbars from "overlayscrollbars";
-import "./overlayScrollbars-bloom.css"; // The CSS for the OverlayScrollbars plugin. This is a modified version for bloom-player that fixes CSS conflicts due to specificity.
+import $ from "jquery";
+import "nicescroll";
 
 enum PlaybackMode {
     Video,
@@ -1277,7 +1278,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance = s;
             },
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
-            touchStartPreventDefault: false, // If true, would prevent the default, which would cause overlayScrollbars not to receive mousedown events.
+            touchStartPreventDefault: false, // If true, would prevent the default, which would cause niceScroll not to receive mousedown events.
 
             on: {
                 slideChange: () => {
@@ -1595,23 +1596,30 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance.keyboard.enable();
             }
 
-            const options = OverlayScrollbars.defaultOptions();
-
-            // Ignore xmatter (where this doesn't work too well due to more complex layouts)
-            if (
-                !bloomPage.classList.contains("bloom-frontMatter") &&
-                !bloomPage.classList.contains("bloom-backMatter")
-            ) {
-                // Ignore editables that are under a bloom-textOverPicture... This isn't working too well for them right now.
-                // The ignored ones are comic bubbles.  Comic bubbles usually shouldn't need a scrollbar because the size auto-grows in Bloom,
-                // so the only way you're supposed to be able to get an overflow is if the there is if the bubble can't grow anymore
-                // (because it's already reached the bottom of the image container).
-                const editables = bloomPage.querySelectorAll(
-                    ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
-                );
-                OverlayScrollbars(editables, options);
-            }
+            BloomPlayerCore.addScrollbarsToPage(bloomPage);
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
+    }
+
+    private static addScrollbarsToPage(bloomPage: Element): void {
+        // Expected behavior for cover: "on the cover, which is has a very dynamic layout, we just don't do scrollbars"
+        if (bloomPage.classList.contains("cover")) {
+            return;
+        }
+
+        // ENHANCE: If you drag the scrollbar mostly horizontal instead of mostly vertical,
+        // both the page swiping and the scrollbar will be operating, which is somewhat confusing
+        // and not perfectly ideal, although it doesn't really break anything.
+        // It'd be nice so that if you're dragging the scrollbar in any way, swiping is disabled.
+
+        // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
+        // Expected behavior for comic bubbbles:  "we want overflow to show, but not generate scroll bars"
+        $(bloomPage)
+            .find(
+                ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
+            )
+            .niceScroll({
+                autohidemode: false
+            });
     }
 
     // called by narration.ts

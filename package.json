@@ -61,6 +61,8 @@
         "@storybook/addons": "^5.1.11",
         "@storybook/react": "^5.1.11",
         "@types/jest": "^24.0.11",
+        "@types/jquery": "^3.5.5",
+        "@types/jquery.nicescroll": "^3.7.1",
         "@types/node": "^12.7.2",
         "@types/react": "^16.9.1",
         "@types/react-dom": "^16.8.5",
@@ -117,8 +119,7 @@
         "testEnvironment": "jsdom"
     },
     "dependencies": {
-        "@types/overlayscrollbars": "1.12.0",
         "dynamic-import-polyfill": "^0.1.1",
-        "overlayscrollbars": "1.13.0"
+        "nicescroll": "^3.7.4"
     }
 }

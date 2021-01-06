@@ -195,6 +195,7 @@ We just make them follow the main content normally. */
     // 1) In the interior we are conservative and just let scrolls appear, even at the risk of sometimes showing one
     // (and thus pushing something off the bottom that would otherwise have been visible):
     .bloom-editable.bloom-visibility-code-on {
+        // Hidden because we let jquery.niceScroll control the scrollbars instead.
         overflow-y: hidden !important; // unfortunately this needs !important to override 2 basePage.less rules
     }
     // it would be more elegant to embed this rule in the one above, but I can't figure out
