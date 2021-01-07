@@ -44,9 +44,14 @@ import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
 import "jquery.nicescroll";
 
-enum PlaybackMode {
-    Video,
-    Audio
+export enum PlaybackMode {
+    NewPage, // starting a new page ready to play
+    NewPageMediaPaused, // starting a new page in the "paused" state
+    VideoPlaying, // video is playing
+    VideoPaused, // video is paused
+    AudioPlaying, // narration, music, and/or animation are playing (or possibly finished)
+    AudioPaused, // narration, music, and/or animation are paused
+    MediaFinished // video, narration, and/or animation has played (possibly no media to play)
 }
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -206,7 +211,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
     private static currentPageHasVideo: boolean;
-    private static currentPlaybackMode: PlaybackMode;
+
+    public static currentPlaybackMode: PlaybackMode;
 
     private indexOflastNumberedPage: number;
 
@@ -619,7 +625,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.video = new Video();
             this.video.PageVideoComplete = new LiteEvent<HTMLElement>();
             this.video.PageVideoComplete.subscribe(pageElement => {
-                this.playAudioAndAnimation(pageElement);
+                this.playAudioAndAnimation(pageElement); // play audio after video finishes
             });
         }
         if (!this.narration) {
@@ -645,7 +651,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             });
             this.narration.PlayCompleted.subscribe(() => {
-                BloomPlayerCore.setVideoModeIfAppropriate();
+                BloomPlayerCore.currentPlaybackMode =
+                    PlaybackMode.MediaFinished;
             });
         }
         if (!this.music) {
@@ -691,15 +698,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         } else {
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
-            if (BloomPlayerCore.currentPage !== this.narration.playerPage) {
+            if (
+                BloomPlayerCore.currentPage !== this.narration.playerPage ||
+                BloomPlayerCore.currentPlaybackMode ===
+                    PlaybackMode.MediaFinished
+            ) {
                 this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
             } else {
                 if (
-                    BloomPlayerCore.currentPlaybackMode === PlaybackMode.Video
+                    BloomPlayerCore.currentPlaybackMode ===
+                    PlaybackMode.VideoPaused
                 ) {
-                    this.video.play();
+                    this.video.play(); // sets currentPlaybackMode = VideoPlaying
                 } else {
-                    this.narration.play();
+                    this.narration.play(); // sets currentPlaybackMode = AudioPlaying
                     this.animation.PlayAnimation();
                     this.music.play();
                 }
@@ -861,10 +873,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private pauseAllMultimedia() {
-        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.Video) {
-            this.video.pause();
-        } else {
-            this.narration.pause();
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPlaying) {
+            this.video.pause(); // sets currentPlaybackMode = VideoPaused
+        } else if (
+            BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPlaying
+        ) {
+            this.narration.pause(); // sets currentPlaybackMode = AudioPaused
             this.animation.PauseAnimation();
             this.music.pause();
         }
@@ -1452,7 +1466,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!page) {
             return;
         }
-        BloomPlayerCore.setVideoModeIfAppropriate();
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.MediaFinished;
+        // TODO: at this point, signal BloomPlayerControls to switch the pause button to show play.
         if (this.bookInfo.autoAdvance && this.props.landscape) {
             this.swiperInstance.slideNext();
         }
@@ -1494,7 +1509,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // its continued playing.
             this.video.hidingPage();
             this.video.HandlePageBeforeVisible(bloomPage);
+            this.narration.hidingPage();
             this.music.hidingPage();
+            if (
+                BloomPlayerCore.currentPlaybackMode ===
+                    PlaybackMode.AudioPaused ||
+                BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPaused
+            ) {
+                BloomPlayerCore.currentPlaybackMode =
+                    PlaybackMode.NewPageMediaPaused;
+            } else {
+                BloomPlayerCore.currentPlaybackMode = PlaybackMode.NewPage;
+            }
         }
     }
 
@@ -1670,8 +1696,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (this.props.paused) {
             return; // shouldn't call when paused
         }
+        // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
-            BloomPlayerCore.currentPlaybackMode = PlaybackMode.Video;
+            BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
             this.video.HandlePageVisible(bloomPage);
         } else {
             this.playAudioAndAnimation(bloomPage);
@@ -1679,7 +1706,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.Audio;
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPlaying;
         if (!bloomPage) return;
         this.narration.setSwiper(this.swiperInstance);
         // When we have computed it, this will raise PageDurationComplete,
@@ -1691,12 +1718,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         this.animation.HandlePageVisible(bloomPage);
         this.music.HandlePageVisible(bloomPage);
-    }
-
-    public static setVideoModeIfAppropriate() {
-        if (BloomPlayerCore.currentPageHasVideo) {
-            BloomPlayerCore.currentPlaybackMode = PlaybackMode.Video; // start over with video for replay
-        }
     }
 }
 

@@ -1,5 +1,5 @@
 import LiteEvent from "./event";
-import { BloomPlayerCore } from "./bloom-player-core";
+import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
 import { sortAudioElements, ISetHighlightParams } from "./narrationUtils";
 import { SwiperInstance } from "react-id-swiper";
 
@@ -18,7 +18,6 @@ const kAudioSentence = "audio-sentence"; // Even though these can now encompass 
 export default class Narration {
     public playerPage: HTMLElement;
     public swiperInstance: SwiperInstance | null = null;
-    private paused: boolean = false;
     public urlPrefix: string;
     // The time we started to play the current page (set in computeDuration, adjusted for pauses)
     private startPlay: Date;
@@ -95,7 +94,6 @@ export default class Narration {
             return;
         }
 
-        this.paused = false;
         const firstElementToPlay = this.elementsToPlayConsecutivelyStack[
             stackSize - 1
         ]; // Remember to pop it when you're done playing it. (i.e., in playEnded)
@@ -106,7 +104,7 @@ export default class Narration {
     }
 
     private playCurrentInternal() {
-        if (!this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPlaying) {
             const mediaPlayer = this.getPlayer();
             if (mediaPlayer) {
                 const element = this.playerPage.querySelector(
@@ -275,7 +273,7 @@ export default class Narration {
         }
         // Seems to be needed to prevent jumping to the next subelement when not permitted to play by browser.
         // Not sure why the check below on mediaPlayer.currentTime does not prevent this.
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPaused) {
             return;
         }
 
@@ -668,9 +666,10 @@ export default class Narration {
     }
 
     public play() {
-        if (!this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPlaying) {
             return; // no change.
         }
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPlaying;
         // I'm not sure how getPlayer() can return null/undefined, but have seen it happen
         // typically when doing something odd like trying to go back from the first page.
         if (this.segments.length && this.getPlayer()) {
@@ -686,7 +685,6 @@ export default class Narration {
                 return;
             }
         }
-        this.paused = false;
         // adjust startPlay by the elapsed pause. This will cause fakePageNarrationTimedOut to
         // start a new timeout if we are depending on it to fake PageNarrationComplete.
         const pause = new Date().getTime() - this.startPause.getTime();
@@ -707,9 +705,24 @@ export default class Narration {
     }
 
     public pause() {
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPaused) {
             return;
         }
+        this.pausePlaying();
+        this.startPause = new Date();
+
+        // Note that neither music.pause() nor animations.PauseAnimations() check the state.
+        // If that changes, then this state setting will have to be moved to BloomPlayerCore.
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPaused;
+    }
+
+    // This pauses the current player without setting the "AudioPaused" state or setting the
+    // startPause timestamp.  If this method is called when resumption is possible, the calling
+    // method must take care of these values (as in the pause method directly above).
+    // Note that there's no "stop" method on player, only a "pause" method.  This method is
+    // used both when "pausing" the narration while viewing a page and when stopping narration
+    // when changing pages.
+    private pausePlaying() {
         const player = this.getPlayer();
         if (this.segments && this.segments.length && player) {
             // Before reporting duration, try to check that we really are playing.
@@ -719,8 +732,6 @@ export default class Narration {
             }
             player.pause();
         }
-        this.paused = true;
-        this.startPause = new Date();
     }
 
     public computeDuration(page: HTMLElement): void {
@@ -785,7 +796,7 @@ export default class Narration {
     }
 
     private fakePageNarrationTimedOut(page: HTMLElement) {
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPaused) {
             this.fakeNarrationAborted = true;
             clearTimeout(this.fakeNarrationTimer);
             return;
@@ -808,5 +819,9 @@ export default class Narration {
         if (this.PageNarrationComplete) {
             this.PageNarrationComplete.raise(page);
         }
+    }
+
+    public hidingPage() {
+        this.pausePlaying(); // Doesn't set AudioPaused state.  Caller sets NewPage state.
     }
 }

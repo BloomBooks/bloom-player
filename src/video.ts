@@ -1,10 +1,9 @@
 import LiteEvent from "./event";
-import { BloomPlayerCore } from "./bloom-player-core";
+import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
 export class Video {
-    private paused: boolean = false;
     private currentPage: HTMLDivElement;
     private currentVideoElement: HTMLVideoElement | undefined;
 
@@ -57,7 +56,7 @@ export class Video {
                 this.PageVideoComplete.raise(bloomPage);
             }
         };
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement.pause();
         } else {
             const videoElement = this.currentVideoElement;
@@ -93,26 +92,26 @@ export class Video {
     }
 
     public play() {
-        if (!this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode == PlaybackMode.VideoPlaying) {
             return; // no change.
         }
         const videoElement = this.currentVideoElement;
         if (!videoElement) {
             return; // no change
         }
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
         // If it has ended, it's going to replay from the beginning, even though
         // (to prevent an abrupt visual effect) we didn't reset currentTime when it ended.
         this.videoStartTime = this.videoEnded ? 0 : videoElement.currentTime;
         videoElement.play();
-        this.paused = false;
     }
 
     public pause() {
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode == PlaybackMode.VideoPaused) {
             return;
         }
         this.pauseCurrentVideo();
-        this.paused = true;
+        BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPaused;
     }
 
     private pauseCurrentVideo() {
