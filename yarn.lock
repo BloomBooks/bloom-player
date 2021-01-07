@@ -6953,6 +6953,13 @@ jest@^24.7.1:
     import-local "^2.0.0"
     jest-cli "^24.7.1"
 
+jquery.nicescroll@^3.7.6:
+  version "3.7.6"
+  resolved "https://registry.yarnpkg.com/jquery.nicescroll/-/jquery.nicescroll-3.7.6.tgz#afeff3e80658dabe4f78d2d2e84250060fea0852"
+  integrity sha1-r+/z6AZY2r5PeNLS6EJQBg/qCFI=
+  dependencies:
+    jquery ">=1.8.3"
+
 jquery@>=1.8.3:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
@@ -7861,13 +7868,6 @@ nested-object-assign@^1.0.3:
 nice-try@^1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
-
-nicescroll@^3.7.4:
-  version "3.7.4"
-  resolved "https://registry.yarnpkg.com/nicescroll/-/nicescroll-3.7.4.tgz#8cfd3b58fb95e7c5cb279e2208fc10ea90e35a18"
-  integrity sha1-jP07WPuV58XLJ54iCPwQ6pDjWhg=
-  dependencies:
-    jquery ">=1.8.3"
 
 no-case@^2.2.0:
   version "2.3.2"

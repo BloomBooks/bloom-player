@@ -42,7 +42,7 @@ import { CircularProgress } from "@material-ui/core";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
-import "nicescroll";
+import "jquery.nicescroll";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
