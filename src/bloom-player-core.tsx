@@ -42,7 +42,7 @@ import { CircularProgress } from "@material-ui/core";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
-import "nicescroll";
+import "jquery.nicescroll";
 
 enum PlaybackMode {
     Video,
