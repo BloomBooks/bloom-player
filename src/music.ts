@@ -1,4 +1,5 @@
 import LiteEvent from "./event";
+import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
 
 interface ISelection {
     id: number;
@@ -12,7 +13,6 @@ export class Music {
     public urlPrefix: string;
     public PlayFailed: LiteEvent<HTMLElement>;
 
-    private paused: boolean = false;
     private currentPage: HTMLDivElement;
     private selectionPlaying: ISelection | undefined;
     private pageIdToSelectionMap: Map<string, ISelection> = new Map<
@@ -43,7 +43,7 @@ export class Music {
 
     private listen() {
         this.setMusicSourceAndVolume();
-        if (this.paused) {
+        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPaused) {
             this.getPlayer().pause();
         } else {
             this.playerPlay();
@@ -55,7 +55,6 @@ export class Music {
             return;
         }
         this.playerPlay();
-        this.paused = false;
     }
 
     public pause() {
@@ -63,7 +62,6 @@ export class Music {
             return;
         }
         this.getPlayer().pause();
-        this.paused = true;
     }
 
     // Create the mapping of pages to music files so we know what to play
