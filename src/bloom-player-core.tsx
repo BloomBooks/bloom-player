@@ -1644,7 +1644,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
             )
             .niceScroll({
-                autohidemode: false
+                autohidemode: false,
+                cursorwidth: "12px",
+                cursorcolor: "#000000",
+                cursoropacitymax: 0.1,
+                cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
             });
     }
 
