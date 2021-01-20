@@ -4,6 +4,7 @@ bloom-player-core is responsible for all the behavior of working through a book,
 */
 /// <reference path="../node_modules/@types/jquery.nicescroll/index.d.ts" />
 import * as React from "react";
+import * as ReactDOM from "react-dom";
 import axios, { AxiosPromise } from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
@@ -16,7 +17,7 @@ import "./bloom-player.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
-import { Video } from "./video";
+import { IPageVideoComplete, Video } from "./video";
 import { Music } from "./music";
 import { LocalizationManager } from "./l10n/localizationManager";
 import {
@@ -25,6 +26,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
+import Replay from "@material-ui/icons/Replay";
 
 // See related comments in controlBar.tsx
 //tslint:disable-next-line:no-submodule-imports
@@ -619,13 +621,57 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    private showReplayButton(pageVideoData: IPageVideoComplete | undefined) {
+        if (!pageVideoData?.video || !pageVideoData!.page) {
+            return; // paranoia, and allows us to assume they are defined without ! everywhere.
+        }
+        let replayButton = document.getElementById("replay");
+        if (!replayButton) {
+            replayButton = document.createElement("div");
+            replayButton.setAttribute("id", "replay");
+            ReactDOM.render(
+                <Replay
+                    style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
+                    onClick={args => {
+                        // in storybook, I was seeing the page jump around as I clicked the button.
+                        // Guessing it was somehow caused by something higher up also responding to
+                        // the click, I put these in to try to stop it, but didn't succeed.
+                        // If we get the behavior in production, we'll need to try some more.
+                        args.preventDefault();
+                        args.stopPropagation();
+                        // This not only starts the video, it should put everything in the right
+                        // state, including stopping any audio. If we change our minds about
+                        // always playing video first, or decide to support more than one video
+                        // on a page, we'll need something smarter here.
+                        this.resetForNewPageAndPlay(
+                            BloomPlayerCore.currentPage!
+                        );
+                    }}
+                    onMouseDown={args => {
+                        // another attempt to stop the jumping around.
+                        args.stopPropagation();
+                    }}
+                />,
+                replayButton
+            );
+            replayButton.style.position = "absolute";
+            replayButton.style.fontSize = "45px";
+            replayButton.style.left = "calc(50% - 22px)";
+            replayButton.style.top = "calc(50% - 22px)";
+            replayButton.style.cursor = "";
+        }
+        pageVideoData.video.parentElement!.appendChild(replayButton);
+        replayButton!.style.display = "block";
+    }
+
     private initializeMedia() {
         // The conditionals guarantee that each type of media will only be created once.
         if (!this.video) {
             this.video = new Video();
-            this.video.PageVideoComplete = new LiteEvent<HTMLElement>();
-            this.video.PageVideoComplete.subscribe(pageElement => {
-                this.playAudioAndAnimation(pageElement); // play audio after video finishes
+            this.video.PageVideoComplete = new LiteEvent<IPageVideoComplete>();
+            this.video.PageVideoComplete.subscribe(pageVideoData => {
+                this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
+                this.showReplayButton(pageVideoData);
             });
         }
         if (!this.narration) {
@@ -1699,6 +1745,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
         if (this.props.paused) {
             return; // shouldn't call when paused
+        }
+        const replayButton = document.getElementById("replay");
+        if (replayButton) {
+            replayButton.style.display = "none";
         }
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {

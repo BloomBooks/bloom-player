@@ -3,11 +3,16 @@ import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
+export interface IPageVideoComplete {
+    page: HTMLElement;
+    video: HTMLElement;
+}
+
 export class Video {
     private currentPage: HTMLDivElement;
     private currentVideoElement: HTMLVideoElement | undefined;
 
-    public PageVideoComplete: LiteEvent<HTMLElement>;
+    public PageVideoComplete: LiteEvent<IPageVideoComplete>;
 
     public static pageHasVideo(page: HTMLElement): boolean {
         return !!page.getElementsByTagName("video").length;
@@ -53,7 +58,10 @@ export class Video {
                     this.videoStartTime
             );
             if (this.PageVideoComplete) {
-                this.PageVideoComplete.raise(bloomPage);
+                this.PageVideoComplete.raise({
+                    page: bloomPage,
+                    video: this.currentVideoElement!
+                });
             }
         };
         if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPaused) {
@@ -67,7 +75,10 @@ export class Video {
                     promise.catch(reason => {
                         console.log(reason);
                         if (this.PageVideoComplete) {
-                            this.PageVideoComplete.raise(bloomPage);
+                            this.PageVideoComplete.raise({
+                                page: bloomPage,
+                                video: videoElement
+                            });
                         }
                     });
                 }
