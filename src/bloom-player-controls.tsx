@@ -370,7 +370,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             newOutsideButtonPageClass = "largeOutsideButtons";
         } else if (widthMargin > smallNavigationButtonWidth * 2) {
             newOutsideButtonPageClass = "smallOutsideButtons";
-        } else if (winWidth > 407) {
+        } else if (winWidth > 407 && navigator.userAgent.includes("Chrome")) {
             // This nasty kludge is to work around a bug in Chrome 85.
             // In browsers based on that engine, when the next-page button is overlaid on
             // the page and the window is more than 407px wide, it disappears (BL-8936; see also BL-8944).
