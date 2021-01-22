@@ -1,5 +1,6 @@
 import LiteEvent from "./event";
 import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
+import { isMacOrIOS } from "./utilities/osUtils";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
@@ -68,21 +69,44 @@ export class Video {
             this.currentVideoElement.pause();
         } else {
             const videoElement = this.currentVideoElement;
-            window.setTimeout(() => {
-                this.videoStartTime = videoElement.currentTime;
-                const promise = videoElement.play();
-                if (promise) {
-                    promise.catch(reason => {
-                        console.log(reason);
-                        if (this.PageVideoComplete) {
-                            this.PageVideoComplete.raise({
-                                page: bloomPage,
-                                video: videoElement
-                            });
-                        }
+            if (!isMacOrIOS()) {
+                // Delay the start of the video by a little bit so the user can get oriented (BL-6985)
+                window.setTimeout(() => {
+                    this.playVideoCallback(videoElement, bloomPage);
+                }, 1000);
+            } else {
+                // To auto-play a video w/sound on Apple Webkit browsers, the JS that invokes video.play()
+                // "must have directly resulted from a handler for touchend, click, doubleclick, or keydown"
+                // (See https://webkit.org/blog/6784/new-video-policies-for-ios/)
+                // The setTimeout delay in the other branch is nice to have,
+                // but it prevents the video from auto-playing in Apple Webkit browsers (BL-9383).
+                //
+                // Currently, this code goes down this path for all videos, regardless of if they have an audio track or not.
+                // In theory, videos w/o an audio track can go down the normal path instead.
+                // However, when I tried to detect audio tracks, it didn't detect the correct result
+                // the first time a video with audio was loaded, even when I tried checking the readyState.
+                // So, for now we'll just do this for all videos on Mac or iOS, even if they don't have audio tracks.
+                this.playVideoCallback(videoElement, bloomPage);
+            }
+        }
+    }
+
+    private playVideoCallback(
+        videoElement: HTMLVideoElement,
+        bloomPage: HTMLElement
+    ) {
+        this.videoStartTime = videoElement.currentTime;
+        const promise = videoElement.play();
+        if (promise) {
+            promise.catch(reason => {
+                console.log(reason);
+                if (this.PageVideoComplete) {
+                    this.PageVideoComplete.raise({
+                        page: bloomPage,
+                        video: videoElement
                     });
                 }
-            }, 1000);
+            });
         }
     }
 
