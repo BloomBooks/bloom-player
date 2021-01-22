@@ -327,6 +327,24 @@ We just make them follow the main content normally. */
     }
 }
 
+#replay-button {
+    font-size: 45px;
+    left: calc(50% - 22px);
+    top: calc(50% - 22px);
+}
+
+.fade-out {
+    animation: fadeOut ease 1s;
+}
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.2;
+    }
+}
+
 .bigButtonOverlay {
     position: absolute;
     // Did a lot of fiddling here to try to get the button centered,
