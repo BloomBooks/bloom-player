@@ -665,7 +665,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             /WebKit/.test(UA) &&
             !/Edge/.test(UA) &&
             !window.MSStream;
-        if (isWebkit || /chrome)/.test(UA.toLowerCase())) {
+        if (isWebkit || /chrome/.test(UA.toLowerCase())) {
             // Due to a bug in Chrome and Safari (and probably other Webkit-based browsers, hopefully
             // this catches them all), we can't be sure the button will show up if we place it over the video
             // So, instead, we hide the video to make room for it. That can seem a very abrupt change,
