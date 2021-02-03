@@ -585,3 +585,12 @@ body,
 *[tabindex]:focus {
     outline: none;
 }
+
+// FF60 has a behavior that we don't see in new FF or other browsers (BL-8900), where a following activity page
+// seems to grow and push into the current page. We don't fully understand what causes this, but the following
+// collapses the width of the following page, so that this does not happen.
+// See https://developer.mozilla.org/en-US/docs/Web/CSS/visibility for an explanation of what this setting does.
+// Note that swiper uses flex boxes to achieve its behavior.
+.swiper-slide-next {
+    visibility: collapse;
+}
