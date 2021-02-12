@@ -10472,9 +10472,10 @@ style-loader@^0.23.1:
     loader-utils "^1.1.0"
     schema-utils "^1.0.0"
 
-style-scoped@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/style-scoped/-/style-scoped-0.1.0.tgz#d4519787a37fc8dd630d86cf9c894ef42b52727e"
+style-scoped@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/style-scoped/-/style-scoped-0.2.1.tgz#b079c8e47657ef17a4ac1253c4b338b52bc6f573"
+  integrity sha512-gPQX5eJnygb17byvGi68yCpn/Lq58ZIvLvfU1p9ph559udJ4RbuSFVbgVueMjmDvkmh8XKLEY6O+wsTjEnklkQ==
 
 stylis-rule-sheet@^0.0.10:
   version "0.0.10"
