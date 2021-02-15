@@ -9,9 +9,9 @@ import axios, { AxiosPromise } from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
 // tslint:disable-next-line: no-submodule-imports
-import "style-scoped/scoped"; // maybe use .min.js after debugging?
+import "style-scoped/scoped.min.js";
 // tslint:disable-next-line: no-submodule-imports
-import "swiper/dist/css/swiper.css";
+import "swiper/dist/css/swiper.min.css";
 // tslint:enable:no-submodule-imports
 import "./bloom-player.less";
 import Narration from "./narration";
@@ -26,6 +26,7 @@ import {
     updateBookProgressReport
 } from "./externalContext";
 import LangData from "./langData";
+// tslint:disable-next-line: no-submodule-imports
 import Replay from "@material-ui/icons/Replay";
 
 // See related comments in controlBar.tsx
@@ -1462,6 +1463,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     index - this.state.currentSwiperIndex
                                 ) < 2 ? (
                                     <>
+                                        {/* The idea here is to scope our styles (using a polyfill)
+                                            so that book styles cannot inadvertently change the swiper or other
+                                            elements outside the pages themselves. However, we discovered 2/2021
+                                            that this does not work, at least in some circumstances.
+                                            E.g. you can style the swiper next button using an !important rule
+                                            in the collection custom css.
+                                            The problem occurs because state.styleRules gets modified on a subsequent render.
+                                            I.e. if we could get rid of the extra render, this would work until something
+                                            else introduces another render.
+                                            I (Andrew) attempted to implement this using a shadow dom and got fairly
+                                            far using the react-shadow package, but various styles inside the page
+                                            were having issues, and lazy loading of images was not working. */}
                                         <style scoped={true}>
                                             {this.state.styleRules}
                                         </style>
