@@ -122,7 +122,12 @@ interface IProps {
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
-    styleRules: string; // concatenated stylesheets the book references or embeds.
+
+    // concatenated stylesheets the book references or embeds.
+    // Make sure these are only set once per book or else
+    // it wreaks havoc on scoped styles. See BL-9504.
+    styleRules: string;
+
     importedBodyClasses: string;
     // indicates current page, though typically not corresponding to the page
     // numbers actually on the page. This is an index into pages, and in context
@@ -151,8 +156,6 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
-
-    usingDefaultLang: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -188,8 +191,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         loadErrorHtml: "",
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
-        inPauseForced: false,
-        usingDefaultLang: true
+        inPauseForced: false
     };
 
     // The book url we were passed as a URL param.
@@ -489,6 +491,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.bookInteraction.clearPagesShown();
             this.music.processAllMusicForBook(pages);
         }
+
+        const preferredLanguages = this.bookInfo.getPreferredTranslationLanguages();
+        const usingDefaultLang =
+            preferredLanguages[0] === this.props.activeLanguageCode ||
+            !this.props.activeLanguageCode;
+
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const landscape = this.setPageSizeClass(page);
@@ -498,13 +506,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // Now we have all the information we need to call reportBookProps if it is set.
             if (i === 0 && this.props.reportBookProperties) {
                 // Informs containing react controls (in the same frame)
-                const preferredLanguages = this.bookInfo.getPreferredTranslationLanguages();
-                const usingDefaultLang =
-                    preferredLanguages[0] === this.props.activeLanguageCode ||
-                    !this.props.activeLanguageCode;
-                if (usingDefaultLang !== this.state.usingDefaultLang) {
-                    this.setState({ usingDefaultLang });
-                }
                 this.props.reportBookProperties({
                     landscape,
                     canRotate: this.bookInfo.canRotate,
@@ -530,6 +531,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.bookInfo.questionCount++;
                 }
             }
+            this.showOrHideTitle2(page, usingDefaultLang);
             swiperContent.push(page.outerHTML);
 
             // look for activities on this page
@@ -558,16 +560,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.controlsCallback(languages);
             }
         }
-        const combinedStyle = await this.assembleStyleSheets(this.htmlElement);
-        // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
-        // we get them, so we wait for the results and then make all the state changes in one go
-        // to minimize renderings. (Because all this is happening asynchronously, not within the
-        // original componentDidUpdate method call, each setState results in an immediate render.)
-        this.setState({
-            pages: swiperContent,
-            styleRules: combinedStyle,
-            isLoading: false
-        });
+
+        // Make sure you only set state.styleRules once per book.
+        // Otherwise, it wreaks havoc on scoped styles. See BL-9504.
+        if (isNewBook) {
+            const combinedStyle = await this.assembleStyleSheets(
+                this.htmlElement
+            );
+            // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
+            // we get them, so we wait for the results and then make all the state changes in one go
+            // to minimize renderings. (Because all this is happening asynchronously, not within the
+            // original componentDidUpdate method call, each setState results in an immediate render.)
+            this.setState({
+                pages: swiperContent,
+                styleRules: combinedStyle,
+                isLoading: false
+            });
+        } else {
+            this.setState({
+                pages: swiperContent,
+                isLoading: false
+            });
+        }
+
         this.props.pageStylesAreNowInstalled();
         // A pause hopefully allows the document to become visible before we
         // start playing any audio or movement on the first page.
@@ -604,6 +619,40 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     );
                 }, 200);
             }
+        }
+    }
+
+    // If a book is displayed in its original language, the author may well want to also see a title
+    // in the corresponding national language. Typically default rules or author styles will make
+    // the two titles appropriate sizes.
+    // When the user selects a different language, showing the published national language as well is
+    // less appropriate. It may not be the national language of any country where the chosen language
+    // is spoken. Worse, the book may have been published in a monolingual collection, where the
+    // vernacular and national languages are the same. When a different language is chosen,
+    // what was originally a single, possibly very large, title in the book's only language
+    // suddenly becomes a (possibly smaller) title in the chosen language followed by a possibly
+    // larger one in the original language (previously marked both bloom-content1 and
+    // bloom-contentNational1, now with just the second class making it visible).
+    // We decided (BL-9256) that Title-On-Cover should not display in the national language
+    // unless we are displaying the book's default language or unless the national language IS
+    // the main one we're showing (that is, it has bloom-content1 as well as bloom-contentNational1).
+    //
+    // Don't be tempted to achieve this by returning conditionally created rules from assembleStyleSheets.
+    // That was our original implementation, but if state.styleRules gets set more than once for a book,
+    // it wreaks havoc on scoped styles. See BL-9504.
+    private showOrHideTitle2(page: Element, show: boolean) {
+        if (show) {
+            page.querySelectorAll(
+                ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1"
+            ).forEach(title2Element => {
+                title2Element.classList.remove("do-not-display");
+            });
+        } else {
+            page.querySelectorAll(
+                ".Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1), .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1)"
+            ).forEach(title2Element => {
+                title2Element.classList.add("do-not-display");
+            });
         }
     }
 
@@ -815,12 +864,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         const visibilityClass = "bloom-visibility-code-on";
 
         for (
-            let iTrangGrps = 0;
-            iTrangGrps < translationGroupDivs.snapshotLength;
-            iTrangGrps++
+            let iTranGrps = 0;
+            iTranGrps < translationGroupDivs.snapshotLength;
+            iTranGrps++
         ) {
             const groupElement = translationGroupDivs.snapshotItem(
-                iTrangGrps
+                iTranGrps
             ) as HTMLElement;
             const dataDefaultLangsAttr = groupElement.getAttribute(
                 "data-default-languages"
@@ -832,8 +881,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 : [];
 
             const childElts = groupElement.childNodes;
-            for (let iedit = 0; iedit < childElts.length; iedit++) {
-                const divElement = childElts.item(iedit) as HTMLDivElement;
+            for (let iEdit = 0; iEdit < childElts.length; iEdit++) {
+                const divElement = childElts.item(iEdit) as HTMLDivElement;
                 if (
                     !divElement ||
                     !divElement.classList ||
@@ -1251,31 +1300,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
                                 : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'
                         };
-                }`;
-            // If a book is displayed in its original language, the author may well want to also see a title
-            // in the corresponding national language. Typically default rules or author styles will make
-            // the two titles appropriate sizes.
-            // When the user selects a different language, showing the published national language as well is
-            // less appropriate. It may not be the national language of any country where the chosen language
-            // is spoken. Worse, the book may have been published in a monolingual collection, where the
-            // vernacular and national languages are the same. When a different langauge is chosen,
-            // what was originally a single, possibly very large, title in the book's only language
-            // suddenly becomes a (possibly smaller) title in the chosen language followed by a possibly
-            // larger one in the original language (previously marked both bloom-content1 and
-            // bloom-contentNational1, now with just the second class making it visible).
-            // We decided (BL-9256) that Title-On-Cover should not display in the national language
-            // unless we are displaying the book's default language or unless the national langauge IS
-            // the main one we're showing (that is, it has bloom-content1 as well as bloom-contentNational1).
-            if (!this.state.usingDefaultLang) {
-                combinedStyle += `
-                .Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1) {
-                    display:none !important;
                 }
-                .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1) {
+
+                .do-not-display {
                     display:none !important;
                 }
                 `;
-            }
+
             // start with embedded styles (typically before links in a bloom doc...)
             const styleElts = doc.ownerDocument!.evaluate(
                 ".//style[@type='text/css']",
