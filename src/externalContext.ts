@@ -25,6 +25,12 @@ export function sendMessageToHost(messageObj: WithMessageType) {
         (window as any).ParentProxy.receiveMessage(message);
         return;
     }
+    // If we're in a native iOS WKWebView, we could not get it to receive postMessage
+    // messages, so instead it has to inject an object called webkit.messageHandlers to receive the message.
+    if ((window as any).webkit) {
+        (window as any).webkit.messageHandlers.receiveMessage.postMessage(message);
+        return;
+    }
     // If we're in an iframe, window.parent is the parent window, which may (but
     // probably won't) handle the message. If we're in a ReactNative WebView, window.parent
     // is the WebView itself (same as plain 'window') but the React Native code
