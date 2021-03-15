@@ -35,6 +35,7 @@ import Language from "@material-ui/icons/Language";
 import Fullscreen from "@material-ui/icons/Fullscreen";
 //tslint:disable-next-line:no-submodule-imports
 import FullscreenExit from "@material-ui/icons/FullscreenExit";
+import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
@@ -63,6 +64,9 @@ interface IControlBarProps {
     bookLanguages: LangData[];
     onLanguageChanged: (language: string) => void;
     extraButtons?: IExtraButton[];
+    bookHasImageDescriptions: boolean;
+    readImageDescriptions: boolean;
+    onReadImageDescriptionToggled: () => void;
 }
 
 export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
@@ -84,7 +88,10 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API.
         try {
             // Doc suggests also trying prefixes ms and moz; but I can't find any current browsers that require this
-            if (document.fullscreenElement != null || (document as any).webkitFullscreenElement != null) {
+            if (
+                document.fullscreenElement != null ||
+                (document as any).webkitFullscreenElement != null
+            ) {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if ((document as any).webkitExitFullScreen) {
@@ -93,12 +100,14 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
             } else {
                 if (document.documentElement.requestFullscreen) {
                     document.documentElement.requestFullscreen();
-                } else if ((document.documentElement as any).webkitRequestFullscreen) {
+                } else if (
+                    (document.documentElement as any).webkitRequestFullscreen
+                ) {
                     (document.documentElement as any).webkitRequestFullscreen();
                 }
             }
-        } catch(e) {
-            console.error("RequestFullScreen failed: ",e);
+        } catch (e) {
+            console.error("RequestFullScreen failed: ", e);
         }
     };
 
@@ -112,6 +121,29 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         <PlayCircleOutline titleAccess={props.playLabel} />
     ) : (
         <PauseCircleOutline titleAccess={pauseLabel} />
+    );
+
+    const readImageDescriptions = LocalizationManager.getTranslation(
+        "Button.ReadImageDescriptions",
+        props.preferredLanguages,
+        "Read Image Descriptions"
+    );
+
+    const ignoreImageDescriptions = LocalizationManager.getTranslation(
+        "Button.IgnoreImageDescriptions",
+        props.preferredLanguages,
+        "Ignore Image Descriptions"
+    );
+
+    const readImageDescriptionsOrNot: JSX.Element = (
+        <ImageDescriptionIcon
+            titleAccess={
+                props.readImageDescriptions
+                    ? ignoreImageDescriptions
+                    : readImageDescriptions
+            }
+            opacity={props.readImageDescriptions ? 1 : 0.38}
+        />
     );
 
     const extraButtons = props.extraButtons
@@ -178,6 +210,14 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 <div
                     className="filler" // this is set to flex-grow, making the following icons right-aligned.
                 />
+                {props.bookHasImageDescriptions && (
+                    <IconButton
+                        color={"secondary"}
+                        onClick={() => props.onReadImageDescriptionToggled()}
+                    >
+                        {readImageDescriptionsOrNot}
+                    </IconButton>
+                )}
                 {props.bookLanguages.length > 1 && (
                     <IconButton
                         className={controlButtonClass}

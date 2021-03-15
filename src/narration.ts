@@ -5,7 +5,10 @@ import { SwiperInstance } from "react-id-swiper";
 
 const kSegmentClass = "bloom-highlightSegment";
 const kMinDuration = 3.0; // seconds
-const kAudioSentence = "audio-sentence"; // Even though these can now encompass more than strict sentences, we continue to use this class name for backwards compatability reasons
+
+// Even though these can now encompass more than strict sentences,
+// we continue to use this class name for backwards compatability reasons.
+const kAudioSentence = "audio-sentence";
 
 // Handles implementation of narration, including playing the audio and
 // highlighting the currently playing text.
@@ -46,6 +49,8 @@ export default class Narration {
     // A Session Number that keeps track of each time playAllSentences started.
     // This is used to determine whether the page has been changed or not.
     private currentAudioSessionNum: number = 0;
+
+    private includeImageDescriptions: boolean = true;
 
     // This represents the start time of the current playing of the audio. If the user presses pause/play, it will be reset.
     // This is used for analytics reporting purposes
@@ -614,10 +619,15 @@ export default class Narration {
         return true; // currently no way to check
     }
 
+    public setIncludeImageDescriptions(includeImageDescriptions: boolean) {
+        this.includeImageDescriptions = includeImageDescriptions;
+    }
+
     // Returns all elements that match CSS selector {expr} as an array.
     // Querying can optionally be restricted to {container}’s descendants
     // If includeSelf is true, it includes both itself as well as its descendants.
     // Otherwise, it only includes descendants.
+    // Also filters out imageDescriptions if we aren't supposed to be reading them.
     private findAll(
         expr: string,
         container: HTMLElement,
@@ -633,7 +643,11 @@ export default class Narration {
             allMatches.push(container);
         }
 
-        return allMatches;
+        return this.includeImageDescriptions
+            ? allMatches
+            : allMatches.filter(
+                  match => match.closest(".bloom-imageDescription") === null
+              );
     }
 
     private getPlayableDivs(container: HTMLElement) {
