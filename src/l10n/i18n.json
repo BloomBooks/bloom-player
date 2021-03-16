@@ -41,5 +41,11 @@
     },
     "Button.Prev": {
         "en": "Previous Page"
+    },
+    "Button.ReadImageDescriptions": {
+        "en": "Read Image Descriptions"
+    },
+    "Button.IgnoreImageDescriptions": {
+        "en": "Ignore Image Descriptions"
     }
 }
