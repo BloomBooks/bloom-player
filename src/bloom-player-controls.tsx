@@ -170,10 +170,19 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const [languageData, setLanguageData] = useState(emptyLangDataArray);
     const [activeLanguageCode, setActiveLanguageCode] = useState("");
 
-    const [readImageDescriptions, setReadImageDescriptions] = useState(true);
+    const [
+        shouldReadImageDescriptions,
+        setShouldReadImageDescriptions
+    ] = useState(true);
     const [bookHasImageDescriptions, setBookHasImageDescriptions] = useState(
         false
     );
+
+    // Is narration.ts currently reading an image description aloud?
+    const [
+        nowReadingImageDescription,
+        setNowReadingImageDescription
+    ] = useState(false);
 
     // the point of this is just to have an ever-increasing number; each time the number
     // is increased, it will cause the useEffect to scale the page to the window again.
@@ -549,6 +558,11 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             secondary: { main: "#FFF" }
         }
     });
+
+    const handleToggleImageDescription = (inImageDescription: boolean) => {
+        setNowReadingImageDescription(inImageDescription);
+    };
+
     return (
         <div
             className="reactRoot"
@@ -595,10 +609,11 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 canShowFullScreen={!props.hideFullScreenButton}
                 extraButtons={props.extraButtons}
                 bookHasImageDescriptions={bookHasImageDescriptions}
-                readImageDescriptions={readImageDescriptions}
+                readImageDescriptions={shouldReadImageDescriptions}
                 onReadImageDescriptionToggled={() =>
-                    setReadImageDescriptions(!readImageDescriptions)
+                    setShouldReadImageDescriptions(!shouldReadImageDescriptions)
                 }
+                nowReadingImageDescription={nowReadingImageDescription}
             />
             <BloomPlayerCore
                 url={props.url}
@@ -664,7 +679,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 // We can helpfully reduce flicker if we don't actually show the real content until we
                 // have scaled the player to fit the window. This doesn't hide the loading spinner.
                 extraClassNames={pageScaled ? "" : "hidePlayer"}
-                shouldReadImageDescriptions={readImageDescriptions}
+                shouldReadImageDescriptions={shouldReadImageDescriptions}
+                imageDescriptionCallback={handleToggleImageDescription}
             />
         </div>
     );
