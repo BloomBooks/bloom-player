@@ -1,8 +1,10 @@
 //tslint:disable-next-line:no-submodule-imports
 import { createMuiTheme } from "@material-ui/core/styles";
 
-const bloomRed = "#d65649";
+const bloomRed = "#d65649"; // also in bloom-player.less
 const bloomGrey = "#2e2e2e"; // also in bloom-player.less
+// exported color here is used in controlBar.tsx
+export const bloomHighlight = "#ffff00"; // also in bloom-player.less
 
 const theme = createMuiTheme({
     palette: {
