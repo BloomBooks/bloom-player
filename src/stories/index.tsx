@@ -163,6 +163,12 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
+    "Activity that leads to FF60 split page",
+    //"https://s3.amazonaws.com/bloomharvest-sandbox/stephen_mcconnel%40sil.org/eda23196-72e8-4701-8651-58f14ce2bcfd/bloomdigital/index.htm"
+    "testBooks/Testing Away Again/index.htm"
+);
+
+AddBloomPlayerStory(
     "Multilingual motion book - default language",
     "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
 );
