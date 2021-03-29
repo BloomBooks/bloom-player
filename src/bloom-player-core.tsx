@@ -46,6 +46,7 @@ import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
 import "jquery.nicescroll";
+import { getQueryStringParamAndUnencode } from "./utilities/urlUtils";
 
 export enum PlaybackMode {
     NewPage, // starting a new page ready to play
@@ -245,7 +246,72 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // everything still works (but there could well be some state that we didn't test). So we're leaving
         // it in.
         this.componentDidUpdate(this.props, this.state);
+        const host = getQueryStringParamAndUnencode("host");
+        if (host === "bloomdesktop") {
+            // needed only for GeckoFx60. (We hope no one else is still running FF 60!)
+            // To test this in storybook:
+            // - use the "Activity that leads to FF60 split page";
+            // - use Firefox 60, initially you should see the problem when advancing to second page
+            // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
+            // or, of course, you can try it actually in Bloom desktop.
+            setTimeout(() => this.repairFF60Offset(), 2000);
+        }
     }
+
+    // This horrible hack attempts to fix the worst effects of BL-8900. Basically, something inside
+    // a widget iframe sometimes causes the wrapper that holds the whole collection of pages to scroll
+    // over to be out of position. It appears to be related to an unknown bug in FF60...a very nasty one
+    // since anything happening inside an iframe should not be able to affect its size, position, or
+    // anything outside it (except with the deliberate cooperation of the host page). We have not found
+    // any good way to stop it happening, but this basically compensates for it and puts the current page
+    // back where it belongs. Our theory is that the problem occurs when the activity finishes loading,
+    // typically sometime after the page before it becomes the 'current' page and the activity itself is
+    // therefore the 'next' page and no longer blocked by laziness.
+    // Observed cases take about 2s for the problem to appear on a fast computer
+    // with a good internet. To be fairly sure of catching it if it happens, but not keep using power
+    // doing this forever, we monitor for it for 30s.
+    // Note that the initial call that starts this checking process only happens if we are invoked
+    // from bloomdesktop. Otherwise, this function will never be called at all.
+    private repairFF60Offset() {
+        try {
+            let wrapper = document.getElementsByClassName(
+                "swiper-wrapper"
+            )[0] as HTMLElement;
+            let current = document.getElementsByClassName(
+                "swiper-slide-active"
+            )[0] as HTMLElement;
+            if (wrapper && current && this.msToContinueFF60RepairChecks > 0) {
+                let error =
+                    wrapper.parentElement!.getBoundingClientRect().left -
+                    current.getBoundingClientRect().left;
+                if (Math.abs(error) > 1) {
+                    const scale =
+                        wrapper.getBoundingClientRect().width /
+                        wrapper.offsetWidth;
+                    const paddingPx = wrapper.style.paddingLeft;
+                    const padding =
+                        paddingPx.length === 0
+                            ? 0
+                            : parseFloat(
+                                  paddingPx.substring(0, paddingPx.length - 2)
+                              );
+                    wrapper.style.paddingLeft = padding + error / scale + "px";
+                }
+            }
+        } catch (_) {
+            // If something goes wrong with this...oh well, we tried, and on most
+            // browsers we didn't need it anyway.
+        }
+        this.msToContinueFF60RepairChecks -= 100;
+        setTimeout(() => this.repairFF60Offset(), 100);
+    }
+
+    // This stores a number of milliseconds during which we should continue to check repeatedly
+    // for the FF60 problem described above. It is set to zero when checking should be disabled
+    // (e.g., during drag or animation) and to a substantial number after we change pages.
+    // Then it gets decremented in repairFF60Offset, and eventually decrements to zero so we
+    // don't consume extra power forever doing this check.
+    private msToContinueFF60RepairChecks = 0;
 
     private handleDocumentLevelKeyDown = e => {
         if (e.key === "Home") {
@@ -1484,9 +1550,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.setState({ inPauseForced: false });
 
                     this.showingPage(this.swiperInstance.activeIndex);
+                    this.msToContinueFF60RepairChecks = 30000;
                 },
-                slideChangeTransitionStart: () =>
-                    this.setIndex(this.swiperInstance.activeIndex)
+                slideChangeTransitionStart: () => {
+                    this.msToContinueFF60RepairChecks = 0; // disable
+                    this.setIndex(this.swiperInstance.activeIndex);
+                },
+                // Not sure we need all of these. The idea is that if slider is
+                // messing with offsets itself, we don't want to try to adjust things.
+                // During e.g. animation, it's normal that the current page isn't aligned
+                // with the frame.
+                // It appears that the last setTranslate call happens before at least one
+                // of the events we're using to turn checking on.
+                setTranslate: () => (this.msToContinueFF60RepairChecks = 0), // disable
+                sliderMove: () => (this.msToContinueFF60RepairChecks = 0), // disable
+                // This (30s) is a pretty generous allowance. Our theory is that the problem occurs
+                // when the activity finishes loading, typically sometime after the page before
+                // it becomes the 'current' page and the activity itself is therefore the 'next'
+                // page. Observed cases take about 2s for the problem to appear on a fast computer
+                // with a good internet. 30s allows for it to be a LOT slower on a phone with a poor
+                // connection.. We want SOME limit so
+                // we don't keep using power for hours if the device is left on this page.
+                slideChangeTransitionEnd: () =>
+                    (this.msToContinueFF60RepairChecks = 30000)
             },
             keyboard: {
                 enabled: true,
@@ -1559,7 +1645,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     ) {
                                         this.props.onContentClick(e);
                                     }
-                                    this.setState({ ignorePhonyClick: false });
+                                    this.setState({
+                                        ignorePhonyClick: false
+                                    });
                                 }}
                             >
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
