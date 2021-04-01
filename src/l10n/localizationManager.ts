@@ -1,21 +1,24 @@
-import i18nData from "./i18n.json";
+import i18nData from "./l10n-all.json"; // file created at build time
 
 // Handles loading and retrieving of localization data.
 //
-// i18n.json contains all the translation information.
-// Ideally, we will build that file from Crowdin (or git)
-// at build time. However, we only have one string currently,
-// it is for legacy quizzes, and we're not even sure we will
-// add more strings in the future (as we are going to use icons
-// whenever possible). So today it is maintained manually
-// using approved translations from Crowdin. Last updated 6/10/19.
+// l10n-all.json contains all the translation information.
+// We build that file from Crowdin (or git) at build time.
 // We would call the class LocalizationManager, but we're using that
 // for the singleton.
 class LocalizationManagerImplementation {
-    // Each item has the following structure:
-    // "Sample.ID": { "en": "Sample English Text", "fr": "Sample French Text" }
-    // So you have a l10n ID mapped to a set of key-value pairs, each of
-    // which is a translation in a particular language.
+    // l10n-all.json has the following structure:
+    // {
+    //   "en": { "Sample.ID1": { "message": "First Sample English Text", "description": "..." },
+    //           "Sample.ID2": { "message": "Second English Text", "description": "..." }
+    //         },
+    //   "fr": { "Sample.ID1": { "message": "Premier échantillon de texte en français", "description": "..."},
+    //           "Sample.ID2": { "message": "Deuxième texte français", "description": "..."}
+    //         }
+    // }
+    // This is essentially a concatenation of the individual language json files, with the
+    // language codes tagging the  separate pieces that were gathered together.  This is based
+    // on the "Chrome JSON" format (https://support.crowdin.com/file-formats/chrome-json/).
     private l10nDictionary: Map<string, Map<string, string>> = new Map();
 
     private isSetup: boolean = false;
@@ -29,13 +32,16 @@ class LocalizationManagerImplementation {
 
         const i18nDataToUse = i18nDataOverride ? i18nDataOverride : i18nData;
 
-        Object.keys(i18nDataToUse).forEach(key => {
-            const translations = i18nDataToUse[key];
-            const translationsMap = new Map();
-            Object.keys(translations).forEach(language => {
-                translationsMap.set(language, translations[language]);
+        Object.keys(i18nDataToUse).forEach(lang => {
+            const strings = i18nDataToUse[lang];
+            Object.keys(strings).forEach(stringId => {
+                let translations = this.l10nDictionary.get(stringId);
+                if (!translations) {
+                    translations = new Map();
+                    this.l10nDictionary.set(stringId, translations);
+                }
+                translations.set(lang, strings[stringId].message);
             });
-            this.l10nDictionary.set(key, translationsMap);
         });
     }
 

@@ -4,13 +4,31 @@ import { LocalizationManager } from "./localizationManager";
 // before any tests. The other option is beforeEach which we don't want.
 beforeAll(() => {
     LocalizationManager.setUp({
-        "Sample.ID": {
-            en: "Sample English Text",
-            fr: "Sample French Text",
-            hi: "Sample Hindi Text"
+        en: {
+            "Sample.ID": {
+                message: "Sample English Text",
+                description: "This is a test."
+            }
         },
-        // We don't expect this to ever happen in real data
-        "Sample.ID.WithoutEnglish": { sp: "Sample Spanish Text" }
+        fr: {
+            "Sample.ID": {
+                message: "Sample French Text",
+                description: "This is a test."
+            }
+        },
+        hi: {
+            "Sample.ID": {
+                message: "Sample Hindi Text",
+                description: "This is a test."
+            }
+        },
+        sp: {
+            // We don't expect this to ever happen in real data
+            "Sample.ID.WithoutEnglish": {
+                message: "Sample Spanish Text",
+                description: "This is a test."
+            }
+        }
     });
 });
 
