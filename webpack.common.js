@@ -260,7 +260,8 @@ async function fetchUpdatedCrowdinTranslations() {
         const results = [];
         while (languages.length > 0) {
             const langs = [];
-            for (let i = 0; i < Math.min(10, languages.length); ++i) {
+            const limit = Math.min(10, languages.length);
+            for (let i = 0; i < limit; ++i) {
                 langs.push(languages.pop());
             }
             const partial = langs.map(lang => {
@@ -268,7 +269,7 @@ async function fetchUpdatedCrowdinTranslations() {
             });
             const partialResults = await Promise.all(partial);
 
-            for (let i = 0; i < partialResults.length; ++i) {
+            while (partialResults.length) {
                 results.push(partialResults.pop());
             }
         }
