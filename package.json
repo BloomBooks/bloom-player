@@ -69,7 +69,7 @@
         "@types/react-dom": "^16.8.5",
         "@types/storybook__addon-info": "^4.1.2",
         "@types/storybook__react": "^4.0.2",
-        "axios": "^0.18.0",
+        "axios": "^0.21.1",
         "babel-jest": "^24.7.1",
         "babel-loader": "^8.0.6",
         "before-build-webpack": "^0.2.11",
