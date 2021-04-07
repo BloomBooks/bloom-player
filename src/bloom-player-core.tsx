@@ -2020,11 +2020,10 @@ function htmlEncode(str: string): string {
     });
 }
 function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
-    let xpath = "//div[contains(@class, 'bloom-imageDescription')]";
-    xpath +=
-        "/div[contains(@class, 'bloom-editable') and contains(@class, 'bloom-visibility-code-on')]//";
-    xpath +=
-        "*[contains(@class, 'audio-sentence') or contains(@class, 'bloom-highlightSegment')]";
+    const xpath =
+        "//div[contains(@class, 'bloom-imageDescription')]" +
+        "/div[contains(@class, 'bloom-editable') and contains(@class, 'bloom-visibility-code-on')]" +
+        "//*[contains(@class, 'audio-sentence') or contains(@class, 'bloom-highlightSegment')]";
     const imgDescDivs = body.ownerDocument!.evaluate(
         xpath,
         body,
@@ -2032,5 +2031,20 @@ function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
         XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
         null
     );
-    return imgDescDivs.snapshotLength > 0;
+    if (imgDescDivs.snapshotLength > 0) return true;
+    // Perhaps the user never split TextBox recordings into segments for image descriptions
+    // because none of them had multiple sentences.  Playback works fine without the segmentation,
+    // so check for this condition as well.
+    const xpath2 =
+        "//div[contains(@class, 'bloom-imageDescription')]" +
+        "/div[contains(@class, 'bloom-editable') and contains(@class, 'bloom-visibility-code-on') and @data-audiorecordingmode='TextBox']" +
+        "/p[text()]";
+    const imgDescParas = body.ownerDocument!.evaluate(
+        xpath2,
+        body,
+        null,
+        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+        null
+    );
+    return imgDescParas.snapshotLength > 0;
 }
