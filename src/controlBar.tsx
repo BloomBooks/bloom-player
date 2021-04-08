@@ -252,7 +252,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     >
                         <Language
                             titleAccess={LocalizationManager.getTranslation(
-                                "Button.Language",
+                                "Button.ChooseLanguage",
                                 props.preferredLanguages,
                                 "Choose Language"
                             )}
