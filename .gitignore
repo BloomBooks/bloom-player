@@ -5,3 +5,7 @@ updateFiles.bat
 *.orig
 
 debug.log
+
+/src/l10n/l10n-all.json
+/src/l10n/_locales/*
+!/src/l10n/_locales/en
