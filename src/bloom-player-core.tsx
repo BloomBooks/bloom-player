@@ -53,9 +53,10 @@ export enum PlaybackMode {
     NewPageMediaPaused, // starting a new page in the "paused" state
     VideoPlaying, // video is playing
     VideoPaused, // video is paused
-    AudioPlaying, // narration, music, and/or animation are playing (or possibly finished)
-    AudioPaused, // narration, music, and/or animation are paused
+    AudioPlaying, // narration and/or animation are playing (or possibly finished)
+    AudioPaused, // narration and/or animation are paused
     MediaFinished // video, narration, and/or animation has played (possibly no media to play)
+    // Note that music can be playing when the state is either AudioPlaying or MediaFinished.
 }
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -1140,8 +1141,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ) {
             this.narration.pause(); // sets currentPlaybackMode = AudioPaused
             this.animation.PauseAnimation();
-            this.music.pause();
         }
+        // Music keeps playing after all video, narration, and animation have finished.
+        // Clicking on pause should pause the music, even though clicking on play will
+        // then restart the video, narration, or animation while resuming the music where
+        // it paused.  See https://issues.bloomlibrary.org/youtrack/issue/BL-9967.
+        this.music.pause();
     }
 
     private reportBookOpened(body: HTMLBodyElement) {
@@ -1993,6 +1998,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (BloomPlayerCore.currentPageHasVideo) {
             BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
             this.video.HandlePageVisible(bloomPage);
+            this.music.pause(); // in case we have audio from previous page
         } else {
             this.playAudioAndAnimation(bloomPage);
         }
