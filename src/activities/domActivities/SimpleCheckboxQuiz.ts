@@ -30,7 +30,9 @@ export default class SimpleCheckboxQuiz {
         // and for maintaining the class that indicates empty choice.
         // Assumes the code that sets up the editMode class on the body element if appropriate has already been run.
 
-        //markEmptyChoices();
+        // BL-10037 if this code is missing, pre-existing "empty" class may hide answers when we switch to a
+        // language that should have visible answers.
+        this.markEmptyChoices();
         //const observer = new MutationObserver(markEmptyChoices);
         //observer.observe(document.body, { characterData: true, subtree: true });
         const choices = this.activityContext.pageElement.getElementsByClassName(
@@ -74,6 +76,31 @@ export default class SimpleCheckboxQuiz {
             }
         });
     }
+
+    private markEmptyChoices(): void {
+        const choices = this.activityContext.pageElement.getElementsByClassName(
+            "checkbox-and-textbox-choice"
+        );
+        for (let i = 0; i < choices.length; i++) {
+            if (this.hasVisibleContent(choices[i])) {
+                choices[i].classList.remove("empty");
+            } else {
+                choices[i].classList.add("empty");
+            }
+        }
+    }
+
+    private hasVisibleContent(choice: Element): boolean {
+        const editables = choice.getElementsByClassName("bloom-editable");
+        console.log(`hasVisibleContent found ${editables.length} editables`);
+
+        return Array.from(editables).some(
+            e =>
+                e.classList.contains("bloom-visibility-code-on") &&
+                (e.textContent || "").trim() !== ""
+        );
+    }
+
     private handleReadModeClick(event: Event) {
         // prevent the browser messing with the check box checked state
         event.stopPropagation();
