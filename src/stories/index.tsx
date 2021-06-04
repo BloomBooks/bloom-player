@@ -217,3 +217,7 @@ AddBloomPlayerStory(
     // note, I could not test :, /, or ? because they are not allowed as part of the filename anyways.
     "src/testbook/test %231/test %26 play%232.htm"
 );
+AddBloomPlayerStory(
+    "Sign Language with sound",
+    "https://s3.amazonaws.com/share.bloomlibrary.org/debug/Is+it+the+End+of+the+World++-+SL/Is+it+the+End+of+the+World++-+SL.htm",
+);

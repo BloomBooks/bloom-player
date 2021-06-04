@@ -840,8 +840,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // We need named functions for each LiteEvent handler, so that we can unsubscribe them
     // when we are about to unmount.
     private handlePageVideoComplete = pageVideoData => {
-        this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
-        this.showReplayButton(pageVideoData);
+        // Verify we're on the current page before playing audio (BL-10039)
+        // If the user if flipping pages rapidly, video completed events can overlap.
+        if (pageVideoData!.page === BloomPlayerCore.currentPage) {
+            this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
+            this.showReplayButton(pageVideoData);
+            // } else {
+            //     console.log(`DEBUG: ignoring out of sequence page audio`);
+        }
     };
 
     private handlePageDurationAvailable = (
