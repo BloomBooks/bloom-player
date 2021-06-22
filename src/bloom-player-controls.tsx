@@ -15,7 +15,7 @@ import {
 import { ControlBar, IExtraButton } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, LegacyRef } from "react";
 import LangData from "./langData";
 import {
     getQueryStringParamAndUnencode,
@@ -108,6 +108,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         props.centerVertically === undefined ? true : props.centerVertically;
 
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
+    // And now (BL-9871) we allow activities to manipulate our controls too.
+    // If we arrive here, our messageType is "control".
     setExternalControlCallback(data => {
         if (data.pause) {
             canExternallyResume = !paused;
@@ -116,6 +118,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             setPaused(false);
         } else if (data.play) {
             setPaused(false);
+        } else if (data.controlAction) {
+            handleControlMessage(data.controlAction as string);
         }
     });
 
@@ -196,6 +200,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const [outsideButtonPageClass, setOutsideButtonPageClass] = useState("");
 
+    const [areNextPrevButtonsHidden, setAreNextPrevButtonsHidden] = useState(
+        false
+    );
+
     useEffect(() => {
         scalePageToWindow();
     }, [
@@ -217,6 +225,33 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             }
         };
     }, []);
+
+    const coreRef = useRef<BloomPlayerCore>();
+
+    const handleControlMessage = (messageName: string) => {
+        switch (messageName) {
+            case "hide-buttons":
+                setAreNextPrevButtonsHidden(true);
+                break;
+            case "next":
+                if (coreRef && coreRef.current) {
+                    setAreNextPrevButtonsHidden(false); // in case the next page is not an activity
+                    coreRef.current.slideNext();
+                }
+                break;
+            case "previous":
+                if (coreRef && coreRef.current) {
+                    setAreNextPrevButtonsHidden(false); // in case the next page is not an activity
+                    coreRef.current.slidePrevious();
+                }
+                break;
+            default:
+                console.log(
+                    "'handleActivityMessage' received an unknown message."
+                );
+                return;
+        }
+    };
 
     // Assumes that we want the controls and player to fill a (typically device) window.
     // (The page is trying to be a standard height (in mm) for a predictable layout
@@ -616,6 +651,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 nowReadingImageDescription={nowReadingImageDescription}
             />
             <BloomPlayerCore
+                ref={coreRef as LegacyRef<BloomPlayerCore>}
                 url={props.url}
                 landscape={windowLandscape}
                 showContextPages={props.showContextPages}
@@ -634,6 +670,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     reportBookProperties(bookPropsObj);
                     setPreferredLanguages(bookProps.preferredLanguages);
                 }}
+                hideNextPrevButtons={areNextPrevButtonsHidden}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
                     if (p) {

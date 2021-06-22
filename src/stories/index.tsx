@@ -189,7 +189,7 @@ AddBloomPlayerStory(
 
 AddBloomPlayerStory(
     "Activity - Simple DOM",
-    "src/sample-dom-activity/Simple Activities.htm"
+    "testbooks/sample-dom-activity/Simple Activities.htm"
 );
 AddBloomPlayerStory(
     "Book with two audio sentences on cover",
@@ -197,15 +197,19 @@ AddBloomPlayerStory(
 );
 AddBloomPlayerStory(
     "Activity - IFrame - Construct Runtime Game",
-    "src/sample-iframe-activity/index.htm"
+    "testbooks/sample-iframe-activity/index.htm"
 );
 AddBloomPlayerStory(
     "Activity - Canvas Game - Snake",
-    "src/sample-canvas-activity/index.htm"
+    "testbooks/sample-canvas-activity/index.htm"
+);
+AddBloomPlayerStory(
+    "Activity - Test widget-controlled navigation",
+    "testbooks/test-widget-message-activity/index.htm"
 );
 AddBloomPlayerStory(
     "Sign language with talking",
-    "src/sign-language-with-talking-book/sign-language-with-talking-book.htm"
+    "testbooks/sign-language-with-talking-book/sign-language-with-talking-book.htm"
 );
 
 AddBloomPlayerStory(
@@ -219,5 +223,5 @@ AddBloomPlayerStory(
 );
 AddBloomPlayerStory(
     "Sign Language with sound",
-    "https://s3.amazonaws.com/share.bloomlibrary.org/debug/Is+it+the+End+of+the+World++-+SL/Is+it+the+End+of+the+World++-+SL.htm",
+    "https://s3.amazonaws.com/share.bloomlibrary.org/debug/Is+it+the+End+of+the+World++-+SL/Is+it+the+End+of+the+World++-+SL.htm"
 );
