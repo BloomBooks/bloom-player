@@ -74,6 +74,7 @@ interface IProps {
     // ``paused`` allows the parent to control pausing of audio. We expect we may supply
     // a click/touch event callback if needed to support pause-on-touch.
     paused?: boolean;
+    preferredUiLanguages: string[];
 
     pageStylesAreNowInstalled: () => void;
     onContentClick?: (event: any) => void;
@@ -584,9 +585,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.music.processAllMusicForBook(pages);
         }
 
-        const preferredLanguages = this.bookInfo.getPreferredTranslationLanguages();
+        const bookLanguages = this.bookInfo.getPreferredTranslationLanguages();
         const usingDefaultLang =
-            preferredLanguages[0] === this.props.activeLanguageCode ||
+            bookLanguages[0] === this.props.activeLanguageCode ||
             !this.props.activeLanguageCode;
 
         for (let i = 0; i < pages.length; i++) {
@@ -601,7 +602,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.reportBookProperties({
                     landscape,
                     canRotate: this.bookInfo.canRotate,
-                    preferredLanguages
+                    preferredLanguages: bookLanguages
                 });
             }
             if (isNewBook) {
@@ -1718,7 +1719,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         <ArrowBack
                             titleAccess={LocalizationManager.getTranslation(
                                 "Button.Prev",
-                                this.bookInfo.getPreferredTranslationLanguages(),
+                                this.props.preferredUiLanguages,
                                 "Previous Page"
                             )}
                         />
@@ -1739,7 +1740,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         <ArrowForward
                             titleAccess={LocalizationManager.getTranslation(
                                 "Button.Next",
-                                this.bookInfo.getPreferredTranslationLanguages(),
+                                this.props.preferredUiLanguages,
                                 "Next Page"
                             )}
                         />

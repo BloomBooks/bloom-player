@@ -150,7 +150,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const [paused, setPaused] = useState(false);
     const [browserForcedPaused, setBrowserForcedPaused] = useState(false);
-    const [preferredLanguages, setPreferredLanguages] = useState(["en"]);
+
+    const uiLang = LocalizationManager.getBloomUiLanguage();
+    const initialPreferredUiLanguages =
+        uiLang === "en" ? [uiLang] : [uiLang, "en"];
+    const [preferredUiLanguages, setPreferredUiLanguages] = useState(
+        initialPreferredUiLanguages
+    );
+
     useEffect(() => {
         if (!paused) {
             // When we change from paused to playing, reset this to the initial state (false)
@@ -531,12 +538,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const playString = LocalizationManager.getTranslation(
         "Audio.Play",
-        preferredLanguages,
+        preferredUiLanguages,
         "Play"
     );
     const readAloudString = LocalizationManager.getTranslation(
         "Audio.ReadAloud",
-        preferredLanguages,
+        preferredUiLanguages,
         "Read Aloud"
     );
     const playLabel = hasAudio ? readAloudString : playString;
@@ -599,7 +606,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 paused={paused}
                 pausedChanged={(p: boolean) => setPaused(p)}
                 playLabel={playLabel}
-                preferredLanguages={preferredLanguages}
+                preferredLanguages={preferredUiLanguages}
                 backClicked={() => onBackClicked()}
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
@@ -620,6 +627,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 landscape={windowLandscape}
                 showContextPages={props.showContextPages}
                 paused={paused}
+                preferredUiLanguages={preferredUiLanguages}
                 pageStylesAreNowInstalled={() => {
                     setPageStylesInstalled(true);
                 }}
@@ -632,7 +640,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     // This method uses externalContext which handles both possible contexts:
                     // Android WebView and html iframe
                     reportBookProperties(bookPropsObj);
-                    setPreferredLanguages(bookProps.preferredLanguages);
+                    setPreferredUiLanguages(
+                        [uiLang].concat(bookProps.preferredLanguages)
+                    );
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {

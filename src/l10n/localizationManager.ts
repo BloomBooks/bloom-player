@@ -122,6 +122,47 @@ class LocalizationManagerImplementation {
         const [result] = this.getTranslationAndLanguage(id, preferredLanguages);
         return result || defaultVal;
     }
+
+    // Returns the language code that should be used for Bloom Player's UI
+    // (Note - this may be different than the book's languages or the UI of the browser)
+    public getBloomUiLanguage(): string {
+        // NOTE: This has only really been tested in the browser (BloomLibrary) scenario.
+        // For devices (BloomReader): well, this currently affects tooltips,
+        // but tooltips don't show up in the Android app even when long-pressing,
+        // so no relevant scenario to test.
+
+        // NOTE: If the user has set multiple preferred languages in the browser,
+        // this code only picks the user's most-preferred language
+        // My reasoning for this is that a user might set a non-English language as their most preferred,
+        // and then have English as their least preferred.
+        // I think it's awkward if we used their least preferred browser language before the book's language
+        // So... I figure we might as well just use only their first one.
+        //
+        // NOTE: This is user's preferred language setting.
+        // Although it usually the same as the browser's UI language, it is not guaranteed to be the same,
+        // if the user has configured their settings such that the top language
+        // is not the language selected for displaying the browser's UI.
+        // But since they signed up saying they most desire to receive their web content in this language,
+        // I think it's a reasonable thing to do (actually, the most reasonable thing)
+        const langForBloomUi = navigator.language; // Might be a lang/region, e.g. "en-US". Or may just be "es"
+
+        return this.removeRegionCode(langForBloomUi);
+    }
+
+    // Removes the region and any other suffixes from a lang with region code like "en-US"
+    // Examples:
+    // * en-US -> en
+    // * es -> es
+    public removeRegionCode(langRegionCode: string): string {
+        const hyphenIndex = langRegionCode.indexOf("-");
+        if (hyphenIndex < 0) {
+            // No hyphen, we can return it directly
+            return langRegionCode;
+        }
+
+        const langOnly = langRegionCode.substring(0, hyphenIndex);
+        return langOnly;
+    }
 }
 
 // This is the one instance of this class.
