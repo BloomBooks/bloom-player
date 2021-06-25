@@ -200,9 +200,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const [outsideButtonPageClass, setOutsideButtonPageClass] = useState("");
 
-    const [areNextPrevButtonsHidden, setAreNextPrevButtonsHidden] = useState(
-        false
-    );
+    const [isHideNextPrevButtons, setIsHideNextPrevButtons] = useState(false);
 
     useEffect(() => {
         scalePageToWindow();
@@ -231,17 +229,17 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const handleControlMessage = (messageName: string) => {
         switch (messageName) {
             case "hide-buttons":
-                setAreNextPrevButtonsHidden(true);
+                setIsHideNextPrevButtons(true);
                 break;
             case "next":
                 if (coreRef && coreRef.current) {
-                    setAreNextPrevButtonsHidden(false); // in case the next page is not an activity
+                    setIsHideNextPrevButtons(false); // in case the next page is not an activity
                     coreRef.current.slideNext();
                 }
                 break;
             case "previous":
                 if (coreRef && coreRef.current) {
-                    setAreNextPrevButtonsHidden(false); // in case the next page is not an activity
+                    setIsHideNextPrevButtons(false); // in case the previous page is not an activity
                     coreRef.current.slidePrevious();
                 }
                 break;
@@ -651,6 +649,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 nowReadingImageDescription={nowReadingImageDescription}
             />
             <BloomPlayerCore
+                // We believe/hope we can do this a better way (without LegacyRef) once BloomPlayerCore is a function component.
                 ref={coreRef as LegacyRef<BloomPlayerCore>}
                 url={props.url}
                 landscape={windowLandscape}
@@ -670,7 +669,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     reportBookProperties(bookPropsObj);
                     setPreferredLanguages(bookProps.preferredLanguages);
                 }}
-                hideNextPrevButtons={areNextPrevButtonsHidden}
+                hideNextPrevButtons={isHideNextPrevButtons}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
                     if (p) {
