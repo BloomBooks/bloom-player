@@ -1,3 +1,5 @@
+import { LocalizationManager } from "../../l10n/localizationManager";
+
 export class OldQuestionsConverter {
     public static convert(json: string, pageClass: string): HTMLElement[] {
         if (!json) {
@@ -44,11 +46,16 @@ export class OldQuestionsConverter {
                     marginBox
                 );
 
+                const checkYourUnderstandingString = LocalizationManager.getTranslation(
+                    "Quiz.CheckYourUnderstanding",
+                    [lang],
+                    "Check Your Understanding"
+                );
                 this.appendTranslationGroup(
                     quiz,
-                    "Check Your Understanding",
+                    checkYourUnderstandingString,
                     "QuizHeader-style",
-                    "en", // If we find a translation of this, we will change the lang attribute to match later
+                    lang, // Regardless of whether the string is actually this lang or a fallback, we need to put something and mark it down for {lang}
                     "Quiz.CheckYourUnderstanding"
                 );
 
