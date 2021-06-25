@@ -1506,6 +1506,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         return this.rootDiv;
     }
 
+    public slideNext(): void {
+        if (this.swiperInstance) {
+            this.swiperInstance.slideNext();
+        }
+    }
+
+    public slidePrevious(): void {
+        if (this.swiperInstance) {
+            this.swiperInstance.slidePrev();
+        }
+    }
+
     public render() {
         const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
         if (this.state.isLoading) {
@@ -1608,7 +1620,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         };
 
         let bloomPlayerClass = "bloomPlayer";
-        if (this.props.outsideButtonPageClass) {
+        if (this.props.hideNextPrevButtons) {
+            bloomPlayerClass += " hideNextPrevButtons";
+        } else if (this.props.outsideButtonPageClass) {
             // there's room for buttons outside the page; show them.
             bloomPlayerClass += " " + this.props.outsideButtonPageClass;
             // Bloom Reader on Android can have states where the page display
@@ -1621,8 +1635,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         } else if (showNavigationButtonsEvenOnTouchDevices) {
             bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
-        } else if (this.props.hideNextPrevButtons) {
-            bloomPlayerClass += " hideNextPrevButtons";
         }
 
         // multiple classes help make rules more specific than those in the book's stylesheet
@@ -1705,10 +1717,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             ? " swiper-button-disabled"
                             : "")
                     }
-                    onClick={() => this.swiperInstance.slidePrev()}
+                    onClick={() => this.slidePrevious()}
                     onTouchStart={e => {
                         this.setState({ ignorePhonyClick: true });
-                        this.swiperInstance.slidePrev();
+                        this.slidePrevious();
                     }}
                 >
                     {/* The ripple is an animation on the button on click and
@@ -1732,8 +1744,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             ? " swiper-button-disabled"
                             : "")
                     }
-                    onClick={() => this.swiperInstance.slideNext()}
-                    onTouchStart={() => this.swiperInstance.slideNext()}
+                    onClick={() => this.slideNext()}
+                    onTouchStart={() => this.slideNext()}
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward

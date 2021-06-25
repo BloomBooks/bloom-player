@@ -14,7 +14,7 @@ export interface IActivityModule {
 
 // This is the class that the activity module has to implement
 export interface IActivityObject {
-    new (HTMLElement): object;
+    new (element: HTMLElement): object;
     start: (context: ActivityContext) => void;
     stop: () => void;
 }
