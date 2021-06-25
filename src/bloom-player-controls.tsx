@@ -228,16 +228,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const handleControlMessage = (messageName: string) => {
         switch (messageName) {
-            case "hide-buttons":
+            case "hide-page-navigation-buttons":
                 setIsHideNextPrevButtons(true);
                 break;
-            case "next":
+            case "navigate-to-next-page":
                 if (coreRef && coreRef.current) {
                     setIsHideNextPrevButtons(false); // in case the next page is not an activity
                     coreRef.current.slideNext();
                 }
                 break;
-            case "previous":
+            case "navigate-to-previous-page":
                 if (coreRef && coreRef.current) {
                     setIsHideNextPrevButtons(false); // in case the previous page is not an activity
                     coreRef.current.slidePrevious();

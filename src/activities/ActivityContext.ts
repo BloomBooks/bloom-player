@@ -149,15 +149,15 @@ export class ActivityContext {
         window.postMessage(messageJson, "*"); // any window may receive
     }
 
-    public hidePageNavigationButtons() {
-        this.sendMessageToPlayer("hide-buttons");
+    public hidePageNavigationButtons() { 
+        this.sendMessageToPlayer("hide-page-navigation-buttons");
     }
 
     public navigateToNextPage() {
-        this.sendMessageToPlayer("next");
+        this.sendMessageToPlayer("navigate-to-next-page");
     }
 
     public navigateToPreviousPage() {
-        this.sendMessageToPlayer("previous");
+        this.sendMessageToPlayer("navigate-to-previous-page");
     }
 }
