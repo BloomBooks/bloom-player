@@ -99,7 +99,7 @@ test("correct header", () => {
         headerGroup,
         "Check Your Understanding",
         "QuizHeader-style",
-        "en" // The header is initially set to English and changed by the localization code
+        "sp"
     );
 });
 
