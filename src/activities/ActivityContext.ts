@@ -9,6 +9,10 @@ import {
 const rightAnswer = require("./right_answer.mp3");
 const wrongAnswer = require("./wrong_answer.mp3");
 
+export interface IPlayerPageOptions {
+    hideNavigation?: boolean;
+}
+
 // This is passed to an activity to give it things that it needs. It's mostly
 // a wrapper so that activities don't have direct knowledge of how parts outside
 // of them are arranged.
@@ -18,6 +22,8 @@ export class ActivityContext {
     // Typically, indices of all pages with the same analytics category.
     // (This is necessary to be able to report analytics for this category as a group.)
     public pagesToGroupForAnalytics: number[] | undefined;
+    // We will pass options on how to deal with activities to BP via the 'data-player-options' json.
+    public pageOptions: IPlayerPageOptions;
 
     private listeners = new Array<{
         name: string;
@@ -33,6 +39,10 @@ export class ActivityContext {
         this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
         this.pagesToGroupForAnalytics = pagesToGroupForAnalytics;
+        const options = this.getPlayerOptionsForPage();
+        if (options) {
+            this.pageOptions = options;
+        }
     }
 
     // report a score that can be used for analytics
@@ -149,7 +159,7 @@ export class ActivityContext {
         window.postMessage(messageJson, "*"); // any window may receive
     }
 
-    public hidePageNavigationButtons() { 
+    public hidePageNavigationButtons() {
         this.sendMessageToPlayer("hide-page-navigation-buttons");
     }
 
@@ -159,5 +169,23 @@ export class ActivityContext {
 
     public navigateToPreviousPage() {
         this.sendMessageToPlayer("navigate-to-previous-page");
+    }
+
+    private getPlayerOptionsForPage(): IPlayerPageOptions | undefined {
+        const optionJson = this.pageElement.getAttribute("data-player-options");
+        if (!optionJson) {
+            return undefined;
+        }
+        try {
+            return JSON.parse(optionJson) as IPlayerPageOptions;
+        } catch (e) {
+            console.log(
+                "getPlayerOptionsForPage failed to parse json: " +
+                    optionJson +
+                    " with errror " +
+                    e.message
+            );
+            return;
+        }
     }
 }

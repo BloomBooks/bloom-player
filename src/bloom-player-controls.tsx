@@ -252,7 +252,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 break;
             default:
                 console.log(
-                    "'handleActivityMessage' received an unknown message."
+                    "'handleControlMessage' received an unknown message."
                 );
                 return;
         }
