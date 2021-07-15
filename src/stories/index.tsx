@@ -200,6 +200,10 @@ AddBloomPlayerStory(
     "testbooks/sample-iframe-activity/index.htm"
 );
 AddBloomPlayerStory(
+    "Activity - ActivePresenter widget test",
+    "testbooks/test-widget-iframe-messages/index.htm"
+);
+AddBloomPlayerStory(
     "Activity - Canvas Game - Snake",
     "testbooks/sample-canvas-activity/index.htm"
 );

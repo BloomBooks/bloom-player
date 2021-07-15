@@ -252,7 +252,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 break;
             default:
                 console.log(
-                    "'handleActivityMessage' received an unknown message."
+                    "'handleControlMessage' received an unknown message."
                 );
                 return;
         }
@@ -679,7 +679,6 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         [uiLang].concat(bookProps.preferredLanguages)
                     );
                 }}
-                hideNextPrevButtons={isHideNextPrevButtons}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
                     if (p) {
