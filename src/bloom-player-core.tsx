@@ -1520,7 +1520,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
+        const showNavigationButtonsEvenOnTouchDevices =
+            // we have to have *some* way of changing the page
+            this.activityManager.getActivityAbsorbsDragging() &&
+            // unless the activity itself is handling navigation
+            !this.props.hideNextPrevButtons;
         if (this.state.isLoading) {
             return (
                 <CircularProgress
@@ -1622,7 +1626,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         let bloomPlayerClass = "bloomPlayer";
         if (this.props.hideNextPrevButtons) {
-            bloomPlayerClass += " hideNextPrevButtons";
+            bloomPlayerClass +=
+                " hideNextPrevButtons extraScalingForChrome85Bug";
         } else if (this.props.outsideButtonPageClass) {
             // there's room for buttons outside the page; show them.
             bloomPlayerClass += " " + this.props.outsideButtonPageClass;
