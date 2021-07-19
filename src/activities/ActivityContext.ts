@@ -149,7 +149,7 @@ export class ActivityContext {
         window.postMessage(messageJson, "*"); // any window may receive
     }
 
-    public hidePageNavigationButtons() { 
+    public hidePageNavigationButtons() {
         this.sendMessageToPlayer("hide-page-navigation-buttons");
     }
 

@@ -120,8 +120,6 @@ interface IProps {
         hasVideo: boolean;
     }) => void;
 
-    hideNextPrevButtons?: boolean;
-
     locationOfDistFolder: string;
 
     // may be "largeOutsideButtons" or "smallOutsideButtons" or empty.
@@ -169,6 +167,10 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
+}
+
+interface IPlayerPageOptions {
+    hideNavigation?: boolean;
 }
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
@@ -229,6 +231,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static currentPage: HTMLElement | null;
     private static currentPageIndex: number;
     private static currentPageHasVideo: boolean;
+    private currentPageHidesNavigationButtons: boolean = false;
 
     public static currentPlaybackMode: PlaybackMode;
 
@@ -1519,8 +1522,38 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    private getPlayerOptionsForPage(
+        bloomPage: HTMLElement
+    ): IPlayerPageOptions | undefined {
+        if (!bloomPage) {
+            return undefined;
+        }
+        let optionJson = bloomPage.getAttribute("data-player-options");
+        if (!optionJson) {
+            return undefined;
+        }
+        try {
+            // We tried various options here. Single quote works and Bloom doesn't replace it with
+            // anything else. Backticks (as in comical) would work too, but single quotes are less
+            // "obscure". Using nothing around the "hideNavigation" doesn't parse. Using single quotes
+            // outside and double quotes inside doesn't work because Bloom escapes the double quotes.
+            optionJson = optionJson.replace(/'/g, '"');
+            return JSON.parse(optionJson);
+        } catch (e) {
+            console.log(
+                "getPlayerOptionsForPage failed to parse json: " +
+                    optionJson +
+                    " with errror " +
+                    e.message
+            );
+            return;
+        }
+    }
+
     public render() {
-        const showNavigationButtonsEvenOnTouchDevices = this.activityManager.getActivityAbsorbsDragging(); // we have to have *some* way of changing the page
+        const showNavigationButtonsEvenOnTouchDevices =
+            // we have to have *some* way of changing the page
+            this.activityManager.getActivityAbsorbsDragging();
         if (this.state.isLoading) {
             return (
                 <CircularProgress
@@ -1621,8 +1654,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         };
 
         let bloomPlayerClass = "bloomPlayer";
-        if (this.props.hideNextPrevButtons) {
-            bloomPlayerClass += " hideNextPrevButtons";
+        if (this.currentPageHidesNavigationButtons) {
+            bloomPlayerClass +=
+                " hideNextPrevButtons extraScalingForChrome85Bug";
         } else if (this.props.outsideButtonPageClass) {
             // there's room for buttons outside the page; show them.
             bloomPlayerClass += " " + this.props.outsideButtonPageClass;
@@ -1872,6 +1906,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!bloomPage) {
             return; // blank initial or final page?
         }
+        // We will pass options on how to deal with the current page to BP via the
+        // 'data-player-options' json.
+        const options = this.getPlayerOptionsForPage(bloomPage);
+        this.currentPageHidesNavigationButtons =
+            options && options.hideNavigation ? true : false;
         // Values this sets are used in the render of the new page, so it must NOT
         // be postponed like the other actions below.
         this.activityManager.showingPage(index, bloomPage);
