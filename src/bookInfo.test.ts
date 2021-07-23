@@ -130,6 +130,64 @@ test("setSomeBookInfoFromMetadata", () => {
         "my original publisher"
     );
     expect(ambientAnalyticsProps.features).toEqual("blind,talkingBook");
+    expect(ambientAnalyticsProps.bookshelves).toEqual("");
+});
+
+test("setSomeBookInfoFromMetadata_bookshelvesFromTags", () => {
+    const bookInfo = new BookInfo();
+
+    const metadata = {
+        tags: [
+            "bookshelf:my bookshelf",
+            "otherTag:my other tag",
+            "bookshelf:my other bookshelf"
+        ]
+    };
+    const body = document.body as HTMLBodyElement;
+
+    bookInfo.setSomeBookInfoFromMetadata(metadata, body);
+
+    const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
+    expect(ambientAnalyticsProps.bookshelves).toEqual(
+        "my bookshelf,my other bookshelf"
+    );
+});
+
+test("setSomeBookInfoFromMetadata_bookshelvesFromBookshelvesField", () => {
+    const bookInfo = new BookInfo();
+
+    const metadata = {
+        bookshelves: ["my bookshelf", "my other bookshelf"]
+    };
+    const body = document.body as HTMLBodyElement;
+
+    bookInfo.setSomeBookInfoFromMetadata(metadata, body);
+
+    const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
+    expect(ambientAnalyticsProps.bookshelves).toEqual(
+        "my bookshelf,my other bookshelf"
+    );
+});
+
+test("setSomeBookInfoFromMetadata_bookshelvesFromTagsAndBookshelvesField", () => {
+    const bookInfo = new BookInfo();
+
+    const metadata = {
+        bookshelves: ["my bookshelf", "my other bookshelf 2"],
+        tags: [
+            "bookshelf:my bookshelf",
+            "otherTag:my other tag",
+            "bookshelf:my other bookshelf"
+        ]
+    };
+    const body = document.body as HTMLBodyElement;
+
+    bookInfo.setSomeBookInfoFromMetadata(metadata, body);
+
+    const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
+    expect(ambientAnalyticsProps.bookshelves).toEqual(
+        "my bookshelf,my other bookshelf 2,my other bookshelf"
+    );
 });
 
 test("getPreferredTranslationLanguages, 1 language", () => {

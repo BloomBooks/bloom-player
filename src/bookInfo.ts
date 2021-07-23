@@ -29,6 +29,9 @@ export class BookInfo {
     private publisher = "";
     private originalPublisher = "";
     private features = "";
+    // This will almost always be a single bookshelf, but the model allows for multiple, so we handle that by creating a
+    // comma-delimited list.
+    private bookshelves = "";
 
     private bookLanguage1: string | undefined;
     private bookLanguage2: string | undefined;
@@ -96,7 +99,8 @@ export class BookInfo {
             originalCopyrightHolder: this.originalCopyrightHolder,
             copyrightHolder: this.copyrightHolder,
             publisher: this.publisher,
-            originalPublisher: this.originalPublisher
+            originalPublisher: this.originalPublisher,
+            bookshelves: this.bookshelves
         };
         // BloomLibrary2 and BloomReader both set this query parameter appropriately.
         const host = getQueryStringParamAndUnencode("host", null);
@@ -144,6 +148,10 @@ export class BookInfo {
         this.originalTitle = metaDataObject.originalTitle;
         this.publisher = metaDataObject.publisher;
         this.originalPublisher = metaDataObject.originalPublisher;
+        this.bookshelves = this.getBookshelves(
+            metaDataObject.tags,
+            metaDataObject.bookshelves
+        );
 
         const bloomdVersion = metaDataObject.bloomdVersion
             ? metaDataObject.bloomdVersion
@@ -152,6 +160,31 @@ export class BookInfo {
             bloomdVersion > 0
                 ? metaDataObject.features
                 : this.guessFeatures(body);
+    }
+
+    private getBookshelves(
+        tagsField: Array<string>,
+        bookshelvesField: Array<string>
+    ): string {
+        // The bookshelves field is untested.
+        // As of Jul 2021, we only put bookshelves in meta.json in the tags field.
+        // But we are progressively trying to migrate to using the more simple
+        // and separate bookshelves field which already exists in parse.
+        // Assumption: items in the bookshelves field will be unique.
+        const bookshelvesSet: Array<string> = Array.from(
+            bookshelvesField ?? []
+        );
+        if (tagsField) {
+            tagsField.forEach(tag => {
+                if (tag.startsWith("bookshelf:")) {
+                    const bookshelf = tag.substring("bookshelf:".length).trim();
+                    if (!bookshelvesSet.includes(bookshelf)) {
+                        bookshelvesSet.push(bookshelf);
+                    }
+                }
+            });
+        }
+        return bookshelvesSet.join(",");
     }
 
     public setLanguage2And3(data: any): void {
