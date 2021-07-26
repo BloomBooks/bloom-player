@@ -1543,7 +1543,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             console.log(
                 "getPlayerOptionsForPage failed to parse json: " +
                     optionJson +
-                    " with errror " +
+                    " with error " +
                     e.message
             );
             return;
