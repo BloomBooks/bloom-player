@@ -27,8 +27,11 @@ export function sendMessageToHost(messageObj: WithMessageType) {
     }
     // If we're in a native iOS WKWebView, we could not get it to receive postMessage
     // messages, so instead it has to inject an object called webkit.messageHandlers to receive the message.
-    if ((window as any).webkit) {
-        (window as any).webkit.messageHandlers.receiveMessage.postMessage(message);
+    // Note: receiveMessage is custom defined. It may or may not exist, even if messageHandlers is added. See BL-10216
+    const webkitPostMessageFunction = (window as any).webkit?.messageHandlers
+        ?.receiveMessage?.postMessage;
+    if (webkitPostMessageFunction) {
+        webkitPostMessageFunction(message);
         return;
     }
     // If we're in an iframe, window.parent is the parent window, which may (but
@@ -174,7 +177,7 @@ export function receiveMessage(data: any) {
         console.log(
             "receiveMessage failed to parse json: " +
                 data +
-                " with errror " +
+                " with error " +
                 e.message
         );
         return;
