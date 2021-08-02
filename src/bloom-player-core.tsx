@@ -1981,26 +1981,50 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
         // Expected behavior for comic bubbbles:  "we want overflow to show, but not generate scroll bars"
-        const scrollBlocks = $(bloomPage).find(
-            ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
-        );
+        const scrollBlocks = $(bloomPage)
+            .find(
+                ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
+            )
+            .filter((index, elt) => {
+                // Filter out the blocks that are definitely not overflowing.
+                // Blocks that are overflowing will be configured to use niceScroll
+                // so the user can scroll and see everything. That is costly, because
+                // niceScroll leaks event listeners every time it is called. So we don't
+                // want to use it any more than we need to. Also, niceScroll
+                // somehow fails to work when our vertical alignment classes are applied;
+                // probably something to do with the bloom-editables being display:flex
+                // to achieve vertical positioning. We can safely remove those classes
+                // if the block is overflowing, because there's no excess white space
+                // to distribute.
+                // Note: there are complications Bloom desktop handles in determining
+                // accurately whether a block is overflowing. We don't need those here.
+                // If it is close enough to overflow to get a scroll bar, it's close
+                // enough not to care whether extra white space is at the top, bottom,
+                // or split (hence we can safely remove classes used for that).
+                // And we'll risk sometimes adding nicescroll when we could (just)
+                // have done without it.
+                const lastChild = elt.lastElementChild;
+                if (!lastChild) {
+                    // no children, can't be overflowing
+                    return false;
+                }
+                return (
+                    // Here the tempation is to compare elt.scollHeight with elt.clientHeight, but
+                    // scrollHeight is never LESS than clientHeight, even if the content is much
+                    // smaller. Since we know the contents of a bloom-editable are always arranged
+                    // in order and vertically, we can get a more accurate idea of the content
+                    // height using the bottom of the last child.
+                    elt.clientHeight <
+                    lastChild.clientTop + lastChild.clientHeight
+                );
+            });
+        // remove classes incompatible with nicescroll
         scrollBlocks.each((i, e) => {
-            // niceScroll somehow fails to work when these classes are applied;
-            // probably something to do with the bloom-editables being display:flex
-            // to achieve vertical positioning. However, if the block is overflowing,
-            // we don't need it centered or forced to the bottom; so just remove
-            // the classes that do it.
-            // Note: there are complications Bloom desktop handles in determining
-            // accurately whether a block is overflowing. We don't need those here.
-            // If it is close enough to overflow to get a scroll bar, it's close
-            // enough not to care whether extra white space is at the top, bottom,
-            // or split.
             const group = e.parentElement!;
-            if (e.scrollHeight > e.clientHeight) {
-                group.classList.remove("bloom-vertical-align-center");
-                group.classList.remove("bloom-vertical-align-bottom");
-            }
+            group.classList.remove("bloom-vertical-align-center");
+            group.classList.remove("bloom-vertical-align-bottom");
         });
+        // and then configure nicescroll
         scrollBlocks.niceScroll({
             autohidemode: false,
             cursorwidth: "12px",
