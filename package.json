@@ -36,11 +36,10 @@
         "//   Don't forget to run 'yarn chrome' from bloom-library.": "",
         "// This will fail if the http server is locking the directory": "",
         "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": "",
-        "tobloomlibrary": "yarn build-dev && shx cp dist/bloomplayer-for-developing.htm ../BloomLibrary/build && shx cp dist/bloomPlayer.js ../BloomLibrary/build",
         "tobloomlibrary2": "shx rm -f ../BloomLibrary2/public/bloom-player/*.* && shx cp dist/*.* ../BloomLibrary2/public/bloom-player",
         "tobloomreader": "shx rm -f ../BloomReader/app/src/main/assets/bloom-player/*.* && shx cp dist/*.* ../BloomReader/app/src/main/assets/bloom-player",
         "tobloom": "shx cp dist/*.* ../BloomDesktop/output/browser/bloom-player/dist",
-        "build4bl": "yarn build && yarn tobloomlibrary",
+        "build4bl": "yarn build && yarn tobloomlibrary2",
         "build4bl2": "yarn build && yarn tobloomlibrary2",
         "build4br": "yarn build && yarn tobloomreader",
         "build4bd": "yarn build && yarn tobloom"
