@@ -1,6 +1,9 @@
 export class BookInteraction {
     public lastNumberedPageWasRead: boolean = false; // has user read to last numbered page?
 
+    // Time the user started reading this book
+    public beginReadTime: number = Date.now();
+
     public totalAudioDuration: number = 0;
     public totalVideoDuration: number = 0;
 
@@ -18,7 +21,8 @@ export class BookInteraction {
             videoPages: this.videoPagesShown.size,
             audioDuration: this.totalAudioDuration,
             videoDuration: this.totalVideoDuration,
-            lastNumberedPageRead: this.lastNumberedPageWasRead
+            lastNumberedPageRead: this.lastNumberedPageWasRead,
+            readDuration: Math.floor((Date.now() - this.beginReadTime) / 1000) // seconds spent reading this book
         };
     }
 

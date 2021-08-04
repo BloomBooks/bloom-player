@@ -47,6 +47,10 @@ import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
 import "jquery.nicescroll";
 import { getQueryStringParamAndUnencode } from "./utilities/urlUtils";
+import {
+    kLocalStorageDurationKey,
+    kLocalStorageBookUrlKey
+} from "./bloomPlayerAnalytics";
 
 export enum PlaybackMode {
     NewPage, // starting a new page ready to play
@@ -240,6 +244,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     public componentDidMount() {
         LocalizationManager.setUp();
 
+        window.addEventListener("focus", () => this.handleWindowFocus());
+        window.addEventListener("blur", () => this.handleWindowBlur());
+
         // To get this to fire consistently no matter where the focus is,
         // we have to attach to the document itself. No level of react component
         // seems to work (using the OnKeyDown prop). So we use good ol'-fashioned js.
@@ -261,6 +268,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // or, of course, you can try it actually in Bloom desktop.
             setTimeout(() => this.repairFF60Offset(), 2000);
         }
+    }
+
+    private handleWindowFocus() {
+        const readDuration = localStorage.getItem(kLocalStorageDurationKey);
+        const savedBookUrl = localStorage.getItem(kLocalStorageBookUrlKey);
+
+        if (readDuration && savedBookUrl == this.sourceUrl) {
+            this.bookInteraction.beginReadTime =
+                Date.now() - parseInt(readDuration, 10);
+        }
+    }
+
+    private handleWindowBlur() {
+        const readDuration = Date.now() - this.bookInteraction.beginReadTime;
+
+        localStorage.setItem(kLocalStorageDurationKey, readDuration.toString());
+        localStorage.setItem(kLocalStorageBookUrlKey, this.sourceUrl);
     }
 
     // This horrible hack attempts to fix the worst effects of BL-8900. Basically, something inside

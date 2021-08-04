@@ -81,6 +81,12 @@ export function updateBookProgressReport(event: string, properties: any) {
     if (getBooleanUrlParam("independent", true)) {
         updateBookProgress(event, { ...ambientAnalyticsProps, ...properties });
     } else {
+        // The host must handle this property itself because there is no accurate
+        // way for bloom-player to accumulate time without knowing when the host
+        // is in the foreground.
+        // i.e. window.blur and window.focus do not get called in Android Webview.
+        delete properties.readDuration;
+
         sendMessageToHost({
             messageType: "updateBookProgressReport",
             event,

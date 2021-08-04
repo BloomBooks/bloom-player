@@ -101,6 +101,9 @@ if (!window.location.search.includes("independent=false")) {
     window.onbeforeunload = finalAnalytics;
 }
 
+export const kLocalStorageDurationKey = "bloom-player-read-duration";
+export const kLocalStorageBookUrlKey = "bloom-player-book-url";
+
 // If there is book progress report pending, send it to analytics.
 // This happens only if a reader quits part-way through a book.
 // This report is hooked to the 'beforeunload' event in hopes that it will get sent before
@@ -117,6 +120,7 @@ function finalAnalytics() {
         item = myIter.next();
     }
     pendingBookAnalytics.clear();
+    localStorage.removeItem(kLocalStorageDurationKey); // Make sure we don't include this duration for subsequent reads
     return null; // prevent popup verification dialog.
 }
 
@@ -146,6 +150,7 @@ export function updateBookProgress(event: string, params: object) {
             track(event, params);
             allPagesRead = true;
             pendingBookAnalytics.delete(event);
+            localStorage.removeItem(kLocalStorageDurationKey); // Make sure we don't include this duration for subsequent reads
         }
         if (allPagesRead) {
             return;
