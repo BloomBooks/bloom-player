@@ -1,9 +1,20 @@
 <!-- This is used with the lite-server. Haven't figured
-     out how to have it exist anywhere but at this top level. -->
+     out how to have it exist anywhere but at this top level.
+     To serve a local book (e.g., from testBooks): copy its folder to the dist directory.
+     (This could no doubt be automated if we wanted.)
+     Then, set src to bloomplayer-for-developing.htm?url=http://localhost:8080/<folder>/<filename>.htm
+     Don't include dist in the path. Change backslash to slash. May be helpful to rename things
+     so no there are no characters needing encoding.
+     For example, given a book at dist\BunAndJam\BunAndJam.htm, use
+     src="bloomplayer-for-developing.htm?url=http://localhost:8080/BunAndJam/BunAndJam.htm"
+     Note: all the different versions of src below except src itself are ignored; they
+     are alternative src's that may be useful again (or may be obsolete and wrong).
+     -->
 <html>
     <body>
         <iframe
             src="bloomplayer-for-developing.htm?url=https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2f433f2ae9-3cba-48bf-82a7-faa3932908ae/bloomdigital%2findex.htm&hideFullScreenButton=false"
+            local_folder_manually_copied_to_dist_src="bloomplayer-for-developing.htm?url=http://localhost:8080/CatAndDog/CatAndDog.htm"
             dev_videoWithAudio_src="bloomplayer-for-developing.htm?centerVertically=true&url=https://s3.amazonaws.com/bloomharvest-sandbox/colin_sugget%40sil.org%2f665dab68-723c-4245-b4b4-c771d0329329/bloomdigital%2findex.htm&independent=false&host=testing"
             dev_moonAndCap_src="bloomplayer-for-developing.htm?centerVertically=true&url=https://s3.amazonaws.com/bloomharvest-sandbox/john_thomson%40sil.org%2fd4d081d9-9c90-427b-814c-7bd7730fc25b/bloomdigital%2findex.htm&independent=false&host=testing"
             bloom_reader_preview_src="bloomplayer-for-developing.htm?url=http://localhost:8089/bloom/C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle"
