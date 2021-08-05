@@ -2038,8 +2038,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // smaller. Since we know the contents of a bloom-editable are always arranged
                     // in order and vertically, we can get a more accurate idea of the content
                     // height using the bottom of the last child.
-                    elt.clientHeight <
-                    lastChild.clientTop + lastChild.clientHeight
+                    elt.getBoundingClientRect().bottom <
+                    lastChild.getBoundingClientRect().bottom
                 );
             });
         // remove classes incompatible with nicescroll
