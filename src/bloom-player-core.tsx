@@ -825,6 +825,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             BloomPlayerCore.currentPage!
                         );
                     }}
+                    onTouchStart={args => {
+                        this.setState({ ignorePhonyClick: true });
+                        this.resetForNewPageAndPlay(
+                            BloomPlayerCore.currentPage!
+                        );
+                    }}
                     onMouseDown={args => {
                         // another attempt to stop the jumping around.
                         args.stopPropagation();
@@ -1804,7 +1810,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.slideNext()}
-                    onTouchStart={() => this.slideNext()}
+                    onTouchStart={e => {
+                        this.setState({ ignorePhonyClick: true });
+                        this.slideNext();
+                    }}
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward
