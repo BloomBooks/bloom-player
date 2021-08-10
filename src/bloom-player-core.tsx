@@ -825,6 +825,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             BloomPlayerCore.currentPage!
                         );
                     }}
+                    onTouchStart={args => {
+                        // This prevents the toolbar from toggling if we start a touch on the Replay button.
+                        // If the touch ends up being a tap, then onClick will get processed too.
+                        this.setState({ ignorePhonyClick: true });
+                    }}
                     onMouseDown={args => {
                         // another attempt to stop the jumping around.
                         args.stopPropagation();
@@ -1804,7 +1809,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.slideNext()}
-                    onTouchStart={() => this.slideNext()}
+                    onTouchStart={e => {
+                        this.setState({ ignorePhonyClick: true });
+                        this.slideNext();
+                    }}
                 >
                     <IconButton disableRipple={true}>
                         <ArrowForward
