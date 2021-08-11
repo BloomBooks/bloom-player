@@ -1,5 +1,8 @@
 import { TransientPageDataSingleton } from "./transientPageData";
-import { getBooleanUrlParam } from "./utilities/urlUtils";
+import {
+    getBooleanUrlParam,
+    getQueryStringParamAndUnencode
+} from "./utilities/urlUtils";
 
 import {
     track,
@@ -81,11 +84,17 @@ export function updateBookProgressReport(event: string, properties: any) {
     if (getBooleanUrlParam("independent", true)) {
         updateBookProgress(event, { ...ambientAnalyticsProps, ...properties });
     } else {
-        // The host must handle this property itself because there is no accurate
+        // Non-web hosts must handle this property themselves because there is no accurate
         // way for bloom-player to accumulate time without knowing when the host
         // is in the foreground.
         // i.e. window.blur and window.focus do not get called in Android Webview.
-        delete properties.readDuration;
+        //
+        // We decided to whitelist the hosts which receive this property because
+        // we want to be safe. We would rather report no data than incorrect/invalid data.
+        // We could try to do something fancy like looking for parent.window to distinguish
+        // between running on the web or not, but that is not guaranteed to be future-proof, either.
+        if (getQueryStringParamAndUnencode("host", "") !== "bloomlibrary")
+            delete properties.readDuration;
 
         sendMessageToHost({
             messageType: "updateBookProgressReport",

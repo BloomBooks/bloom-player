@@ -88,9 +88,11 @@ Default: `true`
 
 If set, provides a host value for analytics.  If not set, bloom-player attempts to derive a value from the available information if independent is `true` (information can be limited in an iframe) and does nothing otherwise.
 
-Examples: `host=bloomlibrary` or `host=bloomreader` or `host=bloompubviewer` or `host=readingapp` or `host=embed@xyzzy.org`
+Examples: `host=bloomlibrary` or `host=bloomreader` or `host=bloompubviewer` or `host=readerapp`
 
-Default: nothing/undefined ??
+...or, theoretically, `host=embed@xyzzy.org` (but we haven't used that yet)
+
+Default: `nothing/undefined`
 
 # Development
 
