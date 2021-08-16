@@ -2040,15 +2040,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // no children, can't be overflowing
                     return false;
                 }
-                return (
-                    // Here the tempation is to compare elt.scollHeight with elt.clientHeight, but
-                    // scrollHeight is never LESS than clientHeight, even if the content is much
-                    // smaller. Since we know the contents of a bloom-editable are always arranged
-                    // in order and vertically, we can get a more accurate idea of the content
-                    // height using the bottom of the last child.
-                    elt.getBoundingClientRect().bottom <
-                    lastChild.getBoundingClientRect().bottom
-                );
+
+                // Here the temptation is to compare elt.scollHeight with elt.clientHeight, but
+                // scrollHeight is never LESS than clientHeight, even if the content is much
+                // smaller. Since we know the contents of a bloom-editable are always arranged
+                // in order and vertically, we can get a more accurate idea of the content
+                // height using the bottom of the last child.
+                const overflowY =
+                    lastChild.getBoundingClientRect().bottom -
+                    elt.getBoundingClientRect().bottom;
+
+                // Allow a scrollbar check if the bottom of the last child is close to the bottom of the editable
+                // It was noticed in BL-10217 that one item that required a scrollbar did not actually have a positive
+                // overflowY, but was very close to it. In contrast, most things that definitely don't need scrollbars
+                // have a very negative overflowY. So, we allow a scrollbar check if it's close. If it's not needed,
+                // it just adds some unnecessary event handlers, which can affect performance of large books,
+                // but it's not the end of the world.
+                const marginOfErrorInPx = 0.5;
+
+                return overflowY > 0 - marginOfErrorInPx;
             });
         // remove classes incompatible with nicescroll
         scrollBlocks.each((i, e) => {
