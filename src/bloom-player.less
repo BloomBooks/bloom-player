@@ -196,6 +196,12 @@ We just make them follow the main content normally. */
     .bloom-editable.bloom-visibility-code-on {
         // Hidden because we let jquery.niceScroll control the scrollbars instead.
         overflow-y: hidden !important; // unfortunately this needs !important to override 2 basePage.less rules
+
+        // Flexboxes default to flex-shrink: 1, but we don't want paragraphs (or probably anything) to shrink if they're overflowing.
+        // (we add a scrollbar instead).  See BL-10217)
+        p {
+            flex-shrink: 0;
+        }
     }
     // it would be more elegant to embed this rule in the one above, but I can't figure out
     // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
