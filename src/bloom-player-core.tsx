@@ -143,7 +143,8 @@ interface IState {
     // it wreaks havoc on scoped styles. See BL-9504.
     styleRules: string;
 
-    importedBodyClasses: string;
+    importedBodyAttributes: {};
+
     // indicates current page, though typically not corresponding to the page
     // numbers actually on the page. This is an index into pages, and in context
     // mode it's the index of the left context page, not the main page.
@@ -203,7 +204,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     public readonly state: IState = {
         pages: this.initialPages,
         styleRules: this.initialStyleRules,
-        importedBodyClasses: "",
+        importedBodyAttributes: {},
         currentSwiperIndex: 0,
         isLoading: true,
         loadFailed: false,
@@ -447,7 +448,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
                         this.animation.PlayAnimations = this.bookInfo.playAnimations;
 
-                        this.setBodyClasses(body);
+                        this.collectBodyAttributes(body);
                         this.makeNonEditable(body);
                         this.htmlElement = bookHtmlElement;
 
@@ -545,14 +546,24 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private setBodyClasses(originalBodyElement: HTMLBodyElement) {
+    private collectBodyAttributes(originalBodyElement: HTMLBodyElement) {
         // When working on the ABC-BARMM branding/XMatter pack, we discovered that the classes on the
         // Desktop body element were not getting passed into bloom-player.
         // Unfortunately, just putting them on the body element doesn't work because we are using
         // scoped styles. So we put them on the div.bloomPlayer-page (and then we have to adjust the rules
         // so they'll work there).
+        // Other xmatter uses other info than classes. E.g. Kyrgystan uses the data-bookshelfurlkey attribute
+        // to control the background color.
+
+        // convert from the NamedNodeMap to a simple object:
+        var x = {};
+        for (var i = 0; i < originalBodyElement.attributes.length; i++) {
+            x[
+                originalBodyElement.attributes.item(i)!.nodeName
+            ] = originalBodyElement.attributes.item(i)!.nodeValue;
+        }
         this.setState({
-            importedBodyClasses: originalBodyElement.className
+            importedBodyAttributes: x
         });
     }
 
@@ -1760,7 +1771,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             {this.state.styleRules}
                                         </style>
                                         <div
-                                            className={`bloomPlayer-page ${this.state.importedBodyClasses}`}
+                                            {...this.state
+                                                .importedBodyAttributes}
+                                            // The above will put in the class attribute that was on the body
+                                            // now we want to overwrite that with those same classes, but add
+                                            // this bloomPlayer-page one.
+                                            className={`bloomPlayer-page ${this
+                                                .state.importedBodyAttributes[
+                                                "class"
+                                            ] ?? ""}`}
                                             dangerouslySetInnerHTML={{
                                                 __html: slide
                                             }}
