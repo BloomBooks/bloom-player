@@ -84,7 +84,7 @@ interface IProps {
     onContentClick?: (event: any) => void;
 
     // reportBookProperties is called when book loaded enough to determine these properties.
-    // This is probably obsolete, since if the player is embedded in a iframe as we currently
+    // Some of this is probably obsolete, since if the player is embedded in a iframe as we currently
     // require, only the containing BloomPlayerControls can make use of it. However, it's just
     // possible we might want it if we end up with rotation-related controls. Note that the
     // same information is made available via postMessage if the control's window has a parent.
@@ -92,16 +92,25 @@ interface IProps {
         landscape: boolean;
         canRotate: boolean;
         preferredLanguages: string[];
+        pageNumbers: string[]; // one per page, from data-page-number; some empty
     }) => void;
 
-    // 'controlsCallback' feeds information about the book's contents up to BloomPlayerControls
+    // 'controlsCallback' feeds information about the book's contents and other things
+    /// BloomPlayerControls needs back to it.
     // So far:
     // - the book's languages for the LanguageMenu to use
     // - whether the book has image descriptions or not.
     controlsCallback?: (
         bookLanguages: LangData[],
-        bookHasImageDescriptions: boolean
+        bookHasImageDescriptions: boolean,
+        // Provides the client a way to switch page numbers. It would feel more natural and React-y to
+        // just pass current page number to bloom-player-controls as a property, but I don't think regenerating the whole
+        // bloom-player-core to switch page numbers is a great idea.
+        setCurrentPage?: (pageNo: number) => void
     ) => void;
+
+    // A callback the client may supply to be notified whether navigation buttons are being hidden for this page.
+    hidingNavigationButtonsCallback?: (hiding: boolean) => void;
 
     // Allows the core to inform the controls that we have been forced to pause.
     // We use this when trying to play initially and that playback fails,
@@ -134,6 +143,9 @@ interface IProps {
     shouldReadImageDescriptions: boolean;
 
     imageDescriptionCallback: (inImageDescription: boolean) => void;
+
+    // A callback the client may provide in order to be notified when the current page changes.
+    pageChanged?: (n: number) => void;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -640,7 +652,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.reportBookProperties({
                     landscape,
                     canRotate: this.bookInfo.canRotate,
-                    preferredLanguages: bookLanguages
+                    preferredLanguages: bookLanguages,
+                    // We pass these up to the client, typically for use in the page number control.
+                    // This allows the page numbers it shows as labels to reflect the actual page numbers shown on the
+                    // page, which typically don't correspond to the page index, since xmatter pages are not numbered.
+                    pageNumbers: Array.from(pages).map(
+                        p => p.getAttribute("data-page-number") ?? ""
+                    )
                 });
             }
             if (isNewBook) {
@@ -692,7 +710,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // and whether or not to bother with the readImageDescriptions toggle.
                 this.props.controlsCallback(
                     languages,
-                    this.hasImageDescriptions
+                    this.hasImageDescriptions,
+                    (pageNumber: number) => {
+                        this.swiperInstance?.slideTo(pageNumber);
+                    }
                 );
             }
         }
@@ -1953,15 +1974,28 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
+        if (this.props.pageChanged) {
+            this.props.pageChanged(index);
+        }
         const bloomPage = this.getPageAtSwiperIndex(index);
         if (!bloomPage) {
-            return; // blank initial or final page?
+            // It MIGHT be a blank initial or final page placeholder, but more likely, we did a long
+            // scroll using the slider, so we're switching to a page that is, for the moment,
+            // empty due to laziness. A later render will fill it in. We want to try again then. Not sure how
+            // else to make sure that happens.
+            window.setTimeout(() => this.showingPage(index), 50);
+            return; // nothing more we can do until the page we want really exists.
         }
         // We will pass options on how to deal with the current page to BP via the
         // 'data-player-options' json.
         const options = this.getPlayerOptionsForPage(bloomPage);
         this.currentPageHidesNavigationButtons =
             options && options.hideNavigation ? true : false;
+        if (this.props.hidingNavigationButtonsCallback) {
+            this.props.hidingNavigationButtonsCallback(
+                this.currentPageHidesNavigationButtons
+            );
+        }
         // Values this sets are used in the render of the new page, so it must NOT
         // be postponed like the other actions below.
         this.activityManager.showingPage(index, bloomPage);

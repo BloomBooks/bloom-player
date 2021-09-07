@@ -21,10 +21,20 @@ import {
     getQueryStringParamAndUnencode,
     getBooleanUrlParam
 } from "./utilities/urlUtils";
-import { createMuiTheme, IconButton } from "@material-ui/core";
+import { IconButton } from "@material-ui/core";
 //tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 import { LocalizationManager } from "./l10n/localizationManager";
+import {
+    withStyles,
+    makeStyles,
+    createMuiTheme
+} from "@material-ui/core/styles";
+import { MuiThemeProvider } from "@material-ui/core/styles";
+// We don't want to call this thing a slider in Bloom Player, because the control that actually holds
+// the pages is already known as a slider, so the two would get confused.
+import DragBar from "@material-ui/core/Slider";
+import { bloomRed } from "./bloomPlayerTheme";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -129,6 +139,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         props.initiallyShowAppBar
     );
 
+    const [pageNumberControlPos, setPageNumberControlPos] = useState(0);
+    const [pageNumbers, setPageNumbers] = useState([""]);
+    const [hidingNavigationButtons, setHidingNavigationButtons] = useState(
+        false
+    );
+
     // When we're in storybook we won't get a new page when we change the book,
     // so we need to be able to detect that the book changed and thus do new size calculations.
     const [previousUrl, setPreviousUrl] = useState<string>("");
@@ -180,6 +196,11 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const emptyLangDataArray: LangData[] = [];
     const [languageData, setLanguageData] = useState(emptyLangDataArray);
     const [activeLanguageCode, setActiveLanguageCode] = useState("");
+    // At a certain point in its initialization, bloom-player-core sends us a function that
+    // can be used to change the current page (when the user drags the thumb in the page scrolling
+    // bar). This doesn't need to be state (don't want to render when we get it) but we do need to
+    // hold onto it through multiple renders, so a ref is appropriate.
+    const pageNumberSetter = useRef<(pn: number) => void>();
 
     const [
         shouldReadImageDescriptions,
@@ -207,8 +228,6 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const [outsideButtonPageClass, setOutsideButtonPageClass] = useState("");
 
-    const [isHideNextPrevButtons, setIsHideNextPrevButtons] = useState(false);
-
     useEffect(() => {
         scalePageToWindow();
     }, [
@@ -235,18 +254,13 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const handleControlMessage = (messageName: string) => {
         switch (messageName) {
-            case "hide-page-navigation-buttons":
-                setIsHideNextPrevButtons(true);
-                break;
             case "navigate-to-next-page":
                 if (coreRef && coreRef.current) {
-                    setIsHideNextPrevButtons(false); // in case the next page is not an activity
                     coreRef.current.slideNext();
                 }
                 break;
             case "navigate-to-previous-page":
                 if (coreRef && coreRef.current) {
-                    setIsHideNextPrevButtons(false); // in case the previous page is not an activity
                     coreRef.current.slidePrevious();
                 }
                 break;
@@ -379,6 +393,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             const appbar = document.getElementById("control-bar");
             if (appbar) {
                 controlsHeight += appbar.offsetHeight;
+            }
+            const pageNumberControl = document.getElementById(
+                "pageNumberControl"
+            );
+            if (pageNumberControl) {
+                controlsHeight += pageNumberControl.offsetHeight;
             }
         }
         // How high the document needs to be to make it and the controls fit the window
@@ -547,8 +567,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
     const updateControlsWhenOpeningNewBook = (
         bookLanguages: LangData[],
-        bookHasImageDescriptions: boolean
+        bookHasImageDescriptions: boolean,
+        setPageNumber: (pn: number) => void
     ): void => {
+        pageNumberSetter.current = setPageNumber;
         let languageCode: string;
 
         // This is the case where the url specified an initial language
@@ -602,6 +624,58 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const handleToggleImageDescription = (inImageDescription: boolean) => {
         setNowReadingImageDescription(inImageDescription);
     };
+
+    // MUI-type styles seem to be the only currently practical way to style the parts of a complex control.
+    // MUI 5 is supposed to have an Emotion-type alternative.
+    const PageChooserBar = withStyles({
+        root: {
+            color: bloomRed,
+            height: 2,
+            padding: "15px 0"
+        },
+        active: {},
+        valueLabel: {
+            // material styles make the thumb, which is the parent of the valueLabel (the circle above it),
+            // a little smaller when disabled. To keep the center of the label aligned with the center of
+            // the thumb, the calculation of its left position needs to include half the width
+            // of the thumb itself.
+            left: "calc(50% - 16px)",
+            top: -31,
+            "& *": {
+                background: bloomRed,
+                color: "white"
+                // color: "#000"
+            }
+        },
+        track: {
+            height: 4,
+            opacity: 0.5
+        },
+        rail: {
+            height: 2,
+            opacity: 0.5,
+            backgroundColor: bloomRed
+        },
+        mark: {
+            // we don't want the mark to show up on the track, it's just there for the label
+            // that shows the total number of pages. (That could change if we use marks for bookmarks.)
+            backgroundColor: "transparent"
+        },
+        markActive: {
+            // Yet another default applies when it's selected, so override it again.
+            backgroundColor: "transparent"
+        },
+        markLabel: {
+            top: 20,
+            fontSize: "0.6rem",
+            color: bloomRed
+        },
+        markLabelActive: {
+            top: 20,
+            fontSize: "0.6rem",
+            color: bloomRed
+        }
+    })(DragBar);
 
     return (
         <div
@@ -678,6 +752,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     setPreferredUiLanguages(
                         [uiLang].concat(bookProps.preferredLanguages)
                     );
+                    setPageNumbers(bookProps.pageNumbers);
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
@@ -726,7 +801,51 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 extraClassNames={pageScaled ? "" : "hidePlayer"}
                 shouldReadImageDescriptions={shouldReadImageDescriptions}
                 imageDescriptionCallback={handleToggleImageDescription}
+                pageChanged={n => {
+                    if (n != pageNumberControlPos) {
+                        setPageNumberControlPos(n);
+                    }
+                }}
+                hidingNavigationButtonsCallback={hiding => {
+                    if (hiding != hidingNavigationButtons) {
+                        setHidingNavigationButtons(hiding);
+                    }
+                }}
             />
+            {showAppBar && (
+                <div id="pageNumberControl" className="MuiToolbar-gutters">
+                    <PageChooserBar
+                        valueLabelDisplay="on"
+                        min={1}
+                        max={pageNumbers.length}
+                        step={1}
+                        disabled={hidingNavigationButtons}
+                        defaultValue={pageNumberControlPos + 1}
+                        // tempting to use onChange here, which would make the pages try to follow
+                        // But this gets difficult, because most of the invisible pages are stubs
+                        // until we select them. And even if we could get them instantiated as needed,
+                        // continuous scrolling would probably be too slow to allow the page number control to be
+                        // responsive. So wait until we release.
+                        onChangeCommitted={(ev, val: number) => {
+                            if (val - 1 != pageNumberControlPos) {
+                                setPageNumberControlPos(val - 1);
+                                if (pageNumberSetter.current) {
+                                    pageNumberSetter.current(val - 1);
+                                }
+                            }
+                        }}
+                        valueLabelFormat={(val, index) => {
+                            return pageNumbers[val - 1];
+                        }}
+                        marks={[
+                            {
+                                value: pageNumbers.length,
+                                label: pageNumbers.length.toString()
+                            }
+                        ]}
+                    />
+                </div>
+            )}
         </div>
     );
 };

@@ -350,6 +350,29 @@ We just make them follow the main content normally. */
     }
 }
 
+// I positioned this absolutely so that, although we allow space for it when computing the
+// overall zoom factor for the main page slider, it doesn't otherwise affect the positioning
+// of everything, which is quite complex. Also, this will work even if we later decide that
+// in some or all circumstances we'd like to allow it to overlap the page (in whole or in part).
+// A futher advantage is that it is all the way at the bottom, even when we have plenty of
+// vertical space.
+// The width and left values are designed to make it line up with the buttons in the navigation
+// bar. The visible position of the outermost buttons is determined by 12 pixels of padding
+// in an individual button plus a variable padding on the whole navigation bar that is configured
+// by the MuiToolbar-gutters, which is responsive. So we give this element the same class to
+// make it responsive in the same way. Then we just need another 12 pixels on each side to account
+// for the button padding.
+#pageNumberControl {
+    box-sizing: border-box;
+    position: absolute;
+    height: 68px;
+    padding-top: 33px;
+    width: calc(100% - 24px);
+    bottom: 0;
+    left: 12px;
+    z-index: 1;
+}
+
 .bigButtonOverlay {
     position: absolute;
     // Did a lot of fiddling here to try to get the button centered,

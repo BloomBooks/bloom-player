@@ -41,8 +41,6 @@ export default class WidgetTestActivity {
     start(activityContext) {
         console.log("WidgetTestActivity.start()");
         this.activityContext = activityContext;
-        // When the activity starts, hide the navigation buttons
-        this.activityContext.hidePageNavigationButtons();
         this.button1.onclick = () => this.activityContext.navigateToNextPage();
         this.button2.onclick = () =>
             this.activityContext.navigateToPreviousPage();
