@@ -350,6 +350,22 @@ We just make them follow the main content normally. */
     }
 }
 
+// I positioned this absolutely so that, although we allow space for it when computing the
+// overall zoom factor for the main page slider, it doesn't otherwise affect the positioning
+// of everything, which is quite complex. Also, this will work even if we later decide that
+// in some or all circumstances we'd like to allow it to overlap the page (in whole or in part).
+// A futher advantage is that it is all the way at the bottom, even when we have plenty of
+// vertical space.
+#pageNumberSlider {
+    position: absolute;
+    height: 35px;
+    padding-top: 33px;
+    width: 90%;
+    bottom: 0;
+    left: 5%;
+    z-index: 1;
+}
+
 .bigButtonOverlay {
     position: absolute;
     // Did a lot of fiddling here to try to get the button centered,
