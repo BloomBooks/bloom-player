@@ -149,6 +149,7 @@ interface IProps {
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
+    pageIdToIndexMap: {}; // map from page id to page index
 
     // concatenated stylesheets the book references or embeds.
     // Make sure these are only set once per book or else
@@ -215,6 +216,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public readonly state: IState = {
         pages: this.initialPages,
+        pageIdToIndexMap: {},
         styleRules: this.initialStyleRules,
         importedBodyAttributes: {},
         currentSwiperIndex: 0,
@@ -640,8 +642,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             bookLanguages[0] === this.props.activeLanguageCode ||
             !this.props.activeLanguageCode;
 
+        const pageMap = {};
+
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
+            const pageId = page.getAttribute("id");
+            if (pageId) {
+                pageMap[pageId] = i;
+            }
             const landscape = this.setPageSizeClass(page);
             // this used to be done for us by react-slick, but swiper does not.
             // Since it's used by at least page-api code, it's easiest to just stick it in.
@@ -730,6 +738,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // original componentDidUpdate method call, each setState results in an immediate render.)
             this.setState({
                 pages: swiperContent,
+                pageIdToIndexMap: pageMap,
                 styleRules: combinedStyle,
                 isLoading: false
             });
@@ -1804,6 +1813,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             dangerouslySetInnerHTML={{
                                                 __html: slide
                                             }}
+                                            ref={div =>
+                                                this.fixInternalHyperlinks(div)
+                                            }
                                         />
                                     </>
                                 ) : (
@@ -1866,6 +1878,42 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </div>
             </div>
         );
+    }
+
+    // A bloom book may have hyperlinks that are simply of the form #pageId.
+    // When such a link is clicked, we don't want the whole browser to navigate there;
+    // we want to move to that page.
+    // Other internal links won't work and are disabled; external ones are forced to
+    // open a new tab as the results of trying to display a web page in the bloom-player
+    // iframe or webview can be confusing.
+    private fixInternalHyperlinks(div: HTMLDivElement | null): void {
+        if (!div) {
+            return;
+        }
+        const anchors = Array.from(div.getElementsByTagName("a") ?? []);
+        anchors.forEach(a => {
+            const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
+            if (href?.startsWith("#")) {
+                const pageId = href.substring(1);
+                const pageNum = this.state.pageIdToIndexMap[pageId];
+                if (pageNum !== undefined) {
+                    a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
+                    a.onclick = ev => {
+                        ev.preventDefault();
+                        this.swiperInstance.slideTo(pageNum);
+                    };
+                } else {
+                    // no other kind of internal link makes sense, so let them be ignored.
+                    a.onclick = ev => {
+                        ev.preventDefault();
+                    };
+                }
+            } else {
+                // an external link. It will likely confuse things to follow it inside whatever iframe or webview
+                // bloom player may be running in, so encourage opening a new tab or similar action.
+                a.setAttribute("target", "blank");
+            }
+        });
     }
 
     // What we need to do when the page narration is completed (if autoadvance, go to next page).

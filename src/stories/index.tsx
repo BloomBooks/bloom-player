@@ -212,7 +212,7 @@ AddBloomPlayerStory(
     "testbooks/test-widget-message-activity/index.htm"
 );
 AddBloomPlayerStory(
-    "Sign language with talking",
+    "Sign language with talking & TOC",
     "testbooks/sign-language-with-talking-book/sign-language-with-talking-book.htm"
 );
 
