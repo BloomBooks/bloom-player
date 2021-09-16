@@ -1899,13 +1899,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (pageNum !== undefined) {
                     a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
                     a.onclick = ev => {
-                        ev.preventDefault();
+                        ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
+                        ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
                         this.swiperInstance.slideTo(pageNum);
                     };
                 } else {
                     // no other kind of internal link makes sense, so let them be ignored.
                     a.onclick = ev => {
                         ev.preventDefault();
+                        ev.stopPropagation();
                     };
                 }
             } else {
