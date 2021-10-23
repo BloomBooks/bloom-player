@@ -39,7 +39,7 @@ import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
 import theme, { bloomHighlight } from "./bloomPlayerTheme";
 import { ThemeProvider } from "@material-ui/styles";
-import { createMuiTheme } from "@material-ui/core";
+import { createTheme } from "@material-ui/core";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
@@ -49,28 +49,28 @@ import { LocalizationManager } from "./l10n/localizationManager";
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
 export interface IExtraButton {
-    id: string; // passed as messageType param to postMessage when button is clicked
-    iconUrl: string; // URL for displaying the button icon
-    description?: string; // title to show with the icon; also aria attribute
-    // enhance as needed: location:"farRight|nearRight|farLeft"; // default: farRight
+  id: string; // passed as messageType param to postMessage when button is clicked
+  iconUrl: string; // URL for displaying the button icon
+  description?: string; // title to show with the icon; also aria attribute
+  // enhance as needed: location:"farRight|nearRight|farLeft"; // default: farRight
 }
 
 interface IControlBarProps {
-    visible: boolean; // will slide into / out of view based on this
-    paused: boolean;
-    pausedChanged?: (b: boolean) => void;
-    showPlayPause: boolean;
-    playLabel: string;
-    preferredLanguages: string[];
-    canShowFullScreen: boolean;
-    backClicked?: () => void;
-    canGoBack: boolean;
-    bookLanguages: LangData[];
-    onLanguageChanged: (language: string) => void;
-    extraButtons?: IExtraButton[];
-    bookHasImageDescriptions: boolean;
-    readImageDescriptions: boolean;
-    onReadImageDescriptionToggled: () => void;
+  visible: boolean; // will slide into / out of view based on this
+  paused: boolean;
+  pausedChanged?: (b: boolean) => void;
+  showPlayPause: boolean;
+  playLabel: string;
+  preferredLanguages: string[];
+  canShowFullScreen: boolean;
+  backClicked?: () => void;
+  canGoBack: boolean;
+  bookLanguages: LangData[];
+  onLanguageChanged: (language: string) => void;
+  extraButtons?: IExtraButton[];
+  bookHasImageDescriptions: boolean;
+  readImageDescriptions: boolean;
+  onReadImageDescriptionToggled: () => void;
     nowReadingImageDescription: boolean;
 }
 
@@ -78,30 +78,30 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
     // The "single" class triggers the change in color of the globe icon
-    // in the LanguageMenu.
-    const controlButtonClass =
-        "button" + (props.bookLanguages.length < 2 ? " disabled" : "");
+  // in the LanguageMenu.
+  const controlButtonClass =
+    "button" + (props.bookLanguages.length < 2 ? " disabled" : "");
 
-    const handleCloseLanguageMenu = (isoCode: string) => {
-        setLanguageMenuOpen(false);
-        if (isoCode !== "") {
-            props.onLanguageChanged(isoCode);
+  const handleCloseLanguageMenu = (isoCode: string) => {
+    setLanguageMenuOpen(false);
+    if (isoCode !== "") {
+      props.onLanguageChanged(isoCode);
+    }
+  };
+
+  const toggleFullScreen = () => {
+    // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API.
+    try {
+      // Doc suggests also trying prefixes ms and moz; but I can't find any current browsers that require this
+      if (
+        document.fullscreenElement != null ||
+        (document as any).webkitFullscreenElement != null
+      ) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if ((document as any).webkitExitFullScreen) {
+          (document as any).webkitExitFullScreen(); // Safari, maybe Chrome on IOS?
         }
-    };
-
-    const toggleFullScreen = () => {
-        // See https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API.
-        try {
-            // Doc suggests also trying prefixes ms and moz; but I can't find any current browsers that require this
-            if (
-                document.fullscreenElement != null ||
-                (document as any).webkitFullscreenElement != null
-            ) {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if ((document as any).webkitExitFullScreen) {
-                    (document as any).webkitExitFullScreen(); // Safari, maybe Chrome on IOS?
-                }
             } else {
                 if (document.documentElement.requestFullscreen) {
                     document.documentElement.requestFullscreen();
@@ -111,52 +111,53 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     (document.documentElement as any).webkitRequestFullscreen();
                 }
             }
-        } catch (e) {
-            console.error("RequestFullScreen failed: ", e);
-        }
-    };
+    } catch (e) {
+      console.error("RequestFullScreen failed: ", e);
+    }
+  };
 
-    const pauseLabel = LocalizationManager.getTranslation(
-        "Audio.Pause",
-        props.preferredLanguages,
-        "Pause"
-    );
+  const pauseLabel = LocalizationManager.getTranslation(
+    "Audio.Pause",
+    props.preferredLanguages,
+    "Pause"
+  );
 
-    const playOrPause = props.paused ? (
-        <PlayCircleOutline titleAccess={props.playLabel} />
-    ) : (
-        <PauseCircleOutline titleAccess={pauseLabel} />
-    );
+  const playOrPause = props.paused ? (
+    <PlayCircleOutline titleAccess={props.playLabel} />
+  ) : (
+    <PauseCircleOutline titleAccess={pauseLabel} />
+  );
 
-    const readImageDescriptions = LocalizationManager.getTranslation(
-        "Button.ReadImageDescriptions",
-        props.preferredLanguages,
-        "Read Image Descriptions"
-    );
+  const readImageDescriptions = LocalizationManager.getTranslation(
+    "Button.ReadImageDescriptions",
+    props.preferredLanguages,
+    "Read Image Descriptions"
+  );
 
-    const ignoreImageDescriptions = LocalizationManager.getTranslation(
-        "Button.IgnoreImageDescriptions",
-        props.preferredLanguages,
-        "Ignore Image Descriptions"
-    );
+  const ignoreImageDescriptions = LocalizationManager.getTranslation(
+    "Button.IgnoreImageDescriptions",
+    props.preferredLanguages,
+    "Ignore Image Descriptions"
+  );
 
-    // A modified Mui theme just for the image description icon.
-    // Secondary is the normal bloom red.
-    // Primary is whatever color the icon should be when we are reading an image description.
-    // In this case, I've used the same yellow that's used for audio highlighting.
-    const imageDescIconTheme = createMuiTheme({
-        palette: {
-            primary: { main: bloomHighlight },
+  // A modified Mui theme just for the image description icon.
+  // Secondary is the normal bloom red.
+  // Primary is whatever color the icon should be when we are reading an image description.
+  // In this case, I've used the same yellow that's used for audio highlighting.
+  const imageDescIconTheme = createTheme({
+    palette: {
+      primary: { main: bloomHighlight },
             secondary: { main: theme.palette.secondary.main }
         }
-    });
+  });
 
-    // Using a Mui SvgIcon object here (the "ImageDescriptionIcon") simplifies opacity, accessibility
-    // and tooltips, but means we have to use the above partial theme to modify the color.
-    // SvgIcon's don't take color strings for fill or color attributes, but just access 'primary' and
-    // 'secondary' as palette colors.
-    const readImageDescriptionsOrNot: JSX.Element = (
-        <ThemeProvider theme={imageDescIconTheme}>
+  // Using a Mui SvgIcon object here (the "ImageDescriptionIcon") simplifies opacity, accessibility
+  // and tooltips, but means we have to use the above partial theme to modify the color.
+  // SvgIcon's don't take color strings for fill or color attributes, but just access 'primary' and
+  // 'secondary' as palette colors.
+  const readImageDescriptionsOrNot: JSX.Element = (
+    <ThemeProvider theme={imageDescIconTheme}>
+      {/* removed during vite conversion
             <ImageDescriptionIcon
                 titleAccess={
                     props.readImageDescriptions
@@ -167,72 +168,72 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 color={
                     props.nowReadingImageDescription ? "primary" : "secondary"
                 }
-            />
-        </ThemeProvider>
-    );
+            /> */}
+    </ThemeProvider>
+  );
 
-    const extraButtons = props.extraButtons
+  const extraButtons = props.extraButtons
         ? props.extraButtons.map(eb => (
-              <IconButton
-                  key={eb.id}
-                  color="secondary"
-                  title={eb.description}
-                  onClick={() => sendMessageToHost({ messageType: eb.id })}
-              >
-                  <img
-                      style={{ maxHeight: "24px", maxWidth: "24px" }}
-                      src={eb.iconUrl}
-                  />
-              </IconButton>
-          ))
-        : undefined;
-
-    return (
-        <AppBar
-            color="primary"
-            className={`control-bar ${props.visible ? ", visible" : ""}`}
-            id="control-bar"
-            elevation={0}
-            position="relative" // Keeps the AppBar from floating
+        <IconButton
+          key={eb.id}
+          color="secondary"
+          title={eb.description}
+          onClick={() => sendMessageToHost({ messageType: eb.id })}
         >
-            <Toolbar>
-                {// The logic here is:
-                // - Bloom reader: window === window.top, canGoBack true => Arrow
-                // - Bloom Library, came from detail view: don't need a button at all,
-                // (use browser back button), canGoBack will be passed false.
-                // - Bloom library, not from detail view: canGoBack is true, but not really going back;
-                // it will go to detail view ("more") which in this case is not 'back'.
-                // We may eventually want separate canShowMore and moreClicked props
-                // but for now it feels like more complication than we need.
-                props.canGoBack && (
-                    <IconButton
-                        color="secondary"
-                        onClick={() => {
-                            if (props.backClicked) {
-                                props.backClicked();
-                            }
-                        }}
-                    >
-                        {window === window.top ? (
-                            <ArrowBack
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.Back",
-                                    props.preferredLanguages,
-                                    "Back"
-                                )}
-                            />
-                        ) : (
-                            <MoreHoriz
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.More",
-                                    props.preferredLanguages,
-                                    "More"
-                                )}
-                            />
-                        )}
-                    </IconButton>
+          <img
+            style={{ maxHeight: "24px", maxWidth: "24px" }}
+            src={eb.iconUrl}
+          />
+        </IconButton>
+      ))
+    : undefined;
+
+  return (
+    <AppBar
+      color="primary"
+      className={`control-bar ${props.visible ? ", visible" : ""}`}
+      id="control-bar"
+      elevation={0}
+      position="relative" // Keeps the AppBar from floating
+    >
+      <Toolbar>
+        {// The logic here is:
+        // - Bloom reader: window === window.top, canGoBack true => Arrow
+        // - Bloom Library, came from detail view: don't need a button at all,
+        // (use browser back button), canGoBack will be passed false.
+        // - Bloom library, not from detail view: canGoBack is true, but not really going back;
+        // it will go to detail view ("more") which in this case is not 'back'.
+        // We may eventually want separate canShowMore and moreClicked props
+        // but for now it feels like more complication than we need.
+        props.canGoBack && (
+          <IconButton
+            color="secondary"
+            onClick={() => {
+              if (props.backClicked) {
+                props.backClicked();
+              }
+            }}
+          >
+            {window === window.top ? (
+              <ArrowBack
+                titleAccess={LocalizationManager.getTranslation(
+                  "Button.Back",
+                  props.preferredLanguages,
+                  "Back"
                 )}
-                <div
+              />
+            ) : (
+              <MoreHoriz
+                titleAccess={LocalizationManager.getTranslation(
+                  "Button.More",
+                  props.preferredLanguages,
+                  "More"
+                )}
+              />
+            )}
+          </IconButton>
+        )}
+        <div
                     className="filler" // this is set to flex-grow, making the following icons right-aligned.
                 />
                 {props.bookHasImageDescriptions && (
@@ -242,38 +243,38 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         {readImageDescriptionsOrNot}
                     </IconButton>
                 )}
-                {props.bookLanguages.length > 1 && (
-                    <IconButton
-                        className={controlButtonClass}
-                        color={"secondary"}
-                        onClick={() => {
-                            setLanguageMenuOpen(true);
-                        }}
-                    >
-                        <Language
-                            titleAccess={LocalizationManager.getTranslation(
-                                "Button.ChooseLanguage",
-                                props.preferredLanguages,
-                                "Choose Language"
-                            )}
-                        />
-                    </IconButton>
-                )}
-                {languageMenuOpen && (
-                    <LanguageMenu
-                        languages={props.bookLanguages}
-                        onClose={handleCloseLanguageMenu}
-                    />
-                )}
-                <IconButton
-                    color="secondary"
-                    onClick={() => {
-                        if (props.pausedChanged) {
-                            props.pausedChanged(!props.paused);
-                        }
-                    }}
-                >
-                    {props.showPlayPause ? playOrPause : null}
+        {props.bookLanguages.length > 1 && (
+          <IconButton
+            className={controlButtonClass}
+            color={"secondary"}
+            onClick={() => {
+              setLanguageMenuOpen(true);
+            }}
+          >
+            <Language
+              titleAccess={LocalizationManager.getTranslation(
+                "Button.ChooseLanguage",
+                props.preferredLanguages,
+                "Choose Language"
+              )}
+            />
+          </IconButton>
+        )}
+        {languageMenuOpen && (
+          <LanguageMenu
+            languages={props.bookLanguages}
+            onClose={handleCloseLanguageMenu}
+          />
+        )}
+        <IconButton
+          color="secondary"
+          onClick={() => {
+            if (props.pausedChanged) {
+              props.pausedChanged(!props.paused);
+            }
+          }}
+        >
+          {props.showPlayPause ? playOrPause : null}
                 </IconButton>
                 {extraButtons}
                 {document.fullscreenEnabled && props.canShowFullScreen && (
@@ -284,23 +285,23 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         {document.fullscreenElement == null ? (
                             <Fullscreen
                                 titleAccess={LocalizationManager.getTranslation(
-                                    "Button.FullScreen",
-                                    props.preferredLanguages,
-                                    "Full Screen"
-                                )}
-                            />
-                        ) : (
-                            <FullscreenExit
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.ExitFullScreen",
-                                    props.preferredLanguages,
-                                    "Exit Full Screen"
-                                )}
-                            />
-                        )}
-                    </IconButton>
+                  "Button.FullScreen",
+                  props.preferredLanguages,
+                  "Full Screen"
                 )}
-            </Toolbar>
-        </AppBar>
-    );
+              />
+            ) : (
+              <FullscreenExit
+                titleAccess={LocalizationManager.getTranslation(
+                  "Button.ExitFullScreen",
+                  props.preferredLanguages,
+                  "Exit Full Screen"
+                )}
+              />
+            )}
+          </IconButton>
+        )}
+      </Toolbar>
+    </AppBar>
+  );
 };
