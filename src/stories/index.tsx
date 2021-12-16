@@ -63,7 +63,12 @@ function AddBloomPlayerStory(
     url: string,
     languageCode?: string
 ) {
-    stories.add(label, () => {
+    const parts = label.split("/");
+    const lastPart = parts[parts.length - 1];
+    storiesOf(
+        ["Various books", ...parts.slice(0, parts.length - 1)].join("/"),
+        module
+    ).add(lastPart, () => {
         // The tab order is determined by the order in which the code here uses them.
         // So back button is defined first to make the Props tab show first.
         const showBackButtonKnob = showBackButton();
@@ -163,7 +168,7 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Activity that leads to FF60 split page",
+    "Activity/Activity that leads to FF60 split page",
     //"https://s3.amazonaws.com/bloomharvest-sandbox/stephen_mcconnel%40sil.org/eda23196-72e8-4701-8651-58f14ce2bcfd/bloomdigital/index.htm"
     "testBooks/Testing Away Again/index.htm"
 );
@@ -188,7 +193,7 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Activity - Simple DOM",
+    "Activity/Activity - Simple DOM",
     "testbooks/sample-dom-activity/Simple Activities.htm"
 );
 AddBloomPlayerStory(
@@ -196,19 +201,19 @@ AddBloomPlayerStory(
     "https://s3.amazonaws.com/bloomharvest/namitaj%40chetana.org.in/78c7e561-ce24-4e5d-ad0a-6af141d9d0af/bloomdigital%2findex.htm"
 );
 AddBloomPlayerStory(
-    "Activity - IFrame - Construct Runtime Game",
+    "Activity/IFrame - Construct Runtime Game",
     "testbooks/sample-iframe-activity/index.htm"
 );
 AddBloomPlayerStory(
-    "Activity - ActivePresenter widget test",
+    "Activity/ActivePresenter widget test",
     "testbooks/test-widget-iframe-messages/index.htm"
 );
 AddBloomPlayerStory(
-    "Activity - Canvas Game - Snake",
+    "Activity/Canvas Game - Snake",
     "testbooks/sample-canvas-activity/index.htm"
 );
 AddBloomPlayerStory(
-    "Activity - Test widget-controlled navigation",
+    "Activity/Test widget-controlled navigation",
     "testbooks/test-widget-message-activity/index.htm"
 );
 AddBloomPlayerStory(
