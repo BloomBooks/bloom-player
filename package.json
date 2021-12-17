@@ -11,6 +11,9 @@
     "author": "SIL International",
     "license": "MIT",
     "private": false,
+    "engines": {
+        "node": "~16.13.1"
+    },
     "// Might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working": "",
     "sideEffects": false,
     "repository": {
@@ -63,7 +66,7 @@
         "@types/jest": "^24.0.11",
         "@types/jquery": "^3.5.5",
         "@types/jquery.nicescroll": "^3.7.1",
-        "@types/node": "^12.7.2",
+        "@types/node": "^16.3.1",
         "@types/react": "^16.9.1",
         "@types/react-dom": "^16.8.5",
         "@types/storybook__addon-info": "^4.1.2",
@@ -76,7 +79,7 @@
         "copy-webpack-plugin": "^5.0.4",
         "css-loader": "^2.1.1",
         "editorconfig": "^0.15.3",
-        "eslint": "^6.2.2",
+        "eslint": "^8.4.1",
         "file-loader": "^3.0.1",
         "globule": "^1.2.1",
         "html-webpack-plugin": "^3.2.0",
@@ -103,7 +106,7 @@
         "url-loader": "^1.1.2",
         "webpack": "^4.39.2",
         "webpack-bundle-analyzer": "^3.3.2",
-        "webpack-cli": "^3.3.0",
+        "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^3.7.2",
         "webpack-merge": "^4.2.1",
         "yarn": "^1.15.2"
