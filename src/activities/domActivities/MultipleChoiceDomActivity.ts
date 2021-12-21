@@ -1,12 +1,15 @@
 import { ActivityContext } from "../ActivityContext";
 // tslint:disable-next-line: no-submodule-imports
-const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
-    .default;
+/* Not using. See comment below:
+    const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
+    .default;*/
 
 // This class is intentionally very generic. All it needs is that the html of the
 // page it is given should have some objects (translation groups or images) that have
 // a data-activityRole of either "correct-answer" or "wrong-answer".
 
+// Note that you won't find any code using this directly. Instead,
+// it gets used by the ActivityManager as the default export of this module.
 export default class MultipleChoiceDomActivity {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
@@ -20,14 +23,29 @@ export default class MultipleChoiceDomActivity {
 
     public start(activityContext: ActivityContext) {
         this.activityContext = activityContext;
-        activityContext.addActivityStylesForPage(activityCss);
+
         activityContext.pageElement
-            .querySelectorAll("[data-activityRole]")
+            .querySelectorAll(".chosen-correct, .chosen-wrong")
+            .forEach((choiceElement: HTMLElement) => {
+                choiceElement.classList.remove("chosen-correct");
+                choiceElement.classList.remove("chosen-wrong");
+            });
+        /* I decided that it's too rigid to bake the css into the version of Bloom-Player
+        at this point. It prevents someone improving it without us, and could lead to migration
+        headaches in the future with things like how much room is alloted for various elements.
+         Instead, we're going to keep the styling in the template book that is used to make the book.
+        activityContext.addActivityStylesForPage(activityCss);*/
+        activityContext.pageElement
+            // actual buttons are problematic in the editing mode, so we wrap things with a div.buttonish and then at runtime, replace with a real button
+            .querySelectorAll(".buttonish")
             .forEach((choiceElement: HTMLElement) => {
                 // add a button around the translation group or image container
                 const correct =
                     choiceElement.getAttribute("data-activityRole") ===
                     "correct-answer";
+                let button = choiceElement;
+                /*
+                TODO
 
                 let button = choiceElement.parentNode as HTMLElement;
                 if (button.tagName !== "BUTTON") {
@@ -40,7 +58,7 @@ export default class MultipleChoiceDomActivity {
                     );
                     button.appendChild(choiceElement);
                 }
-
+*/
                 // wire up events
                 this.activityContext.addEventListener(
                     "click",
@@ -48,7 +66,22 @@ export default class MultipleChoiceDomActivity {
                     correct ? this.onCorrectClick : this.onWrongClick
                 );
             });
+        //this.shuffleButtons();
     }
+    // private shuffleButtons(string selector){
+    //      (selector ? this.querySelector(selector) : this)
+    //          .parent()
+    //          .each(function() {
+    //              document
+    //                  .querySelector(this)
+    //                  .children(selector)
+    //                  .sort(function() {
+    //                      return Math.random() - 0.5;
+    //                  })
+    //                  .detach()
+    //                  .appendTo(this);
+    //          });
+    // }
     private onCorrectClick = (evt: Event) => {
         (evt.currentTarget as HTMLElement).classList.add("chosen-correct");
         this.activityContext.playCorrect();
