@@ -4,6 +4,8 @@
 // game runtimes and other ways (i.e. Apple's iwidgets) that can thus be embedded
 // in a Bloom page.
 
+import { ActivityContext } from "./ActivityContext";
+
 // Because we don't actually talk to the activity, this class doesn't do anything,
 // it just adapts the iframe to the bloom-player activity system.
 
@@ -18,9 +20,10 @@ export default class IframeActivity {
     constructor(pageElement: Element) {
         console.log("iframe activity constructed");
     }
-
-    public start() {
-        console.log("iframe activity start");
+    // Do just those things that we only want to do once per read of the book.
+    public prepare(activityContext: ActivityContext) {}
+    public showingPage() {
+        console.log("iframe activity showingPage");
     }
     public stop() {
         console.log("iframe activity stop");

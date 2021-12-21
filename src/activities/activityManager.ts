@@ -14,11 +14,16 @@ export interface IActivityModule {
 
 // This is the class that the activity module has to implement
 export interface IActivityObject {
-    new (element: HTMLElement): object;
-    start: (context: ActivityContext) => void;
+    prepare: (context: ActivityContext) => void;
+    showingPage: (context: ActivityContext) => void;
     stop: () => void;
 }
-
+// Constructing stuff from interfaces has problems with typescript at the moment.
+// The class should have this constructor, but should not claim this interface.
+// See https://stackoverflow.com/a/13408029/723299.
+export interface IActivityObjectConstructable {
+    new (element: HTMLElement): IActivityObject;
+}
 export interface IActivityRequirements {
     dragging?: boolean;
     clicking?: boolean;
@@ -170,11 +175,13 @@ export class ActivityManager {
             );
             if (activity) {
                 this.currentActivity = activity;
-                activity.runningObject = new activity.module!.default(
+                // constructing stuff like this has problems with typescript at the moment.
+                // see https://stackoverflow.com/a/13408029/723299
+                // Then the "as unknown" step is make eslint relax
+                activity.runningObject = new ((activity.module!
+                    .default as unknown) as IActivityObjectConstructable)(
                     bloomPageElement
                 ) as IActivityObject;
-                // for use in styling things differently during playback versus book editing
-                bloomPageElement.classList.add("bloom-activityPlayback");
                 const analyticsCategory = this.getAnalyticsCategoryOfPage(
                     bloomPageElement
                 );
@@ -183,7 +190,18 @@ export class ActivityManager {
                     bloomPageElement,
                     this.bookActivityGroupings[analyticsCategory]
                 );
-                activity.runningObject!.start(activity.context);
+                if (
+                    !activity.context.pageElement.hasAttribute(
+                        "activity-was-prepared"
+                    )
+                ) {
+                    activity.runningObject!.prepare(activity.context);
+                    activity.context.pageElement.setAttribute(
+                        "activity-was-prepared",
+                        "true"
+                    );
+                }
+                activity.runningObject!.showingPage(activity.context);
             }
         }
     }

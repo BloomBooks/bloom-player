@@ -13,3 +13,5 @@ debug.log
 src/activities/domActivities/multipleChoiceDomActivity.css
 
 testBooks/sample-dom-activity/Activity.css
+
+src/bloom-player.css

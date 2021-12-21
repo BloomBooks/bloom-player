@@ -17,8 +17,11 @@ export default class SimpleCheckboxQuiz {
     // eslint-disable-next-line no-unused-consts
     constructor(pageElement: HTMLElement) {}
 
-    public start(activityContext: ActivityContext) {
-        console.log("SimpleCheckboxQuiz.start()");
+    // Do just those things that we only want to do once per read of the book.
+    public prepare(activityContext: ActivityContext) {}
+
+    public showingPage(activityContext: ActivityContext) {
+        console.log("SimpleCheckboxQuiz.showingPage()");
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
         activityContext.addActivityStylesForPage(
