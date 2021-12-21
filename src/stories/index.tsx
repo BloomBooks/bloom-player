@@ -10,6 +10,7 @@ import {
     button
 } from "@storybook/addon-knobs";
 import { withA11y } from "@storybook/addon-a11y";
+import Axios from "axios";
 
 const stories = storiesOf("Various books", module);
 stories.addDecorator(withKnobs);
@@ -121,16 +122,13 @@ function simulateExternalMessage(message: string) {
 }
 
 AddBloomPlayerStory(
-    "Landscape SL with Quiz",
+    "Activity/Landscape SL with Quiz",
     "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2f6f6d82d5-e98d-445d-b4be-143df993c3c0/bloomdigital%2findex.htm"
 );
 
-// To make this work, replace the URL with one found by putting a breakpoint in Bloom at
-// PublishToAndroidApi.cs, in the event handler for updatePreview, right after PreviewUrl is set.
-AddBloomPlayerStory(
-    "Book currently previewed in Bloom",
-    "http://localhost:8089/bloom/C%3A/Users/hatto/AppData/Local/Temp/PlaceForStagingBook/test-activities"
-);
+Axios.get("http://localhost:8089/bloom/CURRENT-BLOOMPUB-URL").then(result => {
+    AddBloomPlayerStory("* BloomPUB currently previewed in Bloom", result.data);
+});
 
 AddBloomPlayerStory(
     "Comic - A5Portrait",

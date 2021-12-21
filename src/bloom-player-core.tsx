@@ -1860,7 +1860,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     {/* The ripple is an animation on the button on click and
                     focus, but it isn't placed correctly on our buttons for
                     some reason */}
-                    <IconButton disableRipple={true}>
+                    <IconButton className={"nav-button"} disableRipple={true}>
                         <ArrowBack
                             titleAccess={LocalizationManager.getTranslation(
                                 "Button.Prev",
@@ -1884,7 +1884,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.slideNext();
                     }}
                 >
-                    <IconButton disableRipple={true}>
+                    <IconButton className={"nav-button"} disableRipple={true}>
                         <ArrowForward
                             titleAccess={LocalizationManager.getTranslation(
                                 "Button.Next",
