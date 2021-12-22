@@ -1,4 +1,5 @@
 import { ActivityContext } from "../ActivityContext";
+import { IActivityObject } from "../activityManager";
 
 // The value we store to indicate that at some point the user
 // chose this answer. We don't really need the value, because if the key for
@@ -6,7 +7,7 @@ import { ActivityContext } from "../ActivityContext";
 // be consistent, in case we later add other options.
 const kChoiceWasSelectedAtOnePoint = "wasSelectedAtOnePoint";
 
-export default class SimpleCheckboxQuiz {
+export default class SimpleCheckboxQuiz implements IActivityObject {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
