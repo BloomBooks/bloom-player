@@ -191,8 +191,8 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Activity/Activity - Simple DOM",
-    "testbooks/sample-dom-activity/Simple Activities.htm"
+    "Activity/Choice activities from Bloom 5.2",
+    "testbooks/Bloom5.2-activities/Bloom5.2-activities.htm"
 );
 AddBloomPlayerStory(
     "Book with two audio sentences on cover",
