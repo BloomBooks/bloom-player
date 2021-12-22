@@ -108,6 +108,13 @@ export class ActivityContext {
                 "style"
             );
             style.setAttribute("data-activity-stylesheet", ""); // value doesn't matter
+            // REVIEW: Scoped styles have been removed from the spec, so we are using
+            // a polyfill,  https://github.com/samthor/scoped, which is not very commonly used
+            // (only 56 stars at the moment). So we should not really be depending on this... it
+            // could break or whatever.
+            // Also, it's not working in Bloom Editor (maybe the polyfill could be added there?).
+            // I think it's better to just scope by hand using a class that
+            // uniquely matches the page. So I'm going to remove this.
             style.setAttribute("scoped", "true");
             style.innerText = css;
             this.pageElement.parentNode!.insertBefore(style, this.pageElement); //NB: will be added even if firstChild is null
