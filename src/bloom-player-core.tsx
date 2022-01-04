@@ -1422,12 +1422,97 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // don't need to do anything.
     }
 
+    // Make a stylesheet that tells the player where to find Andika New Basic.
+    // This can't be part of the <style scoped> where most style rules for the book
+    // content go, because @font-face rules don't work there.
+    private makeAndikaStylesheet(): void {
+        let stylesheet = document.getElementById(
+            "andikaCssStyleSheet"
+        ) as HTMLStyleElement;
+        if (!stylesheet) {
+            stylesheet = document.createElement("style");
+            document.head.appendChild(stylesheet);
+            stylesheet.setAttribute("id", "andikaCssStyleSheet");
+        }
+        const fileUrlOk = this.urlPrefix.startsWith("file:");
+        // The Andika New Basic font might be found already installed. Failing that,
+        // if we're inside BloomReader or RAB, we should be able to get it at the standard
+        // URL for assets embedded in the program. If instead we're embedded in a web
+        // page like BloomLibrary.org, we need to download from the web.
+        // Note that currently that last option will only work when the page origin
+        // is *bloomlibrary.org. This helps limit our exposure to large charges from
+        // people using our font arbitrarily. This does include, however, books
+        // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+        // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
+        // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
+        // we leave it out. This is also why these rules are here rather than in bloom-player.less.
+        // (If we ARE on Android, we shouldn't need the web url, so in the interestes of
+        // failing fast if anything goes wrong with loading the font from the android asset
+        // folder, we leave it out in that case.)
+        stylesheet.innerText = `
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: normal;
+                src: local("Andika New Basic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: normal;
+                src: local("Andika New Basic Bold"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: italic;
+                src: local("Andika New Basic Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: italic;
+                src: local("Andika New Basic Bold Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'
+                    };
+            }
+
+            .do-not-display {
+                display:none !important;
+            }
+            `
+            .replace("\n", "")
+            .replace("\r", ""); // newlines turn to <br> which is wrong in style element
+    }
+
     // Assemble all the style rules from all the stylesheets the book contains or references.
     // When the async completes, the result will be set as our state.styles with setState().
     // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
     // of the main document, since it contains @font-face declarations that don't work
     // in the <scoped> element.
     private async assembleStyleSheets(doc: HTMLHtmlElement): Promise<string> {
+        this.makeAndikaStylesheet();
         const linkElts = doc.ownerDocument!.evaluate(
             ".//link[@href and @type='text/css']",
             doc,
@@ -1461,74 +1546,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 )
             );
 
-            const fileUrlOk = this.urlPrefix.startsWith("file:");
-            // The Andika New Basic font might be found already installed. Failing that,
-            // if we're inside BloomReader or RAB, we should be able to get it at the standard
-            // URL for assets embedded in the program. If instead we're embedded in a web
-            // page like BloomLibrary.org, we need to download from the web.
-            // Note that currently that last option will only work when the page origin
-            // is *bloomlibrary.org. This helps limit our exposure to large charges from
-            // people using our font arbitrarily. This does include, however, books
-            // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
-            // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
-            // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
-            // we leave it out. This is also why these rules are here rather than in bloom-player.less.
-            // (If we ARE on Android, we shouldn't need the web url, so in the interestes of
-            // failing fast if anything goes wrong with loading the font from the android asset
-            // folder, we leave it out in that case.)
-            let combinedStyle = `
-                @font-face {
-                    font-family: "Andika New Basic";
-                    font-weight: normal;
-                    font-style: normal;
-                    src: local("Andika New Basic"),
-                        ${
-                            fileUrlOk
-                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf"),'
-                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'
-                        };
-                }
-
-                @font-face {
-                    font-family: "Andika New Basic";
-                    font-weight: bold;
-                    font-style: normal;
-                    src: local("Andika New Basic Bold"),
-                        ${
-                            fileUrlOk
-                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf"),'
-                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'
-                        };
-                }
-
-                @font-face {
-                    font-family: "Andika New Basic";
-                    font-weight: normal;
-                    font-style: italic;
-                    src: local("Andika New Basic Italic"),
-                        ${
-                            fileUrlOk
-                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf"),'
-                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'
-                        };
-                }
-
-                @font-face {
-                    font-family: "Andika New Basic";
-                    font-weight: bold;
-                    font-style: italic;
-                    src: local("Andika New Basic Bold Italic"),
-                        ${
-                            fileUrlOk
-                                ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf"),'
-                                : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'
-                        };
-                }
-
-                .do-not-display {
-                    display:none !important;
-                }
-                `;
+            let combinedStyle = "";
 
             // start with embedded styles (typically before links in a bloom doc...)
             const styleElts = doc.ownerDocument!.evaluate(
@@ -2108,7 +2126,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (bloomPage.classList.contains("cover")) {
             return;
         }
-
         // ENHANCE: If you drag the scrollbar mostly horizontal instead of mostly vertical,
         // both the page swiping and the scrollbar will be operating, which is somewhat confusing
         // and not perfectly ideal, although it doesn't really break anything.
