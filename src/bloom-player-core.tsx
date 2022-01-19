@@ -2132,7 +2132,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // It'd be nice so that if you're dragging the scrollbar in any way, swiping is disabled.
 
         // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
-        // Expected behavior for comic bubbbles:  "we want overflow to show, but not generate scroll bars"
+        // Expected behavior for comic bubbles:  "we want overflow to show, but not generate scroll bars"
         const scrollBlocks = $(bloomPage)
             .find(
                 ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
@@ -2155,20 +2155,36 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // or split (hence we can safely remove classes used for that).
                 // And we'll risk sometimes adding nicescroll when we could (just)
                 // have done without it.
+                const firstChild = elt.firstElementChild;
                 const lastChild = elt.lastElementChild;
                 if (!lastChild) {
                     // no children, can't be overflowing
                     return false;
                 }
-                return (
-                    // Here the tempation is to compare elt.scollHeight with elt.clientHeight, but
-                    // scrollHeight is never LESS than clientHeight, even if the content is much
-                    // smaller. Since we know the contents of a bloom-editable are always arranged
-                    // in order and vertically, we can get a more accurate idea of the content
-                    // height using the bottom of the last child.
-                    elt.getBoundingClientRect().bottom <
-                    lastChild.getBoundingClientRect().bottom
-                );
+                // Here the temptation is to compare elt.scrollHeight with elt.clientHeight, but
+                // scrollHeight is never LESS than clientHeight, even if the content is much
+                // smaller. Since we know the contents of a bloom-editable are always arranged
+                // in order and vertically, we can get a more accurate idea of the content
+                // height using the top of the first child and the bottom of the last child.
+                // (Just using the bottom of the last child is not reliable because we may
+                // be configured to align the bottom of the last child with the parent.)
+                // Note: we think we should be adding first child's margin top.
+                // (Remember scale if attempting it.)
+                // But we're not sure this is worth fixing because we don't think
+                // it is possible to have a significant margin without custom css.
+                const contentHeight =
+                    lastChild.getBoundingClientRect().bottom -
+                    firstChild!.getBoundingClientRect().top;
+                // Note: we think we should be subtracting the parent's top and bottom
+                // margins and borders. (Remember scale if attempting it.)
+                // But we're not sure this is worth fixing because we don't think
+                // it is possible to have a significant margin/border without custom css.
+                const parentHeight = elt.getBoundingClientRect().height;
+                // We put in a small fudge factor because rounding errors sometimes make something
+                // that fits compute as if it didn't. There's nearly always a few pixels of leeway
+                // anyway, since the bottom of the last paragraph is generally a bit below the
+                // lowest actually drawn pixel of text.
+                return contentHeight > parentHeight + 0.25;
             });
         // remove classes incompatible with nicescroll
         scrollBlocks.each((i, e) => {
