@@ -2132,13 +2132,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // It'd be nice so that if you're dragging the scrollbar in any way, swiping is disabled.
 
         // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
-        // Expected behavior for comic bubbles:  "we want overflow to show, but not generate scroll bars"
-        const scrollBlocks = $(bloomPage)
+        // Expected behavior for comic bubbbles:  "we want overflow to show, but not generate scroll bars"
+        let scrollBlocks: HTMLElement[] = [];
+        let waitingForObservers = 0;
+        let observersReported = 0;
+        $(bloomPage)
             .find(
                 ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
             )
-            .filter((index, elt) => {
-                // Filter out the blocks that are definitely not overflowing.
+            .each((index, elt) => {
+                // Process the blocks that are possibly overflowing.
                 // Blocks that are overflowing will be configured to use niceScroll
                 // so the user can scroll and see everything. That is costly, because
                 // niceScroll leaks event listeners every time it is called. So we don't
@@ -2159,47 +2162,61 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 const lastChild = elt.lastElementChild;
                 if (!lastChild) {
                     // no children, can't be overflowing
-                    return false;
+                    return;
                 }
-                // Here the temptation is to compare elt.scrollHeight with elt.clientHeight, but
-                // scrollHeight is never LESS than clientHeight, even if the content is much
-                // smaller. Since we know the contents of a bloom-editable are always arranged
-                // in order and vertically, we can get a more accurate idea of the content
-                // height using the top of the first child and the bottom of the last child.
-                // (Just using the bottom of the last child is not reliable because we may
-                // be configured to align the bottom of the last child with the parent.)
-                // Note: we think we should be adding first child's margin top.
-                // (Remember scale if attempting it.)
-                // But we're not sure this is worth fixing because we don't think
-                // it is possible to have a significant margin without custom css.
-                const contentHeight =
-                    lastChild.getBoundingClientRect().bottom -
-                    firstChild!.getBoundingClientRect().top;
-                // Note: we think we should be subtracting the parent's top and bottom
-                // margins and borders. (Remember scale if attempting it.)
-                // But we're not sure this is worth fixing because we don't think
-                // it is possible to have a significant margin/border without custom css.
-                const parentHeight = elt.getBoundingClientRect().height;
-                // We put in a small fudge factor because rounding errors sometimes make something
-                // that fits compute as if it didn't. There's nearly always a few pixels of leeway
-                // anyway, since the bottom of the last paragraph is generally a bit below the
-                // lowest actually drawn pixel of text.
-                return contentHeight > parentHeight + 0.25;
+                // We don't really want continuous observation, but this is an elegant
+                // way to find out whether each child is entirely contained within its
+                // parent. Unlike computations involving coordinates, we don't have to
+                // worry about whether borders, margins, and padding are included in
+                // various measurements. We do need to check the first as well as the
+                // last child, because if text is aligned bottom, any overflow will be
+                // at the top.
+                const observer = new IntersectionObserver(
+                    (entries, ob) => {
+                        // called more-or-less immediately for each child, but after the
+                        // loop creates them all.
+                        entries.forEach(entry => {
+                            observersReported++;
+                            ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
+                            if (
+                                entry.intersectionRatio < 1 && // not entirely inside
+                                scrollBlocks.indexOf(
+                                    entry.target.parentElement!
+                                ) < 0
+                            ) {
+                                scrollBlocks.push(entry.target.parentElement!);
+                                // remove classes incompatible with nicescroll
+                                const group = entry.target.parentElement!
+                                    .parentElement!;
+                                group.classList.remove(
+                                    "bloom-vertical-align-center"
+                                );
+                                group.classList.remove(
+                                    "bloom-vertical-align-bottom"
+                                );
+                            }
+                            if (observersReported == waitingForObservers) {
+                                // configure nicescroll...idealy only once for all of them
+                                $(scrollBlocks).niceScroll({
+                                    autohidemode: false,
+                                    cursorwidth: "12px",
+                                    cursorcolor: "#000000",
+                                    cursoropacitymax: 0.1,
+                                    cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
+                                });
+                                scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
+                            }
+                        });
+                    },
+                    { root: elt }
+                );
+                waitingForObservers++;
+                observer.observe(firstChild!);
+                if (firstChild != lastChild) {
+                    waitingForObservers++;
+                    observer.observe(lastChild);
+                }
             });
-        // remove classes incompatible with nicescroll
-        scrollBlocks.each((i, e) => {
-            const group = e.parentElement!;
-            group.classList.remove("bloom-vertical-align-center");
-            group.classList.remove("bloom-vertical-align-bottom");
-        });
-        // and then configure nicescroll
-        scrollBlocks.niceScroll({
-            autohidemode: false,
-            cursorwidth: "12px",
-            cursorcolor: "#000000",
-            cursoropacitymax: 0.1,
-            cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
-        });
     }
 
     // called by narration.ts
