@@ -203,6 +203,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private bookInteraction: BookInteraction = new BookInteraction();
 
     private static currentPagePlayer: BloomPlayerCore;
+    private indicesOfPagesWhereWeShouldPreserveDOMState: any = {};
 
     constructor(props: IProps, state: IState) {
         super(props, state);
@@ -1776,6 +1777,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             >
                 <Swiper {...swiperParams}>
                     {this.state.pages.map((slide, index) => {
+                        const pageIsCloseToCurrentOne =
+                            Math.abs(index - this.state.currentSwiperIndex) < 2;
+                        const useActualContents =
+                            pageIsCloseToCurrentOne ||
+                            this.indicesOfPagesWhereWeShouldPreserveDOMState[
+                                index
+                            ];
+
                         return (
                             <div
                                 key={index}
@@ -1799,9 +1808,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
                                     Only load up the one that is about to be current page and the ones on either side of it with
                                     actual html contents, let every other page be an empty string placeholder. Ref BL-7652 */}
-                                {Math.abs(
-                                    index - this.state.currentSwiperIndex
-                                ) < 2 ? (
+                                {useActualContents ? (
                                     <>
                                         {/* The idea here is to scope our styles (using a polyfill)
                                             so that book styles cannot inadvertently change the swiper or other
@@ -1828,6 +1835,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                                 .state.importedBodyAttributes[
                                                 "class"
                                             ] ?? ""}`}
+                                            // Note: the contents of `slide` are what was in the .htm originally.
+                                            // So you would expect that this would replace any changes made to the dom by the activity or other code.
+                                            // You would expect that we would lose the answers a user made in an activity.
+                                            // However it appears that React doesn't notice those changes and thus does nothing when we try to set
+                                            // the HTML here to what it was originally; instead changes to the DOM are preserved.
                                             dangerouslySetInnerHTML={{
                                                 __html: slide
                                             }}
@@ -2066,7 +2078,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         // Values this sets are used in the render of the new page, so it must NOT
         // be postponed like the other actions below.
-        this.activityManager.showingPage(index, bloomPage);
+        if (this.activityManager.showingPage(index, bloomPage)) {
+            this.indicesOfPagesWhereWeShouldPreserveDOMState[index] = true;
+        }
+
         // While working on performance, we found that (at least some of) the following was slow.
         // (In a large book, still somewhat inexplicably, the stuff checking for audio was slow).
         // Even though the new page was already computed, we found that this blocked the ui from

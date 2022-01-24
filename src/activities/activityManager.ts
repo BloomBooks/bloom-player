@@ -141,13 +141,18 @@ export class ActivityManager {
     }
 
     // Showing a new page, so stop any previous activity and start any new one that might be on the new page.
-    public showingPage(pageIndex: number, bloomPageElement: HTMLElement) {
+    // returns true if this is a page where we are going to have state in the DOM so that the
+    // container needs to be careful not to get rid of it to save memory.
+    public showingPage(
+        pageIndex: number,
+        bloomPageElement: HTMLElement
+    ): boolean | undefined {
         // At the moment bloom-player-core will always call us
         // twice if the book is landscape. Probably that could
         // be fixed but we might as well just protect ourselves
         // from starting the same activity twice without stopping it.
         if (this.previousPageElement === bloomPageElement) {
-            return;
+            return undefined;
         }
         this.previousPageElement = bloomPageElement;
 
@@ -182,6 +187,11 @@ export class ActivityManager {
                     .default as unknown) as IActivityObjectConstructable)(
                     bloomPageElement
                 ) as IActivityObject;
+
+                // for use in styling things differently during playback versus book editing
+
+                bloomPageElement.classList.add("bloom-activityPlayback");
+
                 const analyticsCategory = this.getAnalyticsCategoryOfPage(
                     bloomPageElement
                 );
@@ -192,18 +202,19 @@ export class ActivityManager {
                 );
                 if (
                     !activity.context.pageElement.hasAttribute(
-                        "activity-was-prepared"
+                        "data-activity-state"
                     )
                 ) {
                     activity.runningObject!.prepare(activity.context);
                     activity.context.pageElement.setAttribute(
-                        "activity-was-prepared",
-                        "true"
+                        "data-activity-state",
+                        "prepared"
                     );
                 }
                 activity.runningObject!.showingPage(activity.context);
             }
         }
+        return !!activityID; // return true if this is an activity
     }
 
     private hasLegacyQuizScriptTag(pageDiv: Element): boolean {
