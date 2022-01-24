@@ -2131,92 +2131,101 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // and not perfectly ideal, although it doesn't really break anything.
         // It'd be nice so that if you're dragging the scrollbar in any way, swiping is disabled.
 
-        // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
-        // Expected behavior for comic bubbbles:  "we want overflow to show, but not generate scroll bars"
-        let scrollBlocks: HTMLElement[] = [];
-        let waitingForObservers = 0;
-        let observersReported = 0;
-        $(bloomPage)
-            .find(
-                ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
-            )
-            .each((index, elt) => {
-                // Process the blocks that are possibly overflowing.
-                // Blocks that are overflowing will be configured to use niceScroll
-                // so the user can scroll and see everything. That is costly, because
-                // niceScroll leaks event listeners every time it is called. So we don't
-                // want to use it any more than we need to. Also, niceScroll
-                // somehow fails to work when our vertical alignment classes are applied;
-                // probably something to do with the bloom-editables being display:flex
-                // to achieve vertical positioning. We can safely remove those classes
-                // if the block is overflowing, because there's no excess white space
-                // to distribute.
-                // Note: there are complications Bloom desktop handles in determining
-                // accurately whether a block is overflowing. We don't need those here.
-                // If it is close enough to overflow to get a scroll bar, it's close
-                // enough not to care whether extra white space is at the top, bottom,
-                // or split (hence we can safely remove classes used for that).
-                // And we'll risk sometimes adding nicescroll when we could (just)
-                // have done without it.
-                const firstChild = elt.firstElementChild;
-                const lastChild = elt.lastElementChild;
-                if (!lastChild) {
-                    // no children, can't be overflowing
-                    return;
-                }
-                // We don't really want continuous observation, but this is an elegant
-                // way to find out whether each child is entirely contained within its
-                // parent. Unlike computations involving coordinates, we don't have to
-                // worry about whether borders, margins, and padding are included in
-                // various measurements. We do need to check the first as well as the
-                // last child, because if text is aligned bottom, any overflow will be
-                // at the top.
-                const observer = new IntersectionObserver(
-                    (entries, ob) => {
-                        // called more-or-less immediately for each child, but after the
-                        // loop creates them all.
-                        entries.forEach(entry => {
-                            observersReported++;
-                            ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
-                            if (
-                                entry.intersectionRatio < 1 && // not entirely inside
-                                scrollBlocks.indexOf(
-                                    entry.target.parentElement!
-                                ) < 0
-                            ) {
-                                scrollBlocks.push(entry.target.parentElement!);
-                                // remove classes incompatible with nicescroll
-                                const group = entry.target.parentElement!
-                                    .parentElement!;
-                                group.classList.remove(
-                                    "bloom-vertical-align-center"
-                                );
-                                group.classList.remove(
-                                    "bloom-vertical-align-bottom"
-                                );
-                            }
-                            if (observersReported == waitingForObservers) {
-                                // configure nicescroll...idealy only once for all of them
-                                $(scrollBlocks).niceScroll({
-                                    autohidemode: false,
-                                    cursorwidth: "12px",
-                                    cursorcolor: "#000000",
-                                    cursoropacitymax: 0.1,
-                                    cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
-                                });
-                                scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
-                            }
-                        });
-                    },
-                    { root: elt }
-                );
-                waitingForObservers++;
-                observer.observe(firstChild!);
-                if (firstChild != lastChild) {
-                    waitingForObservers++;
-                    observer.observe(lastChild);
-                }
-            });
+        // on a browser so obsolete that it doesn't have IntersectionObserver (e.g., IE or Safari before 12.2),
+        // we just won't get scrolling.
+        if ("IntersectionObserver" in window) {
+            // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
+            // Expected behavior for comic bubbles:  "we want overflow to show, but not generate scroll bars"
+            let scrollBlocks: HTMLElement[] = [];
+            let countOfObserversExpectedToReport = 0;
+            let countOfObserversThatHaveReported = 0;
+            $(bloomPage)
+                .find(
+                    ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
+                )
+                .each((index, elt) => {
+                    // Process the blocks that are possibly overflowing.
+                    // Blocks that are overflowing will be configured to use niceScroll
+                    // so the user can scroll and see everything. That is costly, because
+                    // niceScroll leaks event listeners every time it is called. So we don't
+                    // want to use it any more than we need to. Also, niceScroll
+                    // somehow fails to work when our vertical alignment classes are applied;
+                    // probably something to do with the bloom-editables being display:flex
+                    // to achieve vertical positioning. We can safely remove those classes
+                    // if the block is overflowing, because there's no excess white space
+                    // to distribute.
+                    // Note: there are complications Bloom desktop handles in determining
+                    // accurately whether a block is overflowing. We don't need those here.
+                    // If it is close enough to overflow to get a scroll bar, it's close
+                    // enough not to care whether extra white space is at the top, bottom,
+                    // or split (hence we can safely remove classes used for that).
+                    // And we'll risk sometimes adding nicescroll when we could (just)
+                    // have done without it.
+                    const firstChild = elt.firstElementChild;
+                    const lastChild = elt.lastElementChild;
+                    if (!lastChild) {
+                        // no children, can't be overflowing
+                        return;
+                    }
+                    // We don't really want continuous observation, but this is an elegant
+                    // way to find out whether each child is entirely contained within its
+                    // parent. Unlike computations involving coordinates, we don't have to
+                    // worry about whether borders, margins, and padding are included in
+                    // various measurements. We do need to check the first as well as the
+                    // last child, because if text is aligned bottom, any overflow will be
+                    // at the top.
+                    const observer = new IntersectionObserver(
+                        (entries, ob) => {
+                            // called more-or-less immediately for each child, but after the
+                            // loop creates them all.
+                            entries.forEach(entry => {
+                                countOfObserversThatHaveReported++;
+                                ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
+                                if (
+                                    entry.intersectionRatio < 1 && // not entirely inside
+                                    scrollBlocks.indexOf(
+                                        entry.target.parentElement!
+                                    ) < 0
+                                ) {
+                                    scrollBlocks.push(
+                                        entry.target.parentElement!
+                                    );
+                                    // remove classes incompatible with nicescroll
+                                    const group = entry.target.parentElement!
+                                        .parentElement!;
+                                    group.classList.remove(
+                                        "bloom-vertical-align-center"
+                                    );
+                                    group.classList.remove(
+                                        "bloom-vertical-align-bottom"
+                                    );
+                                }
+                                if (
+                                    countOfObserversThatHaveReported ==
+                                    countOfObserversExpectedToReport
+                                ) {
+                                    // configure nicescroll...ideally only once for all of them
+                                    $(scrollBlocks).niceScroll({
+                                        autohidemode: false,
+                                        cursorwidth: "12px",
+                                        cursorcolor: "#000000",
+                                        cursoropacitymax: 0.1,
+                                        cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
+                                    });
+                                    scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
+                                }
+                            });
+                        },
+                        { root: elt }
+                    );
+                    countOfObserversExpectedToReport++;
+                    observer.observe(firstChild!);
+                    if (firstChild != lastChild) {
+                        countOfObserversExpectedToReport++;
+                        observer.observe(lastChild);
+                    }
+                });
+        }
     }
 
     // called by narration.ts
