@@ -51,9 +51,12 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
             });
     }
     private shuffleChildren(container: HTMLElement) {
+        // because sort is supposed to get the same answer every time, we
+        // are doing the randomizing ahead, before the sort.
         Array.from(container.childNodes)
-            .sort(() => Math.random() - 0.5)
-            .forEach(item => container.appendChild(item));
+            .map(node => ({ node, randomValue: Math.random() }))
+            .sort((a, b) => a.randomValue - b.randomValue)
+            .forEach(({ node }) => container.appendChild(node));
     }
 
     private replaceWithButton(element: HTMLElement): HTMLButtonElement {
