@@ -95,6 +95,13 @@ export class Video {
         videoElement: HTMLVideoElement,
         bloomPage: HTMLElement
     ) {
+        // When we go to a new page with a video on it, we delay 1 second to allow the user to get
+        // oriented to the new page. During that second, it's just possible that the user went on to
+        // another page. Better check and not play the video, if that's the case.
+        // Storybook "General video with audio" can be used to test this.
+        if (this.currentPage !== bloomPage) {
+            return;
+        }
         this.videoStartTime = videoElement.currentTime;
         const promise = videoElement.play();
         if (promise) {
