@@ -229,6 +229,10 @@ AddBloomPlayerStory(
     "src/testbook/test %231/test %26 play%232.htm"
 );
 AddBloomPlayerStory(
-    "Sign Language with sound",
+    "Sign Language with TalkingBook sound",
     "https://s3.amazonaws.com/share.bloomlibrary.org/debug/Is+it+the+End+of+the+World++-+SL/Is+it+the+End+of+the+World++-+SL.htm"
+);
+AddBloomPlayerStory(
+    "General video with audio",
+    "https://s3.amazonaws.com/BloomLibraryBooks/joemin_maratin%40sil.org%2fe0e4f0e0-7afd-45a4-9ef6-4fdc83010621%2fBuuk+Tuni+Urup+Dang+Kimaragang++Draft%2f"
 );
