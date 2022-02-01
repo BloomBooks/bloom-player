@@ -1,13 +1,17 @@
 import { ActivityContext } from "../ActivityContext";
+import { IActivityObject } from "../activityManager";
 // tslint:disable-next-line: no-submodule-imports
-const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
-    .default;
+/* Not using. See comment below:
+    const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
+    .default;*/
 
 // This class is intentionally very generic. All it needs is that the html of the
 // page it is given should have some objects (translation groups or images) that have
 // a data-activityRole of either "correct-answer" or "wrong-answer".
 
-export default class MultipleChoiceDomActivity {
+// Note that you won't find any code using this directly. Instead,
+// it gets used by the ActivityManager as the default export of this module.
+export default class MultipleChoiceDomActivity implements IActivityObject {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -16,33 +20,65 @@ export default class MultipleChoiceDomActivity {
     // coming back to this page, or going to another instance of this activity
     // in a subsequent page.
     // eslint-disable-next-line no-unused-vars
-    constructor(pageElement: HTMLElement) {}
+    public constructor(public pageElement: HTMLElement) {}
 
-    public start(activityContext: ActivityContext) {
+    public showingPage(activityContext: ActivityContext) {
         this.activityContext = activityContext;
-        activityContext.addActivityStylesForPage(activityCss);
+        this.prepareToDisplayActivityEachTime(activityContext);
+    }
+
+    // Do just those things that we only want to do once per read of the book.
+    public prepare(activityContext: ActivityContext) {
+        // These flags may be set for the edit-time experience. Remove them now that we're actually going to do the activity.
         activityContext.pageElement
-            .querySelectorAll("[data-activityRole]")
+            .querySelectorAll(".chosen-correct, .chosen-wrong")
             .forEach((choiceElement: HTMLElement) => {
-                // add a button around the translation group or image container
+                choiceElement.classList.remove("chosen-correct");
+                choiceElement.classList.remove("chosen-wrong");
+            });
+        // Actual buttons are problematic in the editing mode, so we wrap things with a div.player-button and then here in the player,
+        // we replace that with a real button.
+        activityContext.pageElement
+            .querySelectorAll(".player-button")
+            .forEach((choiceElement: HTMLElement) => {
+                this.replaceWithButton(choiceElement);
+            });
+        // If the activity calls for it, shuffle the buttons
+        activityContext.pageElement
+            .querySelectorAll(".player-shuffle-buttons")
+            .forEach((container: HTMLElement) => {
+                this.shuffleChildren(container);
+            });
+    }
+    private shuffleChildren(container: HTMLElement) {
+        // because sort is supposed to get the same answer every time, we
+        // are doing the randomizing ahead, before the sort.
+        Array.from(container.childNodes)
+            .map(node => ({ node, randomValue: Math.random() }))
+            .sort((a, b) => a.randomValue - b.randomValue)
+            .forEach(({ node }) => container.appendChild(node));
+    }
+
+    private replaceWithButton(element: HTMLElement): HTMLButtonElement {
+        let button = element.ownerDocument!.createElement("button");
+        for (const attr of Array.prototype.slice.call(element.attributes)) {
+            button.setAttribute(attr.name, attr.value);
+        }
+        button.innerHTML = element.innerHTML;
+        element.replaceWith(button);
+        return button;
+    }
+
+    // The context removes event listeners each time the page is shown, so we have to put them back.
+    private prepareToDisplayActivityEachTime(activityContext: ActivityContext) {
+        activityContext.pageElement
+            .querySelectorAll(".player-button")
+            .forEach((button: HTMLButtonElement) => {
                 const correct =
-                    choiceElement.getAttribute("data-activityRole") ===
+                    button.getAttribute("data-activityRole") ===
                     "correct-answer";
 
-                let button = choiceElement.parentNode as HTMLElement;
-                if (button.tagName !== "BUTTON") {
-                    button = choiceElement.ownerDocument!.createElement(
-                        "button"
-                    );
-                    choiceElement.parentNode!.insertBefore(
-                        button,
-                        choiceElement
-                    );
-                    button.appendChild(choiceElement);
-                }
-
-                // wire up events
-                this.activityContext.addEventListener(
+                activityContext.addEventListener(
                     "click",
                     button,
                     correct ? this.onCorrectClick : this.onWrongClick

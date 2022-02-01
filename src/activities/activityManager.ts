@@ -14,11 +14,16 @@ export interface IActivityModule {
 
 // This is the class that the activity module has to implement
 export interface IActivityObject {
-    new (element: HTMLElement): object;
-    start: (context: ActivityContext) => void;
+    prepare: (context: ActivityContext) => void;
+    showingPage: (context: ActivityContext) => void;
     stop: () => void;
 }
-
+// Constructing stuff from interfaces has problems with typescript at the moment.
+// The class should have this constructor, but should not claim this interface.
+// See https://stackoverflow.com/a/13408029/723299.
+export interface IActivityObjectConstructable {
+    new (element: HTMLElement): IActivityObject;
+}
 export interface IActivityRequirements {
     dragging?: boolean;
     clicking?: boolean;
@@ -136,13 +141,18 @@ export class ActivityManager {
     }
 
     // Showing a new page, so stop any previous activity and start any new one that might be on the new page.
-    public showingPage(pageIndex: number, bloomPageElement: HTMLElement) {
+    // returns true if this is a page where we are going to have state in the DOM so that the
+    // container needs to be careful not to get rid of it to save memory.
+    public showingPage(
+        pageIndex: number,
+        bloomPageElement: HTMLElement
+    ): boolean | undefined {
         // At the moment bloom-player-core will always call us
         // twice if the book is landscape. Probably that could
         // be fixed but we might as well just protect ourselves
         // from starting the same activity twice without stopping it.
         if (this.previousPageElement === bloomPageElement) {
-            return;
+            return undefined;
         }
         this.previousPageElement = bloomPageElement;
 
@@ -170,11 +180,18 @@ export class ActivityManager {
             );
             if (activity) {
                 this.currentActivity = activity;
-                activity.runningObject = new activity.module!.default(
+                // constructing stuff like this has problems with typescript at the moment.
+                // see https://stackoverflow.com/a/13408029/723299
+                // Then the "as unknown" step is make eslint relax
+                activity.runningObject = new ((activity.module!
+                    .default as unknown) as IActivityObjectConstructable)(
                     bloomPageElement
                 ) as IActivityObject;
+
                 // for use in styling things differently during playback versus book editing
+
                 bloomPageElement.classList.add("bloom-activityPlayback");
+
                 const analyticsCategory = this.getAnalyticsCategoryOfPage(
                     bloomPageElement
                 );
@@ -183,9 +200,21 @@ export class ActivityManager {
                     bloomPageElement,
                     this.bookActivityGroupings[analyticsCategory]
                 );
-                activity.runningObject!.start(activity.context);
+                if (
+                    !activity.context.pageElement.hasAttribute(
+                        "data-activity-state"
+                    )
+                ) {
+                    activity.runningObject!.prepare(activity.context);
+                    activity.context.pageElement.setAttribute(
+                        "data-activity-state",
+                        "prepared"
+                    );
+                }
+                activity.runningObject!.showingPage(activity.context);
             }
         }
+        return !!activityID; // return true if this is an activity
     }
 
     private hasLegacyQuizScriptTag(pageDiv: Element): boolean {
