@@ -2156,7 +2156,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             let countOfObserversThatHaveReported = 0;
             $(bloomPage)
                 .find(
-                    ":not(.bloom-textOverPicture) > .bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
+                    ".bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
                 )
                 .each((index, elt) => {
                     // Process the blocks that are possibly overflowing.
@@ -2196,8 +2196,58 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             entries.forEach(entry => {
                                 countOfObserversThatHaveReported++;
                                 ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
+                                var isBubble = !!entry.target.closest(
+                                    ".bloom-textOverPicture"
+                                );
+                                let overflowing = entry.intersectionRatio < 1;
+                                if (overflowing && isBubble) {
+                                    // We want to be less aggressive about putting scroll bars on bubbles.
+                                    // Most of the time, a bubble is very carefully sized to just fit the
+                                    // text. But the intersection observer wants it to fit a certain amount
+                                    // of white space as well. We want a scroll bar if it's overflowing
+                                    // really badly for some reason, but that's much more the exception
+                                    // than the rule, so better a little clipping when the bubble is badly
+                                    // sized than a scroll bar that isn't needed in one that is just right.
+                                    // Example: a bubble which appears to fit perfectly, 3 lines high:
+                                    // its clientHeight is 72; containing bloom-editable's is 59;
+                                    // lineHeight is 24px. IntersectionRatio computes to 59/72,
+                                    // which makes the 'overflow' 13. A ratio of 0.5 as we originally
+                                    // proposed would give us a scroll bar we don't want.
+                                    let maxBubbleOverflowLineFraction = 0.6;
+                                    if (
+                                        entry.target !=
+                                            entry.target.parentElement
+                                                ?.firstElementChild ||
+                                        entry.target !=
+                                            entry.target.parentElement!
+                                                .lastElementChild
+                                    ) {
+                                        // Bubbles are center-aligned vertically. If this is not the only
+                                        // child,the first and last will overflow above and below by about the
+                                        // same amount. So we're only really looking at half the overflow on this para,
+                                        // and should reduce the threshold.
+                                        maxBubbleOverflowLineFraction /= 2;
+                                    }
+                                    const overflow =
+                                        (1 - entry.intersectionRatio) *
+                                        entry.target.clientHeight;
+                                    const lineHeightPx = window.getComputedStyle(
+                                        entry.target
+                                    ).lineHeight;
+                                    const lineHeight = parseFloat(
+                                        // remove the trailing "px"
+                                        lineHeightPx.substring(
+                                            0,
+                                            lineHeightPx.length - 2
+                                        )
+                                    );
+                                    overflowing =
+                                        overflow >
+                                        lineHeight *
+                                            maxBubbleOverflowLineFraction;
+                                }
                                 if (
-                                    entry.intersectionRatio < 1 && // not entirely inside
+                                    overflowing &&
                                     scrollBlocks.indexOf(
                                         entry.target.parentElement!
                                     ) < 0
@@ -2214,6 +2264,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     group.classList.remove(
                                         "bloom-vertical-align-bottom"
                                     );
+                                    if (isBubble) {
+                                        // This is a way of forcing it not to be display-flex, which doesn't
+                                        // work with the nice-scroll-bar library we're using.
+                                        // That library messes with the element style, so it seemed safer
+                                        // not to do that myself.
+                                        entry.target.parentElement!.classList.add(
+                                            "scrolling-bubble"
+                                        );
+                                    }
                                 }
                                 if (
                                     countOfObserversThatHaveReported ==
