@@ -30,6 +30,12 @@ above the page so that page numbers will increment.*/
     background-color: @contextPageBackground;
 }
 
+// if we put a scroll-bar on the contents of a bubble, we must NOT let it
+// be display:flex since that doesn't work with our nice scroll bar library
+// (the content starts centered and there's no way to scroll up to see the start).
+.scrolling-bubble {
+    display: block !important;
+}
 // The player is hidden until it is scaled. Note that we want to make measurements
 // of its original size, so it has to be present in the DOM, just not showing on the screen.
 .hidePlayer {
