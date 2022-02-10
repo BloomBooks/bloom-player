@@ -216,6 +216,12 @@ We just make them follow the main content normally. */
         // (BL-7911 -> BL-8076) The first fix made overflow hidden. Actually we want overflow to show,
         // but not generate scroll bars (that's 'visible').
         overflow-y: visible !important;
+        &.scrolling-bubble {
+            // In this case, though, we're doing the nice-scroll scroll bars even in a bubble,
+            // and that requires overflow hidden, so we don't get a regular scroll
+            // bar on our parent as well.
+            overflow-y: hidden !important;
+        }
     }
 
     // 2) for metadata pages, we (for now) risk changing the line-height. Experimentally, which works well:
