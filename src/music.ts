@@ -1,5 +1,10 @@
 import LiteEvent from "./event";
 import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
+import {
+    logSound,
+    logSoundPaused,
+    logSoundRepeat
+} from "./videoRecordingSupport";
 
 interface ISelection {
     id: number;
@@ -62,6 +67,7 @@ export class Music {
             return;
         }
         this.getPlayer().pause();
+        logSoundPaused(this.musicLogIndex);
     }
 
     // Create the mapping of pages to music files so we know what to play
@@ -146,6 +152,12 @@ export class Music {
         if (volume.length) {
             player.volume = Number(volume);
         }
+        if (music) {
+            this.musicLogIndex = logSound(
+                url,
+                volume.length ? Number(volume) : 1
+            );
+        }
     }
 
     private getMusicVolume(page: Element): string {
@@ -159,6 +171,8 @@ export class Music {
         return volume;
     }
 
+    private musicLogIndex = -1;
+
     private currentMusicUrl(filename: string): string {
         return this.urlPrefix + "/audio/" + filename;
     }
@@ -167,6 +181,7 @@ export class Music {
         // just start playing all over again.
         this.getPlayer().currentTime = 0;
         this.play();
+        this.musicLogIndex = logSoundRepeat(this.musicLogIndex);
     }
 
     private playerPlay() {

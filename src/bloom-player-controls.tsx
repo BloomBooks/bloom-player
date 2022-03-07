@@ -12,7 +12,7 @@ import {
     setExternalControlCallback,
     logError
 } from "./externalContext";
-import { ControlBar, IExtraButton } from "./controlBar";
+import { ControlBar, IExtraButton, IVideoSettings } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
 import React, { useState, useEffect, useRef, LegacyRef } from "react";
@@ -35,11 +35,13 @@ import { MuiThemeProvider } from "@material-ui/core/styles";
 // the pages is already known as a slider, so the two would get confused.
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
+import { setDurationOfPagesWithoutNarration } from "./narration";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
 // image descriptions.
 
+export type autoPlayType = "yes" | "no" | "motion"; // default "motion" means autoplay only motion books
 interface IProps {
     // Url of the bloom book (folder). Should be a valid, well-formed URL
     // e.g. any special chars in the path or book title should be appropriately encoded using URL (percent) encoding
@@ -54,6 +56,16 @@ interface IProps {
     showContextPages?: boolean;
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
     initialLanguageCode?: string;
+    // when used in the Bloom Editor video recording publish panel, initializes the state of various
+    // settings. Not intended to be used with initialLanguageCode, as each can set the same property.
+    // Currently, this is a json string which can control whether to narrate image descriptions and
+    // also provides an alternative way to specify initialLanguageCode. That's a slightly awkward
+    // redundancy, but the intent is that videoSettings should be treated as an opaque string, and never
+    // created except by Bloom Player. It's purpose is so that the videoSettings sent to Bloom Editor
+    // using the /bloom/api/publish/video/videoSettings by the Preview instance of BP in the audio/video
+    // publish tab can be passed to the Recording instance. It should be possible to properly handle
+    // any additional settings without changing BloomEditor.
+    videoSettings?: string;
     paused: boolean;
     useOriginalPageSize?: boolean;
     // in production, this is just "". But during testing, we need
@@ -61,6 +73,26 @@ interface IProps {
     // e.g. src/activity-starter/
     locationOfDistFolder: string;
     extraButtons?: IExtraButton[];
+    // Hide the next/previous page buttons (mainly useful in autoplay='yes' scenarios like
+    // audio/video preview and recording)
+    hideSwiperButtons?: boolean;
+    // Options here allow Bloom Player to advance automatically through the book (or just some books, or not at all).
+    // Audio will play on the first page (even if not advancing automatically) unless autoplay is set to "no"
+    // (or unless the browser does not allow it).
+    autoplay: autoPlayType;
+    // If true, pages marked as bloom-interactive will not be shown. This is also useful in
+    // non-interactive scenarios like autoplaying a book to record video.
+    skipActivities?: boolean;
+    // This indicates that we're in the Preview pane of the audio/video recording publish tab
+    // in Bloom Editor. In this mode,
+    // - the nav bar is always shown
+    // - controls in it that are not relevant to how the book will be auto-played for recording are hidden
+    // - when those relevant controls are activated, the results are transmitted to Bloom Editor
+    // using the /bloom/api/publish/video/videoSettings API.
+    videoPreviewMode?: boolean;
+    // Send a report to Bloom API about sounds that have been played (when we reach the end
+    // of the book in autoplay).
+    shouldReportSoundLog?: boolean;
 }
 
 // This logic is not straightforward...
@@ -113,6 +145,7 @@ function getWindowSize() {
 
 export const BloomPlayerControls: React.FunctionComponent<IProps &
     React.HTMLProps<HTMLDivElement>> = props => {
+    const [autoplay, setAutoplay] = useState(props.autoplay);
     // default is to center BP vertically; various versions of blorg should pass this as false.
     const doVerticalCentering =
         props.centerVertically === undefined ? true : props.centerVertically;
@@ -128,6 +161,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             setPaused(false);
         } else if (data.play) {
             setPaused(false);
+            if (data.autoplay) {
+                setAutoplay(data.autoplay);
+            }
+        } else if (data.reset) {
+            setPageNumberControlPos(0);
+            if (pageNumberSetter.current) {
+                pageNumberSetter.current(0);
+            }
         } else if (data.controlAction) {
             handleControlMessage(data.controlAction as string);
         }
@@ -571,17 +612,31 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         setPageNumber: (pn: number) => void
     ): void => {
         pageNumberSetter.current = setPageNumber;
-        let languageCode: string;
+        let languageCode: string | undefined = undefined;
+        if (props.videoSettings) {
+            const videoSettings = JSON.parse(
+                props.videoSettings
+            ) as IVideoSettings;
+            languageCode = videoSettings.lang!;
+            setShouldReadImageDescriptions(
+                videoSettings.imageDescriptions ?? false
+            );
+        }
 
-        // This is the case where the url specified an initial language
-        if (
-            props.initialLanguageCode &&
-            bookLanguages.map(l => l.Code).includes(props.initialLanguageCode)
-        ) {
+        // This is the case where the url specified an initial language. Not normally done if
+        // videoSettings is passed, but will override it.
+        if (props.initialLanguageCode) {
             languageCode = props.initialLanguageCode;
+        }
+
+        if (
+            languageCode &&
+            bookLanguages.map(l => l.Code).includes(languageCode)
+        ) {
             LangData.selectNewLanguageCode(bookLanguages, languageCode);
         }
-        // this is the case where no initial language was specified in the url
+        // this is the case where no initial language was specified in the url or videoSettings
+        // (or, improbably, when they specified one that the book doesn't have)
         else {
             languageCode =
                 bookLanguages.length > 0 ? bookLanguages[0].Code : "";
@@ -589,6 +644,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         setActiveLanguageCode(languageCode);
         setLanguageData(bookLanguages);
         setBookHasImageDescriptions(bookHasImageDescriptions);
+        if (props.videoPreviewMode && !showAppBar) {
+            setShowAppBar(true);
+        }
     };
 
     const playString = LocalizationManager.getTranslation(
@@ -717,6 +775,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 backClicked={() => onBackClicked()}
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
+                activeLanguageCode={activeLanguageCode}
                 onLanguageChanged={(isoCode: string) =>
                     handleLanguageChanged(isoCode)
                 }
@@ -728,6 +787,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     setShouldReadImageDescriptions(!shouldReadImageDescriptions)
                 }
                 nowReadingImageDescription={nowReadingImageDescription}
+                videoPreviewMode={props.videoPreviewMode}
             />
             <BloomPlayerCore
                 // We believe/hope we can do this a better way (without LegacyRef) once BloomPlayerCore is a function component.
@@ -745,6 +805,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     const bookPropsObj = {
                         landscape: bookProps.landscape,
                         canRotate: bookProps.canRotate
+                        //hasActivities: bookProps.hasActivities,
+                        //hasAnimation: bookProps.hasAnimation
                     };
                     // This method uses externalContext which handles both possible contexts:
                     // Android WebView and html iframe
@@ -795,6 +857,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 }}
                 activeLanguageCode={activeLanguageCode}
                 useOriginalPageSize={props.useOriginalPageSize}
+                hideSwiperButtons={props.hideSwiperButtons}
+                autoplay={autoplay}
+                skipActivities={props.skipActivities}
                 outsideButtonPageClass={outsideButtonPageClass}
                 // We can helpfully reduce flicker if we don't actually show the real content until we
                 // have scaled the player to fit the window. This doesn't hide the loading spinner.
@@ -811,8 +876,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         setHidingNavigationButtons(hiding);
                     }
                 }}
+                shouldReportSoundLog={props.shouldReportSoundLog}
             />
-            {showAppBar && (
+            {showAppBar && !props.videoPreviewMode && (
                 <div id="pageNumberControl" className="MuiToolbar-gutters">
                     <PageChooserBar
                         valueLabelDisplay="on"
@@ -876,6 +942,13 @@ function getExtraButtons(): IExtraButton[] {
 // not-in-a-class code gets called. So we arrange in bloom-player-root.ts to call this
 // function which turns the element with id 'root' into a BloomPlayerControls.
 export function InitBloomPlayerControls() {
+    setDurationOfPagesWithoutNarration(
+        parseFloat(getQueryStringParamAndUnencode("defaultDuration", "3.0"))
+    );
+    const autoplay = getQueryStringParamAndUnencode(
+        "autoplay",
+        "motion"
+    )! as autoPlayType;
     ReactDOM.render(
         <ThemeProvider theme={theme}>
             <BloomPlayerControls
@@ -891,7 +964,10 @@ export function InitBloomPlayerControls() {
                 )}
                 centerVertically={getBooleanUrlParam("centerVertically", true)}
                 initialLanguageCode={getQueryStringParamAndUnencode("lang")}
-                paused={false}
+                videoSettings={getQueryStringParamAndUnencode("videoSettings")}
+                // if autoplay is in the definite NO state, we want to start out paused.
+                // otherwise, if the first page has audio we play it.
+                paused={autoplay === "no"}
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(
                     "useOriginalPageSize",
@@ -901,7 +977,15 @@ export function InitBloomPlayerControls() {
                     "hideFullScreenButton",
                     false
                 )}
+                autoplay={autoplay}
+                skipActivities={getBooleanUrlParam("skipActivities", false)}
+                videoPreviewMode={getBooleanUrlParam("videoPreviewMode", false)}
+                hideSwiperButtons={getBooleanUrlParam("hideNavButtons", false)}
                 extraButtons={getExtraButtons()}
+                shouldReportSoundLog={getBooleanUrlParam(
+                    "reportSoundLog",
+                    false
+                )}
             />
         </ThemeProvider>,
         document.getElementById("root")

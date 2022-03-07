@@ -44,6 +44,7 @@ import { createMuiTheme } from "@material-ui/core";
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
 import { sendMessageToHost } from "./externalContext";
+import { sendStringToBloomApi } from "./videoRecordingSupport";
 import { LocalizationManager } from "./l10n/localizationManager";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
@@ -66,12 +67,26 @@ interface IControlBarProps {
     backClicked?: () => void;
     canGoBack: boolean;
     bookLanguages: LangData[];
+    activeLanguageCode: string;
     onLanguageChanged: (language: string) => void;
     extraButtons?: IExtraButton[];
     bookHasImageDescriptions: boolean;
     readImageDescriptions: boolean;
     onReadImageDescriptionToggled: () => void;
     nowReadingImageDescription: boolean;
+    // Indicates the player is being used in the Bloom Editor video recording preview window.
+    // Controls that don't affect how the book will be played for recording are hidden.
+    // Changes to the controls that DO affect recording will be reported to Bloom Editor's API.
+    videoPreviewMode?: boolean;
+}
+
+// Data we send to BloomEditor and get in a URL param in the Video Recording publish tab.
+// Extend if we get more relevant controls.
+// All props are always set when passing to BE, but individual controls may set just one
+// when passing to reportVideoSettings.
+export interface IVideoSettings {
+    lang?: string;
+    imageDescriptions?: boolean;
 }
 
 export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
@@ -86,6 +101,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         setLanguageMenuOpen(false);
         if (isoCode !== "") {
             props.onLanguageChanged(isoCode);
+            reportVideoSettings({ lang: isoCode });
         }
     };
 
@@ -114,6 +130,32 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         } catch (e) {
             console.error("RequestFullScreen failed: ", e);
         }
+    };
+
+    // If this BP instance is being used as a preview in the Record Video publish tab of Bloom Editor,
+    // report to BE the current state of settings which need to be persisted and passed to the
+    // record video window. This string is opaque to BE, but comes back to us through the url param
+    // videoSettings, so it must be URL encoded.
+    // If not all values are set in newSettings, others are taken from our own props.
+    // All current values are reported.
+    const reportVideoSettings = (newSettings: IVideoSettings) => {
+        if (!props.videoPreviewMode) {
+            return;
+        }
+        const settings: IVideoSettings = {
+            lang: props.activeLanguageCode,
+            imageDescriptions: props.readImageDescriptions,
+            ...newSettings
+        };
+        // To achieve our goal that Bloom Editor can send this string back to another instance
+        // of BP through the videoSettings URL param without needing to interpret its contents,
+        // we want to make it a simple string that is already suitably encoded for a URL param.
+        // If Bloom Editor was intended to interpret it, it would be more natural to simply pass
+        // it as JSON; but then Bloom Editor would have to know how to re-encode it as a URL param.
+        sendStringToBloomApi(
+            "publish/video/videoSettings",
+            encodeURIComponent(JSON.stringify(settings))
+        );
     };
 
     const pauseLabel = LocalizationManager.getTranslation(
@@ -204,7 +246,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 // it will go to detail view ("more") which in this case is not 'back'.
                 // We may eventually want separate canShowMore and moreClicked props
                 // but for now it feels like more complication than we need.
-                props.canGoBack && (
+                props.canGoBack && !props.videoPreviewMode && (
                     <IconButton
                         color="secondary"
                         onClick={() => {
@@ -237,7 +279,12 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 />
                 {props.bookHasImageDescriptions && (
                     <IconButton
-                        onClick={() => props.onReadImageDescriptionToggled()}
+                        onClick={() => {
+                            props.onReadImageDescriptionToggled();
+                            reportVideoSettings({
+                                imageDescriptions: !props.readImageDescriptions
+                            });
+                        }}
                     >
                         {readImageDescriptionsOrNot}
                     </IconButton>
@@ -265,41 +312,45 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         onClose={handleCloseLanguageMenu}
                     />
                 )}
-                <IconButton
-                    color="secondary"
-                    onClick={() => {
-                        if (props.pausedChanged) {
-                            props.pausedChanged(!props.paused);
-                        }
-                    }}
-                >
-                    {props.showPlayPause ? playOrPause : null}
-                </IconButton>
-                {extraButtons}
-                {document.fullscreenEnabled && props.canShowFullScreen && (
+                {!props.videoPreviewMode && (
                     <IconButton
                         color="secondary"
-                        onClick={() => toggleFullScreen()}
+                        onClick={() => {
+                            if (props.pausedChanged) {
+                                props.pausedChanged(!props.paused);
+                            }
+                        }}
                     >
-                        {document.fullscreenElement == null ? (
-                            <Fullscreen
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.FullScreen",
-                                    props.preferredLanguages,
-                                    "Full Screen"
-                                )}
-                            />
-                        ) : (
-                            <FullscreenExit
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.ExitFullScreen",
-                                    props.preferredLanguages,
-                                    "Exit Full Screen"
-                                )}
-                            />
-                        )}
+                        {props.showPlayPause ? playOrPause : null}
                     </IconButton>
                 )}
+                {extraButtons}
+                {document.fullscreenEnabled &&
+                    props.canShowFullScreen &&
+                    !props.videoPreviewMode && (
+                        <IconButton
+                            color="secondary"
+                            onClick={() => toggleFullScreen()}
+                        >
+                            {document.fullscreenElement == null ? (
+                                <Fullscreen
+                                    titleAccess={LocalizationManager.getTranslation(
+                                        "Button.FullScreen",
+                                        props.preferredLanguages,
+                                        "Full Screen"
+                                    )}
+                                />
+                            ) : (
+                                <FullscreenExit
+                                    titleAccess={LocalizationManager.getTranslation(
+                                        "Button.ExitFullScreen",
+                                        props.preferredLanguages,
+                                        "Exit Full Screen"
+                                    )}
+                                />
+                            )}
+                        </IconButton>
+                    )}
             </Toolbar>
         </AppBar>
     );
