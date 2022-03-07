@@ -101,6 +101,12 @@ function AddBloomPlayerStory(
                 hideFullScreenButton={hideFullScreenButton()}
                 initialLanguageCode={languageCode}
                 useOriginalPageSize={useOriginalPageSize()}
+                // useful for seeing what will happen in video preview/recording
+                // hideSwiperButtons={true}
+                // autoplay={"yes"}
+                // skipActivities={true}
+                // videoPreviewMode={true}
+                autoplay={"motion"}
                 extraButtons={extraButtons}
             />
         );
