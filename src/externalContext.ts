@@ -8,6 +8,7 @@ import {
     track,
     /*useTrack,*/ updateBookProgress
 } from "./bloomPlayerAnalytics";
+import axios from "axios";
 
 /* Functions
  * For getting information about our url parameters
@@ -229,3 +230,61 @@ window.addEventListener("message", data => {
     }
     receiveMessage((data as any).data);
 });
+
+export interface SoundData {
+    src: string;
+    volume: Number;
+    startTime: string;
+    endTime?: string; // if not set, play the whole sound
+}
+
+let soundsPlayed: SoundData[] = [];
+
+// Log, for later reporting with reportSoundsLogged, that we are starting to play
+// a sound with the specified src url at the specified volume.
+// Returns a number identifiying this particular sound which may later be passed
+// to other log functions.
+export function logSound(src: string, volume: Number): number {
+    const index = soundsPlayed.length;
+    soundsPlayed.push({ src, volume, startTime: new Date().toISOString() });
+    return index;
+}
+
+// Log that the specified sound was paused. This is not intended to be
+// used for the user pausing playback, which is not expected to happen when we
+// are logging sounds. So the typical usage is to indicate that a background
+// 'music' sound has been stopped, either because we got to the end of the book,
+// or because we started a new page that specifies different music.
+export function logSoundPaused(index: number): void {
+    if (index >= 0) {
+        soundsPlayed[index].endTime = new Date().toISOString();
+    }
+}
+
+// Log restarting a previous (typically background music) sound.
+export function logSoundRepeat(index: number): number {
+    const newIndex = soundsPlayed.length;
+    soundsPlayed.push({
+        ...soundsPlayed[index],
+        startTime: new Date().toISOString()
+    });
+    return newIndex;
+}
+
+// Called when we reach the end of the book, this reports all the sounds we have
+// played to a bloom API, if a URL parameter requests this.
+export function reportSoundsLogged(): void {
+    if (getBooleanUrlParam("reportSoundLog", false)) {
+        axios.post(
+            "/bloom/api/publish/video/soundLog",
+            soundsPlayed,
+
+            {
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8" // JSON normally uses UTF-8. Need to explicitly set it because UTF-8 is not the default.
+                }
+            }
+        );
+    }
+    soundsPlayed = [];
+}
