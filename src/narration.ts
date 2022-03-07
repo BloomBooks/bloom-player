@@ -2,9 +2,13 @@ import LiteEvent from "./event";
 import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
 import { sortAudioElements, ISetHighlightParams } from "./narrationUtils";
 import { SwiperInstance } from "react-id-swiper";
+import { logSound } from "./videoRecordingSupport";
 
 const kSegmentClass = "bloom-highlightSegment";
-const kMinDuration = 3.0; // seconds
+var durationOfPagesWithoutNarration = 3.0; // seconds
+export function setDurationOfPagesWithoutNarration(d: number) {
+    durationOfPagesWithoutNarration = d;
+}
 
 // Even though these can now encompass more than strict sentences,
 // we continue to use this class name for backwards compatability reasons.
@@ -97,7 +101,7 @@ export default class Narration {
             if (this.PageNarrationComplete) {
                 this.pageNarrationCompleteTimer = window.setTimeout(() => {
                     this.PageNarrationComplete.raise();
-                }, kMinDuration * 1000);
+                }, durationOfPagesWithoutNarration * 1000);
             }
             if (this.PlayCompleted) {
                 this.PlayCompleted.raise();
@@ -542,12 +546,9 @@ export default class Narration {
         if (player.currentTime > 0 && !player.paused && !player.ended) {
             this.reportPlayDuration();
         }
-        player.setAttribute(
-            "src",
-            this.currentAudioUrl(this.currentAudioId) +
-                "?nocache=" +
-                new Date().getTime()
-        );
+        const url = this.currentAudioUrl(this.currentAudioId);
+        logSound(url, 1);
+        player.setAttribute("src", url + "?nocache=" + new Date().getTime());
     }
 
     private currentAudioUrl(id: string): string {
@@ -782,7 +783,7 @@ export default class Narration {
         // the pause duration from the beginning of this page.
         this.startPause = this.startPlay;
         if (this.segments.length === 0) {
-            this.PageDuration = kMinDuration;
+            this.PageDuration = durationOfPagesWithoutNarration;
             if (this.PageDurationAvailable) {
                 this.PageDurationAvailable.raise(page);
             }
@@ -823,8 +824,8 @@ export default class Narration {
             // this.getDurationPlayer().setAttribute("src",
             //     this.currentAudioUrl(this.segments[this.segmentIndex].getAttribute("id")));
         } else {
-            if (this.PageDuration < kMinDuration) {
-                this.PageDuration = kMinDuration;
+            if (this.PageDuration < durationOfPagesWithoutNarration) {
+                this.PageDuration = durationOfPagesWithoutNarration;
             }
             if (this.PageDurationAvailable) {
                 this.PageDurationAvailable.raise(this.playerPage);
