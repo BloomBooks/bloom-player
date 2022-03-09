@@ -25,6 +25,11 @@ import {
     setAmbientAnalyticsProperties,
     updateBookProgressReport
 } from "./externalContext";
+import {
+    clearSoundLog,
+    reportSoundsLogged,
+    sendStringToBloomApi
+} from "./videoRecordingSupport";
 import LangData from "./langData";
 // tslint:disable-next-line: no-submodule-imports
 import Replay from "@material-ui/icons/Replay";
@@ -51,6 +56,7 @@ import {
     kLocalStorageDurationKey,
     kLocalStorageBookUrlKey
 } from "./bloomPlayerAnalytics";
+import { autoPlayType } from "./bloom-player-controls";
 
 export enum PlaybackMode {
     NewPage, // starting a new page ready to play
@@ -90,6 +96,9 @@ interface IProps {
     // same information is made available via postMessage if the control's window has a parent.
     reportBookProperties?: (properties: {
         landscape: boolean;
+        // Logical additions, but we don't need them yet and they cost something to compute
+        // hasActivities: boolean;
+        // hasAnimation: boolean;
         canRotate: boolean;
         preferredLanguages: string[];
         pageNumbers: string[]; // one per page, from data-page-number; some empty
@@ -138,7 +147,13 @@ interface IProps {
     // may be "largeOutsideButtons" or "smallOutsideButtons" or empty.
     outsideButtonPageClass: string;
 
+    hideSwiperButtons?: boolean;
+
+    autoplay?: autoPlayType;
+
     extraClassNames?: string;
+
+    skipActivities?: boolean;
 
     shouldReadImageDescriptions: boolean;
 
@@ -146,6 +161,10 @@ interface IProps {
 
     // A callback the client may provide in order to be notified when the current page changes.
     pageChanged?: (n: number) => void;
+
+    // Send a report to Bloom API about sounds that have been played (when we reach the end
+    // of the book in autoplay).
+    shouldReportSoundLog?: boolean;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -645,6 +664,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         const pageMap = {};
 
+        // implementation of hasActivities and hasAnimation, if we decide we need them.
+        // const pagesArray = Array.from(pages);
+        // const hasActivities = pagesArray.some(p =>
+        //     p.classList.contains("bloom-interactive-page")
+        // );
+        // const hasAnimation = pagesArray.some(p =>
+        //     Animation.pageHasAnimation(p as HTMLDivElement)
+        // );
+
+        // This implementation should be kept consistent with the HtmlDom.HasActivityPages() method
+        // in Bloom Editor.
+        const isActivityPage = (page: HTMLElement) => {
+            return (
+                page.classList.contains("bloom-interactive-page") ||
+                // Some of these are for older approaches to quizzes and could possibly be retired.
+                page.classList.contains("simple-comprehension-quiz") ||
+                page.getAttribute("data-activity") == "iframe" ||
+                page.getElementsByClassName("questions").length > 0
+            );
+        };
+
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const pageId = page.getAttribute("id");
@@ -652,6 +692,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 pageMap[pageId] = i;
             }
             const landscape = this.setPageSizeClass(page);
+
             // this used to be done for us by react-slick, but swiper does not.
             // Since it's used by at least page-api code, it's easiest to just stick it in.
             page.setAttribute("data-index", i.toString(10));
@@ -660,6 +701,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Informs containing react controls (in the same frame)
                 this.props.reportBookProperties({
                     landscape,
+                    //hasActivities,
+                    //hasAnimation,
                     canRotate: this.bookInfo.canRotate,
                     preferredLanguages: bookLanguages,
                     // We pass these up to the client, typically for use in the page number control.
@@ -690,7 +733,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             this.showOrHideTitle2(page, usingDefaultLang);
-            swiperContent.push(page.outerHTML);
+            if (
+                // Enhance: if we decide to skip activities without hiding the random-access page chooser,
+                // we need to remove the relevant numbers from there, too.
+                !this.props.skipActivities ||
+                !isActivityPage(page)
+            ) {
+                swiperContent.push(page.outerHTML);
+            }
 
             // look for activities on this page
             this.activityManager.processPage(this.urlPrefix, page);
@@ -1859,7 +1909,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 <div
                     className={
                         "swiper-button-prev" +
-                        (this.state.currentSwiperIndex === 0
+                        (this.props.hideSwiperButtons ||
+                        this.state.currentSwiperIndex === 0
                             ? " swiper-button-disabled"
                             : "")
                     }
@@ -1885,8 +1936,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 <div
                     className={
                         "swiper-button-next" +
-                        (this.state.currentSwiperIndex >=
-                        this.state.pages.length - 1
+                        (this.props.hideSwiperButtons ||
+                        this.state.currentSwiperIndex >=
+                            this.state.pages.length - 1
                             ? " swiper-button-disabled"
                             : "")
                     }
@@ -1957,8 +2009,26 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         BloomPlayerCore.currentPlaybackMode = PlaybackMode.MediaFinished;
         // TODO: at this point, signal BloomPlayerControls to switch the pause button to show play.
-        if (this.bookInfo.autoAdvance && this.props.landscape) {
-            this.swiperInstance.slideNext();
+        var autoPlay = this.bookInfo.autoAdvance && this.props.landscape; // default or autoPlay==="motion"
+        if (this.props.autoplay === "yes") {
+            autoPlay = true;
+        } else if (this.props.autoplay === "no") {
+            autoPlay = false;
+        }
+        if (autoPlay) {
+            if (
+                this.swiperInstance.activeIndex >=
+                this.swiperInstance.slides.length - 1
+            ) {
+                // Stop any music that is still playing. The book is done. (Also helps with accuracy of reportSoundsLogged).
+                this.music.pause();
+                if (this.props.shouldReportSoundLog) {
+                    reportSoundsLogged();
+                }
+                clearSoundLog();
+            } else {
+                this.swiperInstance.slideNext();
+            }
         }
     };
 
@@ -2370,6 +2440,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    sentBloomNotification: boolean = false;
+
     public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
         BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPlaying;
         if (!bloomPage) return;
@@ -2377,12 +2449,32 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // When we have computed it, this will raise PageDurationComplete,
         // which calls an animation method to start the image animation.
         this.narration.computeDuration(bloomPage);
-        this.narration.playAllSentences(bloomPage);
-        if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
-            this.animation.HandlePageBeforeVisible(bloomPage);
+
+        // Tail end of the method, happens at once if we're not posting, only after
+        // the post completes if we are.
+        const finishUp = () => {
+            this.narration.playAllSentences(bloomPage);
+            if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
+                this.animation.HandlePageBeforeVisible(bloomPage);
+            }
+            this.animation.HandlePageVisible(bloomPage);
+            this.music.HandlePageVisible(bloomPage);
+        };
+
+        if (!this.sentBloomNotification) {
+            this.sentBloomNotification = true; // actually we may not, but if we don't, we never want to
+
+            // This notification allows Bloom to start recording video at the optimum moment,
+            // when the first page is rendered enough for us to start playing its audio (if any).
+            // We delay starting any animations and audio until it actually has started recording
+            // (that is, the post completes).
+            if (this.props.shouldReportSoundLog) {
+                sendStringToBloomApi("/publish/video/startRecording", "now") // value is not used
+                    .then(finishUp);
+                return; // don't 'finishUp' until the post returns
+            }
         }
-        this.animation.HandlePageVisible(bloomPage);
-        this.music.HandlePageVisible(bloomPage);
+        finishUp(); // if we decided not to post to bloom api
     }
 }
 
