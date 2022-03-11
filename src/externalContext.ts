@@ -76,6 +76,13 @@ export function reportBookProperties(properties: any) {
     });
 }
 
+export function reportPlaybackComplete(properties: any) {
+    sendMessageToHost({
+        messageType: "playbackComplete",
+        params: { ...properties }
+    });
+}
+
 // When the player app pauses/quits or whatever else happens that it
 // decides that now is the time to send the report on how much of
 // this book was read, it will send the latest version of these props.
