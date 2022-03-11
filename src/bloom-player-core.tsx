@@ -22,6 +22,7 @@ import { Music } from "./music";
 import { LocalizationManager } from "./l10n/localizationManager";
 import {
     reportAnalytics,
+    reportPlaybackComplete,
     setAmbientAnalyticsProperties,
     updateBookProgressReport
 } from "./externalContext";
@@ -969,7 +970,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // If the user if flipping pages rapidly, video completed events can overlap.
         if (pageVideoData!.page === BloomPlayerCore.currentPage) {
             this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
-            this.showReplayButton(pageVideoData);
+            if (!this.props.hideSwiperButtons) {
+                // Replay isn't technically a swiper button, but it's the same sort of navigational
+                // control and wants to be hidden in the same circumstances, currently both preview
+                // and recording-in-progress in publish-to-video.
+                this.showReplayButton(pageVideoData);
+            }
             // } else {
             //     console.log(`DEBUG: ignoring out of sequence page audio`);
         }
@@ -2026,6 +2032,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     reportSoundsLogged();
                 }
                 clearSoundLog();
+                reportPlaybackComplete({});
             } else {
                 this.swiperInstance.slideNext();
             }
