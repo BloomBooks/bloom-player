@@ -41,6 +41,6 @@ export function getBooleanUrlParam(
         getQueryStringParamAndUnencode(
             paramName,
             defaultValue ? "true" : "false"
-        ) === "true"
+        ).toLowerCase() === "true"
     );
 }
