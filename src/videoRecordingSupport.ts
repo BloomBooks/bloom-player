@@ -27,8 +27,11 @@ export function logSound(src: string, volume: Number): number {
 // are logging sounds. So the typical usage is to indicate that a background
 // 'music' sound has been stopped, either because we got to the end of the book,
 // or because we started a new page that specifies different music.
+// We may get a pause request from the container after the whole recording
+// is over, at which point the log has been cleared and we can't (and don't want)
+// to log again. To prevent an exception, we check for the index being out of range.
 export function logSoundPaused(index: number): void {
-    if (index >= 0) {
+    if (index >= 0 && index < soundsPlayed.length) {
         soundsPlayed[index].endTime = new Date().toISOString();
     }
 }
