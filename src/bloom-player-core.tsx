@@ -1831,7 +1831,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
                 ref={bloomplayer => (this.rootDiv = bloomplayer)}
             >
-                <Swiper {...swiperParams}>
+                <Swiper
+                    // key is necessary to guarantee we get a new swiper when this.shouldAutoPlay changes.
+                    // Otherwise, effect does not change.
+                    key={this.shouldAutoPlay() ? "fade" : "slide"}
+                    {...swiperParams}
+                    effect={this.shouldAutoPlay() ? "fade" : "slide"}
+                    speed={this.shouldAutoPlay() ? 1500 : 300} // 300 is the default
+                >
                     {this.state.pages.map((slide, index) => {
                         const pageIsCloseToCurrentOne =
                             Math.abs(index - this.state.currentSwiperIndex) < 2;
@@ -1862,22 +1869,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 }}
                             >
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
-                                    Only load up the one that is about to be current page and the ones on either side of it with
-                                    actual html contents, let every other page be an empty string placeholder. Ref BL-7652 */}
+                    Only load up the one that is about to be current page and the ones on either side of it with
+                    actual html contents, let every other page be an empty string placeholder. Ref BL-7652 */}
                                 {useActualContents ? (
                                     <>
                                         {/* The idea here is to scope our styles (using a polyfill)
-                                            so that book styles cannot inadvertently change the swiper or other
-                                            elements outside the pages themselves. However, we discovered 2/2021
-                                            that this does not work, at least in some circumstances.
-                                            E.g. you can style the swiper next button using an !important rule
-                                            in the collection custom css.
-                                            The problem occurs because state.styleRules gets modified on a subsequent render.
-                                            I.e. if we could get rid of the extra render, this would work until something
-                                            else introduces another render.
-                                            I (Andrew) attempted to implement this using a shadow dom and got fairly
-                                            far using the react-shadow package, but various styles inside the page
-                                            were having issues, and lazy loading of images was not working. */}
+                            so that book styles cannot inadvertently change the swiper or other
+                            elements outside the pages themselves. However, we discovered 2/2021
+                            that this does not work, at least in some circumstances.
+                            E.g. you can style the swiper next button using an !important rule
+                            in the collection custom css.
+                            The problem occurs because state.styleRules gets modified on a subsequent render.
+                            I.e. if we could get rid of the extra render, this would work until something
+                            else introduces another render.
+                            I (Andrew) attempted to implement this using a shadow dom and got fairly
+                            far using the react-shadow package, but various styles inside the page
+                            were having issues, and lazy loading of images was not working. */}
                                         <style scoped={true}>
                                             {this.state.styleRules}
                                         </style>
@@ -2015,13 +2022,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         BloomPlayerCore.currentPlaybackMode = PlaybackMode.MediaFinished;
         // TODO: at this point, signal BloomPlayerControls to switch the pause button to show play.
-        var autoPlay = this.bookInfo.autoAdvance && this.props.landscape; // default or autoPlay==="motion"
-        if (this.props.autoplay === "yes") {
-            autoPlay = true;
-        } else if (this.props.autoplay === "no") {
-            autoPlay = false;
-        }
-        if (autoPlay) {
+
+        if (this.shouldAutoPlay()) {
             if (
                 this.swiperInstance.activeIndex >=
                 this.swiperInstance.slides.length - 1
@@ -2038,6 +2040,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         }
     };
+
+    private shouldAutoPlay(): boolean {
+        var autoPlay = this.bookInfo.autoAdvance && this.props.landscape; // default or autoPlay==="motion"
+        if (this.props.autoplay === "yes") {
+            autoPlay = true;
+        } else if (this.props.autoplay === "no") {
+            autoPlay = false;
+        }
+        return autoPlay;
+    }
 
     // Get a class to apply to a particular slide. This is used to apply the
     // contextPage class to the slides before and after the current one.
