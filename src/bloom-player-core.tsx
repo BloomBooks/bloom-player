@@ -2476,7 +2476,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // We delay starting any animations and audio until it actually has started recording
             // (that is, the post completes).
             if (this.props.shouldReportSoundLog) {
-                sendStringToBloomApi("/publish/video/startRecording", "now") // value is not used
+                sendStringToBloomApi("/publish/av/startRecording", "now") // value is not used
                     .then(finishUp);
                 return; // don't 'finishUp' until the post returns
             }

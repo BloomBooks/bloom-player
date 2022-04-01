@@ -153,7 +153,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         // If Bloom Editor was intended to interpret it, it would be more natural to simply pass
         // it as JSON; but then Bloom Editor would have to know how to re-encode it as a URL param.
         sendStringToBloomApi(
-            "publish/video/videoSettings",
+            "publish/av/videoSettings",
             encodeURIComponent(JSON.stringify(settings))
         );
     };

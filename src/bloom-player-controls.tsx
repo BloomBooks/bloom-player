@@ -62,7 +62,7 @@ interface IProps {
     // also provides an alternative way to specify initialLanguageCode. That's a slightly awkward
     // redundancy, but the intent is that videoSettings should be treated as an opaque string, and never
     // created except by Bloom Player. It's purpose is so that the videoSettings sent to Bloom Editor
-    // using the /bloom/api/publish/video/videoSettings by the Preview instance of BP in the audio/video
+    // using the /bloom/api/publish/av/videoSettings by the Preview instance of BP in the audio/video
     // publish tab can be passed to the Recording instance. It should be possible to properly handle
     // any additional settings without changing BloomEditor.
     videoSettings?: string;
@@ -88,7 +88,7 @@ interface IProps {
     // - the nav bar is always shown
     // - controls in it that are not relevant to how the book will be auto-played for recording are hidden
     // - when those relevant controls are activated, the results are transmitted to Bloom Editor
-    // using the /bloom/api/publish/video/videoSettings API.
+    // using the /bloom/api/publish/av/videoSettings API.
     videoPreviewMode?: boolean;
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).

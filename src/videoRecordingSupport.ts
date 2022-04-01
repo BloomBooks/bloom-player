@@ -52,7 +52,7 @@ export function logSoundRepeat(index: number): number {
 export function reportSoundsLogged(): void {
     // JSON normally uses UTF-8. Need to explicitly set it because UTF-8 is not the default for axios
     sendToBloomApi(
-        "publish/video/soundLog",
+        "publish/av/soundLog",
         soundsPlayed,
         "application/json; charset=utf-8"
     );
