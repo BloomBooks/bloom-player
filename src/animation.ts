@@ -203,6 +203,10 @@ export class Animation {
                     imageSrc = img.getAttribute("src");
                 } else if (styleAttr) {
                     movingDiv.style.backgroundImage = styleAttr.backgroundImage;
+                    // Usually we make sure pictures don't have any transparency, but in case
+                    // one sneaks through, this will make the transparent pixels white like they
+                    // would be on paper.
+                    movingDiv.style.backgroundColor = "white";
                     styleAttr.backgroundImage = "";
                     imageSrc = DomHelper.getActualUrlFromCSSPropertyValue(
                         movingDiv.style.backgroundImage
@@ -265,8 +269,6 @@ export class Animation {
                 movingDiv.appendChild(this.animationView.childNodes[0]);
             }
             // careful here...styles of wrapDiv tend to get erased by updateWrapDivSize.
-            // That method also ensures it has a white background.
-            wrapDiv.style.backgroundColor = "white";
             this.animationView.appendChild(wrapDiv);
             page.insertBefore(hidePageDiv, page.firstChild);
         } else {
@@ -466,9 +468,6 @@ export class Animation {
             "visibility: hidden;"
                 ? "visibility: hidden;"
                 : "";
-        // We always need the wrapDiv to have a white background, in case the image we're
-        // animating has transparent regions.
-        oldStyle += " background-color: white;";
         if (imageAspectRatio < viewAspectRatio) {
             // black bars on side
             const imageWidth = viewHeight * imageAspectRatio;
