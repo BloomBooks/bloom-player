@@ -211,6 +211,9 @@ interface IPlayerPageOptions {
     hideNavigation?: boolean;
 }
 
+const kSelectorForPotentialNiceScrollElements =
+    ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on";
+
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
@@ -1817,6 +1820,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
         }
 
+        // Doing this cleanup is unfortunate overhead, but niceScrolls stick around too much,
+        // including when the page divs they are on are removed because the page is not the
+        // previous, current, or next page. This leads to performance issues. See BL-11070.
+        this.rootDiv
+            ?.querySelectorAll(kSelectorForPotentialNiceScrollElements)
+            .forEach(group => {
+                // The type definition is not correct for getNiceScroll which we expect to return an array.
+                const groupNiceScroll = $(group).getNiceScroll() as any;
+                if (groupNiceScroll && groupNiceScroll.length > 0) {
+                    groupNiceScroll.remove();
+                }
+            });
+
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
         // It would be nice to use an ID but we don't want to assume there is
@@ -1837,7 +1853,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     key={this.shouldAutoPlay() ? "fade" : "slide"}
                     {...swiperParams}
                     effect={this.shouldAutoPlay() ? "fade" : "slide"}
-                    speed={this.shouldAutoPlay() ? 1500 : 300} // 300 is the default
+                    // For now, we will go with the default transition time,
+                    // but I'm leaving this here because if we decide to change it, this is how.
+                    // speed={this.shouldAutoPlay() ? 1500 : 300} // 300 is the default
                 >
                     {this.state.pages.map((slide, index) => {
                         const pageIsCloseToCurrentOne =
@@ -2244,9 +2262,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             let countOfObserversExpectedToReport = 0;
             let countOfObserversThatHaveReported = 0;
             $(bloomPage)
-                .find(
-                    ".bloom-translationGroup .bloom-editable.bloom-visibility-code-on"
-                )
+                .find(kSelectorForPotentialNiceScrollElements)
                 .each((index, elt) => {
                     // Process the blocks that are possibly overflowing.
                     // Blocks that are overflowing will be configured to use niceScroll
@@ -2263,7 +2279,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // If it is close enough to overflow to get a scroll bar, it's close
                     // enough not to care whether extra white space is at the top, bottom,
                     // or split (hence we can safely remove classes used for that).
-                    // And we'll risk sometimes adding nicescroll when we could (just)
+                    // And we'll risk sometimes adding niceScroll when we could (just)
                     // have done without it.
                     const firstChild = elt.firstElementChild;
                     const lastChild = elt.lastElementChild;
@@ -2344,7 +2360,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     scrollBlocks.push(
                                         entry.target.parentElement!
                                     );
-                                    // remove classes incompatible with nicescroll
+                                    // remove classes incompatible with niceScroll
                                     const group = entry.target.parentElement!
                                         .parentElement!;
                                     group.classList.remove(

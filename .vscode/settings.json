@@ -6,5 +6,6 @@
         "statusBar.debuggingBackground": "#D65649",
         "statusBar.noFolderBackground": "#D65649",
         "statussBar.prominentBackground": "#D65649"
-    }
+    },
+    "cSpell.words": ["editables", "Xmatter"]
 }

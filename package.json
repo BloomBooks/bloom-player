@@ -45,7 +45,8 @@
         "build4bl": "yarn build && yarn tobloomlibrary2",
         "build4bl2": "yarn build && yarn tobloomlibrary2",
         "build4br": "yarn build && yarn tobloomreader",
-        "build4bd": "yarn build && yarn tobloom"
+        "build4bd": "yarn build && yarn tobloom",
+        "build4bd-dev": "yarn build-dev && yarn tobloom"
     },
     "devDependencies": {
         "@babel/core": "^7.5.5",
