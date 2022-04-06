@@ -566,7 +566,7 @@ export class Animation {
     private shouldAnimate(page: HTMLElement): boolean {
         return (
             this.PlayAnimations &&
-            page.classList.contains("Device16x9Landscape")
+            page.getAttribute("class")!.indexOf("Landscape") >= 0
         );
     }
 }
