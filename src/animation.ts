@@ -433,7 +433,9 @@ export class Animation {
                     "; animation-name: " +
                     movePicName +
                     "; animation-duration: " +
-                    this.animationDuration +
+                    // Making the animation take an extra second lets the movement
+                    // continue smoothly into the fade to the next page.
+                    (this.animationDuration + 1) +
                     "s; animation-fill-mode: forwards; " +
                     "animation-timing-function: linear;}",
                 1
