@@ -388,6 +388,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             e.preventDefault();
         }
     };
+    private distributionSource = "";
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
@@ -454,12 +455,36 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
+                // Note: this does not currently seem to work when using the storybook fileserver.
+                // I hypothesize that it automatically filters files starting with a period,
+                // so asking for .distribution fails even if the local book folder (e.g., Testing
+                // away again) contains a .distribution file. I just tested using a book locally
+                // published through the Bloom Editor server.
+                const distributionPromise = axios
+                    .get(this.fullUrl(".distribution"))
+                    .then(
+                        result => {
+                            return result;
+                        },
+                        // Very possibly the BloomPUB doesn't have this file. The only way to find this
+                        // out is by the request failing. We don't consider this a 'real' failure and
+                        // just fulfil the promise with an object indicating that distribution is an
+                        // empty string.
+                        error => {
+                            return { data: "" };
+                        }
+                    );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
-                Promise.all([htmlPromise, metadataPromise])
+                Promise.all([htmlPromise, metadataPromise, distributionPromise])
                     .then(result => {
-                        const [htmlResult, metadataResult] = result;
-                        this.metaDataObject = metadataResult.data;
+                        const [
+                            htmlResult,
+                            metadataResult,
+                            distributionResult
+                        ] = result;
+                        this.metaDataObject = metadataResult?.data;
+                        this.distributionSource = (distributionResult as any).data;
                         // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
                         // and setting its innerHtml, since that leads to the browser trying to load all the
                         // urls referenced in the book, which is a waste and also won't work because we
@@ -467,7 +492,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         const parser = new DOMParser();
                         // we *think* bookDoc and bookHtmlElement get garbage collected
                         const bookDoc = parser.parseFromString(
-                            htmlResult.data,
+                            htmlResult?.data,
                             "text/html"
                         );
                         const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
@@ -1289,7 +1314,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private reportBookOpened(body: HTMLBodyElement) {
         // Some facts about the book will go out with not just this event,
         // but also subsequent events. We call these "ambient" properties.
-        setAmbientAnalyticsProperties(this.bookInfo.getAmbientAnalyticsProps());
+        const ambientProps = this.bookInfo.getAmbientAnalyticsProps();
+        if (this.distributionSource) {
+            ambientProps.distributionSource = this.distributionSource;
+        }
+        setAmbientAnalyticsProperties(ambientProps);
         reportAnalytics("BookOrShelf opened", {});
     }
 
