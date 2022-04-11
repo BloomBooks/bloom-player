@@ -433,7 +433,13 @@ export class Animation {
                     "; animation-name: " +
                     movePicName +
                     "; animation-duration: " +
-                    this.animationDuration +
+                    // Making the animation take an extra second lets the movement
+                    // continue smoothly into the fade to the next page.
+                    // (Currently all these these things go together: if we are doing animation,
+                    // then we are autoplaying and we fade from one page to the next. If these things
+                    // become separately controllable, we might not always want an extra second
+                    // of animation.)
+                    (this.animationDuration + 1) +
                     "s; animation-fill-mode: forwards; " +
                     "animation-timing-function: linear;}",
                 1
