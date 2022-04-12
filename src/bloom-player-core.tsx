@@ -508,8 +508,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     })
                     .catch(err => this.HandleLoadingError(err));
             } else if (
+                // Still the same book, we've already loaded the page data. But we may need to adjust the orientation
+                // class on each (nontrivial) page if
+                // - the device got rotated (or the window size changed in a way that has the same effect)
                 prevProps.landscape !== this.props.landscape ||
-                prevProps.useOriginalPageSize !== this.props.useOriginalPageSize
+                // - something has changed the other part of the page size class; may have messed up the orientation part
+                //   in the process
+                prevProps.useOriginalPageSize !==
+                    this.props.useOriginalPageSize ||
+                // - autoplay changed...this results in a new instance of slider containing new dom elements
+                //   made from the original HTML which may need fresh adjustment (BL-11090)
+                prevProps.autoplay !== this.props.autoplay
             ) {
                 // rotating the phone...may need to switch the orientation class on each page.
                 const pages = document.getElementsByClassName("bloom-page");
