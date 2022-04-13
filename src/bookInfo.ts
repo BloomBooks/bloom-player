@@ -84,6 +84,9 @@ export class BookInfo {
 
     // Some facts about the book will go out with all events.
     // We call these "ambient" properties.
+    // This returns the ones (nearly all) that are derived from meta.json.
+    // (Currently there is just one more that comes from the .distribution file.
+    // Make sure to include it if you add  new call to this function.)
     public getAmbientAnalyticsProps(): any {
         const ambient: any = {
             bookInstanceId: this.bookInstanceId,
