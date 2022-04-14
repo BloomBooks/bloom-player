@@ -576,6 +576,24 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.finishUp(false); // finishUp(false) just reloads the swiper pages from our stored html
                 }
             }
+            if (this.state.currentSwiperIndex != prevState.currentSwiperIndex) {
+                // Doing this cleanup is unfortunate overhead, but niceScrolls stick around too much,
+                // including when the page divs they are on are removed because the page is not the
+                // previous, current, or next page. This leads to performance issues.
+                // We thought about making things more complex to only remove them for divs which
+                // are being removed from the dom, but experimentation shows that running the below
+                // takes almost no time (usually < 1 millisecond), so it didn't seem worth it.
+                // Note that we can do this here because showingPage() is going to come along
+                // for each page change and add any needed niceScrolls anyway. See BL-11070.
+                this.rootDiv
+                    ?.querySelectorAll(kSelectorForPotentialNiceScrollElements)
+                    .forEach(group => {
+                        // The type definition is not correct for getNiceScroll; we expect it to return an array.
+                        const groupNiceScroll = $(group).getNiceScroll() as any;
+                        if (groupNiceScroll && groupNiceScroll.length > 0) {
+                            groupNiceScroll.remove();
+                        }
+                    });
 
             // If the user changes the image description button on the controlbar
             if (
@@ -1857,25 +1875,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         } else if (showNavigationButtonsEvenOnTouchDevices) {
             bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
         }
-
-        // Doing this cleanup is unfortunate overhead, but niceScrolls stick around too much,
-        // including when the page divs they are on are removed because the page is not the
-        // previous, current, or next page. This leads to performance issues.
-        // We thought about making things more complex to only remove them for divs which
-        // are being removed from the dom, but experimentation shows that running the below
-        // takes almost no time (usually < 1 millisecond), so it didn't seem worth it.
-        // Note that we can do this here, just before each render, because showingPage()
-        // is going to come along for each page and add any needed niceScrolls anyway.
-        // See BL-11070.
-        this.rootDiv
-            ?.querySelectorAll(kSelectorForPotentialNiceScrollElements)
-            .forEach(group => {
-                // The type definition is not correct for getNiceScroll which we expect to return an array.
-                const groupNiceScroll = $(group).getNiceScroll() as any;
-                if (groupNiceScroll && groupNiceScroll.length > 0) {
-                    groupNiceScroll.remove();
-                }
-            });
 
         // multiple classes help make rules more specific than those in the book's stylesheet
         // (which benefit from an extra attribute item like __scoped_N)
