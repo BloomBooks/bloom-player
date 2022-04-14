@@ -2435,6 +2435,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                         cursoropacitymax: 0.1,
                                         cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
                                     });
+                                    this.setupSpecialMouseTrackingForNiceScroll(
+                                        bloomPage
+                                    );
                                     scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
                                 }
                             });
@@ -2448,6 +2451,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         observer.observe(lastChild);
                     }
                 });
+        }
+    }
+    static setupSpecialMouseTrackingForNiceScroll(bloomPage: Element) {
+        bloomPage.removeEventListener("pointerdown", this.listenForPointerDown); // only want one!
+        bloomPage.addEventListener("pointerdown", this.listenForPointerDown);
+    }
+    // If the mouse down is in the thumb of a NiceScroll, we don't want to get a click
+    // event later even if the mouse up is outside that element.
+    static listenForPointerDown(ev: PointerEvent) {
+        if (
+            ev.target instanceof HTMLDivElement &&
+            (ev.target as HTMLDivElement).classList.contains(
+                "nicescroll-cursors"
+            )
+        ) {
+            (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
         }
     }
 
