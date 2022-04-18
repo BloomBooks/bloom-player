@@ -594,6 +594,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             groupNiceScroll.remove();
                         }
                     });
+            }
 
             // If the user changes the image description button on the controlbar
             if (
