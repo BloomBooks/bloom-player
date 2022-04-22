@@ -166,6 +166,9 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
+    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
+    autoplayCount?: number;
 }
 interface IState {
     pages: string[]; // of the book. First and last are empty in context mode.
@@ -227,6 +230,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private static currentPagePlayer: BloomPlayerCore;
     private indicesOfPagesWhereWeShouldPreserveDOMState: any = {};
+    // This is set true just before isLoading is set false. Therefore it is true during
+    // the initial render that actually creates the main swiper, and through (typically) a few
+    // more before things stabilize. It is cleared at the end of a timeout in finishUp() when
+    // we are ready to start any audio or animation. Its purpose is twofold:
+    // - during this phase, we want to force swiper to be on the desired startPage.
+    // Once we're done with that process, we want to allow it to move.
+    // - during this phase, we tyically get notifications that swiper is on, or moving to,
+    // the current page. These normally trigger audio and animation-related side effects. We don't
+    // want those until we're ready to start.
+    // Note: this is very similar to the !state.isFinishUpForNewBookComplete but at the moment
+    // the latter doesn't get set false when we get a new URL (which might be a bug).
+    // We don't need this to be state because we don't need a new render when it changes.
+    // It might be a good thing to combine them somehow.
+    private startingUpSwiper = true;
 
     constructor(props: IProps, state: IState) {
         super(props, state);
@@ -548,7 +565,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 //   made from the original HTML which may need fresh adjustment (BL-11090)
                 prevProps.autoplay !== this.props.autoplay
             ) {
-                // rotating the phone...may need to switch the orientation class on each page.
                 const pages = document.getElementsByClassName("bloom-page");
                 for (let i = 0; i < pages.length; i++) {
                     const page = pages[i];
@@ -597,6 +613,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             // If the user changes the image description button on the controlbar
+            // Review JohnT: I don't see why we want to do this simply on a transition from loading
+            // to not-loading. We already do it on a timeout in the code that sets loading to false,
+            // and we suppress effects on setIndex and showingPage until that timeout completes and
+            // calls them. So I think it would be safe to remove the prevState.isLoading || condition.
             if (
                 !this.state.isLoading &&
                 (prevState.isLoading ||
@@ -605,6 +625,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             ) {
                 if (this.finishUpCalled) {
                     // We need to reset the page enough to get the narration rebuilt.
+                    // console.log(
+                    //     "setting index and page to " +
+                    //         this.state.currentSwiperIndex +
+                    //         " because shouldReadImageDescriptions changed"
+                    // );
                     this.setIndex(this.state.currentSwiperIndex);
                     this.showingPage(this.state.currentSwiperIndex);
                 }
@@ -615,6 +640,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 prevProps.landscape !== this.props.landscape
             ) {
                 // if there was a rotation, we may need to show the page differently (e.g. Motion books)
+                // console.log(
+                //     "setting index and page to " +
+                //         this.state.currentSwiperIndex +
+                //         " because orientation changed"
+                // );
                 this.setIndex(this.state.currentSwiperIndex);
                 this.showingPage(this.state.currentSwiperIndex);
             }
@@ -840,6 +870,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const combinedStyle = await this.assembleStyleSheets(
                 this.htmlElement
             );
+            // We're about to start rendering with isLoading false. That means the spinning circle is
+            // replaced with a swiper control showing the actual book contents. We need to do certain
+            // things differently while swiper is getting stabilized on the first page; this gets set
+            // false again after the timeout just below here.
+            this.startingUpSwiper = true;
             // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
             // we get them, so we wait for the results and then make all the state changes in one go
             // to minimize renderings. (Because all this is happening asynchronously, not within the
@@ -848,7 +883,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 pages: swiperContent,
                 pageIdToIndexMap: pageMap,
                 styleRules: combinedStyle,
-                isLoading: false
+                isLoading: false,
+                currentSwiperIndex: this.props.startPage ?? 0
             });
         } else {
             this.setState({
@@ -867,9 +903,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (isNewBook) {
             window.setTimeout(() => {
                 this.setState({ isFinishUpForNewBookComplete: true });
-                this.setIndex(0);
-                this.showingPage(0);
-                // This allows a user to tab to the prev/next buttons, and also makes the focus() call work
+                this.startingUpSwiper = false; // transition phase is over
+
+                var startPage = this.props.startPage ?? 0;
+                // console.log(
+                //     "setting index and page to " +
+                //         startPage +
+                //         " in timeout for new book"
+                // );
+                // These are normally side effects of swiper showing and preparing to show a certain page.
+                // We've suppressed them until now (by means of startingUpSwiper) to let things stabilize
+                // before we start audio, animation, etc., which are side effects of calling them.
+                // Now we want all that to happen.
+                this.setIndex(startPage);
+                this.showingPage(startPage);
+                //This allows a user to tab to the prev/next buttons, and also makes the focus() call work
                 const nextButton = document.getElementsByClassName(
                     "swiper-button-next"
                 )[0] as HTMLElement;
@@ -1811,12 +1859,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                     this.setState({ inPauseForced: false });
 
-                    this.showingPage(this.swiperInstance.activeIndex);
+                    if (!this.startingUpSwiper) {
+                        // console.log(
+                        //     "changing page to " +
+                        //         this.swiperInstance.activeIndex +
+                        //         " in slideChange; state active index is " +
+                        //         this.state.currentSwiperIndex
+                        // );
+                        this.showingPage(this.swiperInstance.activeIndex);
+                    }
                     this.msToContinueFF60RepairChecks = 30000;
                 },
                 slideChangeTransitionStart: () => {
                     this.msToContinueFF60RepairChecks = 0; // disable
-                    this.setIndex(this.swiperInstance.activeIndex);
+
+                    if (!this.startingUpSwiper) {
+                        // console.log(
+                        //     "setting index to " +
+                        //         this.swiperInstance.activeIndex +
+                        //         " in slideChangeTransitionStart; state active index is " +
+                        //         this.state.currentSwiperIndex
+                        // );
+                        this.setIndex(this.swiperInstance.activeIndex);
+                    }
                 },
                 // Not sure we need all of these. The idea is that if slider is
                 // messing with offsets itself, we don't want to try to adjust things.
@@ -1857,6 +1922,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This seems make it unnecessary to call Swiper.update at the end of componentDidUpdate.
             shouldSwiperUpdate: true
         };
+        if (this.startingUpSwiper) {
+            // When we first render swiper, we need to force it to the right page. But not later,
+            // otherwise, it prevents us ever changing page! (This badly named param is the index
+            // of the slide to show.) (There's possibly some drastic redesign that would let the
+            // current page be a fully controlled paramter. But maybe not...react-id-slider is a
+            // thin layer over something that isn't fully React.)
+            swiperParams.activeSlideKey = this.props.startPage?.toString();
+        }
 
         let bloomPlayerClass = "bloomPlayer";
         if (this.currentPageHidesNavigationButtons) {
@@ -1976,6 +2049,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 ) : (
                                     // All other pages are just empty strings
                                     ""
+                                    // Doing this instead can be useful in debugging.
+                                    // <div
+                                    //     style={{
+                                    //         color: "yellow",
+                                    //         fontSize: "larger"
+                                    //     }}
+                                    // >
+                                    //     {"page " + index}
+                                    // </div>
                                 )}
                             </div>
                         );
@@ -2086,10 +2168,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // TODO: at this point, signal BloomPlayerControls to switch the pause button to show play.
 
         if (this.shouldAutoPlay()) {
-            if (
-                this.swiperInstance.activeIndex >=
-                this.swiperInstance.slides.length - 1
-            ) {
+            const autoplayCount = this.props.autoplayCount ?? 0;
+            const startPage = this.props.startPage ?? 0;
+            const lastPage = this.swiperInstance.slides.length - 1;
+            let lastPageToAutoplay = this.props.autoplayCount
+                ? Math.min(startPage + autoplayCount - 1, lastPage)
+                : lastPage;
+
+            if (this.swiperInstance.activeIndex >= lastPageToAutoplay) {
                 // Stop any music that is still playing. The book is done. (Also helps with accuracy of reportSoundsLogged).
                 this.music.pause();
                 if (this.props.shouldReportSoundLog) {
@@ -2136,6 +2222,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // - if we're animating motion or showing video, need to get the page into the start state
     // before we slide it in
     private setIndex(index: number) {
+        if (this.state.isLoading || this.startingUpSwiper) {
+            //console.log("aborting setIndex because still starting up");
+            return;
+        }
         clearTimeout(this.narration.pageNarrationCompleteTimer);
         this.setState({ currentSwiperIndex: index });
         const bloomPage = this.getPageAtSwiperIndex(index);
@@ -2205,6 +2295,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
+        if (this.state.isLoading || this.startingUpSwiper) {
+            //console.log("abording showingPage because still loading");
+            return;
+        }
         if (this.props.pageChanged) {
             this.props.pageChanged(index);
         }
@@ -2528,6 +2622,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 video.style.display = "";
             }
         }
+        this.animation.PlayAnimation(); // get rid of classes that made it pause
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
@@ -2561,6 +2656,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (!this.sentBloomNotification) {
             this.sentBloomNotification = true; // actually we may not, but if we don't, we never want to
+            //console.log("sending startRecording");
 
             // This notification allows Bloom to start recording video at the optimum moment,
             // when the first page is rendered enough for us to start playing its audio (if any).
