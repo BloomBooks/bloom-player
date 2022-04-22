@@ -93,6 +93,9 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
+    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
+    autoplayCount?: number;
 }
 
 // This logic is not straightforward...
@@ -162,12 +165,13 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         } else if (data.play) {
             setPaused(false);
             if (data.autoplay) {
+                // warning: this currently will reset page to zero (even if startPage is defined).
                 setAutoplay(data.autoplay);
             }
         } else if (data.reset) {
-            setPageNumberControlPos(0);
+            setPageNumberControlPos(props.startPage ?? 0);
             if (pageNumberSetter.current) {
-                pageNumberSetter.current(0);
+                pageNumberSetter.current(props.startPage ?? 0);
             }
         } else if (data.controlAction) {
             handleControlMessage(data.controlAction as string);
@@ -180,7 +184,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         props.initiallyShowAppBar
     );
 
-    const [pageNumberControlPos, setPageNumberControlPos] = useState(0);
+    const [pageNumberControlPos, setPageNumberControlPos] = useState(
+        props.startPage ?? 0
+    );
     const [pageNumbers, setPageNumbers] = useState([""]);
     const [hidingNavigationButtons, setHidingNavigationButtons] = useState(
         false
@@ -209,7 +215,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         setPaused(props.paused);
     }, [props.paused]);
 
-    const [paused, setPaused] = useState(false);
+    const [paused, setPaused] = useState(props.paused);
     const [browserForcedPaused, setBrowserForcedPaused] = useState(false);
 
     const uiLang = LocalizationManager.getBloomUiLanguage();
@@ -877,6 +883,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     }
                 }}
                 shouldReportSoundLog={props.shouldReportSoundLog}
+                startPage={props.startPage}
+                autoplayCount={props.autoplayCount}
             />
             {showAppBar && !props.videoPreviewMode && (
                 <div id="pageNumberControl" className="MuiToolbar-gutters">
@@ -949,6 +957,15 @@ export function InitBloomPlayerControls() {
         "autoplay",
         "motion"
     )! as autoPlayType;
+    const startPageString = getQueryStringParamAndUnencode("start-page");
+    const startPage = startPageString ? parseInt(startPageString) : undefined;
+    const autoplayCountString = getQueryStringParamAndUnencode(
+        "autoplay-count"
+    );
+    const autoplayCount = startPageString
+        ? parseInt(autoplayCountString)
+        : undefined;
+    const initiallyPaused = getBooleanUrlParam("paused", false);
     ReactDOM.render(
         <ThemeProvider theme={theme}>
             <BloomPlayerControls
@@ -965,9 +982,7 @@ export function InitBloomPlayerControls() {
                 centerVertically={getBooleanUrlParam("centerVertically", true)}
                 initialLanguageCode={getQueryStringParamAndUnencode("lang")}
                 videoSettings={getQueryStringParamAndUnencode("videoSettings")}
-                // if autoplay is in the definite NO state, we want to start out paused.
-                // otherwise, if the first page has audio we play it.
-                paused={autoplay === "no"}
+                paused={initiallyPaused}
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(
                     "useOriginalPageSize",
@@ -986,6 +1001,8 @@ export function InitBloomPlayerControls() {
                     "reportSoundLog",
                     false
                 )}
+                startPage={startPage}
+                autoplayCount={autoplayCount}
             />
         </ThemeProvider>,
         document.getElementById("root")

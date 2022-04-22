@@ -108,6 +108,8 @@ function AddBloomPlayerStory(
                 // videoPreviewMode={true}
                 autoplay={"motion"}
                 extraButtons={extraButtons}
+                // startPage={1}
+                // autoplayCount={3}
             />
         );
     });
