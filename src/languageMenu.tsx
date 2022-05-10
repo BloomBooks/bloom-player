@@ -10,7 +10,7 @@ import {
     RadioGroup
 } from "@material-ui/core";
 // tslint:disable-next-line: no-submodule-imports
-import VolumeUp from "@material-ui/icons/VolumeUp";
+import { VolumeUp as AudioIcon } from "@material-ui/icons";
 import LangData from "./langData";
 
 interface ILanguageMenuProps {
@@ -40,8 +40,6 @@ export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = props =
 
     const getRadios = (): JSX.Element => {
         const controls = props.languages.map((langData: LangData) => {
-            // "VolumeUp" below is the name of the material-ui icon that looks like a speaker talking.
-            // We use it to signal that the language has recorded audio.
             return (
                 <div className="chooserItem" key={langData.Code}>
                     <FormControlLabel
@@ -51,7 +49,7 @@ export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = props =
                         checked={langData.Code === selectedLanguage}
                     />
                     <span className="spacer" />
-                    <VolumeUp
+                    <AudioIcon
                         className="icon"
                         visibility={langData.HasAudio ? "inherit" : "hidden"}
                     />

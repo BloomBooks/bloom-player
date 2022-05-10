@@ -820,6 +820,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             this.showOrHideTitle2(page, usingDefaultLang);
+            this.showCorrectLanguageName(page, usingDefaultLang);
             if (
                 // Enhance: if we decide to skip activities without hiding the random-access page chooser,
                 // we need to remove the relevant numbers from there, too.
@@ -976,6 +977,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 title2Element.classList.add("do-not-display");
             });
         }
+    }
+
+    private showCorrectLanguageName(page: Element, useOriginal: boolean) {
+        const legacySelectorForOlderBooks =
+            'div:not(#bloomDataDiv)[data-book="languagesOfBook"]';
+        page.querySelectorAll(
+            `div[data-derived="languagesOfBook"], ${legacySelectorForOlderBooks}`
+        ).forEach(element => {
+            if (!this.htmlElement) return;
+
+            (element as HTMLElement).innerHTML = useOriginal
+                ? LangData.getOriginalLanguagesOfBook(
+                      this.htmlElement.getElementsByTagName("body")[0]
+                  )
+                : LangData.getBestLanguageName(
+                      this.props.activeLanguageCode,
+                      ""
+                  );
+        });
     }
 
     private localizeOnce() {

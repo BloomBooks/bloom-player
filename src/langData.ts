@@ -205,16 +205,8 @@ export default class LangData {
             totalFallBack.IsSelected = true;
             return totalFallBack;
         }
-        const langsOfBookDiv = dataDivElement.ownerDocument!.evaluate(
-            "//div[@data-book='languagesOfBook' and @lang='*']",
-            dataDivElement,
-            null,
-            XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
-        ).singleNodeValue;
         const language1Code: string = LangData.getLanguage1CodeOrEnglish(body);
-        let name =
-            langsOfBookDiv === null ? "" : langsOfBookDiv.textContent!.trim();
+        let name = LangData.getOriginalLanguagesOfBook(body);
         // langsOfBookDiv could have a couple of comma separated language names,
         // but we only want the first for our fallback.
         name = name.split(",")[0];
@@ -222,6 +214,23 @@ export default class LangData {
         const fallback = new LangData(name, language1Code);
         fallback.IsSelected = true;
         return fallback;
+    }
+
+    public static getOriginalLanguagesOfBook(body: HTMLBodyElement): string {
+        const dataDivElement = LangData.getBloomDataDiv(body);
+        if (!dataDivElement) return "";
+
+        const langsOfBookDiv = dataDivElement.ownerDocument!.evaluate(
+            "//div[@data-book='languagesOfBook' and @lang='*']",
+            dataDivElement,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+        ).singleNodeValue;
+
+        return langsOfBookDiv === null
+            ? ""
+            : langsOfBookDiv.textContent!.trim();
     }
 
     private static getBloomDataDiv(body: HTMLBodyElement): HTMLElement | null {
@@ -259,7 +268,7 @@ export default class LangData {
         return LangData.getBestLanguageName(code, proposedDisplayName);
     }
 
-    private static getBestLanguageName(
+    public static getBestLanguageName(
         code: string,
         proposedName: string
     ): string {
