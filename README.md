@@ -1,14 +1,15 @@
 # Introduction
 
-This project, _bloom-player_, lets users view and interact with [Bloom](bloomlibrary.org) books in any browser.
+This project, _bloom-player_, lets users view and interact with [Bloom](https://bloomlibrary.org) books in any browser.
 
-Specifically, the books must be in _BloomPub_ format (.bloompub or .bloomd, which are files are zipped Bloom Digital books).
+Specifically, the books must be in _BloomPub_ format (.bloompub or .bloomd, which are zipped Bloom Digital books).
 
 The Bloom project uses _bloom-player_ is used in the following places:
 
--   In the Bloom Reader tab of Publish, for previewing what the book will look like on a device.
--   In Bloom Reader itself (starting with BR version 2.0)
--   On BloomLibrary.org
+-   In [Bloom Editor](https://github.com/bloombooks/bloomdesktop) / Publish / Bloom Reader tab, for previewing what the book will look like on a device.
+-   In [Bloom Reader](https://github.com/bloombooks/bloomreader) itself (starting with BR version 2.0)
+-   On [BloomLibrary.org](https://bloomlibrary.org)
+-   In [BloomPUB Viewer](https://github.com/bloombooks/bloompub-viewer)
 
 # Using bloom-player in a website
 
