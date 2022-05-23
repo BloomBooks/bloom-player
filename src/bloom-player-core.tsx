@@ -819,7 +819,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.bookInfo.questionCount++;
                 }
             }
-            this.showOrHideTitle2(page, usingDefaultLang);
+            this.showOrHideTitle2AndL1OnlyText(page, usingDefaultLang);
             if (
                 // Enhance: if we decide to skip activities without hiding the random-access page chooser,
                 // we need to remove the relevant numbers from there, too.
@@ -959,21 +959,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // unless we are displaying the book's default language or unless the national language IS
     // the main one we're showing (that is, it has bloom-content1 as well as bloom-contentNational1).
     //
+    // Later, we also added the book language and topic to this because we are only able to display
+    // them in L1. So if the user changes languages, we hide the incorrect language and the topic
+    // which would otherwise be displayed in the wrong language. BL-11133.
+    //
     // Don't be tempted to achieve this by returning conditionally created rules from assembleStyleSheets.
     // That was our original implementation, but if state.styleRules gets set more than once for a book,
     // it wreaks havoc on scoped styles. See BL-9504.
-    private showOrHideTitle2(page: Element, show: boolean) {
+    private showOrHideTitle2AndL1OnlyText(page: Element, show: boolean) {
         if (show) {
             page.querySelectorAll(
-                ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1"
-            ).forEach(title2Element => {
-                title2Element.classList.remove("do-not-display");
+                ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1, .coverBottomBookTopic, .coverBottomLangName"
+            ).forEach(elementToShow => {
+                elementToShow.classList.remove("do-not-display");
             });
         } else {
             page.querySelectorAll(
-                ".Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1), .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1)"
-            ).forEach(title2Element => {
-                title2Element.classList.add("do-not-display");
+                ".Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1), .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1), .coverBottomBookTopic, .coverBottomLangName"
+            ).forEach(elementToHide => {
+                elementToHide.classList.add("do-not-display");
             });
         }
     }
