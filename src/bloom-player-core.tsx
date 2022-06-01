@@ -967,19 +967,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // That was our original implementation, but if state.styleRules gets set more than once for a book,
     // it wreaks havoc on scoped styles. See BL-9504.
     private showOrHideTitle2AndL1OnlyText(page: Element, show: boolean) {
-        if (show) {
-            page.querySelectorAll(
-                ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1, .coverBottomBookTopic, .coverBottomLangName"
-            ).forEach(elementToShow => {
-                elementToShow.classList.remove("do-not-display");
-            });
-        } else {
-            page.querySelectorAll(
-                ".Title-On-Cover-style.bloom-contentNational1:not(.bloom-content1), .Title-On-Title-Page-style.bloom-contentNational1:not(.bloom-content1), .coverBottomBookTopic, .coverBottomLangName"
-            ).forEach(elementToHide => {
-                elementToHide.classList.add("do-not-display");
-            });
-        }
+        page.querySelectorAll(
+            ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1, .coverBottomBookTopic, .coverBottomLangName"
+        ).forEach(elementToShowOrHide => {
+            // bloom-content1 should never be hidden here, nor should anything if show is true.
+            if (
+                show ||
+                elementToShowOrHide.classList.contains("bloom-content1")
+            ) {
+                elementToShowOrHide.classList.remove("do-not-display");
+            } else {
+                elementToShowOrHide.classList.add("do-not-display");
+            }
+        });
     }
 
     private localizeOnce() {
