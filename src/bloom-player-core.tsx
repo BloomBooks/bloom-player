@@ -285,6 +285,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private animation: Animation;
     private music: Music;
     private video: Video;
+    private videoList: string; // determined only if this.props.shouldReportSoundLog.
 
     private isPagesLocalized: boolean = false;
 
@@ -525,6 +526,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         // contains conditions to limit this to one time only after assembleStyleSheets has completed.
                         // Requires bookInfo data, so we must do it after we initialize that.
                         this.localizeOnce();
+
+                        // shouldReportSoundLog is characteristic of using BP to make a video in BloomEditor.
+                        // When doing that, if there are any videos in the input, we need to report them to BE
+                        // so it can check whether they contain audio that will be lost.
+                        if (this.props.shouldReportSoundLog) {
+                            this.videoList = this.getVideoList(bookDoc);
+                        }
 
                         this.animation.PlayAnimations = this.bookInfo.playAnimations;
 
@@ -2666,13 +2674,54 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // when the first page is rendered enough for us to start playing its audio (if any).
             // We delay starting any animations and audio until it actually has started recording
             // (that is, the post completes).
+            // Note that, if we report videos and they turn out to contain audio, Bloom will
+            // display a message and the post may fail with 'canceled'.
+            // Not doing anything about that because Bloom immediately closes the window
+            // containing this player.
             if (this.props.shouldReportSoundLog) {
-                sendStringToBloomApi("/publish/av/startRecording", "now") // value is not used
-                    .then(finishUp);
+                sendStringToBloomApi(
+                    "/publish/av/startRecording",
+                    this.videoList
+                ).then(finishUp);
                 return; // don't 'finishUp' until the post returns
             }
         }
         finishUp(); // if we decided not to post to bloom api
+    }
+
+    // This seems like it should work (if media.track.enabled is set in about:config) but doesn't.
+    // Maybe we need to make a similar video element in the live document? Maybe we need to load it
+    // or even start playing it? Decided to try on the C# side.
+    // Got somethin working with ffmpeg...thought it worth saving this attempt.
+    // getHasAudioInVideo(doc: Document): boolean {
+    //     for (const e of Array.from(doc.getElementsByTagName("video"))) {
+    //         var tracks = (e as any).audiotracks;
+    //         var ev = e as HTMLVideoElement;
+    //         console.log(
+    //             " video with src " +
+    //                 ev.getElementsByTagName("source")[0].getAttribute("src") +
+    //                 " has " +
+    //                 tracks?.length +
+    //                 " tracks"
+    //         );
+    //         if (tracks && tracks.length) {
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    // }
+
+    getVideoList(doc: Document): string {
+        let result = "";
+        for (const e of Array.from(doc.getElementsByTagName("video"))) {
+            var ev = e as HTMLVideoElement;
+            var src = ev.getElementsByTagName("source")[0].getAttribute("src");
+            if (result) {
+                result += "|"; // illegal in file names, so should be a safe separator.
+            }
+            result += src;
+        }
+        return result;
     }
 }
 
