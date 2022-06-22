@@ -1612,7 +1612,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             stylesheet.setAttribute("id", "andikaCssStyleSheet");
         }
         const fileUrlOk = this.urlPrefix.startsWith("file:");
-        // The Andika New Basic font might be found already installed. Failing that,
+        // Starting in Jun 2022, we provide Andika, if possible, when asked for Andika New Basic.
+        // But we still prefer a local ANB over web Andika.
+        //
+        // The font might be found already installed (local). Failing that,
         // if we're inside BloomReader or RAB, we should be able to get it at the standard
         // URL for assets embedded in the program. If instead we're embedded in a web
         // page like BloomLibrary.org, we need to download from the web.
@@ -1623,7 +1626,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Safari on IOS generates masses of exceptions, possibly every time Andika is used,
         // if we use a file:/// url, so unless our main URL is a file:/// one (as on Android),
         // we leave it out. This is also why these rules are here rather than in bloom-player.less.
-        // (If we ARE on Android, we shouldn't need the web url, so in the interestes of
+        // (If we ARE on Android, we shouldn't need the web url, so in the interests of
         // failing fast if anything goes wrong with loading the font from the android asset
         // folder, we leave it out in that case.)
         stylesheet.innerText = `
@@ -1631,11 +1634,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 font-family: "Andika New Basic";
                 font-weight: normal;
                 font-style: normal;
-                src: local("Andika New Basic"),
+                src:
+                    local("Andika"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Regular.ttf"),'
+                            : ""
+                    }
+                    local("Andika New Basic"),
                     ${
                         fileUrlOk
                             ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-R.ttf")'
-                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Regular.woff")'
                     };
             }
 
@@ -1643,11 +1653,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 font-family: "Andika New Basic";
                 font-weight: bold;
                 font-style: normal;
-                src: local("Andika New Basic Bold"),
+                src:
+                    local("Andika Bold"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Bold.ttf"),'
+                            : ""
+                    },
+                    local("Andika New Basic Bold"),
                     ${
                         fileUrlOk
                             ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-B.ttf")'
-                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Bold.woff")'
                     };
             }
 
@@ -1655,11 +1672,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 font-family: "Andika New Basic";
                 font-weight: normal;
                 font-style: italic;
-                src: local("Andika New Basic Italic"),
+                src:
+                    local("Andika Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Italic.ttf"),'
+                            : ""
+                    }
+                    local("Andika New Basic Italic"),
                     ${
                         fileUrlOk
                             ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-I.ttf")'
-                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Italic.woff")'
                     };
             }
 
@@ -1667,11 +1691,66 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 font-family: "Andika New Basic";
                 font-weight: bold;
                 font-style: italic;
-                src: local("Andika New Basic Bold Italic"),
+                src:
+                    local("Andika Bold Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-BoldItalic.ttf"),'
+                            : ""
+                    }
+                    local("Andika New Basic Bold Italic"),
                     ${
                         fileUrlOk
                             ? 'url("file:///android_asset/fonts/Andika New Basic/AndikaNewBasic-BI.ttf")'
-                            : 'url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-BoldItalic.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: normal;
+                src: local("Andika"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Regular.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Regular.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: normal;
+                src: local("Andika Bold"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Bold.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Bold.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: italic;
+                src: local("Andika Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-Italic.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-Italic.woff")'
+                    };
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: italic;
+                src: local("Andika Bold Italic"),
+                    ${
+                        fileUrlOk
+                            ? 'url("file:///android_asset/fonts/Andika/Andika-BoldItalic.ttf")'
+                            : 'url("https://bloomlibrary.org/fonts/Andika/Andika-BoldItalic.woff")'
                     };
             }
 
