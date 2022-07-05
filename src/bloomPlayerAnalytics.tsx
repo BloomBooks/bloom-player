@@ -187,10 +187,10 @@ function getEnvironment(): Environment {
 function getAnalyticsJsFilePath(): string {
     switch (getEnvironment()) {
         case Environment.Prod:
-            return "https://next.bloomlibrary.org/analytics.min.js";
+            return "https://bloomlibrary.org/analytics.min.js";
         case Environment.Dev:
-            return "https://next.bloomlibrary.org/analytics.dev.min.js";
+            return "https://bloomlibrary.org/analytics.dev.min.js";
         default:
-            return "https://next.bloomlibrary.org/analytics.test.min.js";
+            return "https://bloomlibrary.org/analytics.test.min.js";
     }
 }
