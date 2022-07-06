@@ -21,16 +21,18 @@
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
     "scripts": {
-        "// start will build, watch, start a server, and open a chrome browser with CORS disabled": "",
-        "// you can edit index-for-developing.html to point to different books": "",
+        "// COMMENTS: make the action a space rather than empty string so `yarn run` can list the scripts": " ",
+
+        "// start will build, watch, start a server, and open a chrome browser with CORS disabled": " ",
+        "// you can edit index-for-developing.html to point to different books": " ",
         "start": "concurrently npm:start-webpack-serve npm:chrome",
         "start-webpack-serve": "yarn webpack-dev-server",
         "storybook": "concurrently npm:storybook-inner npm:chrome-on-storybook-port",
         "storybook-inner": "start-storybook --static-dir ./,./src/activities,./src/activities/legacyQuizHandling -p 9009 --ci",
-        "// if you are testing with a book hosted online, you will have to load chrome with these args (because of CORS restrictions)": "",
+        "// if you are testing with a book hosted online, you will have to load chrome with these args (because of CORS restrictions)": " ",
         "chrome": "chrome http://localhost:8080/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
         "chrome-on-storybook-port": "chrome http://localhost:9009/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
-        "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": "",
+        "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": " ",
         "build": "shx rm -rf dist/ && webpack --config webpack-config-prod.js",
         "build-dev": "shx rm -rf dist/ && webpack --config webpack.config.js",
         "tslint": "tslint  --project tsconfig.json",
