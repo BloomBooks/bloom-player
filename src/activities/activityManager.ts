@@ -1,7 +1,7 @@
 import { loadDynamically } from "./loadDynamically";
 import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
-const multipleChoiceActivityModule = require("./domActivities/MultipleChoiceDomActivity.ts");
+const simpleDomChoiceActivityModule = require("./domActivities/SimpleDomChoice.ts");
 const simpleCheckboxQuizModule = require("./domActivities/SimpleCheckboxQuiz.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
@@ -48,8 +48,8 @@ export class ActivityManager {
     constructor() {
         this.builtInActivities["iframe"] = iframeModule as IActivityModule;
         this.builtInActivities[
-            "multiple-choice"
-        ] = multipleChoiceActivityModule as IActivityModule;
+            "simple-dom-choice"
+        ] = simpleDomChoiceActivityModule as IActivityModule;
         this.builtInActivities[
             simpleCheckboxQuizModule.dataActivityID
         ] = simpleCheckboxQuizModule as IActivityModule;
@@ -89,8 +89,29 @@ export class ActivityManager {
         return activityID;
     }
 
-    private getAnalyticsCategoryOfPage(pageDiv: HTMLElement) {
-        return pageDiv.getAttribute("data-analyticsCategories") || "";
+    private getAnalyticsCategoryOfPage(pageDiv: HTMLElement): string {
+        // About "categories" vs. "category". No great excuse... some day we might
+        // really need to differentiate between, for example,
+        // picture-choose-word and word-choose-picture, while at the same time
+        // being able to combine these scores. Maybe even combine them with
+        // other kinds of tests. It's just not clear yet what is YAGNI. So at
+        // the moment the html data-analyticscategories attribute is plural,
+        // but here in code we know that we currently only handle the whole
+        // thing as a single string, so we just call it "category".
+        const category =
+            pageDiv.getAttribute("data-analyticscategories") ||
+            pageDiv.getAttribute("data-analyticsCategories") ||
+            "";
+        if (!category) {
+            window.alert(
+                "Activity pages must have a data-analyticscategories attribute."
+            );
+            throw new Error(
+                "Activity pages must have a data-analyticscategories attribute."
+            );
+        } else {
+            return category;
+        }
     }
 
     public processPage(
@@ -198,6 +219,7 @@ export class ActivityManager {
                 activity.context = new ActivityContext(
                     pageIndex,
                     bloomPageElement,
+                    analyticsCategory,
                     this.bookActivityGroupings[analyticsCategory]
                 );
                 if (

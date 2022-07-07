@@ -8,11 +8,14 @@ import { TransientPageDataSingleton } from "./transientPageData";
     Interactive pages call this in order to
     1) update the score that someday we may display on each page, and ( <---- Not implemented yet )
     2) optionally contribute to one analytics score. The category/label for that analytics has to be
-    given to this twice: first in a data-analyticsCategories attribute on the page, and secondly in the
+    given to this twice: first in a data-analyticscategories attribute on the page, and secondly in the
     call. The attribute is used to identify all the pages which are expected to contribute to
     this analytics score; it will be sent when all of them have (see below).
 
     Notes:
+    * It's easy to trip on the spelling of data-analyticscategories, because you would expect it to be
+    "data-analyticsCategories" but html attributes get converted to lower case, so I think it's clearer
+    to just use the lower case all the time to avoid bugs.
     * Pages can call this as many times as they want (e.g. after every click if that makes sense); this will
         take care of replacing the old score with the new.
     * .... Except, only the first call for a page counts for analytics. The thinking here is that currently,
@@ -23,7 +26,7 @@ import { TransientPageDataSingleton } from "./transientPageData";
     *
     * We don't currently (May 2019) have a way to tell the page "this is your last chance to report a score".
     * Rather, we send the analytics immediately when every page that has this analyticsCategory (in its
-    * data-analyticsCategories list) has reported at least once.
+    * data-analyticscategories list) has reported at least once.
     * The category "comprehension" is special. For backwards compatibility with an old implementation
     * of comprehension questions, both the event name and parameters of the event are modified (at least
     * by bloom-reader2; not here).
@@ -33,7 +36,8 @@ import { TransientPageDataSingleton } from "./transientPageData";
 // record the analytics part the very first time we report a score for this page,
 // and only send it when it has been reported for all pages using the same
 // analyticsCategory as this page.
-// Note, it is up to the host of BloomPlayer whether it actually is sending the analytics to some server.
+// Note, it is up to the `independent` flag given by the host of BloomPlayer whether we are
+// actually is sending the analytics to some server (see ReadMe).
 export function reportScoreForCurrentPage(
     pageIndex: number,
     possiblePoints: number,
@@ -45,18 +49,20 @@ export function reportScoreForCurrentPage(
         alert("null currentPage in reportScoreForCurrentPage()");
         return;
     }
-    if (
-        !analyticsCategory ||
-        !doesPageHaveAnalyticsCategory(
-            BloomPlayerCore.getCurrentPage(),
-            analyticsCategory
-        )
-    ) {
-        alert("inconsistent analyticsCategory in reportScoreForCurrentPage()");
+    if (!analyticsCategory) {
+        alert("bloom-player page-api: analyticsCategory is missing.");
     }
 
+    // I (JH) removed a check here that required that the page's data-activity be listed in the activity's data-analyticscategories.
+    // There were no comments saying *why* this should be true, and the error message just said that something was "inconsistent".
+    // From here, today, I cannot see why we couldn't have an analytics category completely divorced from the name of the activity.
+    // For example, we could have data-activity="widget" with a category of "eye-hand-coordination" and another widget with "spelling".
+    // I think the idea was probably part of the *plural* nature of data-analyticscategories which we don't seem to be actually using.
+    // I.e., that you would say "data-analyticscategories='widget eye-hand-coordination'".
+
     if (getPageData(pageIndex, analyticsCategory)) {
-        // not the first time called for this page.
+        // This is not the first time called for this page. Currently we don't report the
+        // users's subsequent attempts.
         // Eventually we might store it under another key for purposes of tracking
         return;
     }
@@ -141,17 +147,6 @@ export function storePageData(
 // A page should call this to recover any state it needs to reconstitute the page.
 export function getPageData(pageIndex: number, key: string): string {
     return TransientPageDataSingleton.getData()[getFullDataKey(pageIndex, key)];
-}
-
-function doesPageHaveAnalyticsCategory(
-    page: Element,
-    analyticsCategory: string
-) {
-    return (
-        (page.getAttribute("data-analyticsCategories") || "")
-            .split(" ")
-            .indexOf(analyticsCategory) >= 0
-    );
 }
 
 function getFullDataKey(pageIndex: number, key: string): string {

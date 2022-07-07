@@ -819,7 +819,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.bookInfo.totalNumberedPages++;
                 }
                 if (
-                    page.getAttribute("data-analyticscategories") ===
+                    (page.getAttribute("data-analyticscategories") ||
+                        page.getAttribute("data-analyticsCategories")) ===
                     "comprehension"
                 ) {
                     // Note that this will count both new-style question pages,
