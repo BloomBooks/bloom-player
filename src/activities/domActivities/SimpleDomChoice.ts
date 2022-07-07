@@ -88,10 +88,19 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
     private onCorrectClick = (evt: Event) => {
         (evt.currentTarget as HTMLElement).classList.add("chosen-correct");
         this.activityContext.playCorrect();
+        this.activityContext.reportScore(
+            1 /*total possible on page*/,
+            1 /*score*/
+        );
     };
+
     private onWrongClick = (evt: Event) => {
         (evt.currentTarget as HTMLElement).classList.add("chosen-wrong");
         this.activityContext.playWrong();
+        this.activityContext.reportScore(
+            1 /*total possible on page*/,
+            0 /*score*/
+        );
     };
 
     // When our page is not the selected one, the bloom-player calls this.

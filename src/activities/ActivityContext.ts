@@ -15,6 +15,7 @@ const wrongAnswer = require("./wrong_answer.mp3");
 export class ActivityContext {
     public pageElement: HTMLElement;
     public pageIndex: number;
+    public analyticsCategory: string;
     // Typically, indices of all pages with the same analytics category.
     // (This is necessary to be able to report analytics for this category as a group.)
     public pagesToGroupForAnalytics: number[] | undefined;
@@ -28,28 +29,27 @@ export class ActivityContext {
     constructor(
         pageIndex: number,
         pageDiv: HTMLElement,
+        analyticsCategory: string,
         pagesToGroupForAnalytics?: number[]
     ) {
         this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
+        this.analyticsCategory = analyticsCategory;
         this.pagesToGroupForAnalytics = pagesToGroupForAnalytics;
     }
 
-    // report a score that can be used for analytics
-    public reportScore(
-        possiblePoints: number,
-        actualPoints: number,
-        analyticsCategory: string
-    ) {
+    // Report a score that can be used for analytics. The caller can call this repeatedly without worrying
+    // about the logic of whether we only report the user's first attempt.
+    public reportScore(possiblePoints: number, actualPoints: number) {
         // please leave this log in... if we could make it only show in storybook, we would
         console.log(
-            `ActivityContext.reportScoreForCurrentPage(<page>, ${possiblePoints}, ${actualPoints},${analyticsCategory})`
+            `ActivityContext.reportScoreForCurrentPage(<page>, ${possiblePoints}, ${actualPoints},${this.analyticsCategory})`
         );
         reportScoreForCurrentPage(
             this.pageIndex,
             possiblePoints,
             actualPoints,
-            analyticsCategory,
+            this.analyticsCategory,
             this.pagesToGroupForAnalytics
         );
     }

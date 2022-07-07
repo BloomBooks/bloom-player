@@ -199,8 +199,8 @@ AddBloomPlayerStory(
 );
 
 AddBloomPlayerStory(
-    "Activity/Choice activities from Bloom 5.2",
-    "testbooks/Bloom5.2-activities/Bloom5.2-activities.htm"
+    "Activity/Choice activities from Bloom 5.4",
+    "testbooks/Bloom5.4-activities/Bloom5.4-activities.htm"
 );
 AddBloomPlayerStory(
     "Book with two audio sentences on cover",
