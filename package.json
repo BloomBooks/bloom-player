@@ -5,7 +5,7 @@
     "// The major and minor version numbers shown here are used by the TeamCity build, so they are meaningful.": "",
     "// Local builds will always get this exact version number, but that should be okay.": "",
     "// There's no need to update the patch value before committing and merging: the TeamCity process ensures a new patch number for each merge.": "",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "A library for displaying Bloom books in iframes or WebViews",
     "main": "bloomPlayer.min.js",
     "author": "SIL International",
@@ -22,7 +22,7 @@
     },
     "scripts": {
         "// COMMENTS: make the action a space rather than empty string so `yarn run` can list the scripts": " ",
-
+        "//": " ",
         "// start will build, watch, start a server, and open a chrome browser with CORS disabled": " ",
         "// you can edit index-for-developing.html to point to different books": " ",
         "start": "concurrently npm:start-webpack-serve npm:chrome",
