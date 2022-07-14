@@ -53,13 +53,6 @@ export function reportScoreForCurrentPage(
         alert("bloom-player page-api: analyticsCategory is missing.");
     }
 
-    // I (JH) removed a check here that required that the page's data-activity be listed in the activity's data-analyticscategories.
-    // There were no comments saying *why* this should be true, and the error message just said that something was "inconsistent".
-    // From here, today, I cannot see why we couldn't have an analytics category completely divorced from the name of the activity.
-    // For example, we could have data-activity="widget" with a category of "eye-hand-coordination" and another widget with "spelling".
-    // I think the idea was probably part of the *plural* nature of data-analyticscategories which we don't seem to be actually using.
-    // I.e., that you would say "data-analyticscategories='widget eye-hand-coordination'".
-
     if (getPageData(pageIndex, analyticsCategory)) {
         // This is not the first time called for this page. Currently we don't report the
         // users's subsequent attempts.
