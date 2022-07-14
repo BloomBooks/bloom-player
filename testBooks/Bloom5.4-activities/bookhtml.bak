@@ -7,7 +7,7 @@
     <meta name="BloomFormatVersion" content="2.1"></meta>
     <meta name="pageTemplateSource" content="Basic Book"></meta>
 
-    <title>Bloom5.2-activities</title>
+    <title>Bloom5.4-activities</title>
     <style type="text/css" title="userModifiedStyles">
     /*<![CDATA[*/
     .BigWords-style { font-size: 45pt !important; text-align: center !important; }
@@ -61,11 +61,11 @@
         </div>
 
         <div data-book="bookTitle" lang="en" class=" bloom-editable bloom-nodefaultstylerule bloom-padForOverflow" style="padding-bottom: 0px;" contenteditable="true">
-            <p>Bloom5.2-activities</p>
+            <p>Bloom5.4-activities</p>
         </div>
 
         <div data-book="originalTitle" lang="*">
-            Bloom5.2-activities
+            Bloom5.4-activities
         </div>
 
         <div data-book="smallCoverCredits" lang="en" class=" bloom-editable smallCoverCredits" contenteditable="true">
@@ -108,7 +108,7 @@
                 <label class="bubble">Book title in {lang}</label>
 
                 <div class="bloom-editable bloom-nodefaultstylerule Title-On-Cover-style bloom-padForOverflow bloom-content1 bloom-contentNational1 bloom-visibility-code-on" data-book="bookTitle" style="padding-bottom: 0px;" data-languagetipcontent="English" data-hasqtip="true" tabindex="0" spellcheck="true" role="textbox" aria-label="false" aria-describedby="qtip-2" lang="en" contenteditable="true">
-                    <p>Bloom5.2-activities</p>
+                    <p>Bloom5.4-activities</p>
                 </div>
 
                 <div class="bloom-editable bloom-nodefaultstylerule Title-On-Cover-style bloom-padForOverflow" data-book="bookTitle" style="" lang="z" contenteditable="true">
@@ -179,7 +179,7 @@
                 <div class="bloom-editable bloom-nodefaultstylerule Title-On-Title-Page-style bloom-padForOverflow" lang="z" contenteditable="true" data-book="bookTitle"></div>
 
                 <div class="bloom-editable bloom-nodefaultstylerule Title-On-Title-Page-style bloom-padForOverflow bloom-content1 bloom-contentNational1 bloom-visibility-code-on" lang="en" contenteditable="true" data-book="bookTitle" style="padding-bottom: 0px;">
-                    <p>Bloom5.2-activities</p>
+                    <p>Bloom5.4-activities</p>
                 </div>
             </div>
             <div class="largeFlexGap"></div>
@@ -264,7 +264,7 @@
         </div>
     </div>
 
-    <div class="bloom-page activity-page-default bloom-ignoreForReaderStats bloom-interactive-page enterprise-only numberedPage Device16x9Landscape bloom-monolingual side-right" id="4b98773b-f22f-42f6-8a8b-3d4a077f04a4" data-activity="multiple-choice" data-pagelineage="3325A8B6-EA15-4FB7-9F8D-271D7B3C8D33" lang="" data-page-number="1">
+    <div class="bloom-page activity-page-default bloom-ignoreForReaderStats bloom-interactive-page enterprise-only numberedPage Device16x9Landscape bloom-monolingual side-right" id="4b98773b-f22f-42f6-8a8b-3d4a077f04a4" data-activity="simple-dom-choice" data-pagelineage="3325A8B6-EA15-4FB7-9F8D-271D7B3C8D33" lang="" data-page-number="1">
         <div class="pageLabel" data-i18n="TemplateBooks.PageLabel.Choose Word From Picture" lang="en">
             Choose Word From Picture
         </div>
@@ -326,7 +326,7 @@
         </div>
     </div>
 
-    <div class="bloom-page activity-page-default bloom-ignoreForReaderStats bloom-interactive-page enterprise-only numberedPage Device16x9Landscape bloom-monolingual side-left" id="6fed9ac8-39d3-4de2-a43f-ee39f4eec860" data-activity="multiple-choice" data-pagelineage="fe7acd9d-c05c-449b-9f99-841d54856924" lang="" data-page-number="2">
+    <div class="bloom-page activity-page-default bloom-ignoreForReaderStats bloom-interactive-page enterprise-only numberedPage Device16x9Landscape bloom-monolingual side-left" id="6fed9ac8-39d3-4de2-a43f-ee39f4eec860" data-activity="simple-dom-choice" data-pagelineage="fe7acd9d-c05c-449b-9f99-841d54856924" lang="" data-page-number="2">
         <div class="pageLabel" data-i18n="TemplateBooks.PageLabel.Choose Picture From Word" lang="en">
             Choose Picture From Word
         </div>

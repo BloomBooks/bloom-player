@@ -128,8 +128,7 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
 
         this.activityContext.reportScore(
             1 /*total possible on page*/,
-            correct ? 1 : 0 /*score*/,
-            "comprehension"
+            correct ? 1 : 0 /*score*/
         );
     }
 
