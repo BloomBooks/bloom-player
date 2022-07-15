@@ -47,7 +47,7 @@
         "jquery.nicescroll": "^3.7.6",
         "react": "^16.8.5",
         "react-dom": "^16.8.5",
-        "react-id-swiper": "^2.3.2",
+        "react-id-swiper": "2.3.2",
         "style-scoped": "^0.2.1",
         "swiper": "^4.5.0"
     },
