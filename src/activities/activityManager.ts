@@ -98,20 +98,11 @@ export class ActivityManager {
         // the moment the html data-analyticscategories attribute is plural,
         // but here in code we know that we currently only handle the whole
         // thing as a single string, so we just call it "category".
-        const category =
+        return (
             pageDiv.getAttribute("data-analyticscategories") ||
             pageDiv.getAttribute("data-analyticsCategories") ||
-            "";
-        if (!category) {
-            window.alert(
-                "Activity pages must have a data-analyticscategories attribute."
-            );
-            throw new Error(
-                "Activity pages must have a data-analyticscategories attribute."
-            );
-        } else {
-            return category;
-        }
+            ""
+        );
     }
 
     public processPage(
