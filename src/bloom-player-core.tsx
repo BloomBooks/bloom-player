@@ -2504,10 +2504,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             entries.forEach(entry => {
                                 countOfObserversThatHaveReported++;
                                 ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
+                                // console.log("bounding: ");
+                                // console.log(entry.boundingClientRect);
+                                // console.log(entry.intersectionRect);
+                                // console.log(entry.rootBounds);
+                                // console.log(
+                                //     "ratio: " + entry.intersectionRatio
+                                // );
                                 var isBubble = !!entry.target.closest(
                                     ".bloom-textOverPicture"
                                 );
-                                let overflowing = entry.intersectionRatio < 1;
+                                // In bloom desktop preview, we set width to 200% and then scale down by 50%.
+                                // This can lead to intersection ratios very slightly less than 1, probably due
+                                // to pixel rounding of some sort, when in fact the content fits comfortably.
+                                // For example, in one case we got a boundingClientRect 72.433 high
+                                // and an intersectionRect 72.416, for a ratio of 0.9998.
+                                // If a block is 1000 pixels high and really overflowing by 1 pixel, the ratio
+                                // will be 0.999. I think it's safe to take anything closer to 1 than that as
+                                // 'not overflowing'.
+                                let overflowing =
+                                    entry.intersectionRatio < 0.999;
+
                                 if (overflowing && isBubble) {
                                     // We want to be less aggressive about putting scroll bars on bubbles.
                                     // Most of the time, a bubble is very carefully sized to just fit the
