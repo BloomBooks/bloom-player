@@ -11,7 +11,7 @@
     "license": "MIT",
     "private": false,
     "engines": {
-        "node": "~16.13.1"
+        "node": ">=16.13.0"
     },
     "// sideeffects might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working": "",
     "sideEffects": false,
