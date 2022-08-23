@@ -22,7 +22,6 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
     public prepare(activityContext: ActivityContext) {}
 
     public showingPage(activityContext: ActivityContext) {
-        console.log("SimpleCheckboxQuiz.showingPage()");
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
         activityContext.addActivityStylesForPage(
@@ -96,7 +95,6 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
 
     private hasVisibleContent(choice: Element): boolean {
         const editables = choice.getElementsByClassName("bloom-editable");
-        console.log(`hasVisibleContent found ${editables.length} editables`);
 
         return Array.from(editables).some(
             e =>
