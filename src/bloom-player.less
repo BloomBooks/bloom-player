@@ -47,7 +47,7 @@ above the page so that page numbers will increment.*/
 // Actually: this did not prevent it from applying in Firefox,: @media screen and (-webkit-min-device-pixel-ratio: 0) {
 // Nor did this: @supports (-webkit-appearance: none) {
 /*@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    span.ui-audioCurrent:not(.disableHighlight) {
+    span.ui-audioCurrent:not(.ui-suppressHighlight) {
         background: linear-gradient(@audioHighlighting, @audioHighlighting);
         background-blend-mode: overlay;
         mix-blend-mode: overlay;
@@ -57,11 +57,15 @@ above the page so that page numbers will increment.*/
 // The above doesn't work on Firefox (through FF 68) (or in Bloom or 2019-era Edge). For those, we can at least
 // deal with the most common case of overlap (the book title on the cover) by just
 // treating the text as a rectangle. And it's fine that this will show this way in Chrome too:
-.Title-On-Cover-style span.ui-audioCurrent:not(.disableHighlight) {
+.Title-On-Cover-style span.ui-audioCurrent:not(.ui-suppressHighlight) {
     display: inline-block;
 }
-span.ui-audioCurrent:not(.disableHighlight),
-div.ui-audioCurrent:not(.disableHighlight) p {
+span.ui-audioCurrent:not(.ui-suppressHighlight, .ui-disableHighlight),
+div.ui-audioCurrent:not(.ui-suppressHighlight, .ui-disableHighlight) p {
+    background-color: @audioHighlighting;
+}
+
+.ui-audioCurrent .ui-enableHighlight {
     background-color: @audioHighlighting;
 }
 
