@@ -211,9 +211,30 @@ export default class Narration {
             return;
         }
 
-        const matches = Array.from(
-            textNode.nodeValue.matchAll(this.multiSpaceRegexGlobal)
-        );
+        // string.matchAll would be cleaner, but not supported in all browsers (in particular, FF60)
+        // Use RegExp.exec for greater compatibility.
+        this.multiSpaceRegexGlobal.lastIndex = 0; // RegExp.exec is stateful! Need to reset the state.
+        const matches: {
+            text: string;
+            startIndex: number;
+            endIndex: number; // the index of the first character to exclude
+        }[] = [];
+        let regexResult: RegExpExecArray | null;
+        while (
+            (regexResult = this.multiSpaceRegexGlobal.exec(
+                textNode.nodeValue
+            )) != null
+        ) {
+            regexResult.forEach(matchingText => {
+                matches.push({
+                    text: matchingText,
+                    startIndex:
+                        this.multiSpaceRegexGlobal.lastIndex -
+                        matchingText.length,
+                    endIndex: this.multiSpaceRegexGlobal.lastIndex // the index of the first character to exclude
+                });
+            });
+        }
 
         // First, generate the new DOM elements with the fixed highlighting.
         const newNodes: Node[] = [];
@@ -221,23 +242,23 @@ export default class Narration {
             // No matches
             newNodes.push(this.makeHighlightedSpan(textNode.nodeValue));
         } else {
+            let lastMatchEndIndex = 0; // the index of the first character to exclude of the last match
             for (let i = 0; i < matches.length; ++i) {
                 const match = matches[i];
-                if (match.index === undefined) {
-                    continue;
-                }
 
-                const startIndex = match.index;
-
-                const preMatchText = textNode.nodeValue.slice(0, startIndex);
+                const preMatchText = textNode.nodeValue.slice(
+                    lastMatchEndIndex,
+                    match.startIndex
+                );
+                lastMatchEndIndex = match.endIndex;
                 newNodes.push(this.makeHighlightedSpan(preMatchText));
 
-                const matchingText = match[0];
-                newNodes.push(document.createTextNode(matchingText));
+                newNodes.push(document.createTextNode(match.text));
 
                 if (i === matches.length - 1) {
-                    const endIndex = startIndex + match[0].length;
-                    const postMatchText = textNode.nodeValue.slice(endIndex);
+                    const postMatchText = textNode.nodeValue.slice(
+                        match.endIndex
+                    );
                     if (postMatchText) {
                         newNodes.push(this.makeHighlightedSpan(postMatchText));
                     }
