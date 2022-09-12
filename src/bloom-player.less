@@ -60,8 +60,10 @@ above the page so that page numbers will increment.*/
 .Title-On-Cover-style span.ui-audioCurrent:not(.ui-suppressHighlight) {
     display: inline-block;
 }
-span.ui-audioCurrent:not(.ui-suppressHighlight, .ui-disableHighlight),
-div.ui-audioCurrent:not(.ui-suppressHighlight, .ui-disableHighlight) p {
+// Note: :not(classA, classB) syntax not supported by some browsers, notably FF60.
+// Use :not(classB):not(classB) syntax instead!!!
+span.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight),
+div.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight) p {
     background-color: @audioHighlighting;
 }
 
