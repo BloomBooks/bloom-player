@@ -620,8 +620,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     });
             }
 
-            // If the user changes the image description button on the controlbar or changes
-            // the active language for displaying the book
+            // If the user changes the image description button on the controlbar
             // Review JohnT: I don't see why we want to do this simply on a transition from loading
             // to not-loading. We already do it on a timeout in the code that sets loading to false,
             // and we suppress effects on setIndex and showingPage until that timeout completes and
@@ -630,9 +629,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 !this.state.isLoading &&
                 (prevState.isLoading ||
                     prevProps.shouldReadImageDescriptions !==
-                        this.props.shouldReadImageDescriptions ||
-                    prevProps.activeLanguageCode !==
-                        this.props.activeLanguageCode)
+                        this.props.shouldReadImageDescriptions)
             ) {
                 if (this.finishUpCalled) {
                     // We need to reset the page enough to get the narration rebuilt.
@@ -832,32 +829,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             this.showOrHideTitle2AndL1OnlyText(page, usingDefaultLang);
-            if (
-                !isNewBook &&
-                !this.props.skipActivities &&
-                isActivityPage(page)
-            ) {
-                // Activity pages need to be modified when they first display. Changing the
-                // language while on an activity causes the original source for the page to be
-                // modified to enable displaying the proper text based on the new language, but
-                // does nothing to modify an activity page the way it gets modified on initial
-                // display.  The current slide page must be replaced for the language switch to
-                // work.  Not replacing the current slide page results in the language changing,
-                // but the correct answer is displayed and choice button clicks are not enabled.
-                // See https://issues.bloomlibrary.org/youtrack/issue/BL-11449.
-                // Quiz pages ("Check your understanding") preserve answers across language changes.
-                // "Chose Word from Picture" and "Choose Picture from Word" pages lose answers
-                // across language changes.  (This behavior is controlled by code in showingPage()
-                // for each type of activity.  SimpleCheckBoxQuiz tries to restore answers while
-                // SimpleDomChoice doesn't bother.  Choices seem to be preserved in either case when
-                // changing pages without changing languages.)
-                const swiperSlide = this.swiperInstance?.slides[
-                    i
-                ] as HTMLElement;
-                if (swiperSlide && swiperSlide !== page) {
-                    this.swiperInstance.slides[i] = page;
-                }
-            }
             if (
                 // Enhance: if we decide to skip activities without hiding the random-access page chooser,
                 // we need to remove the relevant numbers from there, too.
