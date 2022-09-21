@@ -620,7 +620,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     });
             }
 
-            // If the user changes the image description button on the controlbar
+            // If the user changes the image description button on the controlbar or changes
+            // the active language for displaying the book
             // Review JohnT: I don't see why we want to do this simply on a transition from loading
             // to not-loading. We already do it on a timeout in the code that sets loading to false,
             // and we suppress effects on setIndex and showingPage until that timeout completes and
@@ -629,7 +630,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 !this.state.isLoading &&
                 (prevState.isLoading ||
                     prevProps.shouldReadImageDescriptions !==
-                        this.props.shouldReadImageDescriptions)
+                        this.props.shouldReadImageDescriptions ||
+                    prevProps.activeLanguageCode !==
+                        this.props.activeLanguageCode)
             ) {
                 if (this.finishUpCalled) {
                     // We need to reset the page enough to get the narration rebuilt.
@@ -829,6 +832,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             this.showOrHideTitle2AndL1OnlyText(page, usingDefaultLang);
+            if (
+                !isNewBook &&
+                !this.props.skipActivities &&
+                isActivityPage(page)
+            ) {
+                page.removeAttribute("data-activity-state");
+                // need to replace stale slider page for language switch to work
+                const swiperSlide = this.swiperInstance?.slides[
+                    i
+                ] as HTMLElement;
+                if (swiperSlide && swiperSlide !== page) {
+                    this.swiperInstance.slides[i] = page;
+                }
+            }
             if (
                 // Enhance: if we decide to skip activities without hiding the random-access page chooser,
                 // we need to remove the relevant numbers from there, too.
