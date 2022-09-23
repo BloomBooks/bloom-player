@@ -118,6 +118,11 @@
         "dist/*.tsv"
     ],
     "clean-publish": {
-        "packageManager": "yarn"
+        "packageManager": "yarn",
+        "fields": [
+            "dependencies",
+            "scripts",
+            "engines"
+        ]
     }
 }
