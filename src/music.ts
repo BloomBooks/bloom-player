@@ -80,8 +80,10 @@ export class Music {
             const page = pages[iPage];
             // The data-backgroundaudio attribute works like this:
             // If data-backgroundaudio is present and has a value, that page starts the music;
-            // If data-backgroundaudio is NOT present, that page continues the music;
-            // if data-backgroundaudio is present and has NO value, that page has no music.
+            // If data-backgroundaudio is NOT present, that page continues the music
+            //   (if the previous page had music);
+            // if data-backgroundaudio is present and has NO value, that page has no music
+            //   (and nor will subsequent pages, until one has a non-empty data-backgroundaudio).
             const attrValue = page.getAttribute("data-backgroundaudio");
             if (attrValue !== null && attrValue !== "") {
                 // Music starts on this page
@@ -100,7 +102,8 @@ export class Music {
                     );
                 }
             } else {
-                // No music on this page
+                // No music on this page (or following pages until we get data-backgroundaudio)
+                selection = undefined;
             }
         }
     }
