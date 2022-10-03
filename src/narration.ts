@@ -631,7 +631,30 @@ export default class Narration {
             return;
         }
 
-        element.scrollIntoView({
+        let mover = element as HTMLElement; // by default make the element itself scrollIntoView
+        if (
+            window.getComputedStyle(element.parentElement!).position !==
+            "static"
+        ) {
+            // We can make a new element absolutely positioned and it will be relative to the parent.
+            // The idea is to make an element much narrower than the element we are
+            // trying to make visible, since we don't want horizontal movement. Quite possibly,
+            // as in BL-11038, only some white space is actually off-screen. But even if the author
+            // has positioned a bubble so some text is cut off, we don't want horizontal scrolling,
+            // which inside swiper will weirdly pull in part of the next page.
+            // (In the pathological case that the bubble is more than half hidden, we'll do the
+            // horizontal scroll, despite the ugliness of possibly showing part of the next page.)
+            mover = document.createElement("div");
+            mover.style.position = "absolute";
+            mover.style.top = element.clientTop + "px";
+            mover.style.left =
+                element.clientLeft + element.clientWidth / 2 + "px";
+            mover.style.height = element.clientHeight + "px";
+            mover.style.width = "0";
+            element.parentElement?.insertBefore(mover, element);
+        }
+
+        mover.scrollIntoView({
             // Animated instead of sudden
             behavior: "smooth",
 
@@ -642,7 +665,11 @@ export default class Narration {
             block: "nearest"
 
             // horizontal alignment is controlled by "inline". We'll leave it as its default ("nearest")
+            // which typically won't move things at all horizontally
         });
+        if (mover !== element) {
+            mover.parentElement?.removeChild(mover);
+        }
     }
 
     // Returns true if swiping to this page is still in progress.
