@@ -2168,7 +2168,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     onClick={() => this.slidePrevious()}
                     onTouchStart={e => {
                         this.setState({ ignorePhonyClick: true });
-                        this.slidePrevious();
+                        // not needed, touch still causes a click, this can cause double page change
+                        //this.slidePrevious();
                     }}
                 >
                     {/* The ripple is an animation on the button on click and
@@ -2196,7 +2197,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     onClick={() => this.slideNext()}
                     onTouchStart={e => {
                         this.setState({ ignorePhonyClick: true });
-                        this.slideNext();
+                        // not needed, touch still causes a click, this can cause double page change
+                        //this.slideNext();
                     }}
                 >
                     <IconButton className={"nav-button"} disableRipple={true}>
