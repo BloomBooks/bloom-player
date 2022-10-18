@@ -641,9 +641,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     //         this.state.currentSwiperIndex +
                     //         " because shouldReadImageDescriptions changed"
                     // );
-                    this.narration.setCurrentLanguage(
-                        this.props.activeLanguageCode
-                    );
                     this.setIndex(this.state.currentSwiperIndex);
                     this.showingPage(this.state.currentSwiperIndex);
                 }

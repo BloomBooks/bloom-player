@@ -84,11 +84,6 @@ export default class Narration {
         this.swiperInstance = newSwiperInstance;
     }
 
-    private currentLang: string;
-    public setCurrentLanguage(activeLanguageCode: string): void {
-        this.currentLang = activeLanguageCode;
-    }
-
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     // As long as there is audio on the page, this method will play it.
     public playAllSentences(page: HTMLElement | null): void {
@@ -897,55 +892,33 @@ export default class Narration {
               );
     }
 
-    // Optional tryHarder param indicates that we may be called before the DOM is
-    // displayed, so we can't depend on the simple testing of display.
-    private getPlayableDivs(container: HTMLElement, tryHarder?: boolean) {
+    private getPlayableDivs(container: HTMLElement) {
         // We want to play any audio we have from divs the user can see.
         // This is a crude test, but currently we always use display:none to hide unwanted languages.
-        return this.findAll(".bloom-editable", container).filter(e => {
-            // When changing languages to display, this code gets called before the
-            // DOM has computed the display style for these elements.  Note that
-            // eliminating the tryHarder branch causes the Play button to disappear
-            // until the user changes pages, and automatically doing the tryHarder
-            // branch causes the audio to automatically play in the new language,
-            // but without any highlighting.
-            const display = window.getComputedStyle(e).display;
-            if (display && display !== "none") return true;
-            return (
-                tryHarder && !display && e.lang && e.lang === this.currentLang
-            );
-        });
+        return this.findAll(".bloom-editable", container).filter(
+            e => window.getComputedStyle(e).display !== "none"
+        );
     }
 
-    // Optional page param is for use when 'playerPage' has NOT been initialized.
+    // Optional param is for use when 'playerPage' has NOT been initialized.
     // Not using the optional param assumes 'playerPage' has been initialized
-    // Optional tryHarder param indicates that we may be called before the DOM is
-    // displayed, so we can't depend on the simple testing of display.
-    private getPagePlayableDivs(
-        page?: HTMLElement,
-        tryHarder?: boolean
-    ): HTMLElement[] {
-        return this.getPlayableDivs(page ? page : this.playerPage, tryHarder);
+    private getPagePlayableDivs(page?: HTMLElement): HTMLElement[] {
+        return this.getPlayableDivs(page ? page : this.playerPage);
     }
 
-    // Optional page param is for use when 'playerPage' has NOT been initialized.
+    // Optional param is for use when 'playerPage' has NOT been initialized.
     // Not using the optional param assumes 'playerPage' has been initialized
-    // Optional tryHarder param indicates that we may be called before the DOM is
-    // displayed, so we can't depend on the simple testing of display.
-    private getPageAudioElements(
-        page?: HTMLElement,
-        tryHarder?: boolean
-    ): HTMLElement[] {
+    private getPageAudioElements(page?: HTMLElement): HTMLElement[] {
         return [].concat.apply(
             [],
-            this.getPagePlayableDivs(page, tryHarder).map(x =>
+            this.getPagePlayableDivs(page).map(x =>
                 this.findAll(".audio-sentence", x, true)
             )
         );
     }
 
     public pageHasAudio(page: HTMLElement): boolean {
-        return this.getPageAudioElements(page, true).length ? true : false;
+        return this.getPageAudioElements(page).length ? true : false;
     }
 
     public play() {
