@@ -880,12 +880,20 @@ export default class Narration {
               );
     }
 
-    // Optional tryHarder param indicates that we may be called before the DOM is
-    // displayed, so we can't depend on the simple testing of display.
+    // This function may be called before the DOM is displayed, so we can't depend on
+    // the simple testing of display to determine whether an editable div is visible.
+    // The optional tryHarder param tells the function to determine whether any editable
+    // divs exist at all so that we want to show the Play button.  If tryHarder is false,
+    // then we want only divs that we know for sure are visible and playable.
     private getPlayableDivs(container: HTMLElement, tryHarder?: boolean) {
         // We want to play any audio we have from divs the user can see.
         // This is a crude test, but currently we always use display:none to hide unwanted languages.
-        return this.findAll(".bloom-editable", container).filter(e => {
+        const editables = this.findAll(".bloom-editable", container);
+        const blocks = editables.filter(e => {
+            const display = window.getComputedStyle(e).display;
+            return display === "block";
+        });
+        return editables.filter(e => {
             // When changing languages to display, this code gets called before the
             // DOM has computed the display style for these elements.  Note that
             // eliminating the tryHarder branch causes the Play button to disappear
@@ -893,6 +901,23 @@ export default class Narration {
             // branch causes the audio to automatically play in the new language,
             // but without any highlighting.
             const display = window.getComputedStyle(e).display;
+            if (
+                navigator.userAgent.indexOf("Firefox/60.0") &&
+                // Firefox 60 initializes display=block everywhere instead of display=null.
+                // So, we check whether display=block is set in multiple divs and return
+                // false for the filter when getting divs to actually play, but we follow
+                // the normal rules to allow the play button to show otherwise.  Of course,
+                // if there isn't any audio on this page, it may show the play button when
+                // it shouldn't, but working with obsolete software, one can't have everything...
+                !tryHarder &&
+                blocks.length === editables.length &&
+                blocks.length > 1
+            ) {
+                // console.log(
+                //     `getPlayableDivs(): hack for Firefox 60 to stop playing all sounds`
+                // );
+                return false;
+            }
             if (display && display !== "none") return true;
             return (
                 tryHarder && !display && e.lang && e.lang === this.currentLang
