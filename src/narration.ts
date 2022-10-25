@@ -649,12 +649,29 @@ export default class Narration {
             // which inside swiper will weirdly pull in part of the next page.
             // (In the pathological case that the bubble is more than half hidden, we'll do the
             // horizontal scroll, despite the ugliness of possibly showing part of the next page.)
+            // Note that elt may be a span, when scrolling chunks of text into view to play.
+            // I thought about using scrollWidth/Height to include any part of the element
+            // that is scrolled out of view, but for some reason these are always zero for spans.
+            // OffsetHeight seems to give the full height, though docs seem to indicate that it
+            // should not include invisible areas.
+            const elt = element as HTMLElement;
             mover = document.createElement("div");
             mover.style.position = "absolute";
-            mover.style.top = element.clientTop + "px";
+            mover.style.top = elt.offsetTop + "px";
+
+            // now we need what for a block would be offsetLeft. However, for a span, that
+            // yields the offset of the top left corner, which may be in the middle
+            // of a line.
+            const bounds = elt.getBoundingClientRect();
+            const parent = elt.parentElement;
+            const parentBounds = parent?.getBoundingClientRect();
+            const scale = parentBounds!.width / parent!.offsetWidth;
+            const leftRelativeToParent =
+                (bounds.left - parentBounds!.left) / scale;
+
             mover.style.left =
-                element.clientLeft + element.clientWidth / 2 + "px";
-            mover.style.height = element.clientHeight + "px";
+                leftRelativeToParent + elt.offsetWidth / 2 + "px";
+            mover.style.height = elt.offsetHeight + "px";
             mover.style.width = "0";
             element.parentElement?.insertBefore(mover, element);
         }
