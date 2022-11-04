@@ -912,7 +912,7 @@ export default class Narration {
         // This is a crude test, but currently we always use display:none to hide unwanted languages.
         const editables = this.findAll(".bloom-editable", container);
         if (
-            navigator.userAgent.indexOf("Firefox/60.0") &&
+            navigator.userAgent.indexOf("Firefox/60.0") > -1 &&
             // Firefox 60 initializes display="block" everywhere instead of display=null.
             // So, we check whether display="block" is set in all editable divs and return
             // an empty array if we're retrieving divs to actually play.
