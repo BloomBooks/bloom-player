@@ -14,8 +14,15 @@ export interface IActivityModule {
 
 // This is the class that the activity module has to implement
 export interface IActivityObject {
-    prepare: (context: ActivityContext) => void;
+    // Do one-time initialization of the page's html. In the current implementation,
+    // this is acting on a copy of the html, not the real DOM which the user will interact with.
+    // So we can't do things like set up event handlers. (See showingPage below.)
+    initializePageHtml: (context: ActivityContext) => void;
+
+    // Do any setup needed each time the activity becomes the active page.
+    // This is acting on the real DOM, so this is the time to set up event handlers, etc.
     showingPage: (context: ActivityContext) => void;
+
     stop: () => void;
 }
 // Constructing stuff from interfaces has problems with typescript at the moment.
@@ -105,50 +112,90 @@ export class ActivityManager {
         );
     }
 
-    public processPage(
+    // Do any one-time initialization of the html which will later get dangerously set into the swiper card.
+    // Note that here we are NOT operating on the real DOM which will be present at user-interaction time.
+    // So we can't do things like set up event handlers, etc. Those must be set up in showingPage.
+    // But we can't wait for showingPage to do this first initialization because some work must be done
+    // at book load time. For example, SimpleDomChoice must remove the correct answer highlighting and shuffle
+    // answers BEFORE the user starts to swipe to the page. Otherwise, the correct answer will be seen during the swipe.
+    public initializePageHtml(
         bookUrlPrefix: string,
-        // NOTE: this is not the same element we will get as a parameter in showingPage().
-        // But it is clone of it, which is fine because we aren't storing it, we're only
-        // looking for a data-activity attribute.
-        pageDiv: HTMLElement
+        pageDiv: HTMLElement,
+        pageIndex: number
     ): void {
         const activityID = this.getActivityIdOfPage(pageDiv);
         //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
-        if (activityID && !this.loadedActivityScripts[activityID]) {
-            if (this.builtInActivities[activityID]) {
-                this.loadedActivityScripts[activityID] = {
-                    name: activityID,
-                    module: this.builtInActivities[activityID],
-                    runningObject: undefined, // for now were just registering the module, not constructing the object
-                    context: undefined,
-                    requirements: this.builtInActivities[
-                        activityID
-                    ].activityRequirements()
-                };
-            }
 
-            // Try to find the named activity js in the book's folder.
-            else {
-                // Even though we won't use the script until we get to the page,
-                // at the moment we start loading them in the background. This
-                // probably isn't necessary, we could probably wait.
-                loadDynamically(bookUrlPrefix + "/" + activityID + ".js").then(
-                    module => {
-                        // if the same activity is encountered multiple times, we
-                        // could still get here multiple times because the load
-                        // is async
-                        if (!this.loadedActivityScripts[activityID]) {
-                            this.loadedActivityScripts[activityID] = {
-                                name: activityID,
-                                module,
-                                runningObject: undefined, // for now were just registering the module, not constructing the object
-                                context: undefined,
-                                requirements: module.activityRequirements()
-                            };
-                        }
+        if (!activityID) return; // Not an activity
+
+        if (!this.loadedActivityScripts[activityID])
+            this.prepareActivityType(bookUrlPrefix, activityID);
+
+        this.prepareActivityInstance(pageIndex, pageDiv);
+    }
+
+    // Do any setup needed per activity type (activity ID)
+    private prepareActivityType(bookUrlPrefix: string, activityID: string) {
+        if (this.builtInActivities[activityID]) {
+            this.loadedActivityScripts[activityID] = {
+                name: activityID,
+                module: this.builtInActivities[activityID],
+                runningObject: undefined, // for now were just registering the module, not constructing the object
+                context: undefined,
+                requirements: this.builtInActivities[
+                    activityID
+                ].activityRequirements()
+            };
+        }
+
+        // Try to find the named activity js in the book's folder.
+        else {
+            // Even though we won't use the script until we get to the page,
+            // at the moment we start loading them in the background. This
+            // probably isn't necessary, we could probably wait.
+            loadDynamically(bookUrlPrefix + "/" + activityID + ".js").then(
+                module => {
+                    // if the same activity is encountered multiple times, we
+                    // could still get here multiple times because the load
+                    // is async
+                    if (!this.loadedActivityScripts[activityID]) {
+                        this.loadedActivityScripts[activityID] = {
+                            name: activityID,
+                            module,
+                            runningObject: undefined, // for now were just registering the module, not constructing the object
+                            context: undefined,
+                            requirements: module.activityRequirements()
+                        };
                     }
-                );
-            }
+                }
+            );
+        }
+    }
+
+    // Do one-time setup needed per activity instance
+    private prepareActivityInstance(
+        pageIndex: number,
+        pageDiv: HTMLElement
+    ): void {
+        const activity = this.getActivityOfPage(pageDiv);
+        if (!activity) return;
+
+        if (!pageDiv.hasAttribute("data-activity-state")) {
+            // for use in styling things differently during playback versus book editing
+            pageDiv.classList.add("bloom-activityPlayback");
+
+            const activityPage = new ((activity.module!
+                .default as unknown) as IActivityObjectConstructable)(
+                pageDiv
+            ) as IActivityObject;
+            const activityContext = this.getActivityContext(pageIndex, pageDiv);
+            activityPage.initializePageHtml(activityContext);
+
+            // Add an attribute which lets us know we shouldn't prepare it again
+            activityContext.pageElement.setAttribute(
+                "data-activity-state",
+                "prepared"
+            );
         }
     }
 
@@ -179,6 +226,29 @@ export class ActivityManager {
         this.currentActivity = undefined;
 
         // OK, let's look at this page and see if has an activity:
+        const activity = this.getActivityOfPage(bloomPageElement);
+        if (activity) {
+            this.currentActivity = activity;
+            // constructing stuff like this has problems with typescript at the moment.
+            // see https://stackoverflow.com/a/13408029/723299
+            // Then the "as unknown" step is make eslint relax
+            activity.runningObject = new ((activity.module!
+                .default as unknown) as IActivityObjectConstructable)(
+                bloomPageElement
+            ) as IActivityObject;
+
+            activity.context = this.getActivityContext(
+                pageIndex,
+                bloomPageElement
+            );
+            activity.runningObject!.showingPage(activity.context);
+        }
+        return !!activity; // return true if this is an activity
+    }
+
+    private getActivityOfPage(
+        bloomPageElement: HTMLElement
+    ): IActivityInformation | undefined {
         const activityID = this.getActivityIdOfPage(bloomPageElement);
 
         if (activityID) {
@@ -190,44 +260,24 @@ export class ActivityManager {
                 activity,
                 `Trying to start activity "${activityID}" but it wasn't previously loaded.`
             );
-            if (activity) {
-                this.currentActivity = activity;
-                // constructing stuff like this has problems with typescript at the moment.
-                // see https://stackoverflow.com/a/13408029/723299
-                // Then the "as unknown" step is make eslint relax
-                activity.runningObject = new ((activity.module!
-                    .default as unknown) as IActivityObjectConstructable)(
-                    bloomPageElement
-                ) as IActivityObject;
-
-                // for use in styling things differently during playback versus book editing
-
-                bloomPageElement.classList.add("bloom-activityPlayback");
-
-                const analyticsCategory = this.getAnalyticsCategoryOfPage(
-                    bloomPageElement
-                );
-                activity.context = new ActivityContext(
-                    pageIndex,
-                    bloomPageElement,
-                    analyticsCategory,
-                    this.bookActivityGroupings[analyticsCategory]
-                );
-                if (
-                    !activity.context.pageElement.hasAttribute(
-                        "data-activity-state"
-                    )
-                ) {
-                    activity.runningObject!.prepare(activity.context);
-                    activity.context.pageElement.setAttribute(
-                        "data-activity-state",
-                        "prepared"
-                    );
-                }
-                activity.runningObject!.showingPage(activity.context);
-            }
+            return activity;
         }
-        return !!activityID; // return true if this is an activity
+        return undefined;
+    }
+
+    private getActivityContext(
+        pageIndex: number,
+        bloomPageElement: HTMLElement
+    ): ActivityContext {
+        const analyticsCategory = this.getAnalyticsCategoryOfPage(
+            bloomPageElement
+        );
+        return new ActivityContext(
+            pageIndex,
+            bloomPageElement,
+            analyticsCategory,
+            this.bookActivityGroupings[analyticsCategory]
+        );
     }
 
     private hasLegacyQuizScriptTag(pageDiv: Element): boolean {

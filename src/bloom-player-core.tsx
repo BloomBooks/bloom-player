@@ -829,17 +829,24 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
             this.showOrHideTitle2AndL1OnlyText(page, usingDefaultLang);
+
+            // look for activities on this page
+            const isActivity = isActivityPage(page);
+            if (isActivity)
+                this.activityManager.initializePageHtml(
+                    this.urlPrefix,
+                    page,
+                    swiperContent.length
+                );
+
             if (
                 // Enhance: if we decide to skip activities without hiding the random-access page chooser,
                 // we need to remove the relevant numbers from there, too.
                 !this.props.skipActivities ||
-                !isActivityPage(page)
+                !isActivity
             ) {
                 swiperContent.push(page.outerHTML);
             }
-
-            // look for activities on this page
-            this.activityManager.processPage(this.urlPrefix, page);
         }
         if (this.props.showContextPages) {
             swiperContent.push(""); // blank page to fill the space right of last.
@@ -2363,7 +2370,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Called from slideChange, starts narration, etc.
     private showingPage(index: number): void {
         if (this.state.isLoading || this.startingUpSwiper) {
-            //console.log("abording showingPage because still loading");
+            //console.log("aborting showingPage because still loading");
             return;
         }
         if (this.props.pageChanged) {
