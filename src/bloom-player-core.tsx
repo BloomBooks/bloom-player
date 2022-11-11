@@ -1971,7 +1971,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // connection.. We want SOME limit so
                 // we don't keep using power for hours if the device is left on this page.
                 slideChangeTransitionEnd: () =>
-                    (this.msToContinueFF60RepairChecks = 30000)
+                    (this.msToContinueFF60RepairChecks = 30000),
+                // Without this, we don't properly set up activities when the language changes. See BL-11449.
+                update: () => this.showingPage(this.swiperInstance.activeIndex)
             },
             keyboard: {
                 enabled: true,
