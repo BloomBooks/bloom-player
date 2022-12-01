@@ -15,31 +15,21 @@ import React, { useState } from "react";
 // The latter two effects probably indicate that I have not yet figured out how to
 // configure webpack to really do tree-shaking, even in our production build.
 
-//tslint:disable-next-line:no-submodule-imports
 import AppBar from "@material-ui/core/AppBar";
-//tslint:disable-next-line:no-submodule-imports
 import Toolbar from "@material-ui/core/Toolbar";
-//tslint:disable-next-line:no-submodule-imports
 import IconButton from "@material-ui/core/IconButton";
-//tslint:disable-next-line:no-submodule-imports
 import ArrowBack from "@material-ui/icons/ArrowBack";
-//tslint:disable-next-line:no-submodule-imports
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-//tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
-//tslint:disable-next-line:no-submodule-imports
 import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
-//tslint:disable-next-line:no-submodule-imports
 import Language from "@material-ui/icons/Language";
-//tslint:disable-next-line:no-submodule-imports
 import Fullscreen from "@material-ui/icons/Fullscreen";
-//tslint:disable-next-line:no-submodule-imports
 import FullscreenExit from "@material-ui/icons/FullscreenExit";
 import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
 import theme, { bloomHighlight } from "./bloomPlayerTheme";
 import { ThemeProvider } from "@material-ui/styles";
-import { createMuiTheme } from "@material-ui/core";
+import { createTheme } from "@material-ui/core/styles";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
@@ -186,7 +176,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     // Secondary is the normal bloom red.
     // Primary is whatever color the icon should be when we are reading an image description.
     // In this case, I've used the same yellow that's used for audio highlighting.
-    const imageDescIconTheme = createMuiTheme({
+    const imageDescIconTheme = createTheme({
         palette: {
             primary: { main: bloomHighlight },
             secondary: { main: theme.palette.secondary.main }

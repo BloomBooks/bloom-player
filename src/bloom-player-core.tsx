@@ -8,11 +8,8 @@ import * as ReactDOM from "react-dom";
 import axios, { AxiosPromise } from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
-// tslint:disable-next-line: no-submodule-imports
 import "style-scoped/scoped.min.js";
-// tslint:disable-next-line: no-submodule-imports
 import "swiper/dist/css/swiper.min.css";
-// tslint:enable:no-submodule-imports
 import "./bloom-player.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
@@ -32,17 +29,12 @@ import {
     sendStringToBloomApi
 } from "./videoRecordingSupport";
 import LangData from "./langData";
-// tslint:disable-next-line: no-submodule-imports
 import Replay from "@material-ui/icons/Replay";
 
 // See related comments in controlBar.tsx
-//tslint:disable-next-line:no-submodule-imports
 import IconButton from "@material-ui/core/IconButton";
-//tslint:disable-next-line:no-submodule-imports
 import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
-//tslint:disable-next-line:no-submodule-imports
 import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
-//tslint:disable-next-line:no-submodule-imports
 import LoadFailedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
 
 import { ActivityManager } from "./activities/activityManager";
