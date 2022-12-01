@@ -8,5 +8,8 @@ module.exports = {
         "@storybook/addon-a11y",
         "@storybook/addon-actions",
         "@storybook/addon-interactions"
-    ]
+    ],
+    features: {
+        interactionsDebugger: true // enable playback controls
+    }
 };
