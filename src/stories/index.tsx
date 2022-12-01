@@ -9,12 +9,10 @@ import {
     boolean as booleanKnob,
     button
 } from "@storybook/addon-knobs";
-import { withA11y } from "@storybook/addon-a11y";
 import Axios from "axios";
 
 const stories = storiesOf("Various books", module);
 stories.addDecorator(withKnobs);
-stories.addDecorator(withA11y);
 stories.addDecorator(storyFn => (
     <ThemeProvider theme={theme}>{storyFn()}</ThemeProvider>
 ));
