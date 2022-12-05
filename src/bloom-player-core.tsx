@@ -2020,6 +2020,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // only one of these components on a page.
         return (
             <div
+                aria-label="Player Content"
                 className={
                     bloomPlayerClass +
                     (this.props.extraClassNames

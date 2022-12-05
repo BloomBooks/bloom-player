@@ -190,6 +190,11 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const readImageDescriptionsOrNot: JSX.Element = (
         <ThemeProvider theme={imageDescIconTheme}>
             <ImageDescriptionIcon
+                aria-label={
+                    props.readImageDescriptions
+                        ? "Read image descriptions"
+                        : "Ignore image descriptions"
+                }
                 titleAccess={
                     props.readImageDescriptions
                         ? ignoreImageDescriptions
@@ -247,6 +252,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     >
                         {window === window.top ? (
                             <ArrowBack
+                                aria-label="Go Back"
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Back",
                                     props.preferredLanguages,
@@ -255,6 +261,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             />
                         ) : (
                             <MoreHoriz
+                                aria-label="More Menu"
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.More",
                                     props.preferredLanguages,
@@ -282,6 +289,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 {props.bookLanguages.length > 1 && (
                     <IconButton
                         className={controlButtonClass}
+                        aria-label="Choose Language"
                         color={"secondary"}
                         onClick={() => {
                             setLanguageMenuOpen(true);
@@ -305,6 +313,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 {!props.videoPreviewMode && (
                     <IconButton
                         color="secondary"
+                        aria-label="PlayPause"
                         onClick={() => {
                             if (props.pausedChanged) {
                                 props.pausedChanged(!props.paused);
@@ -324,6 +333,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         >
                             {document.fullscreenElement == null ? (
                                 <Fullscreen
+                                    aria-label="Full Screen"
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.FullScreen",
                                         props.preferredLanguages,
@@ -332,6 +342,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                                 />
                             ) : (
                                 <FullscreenExit
+                                    aria-label="Exit Full Screen"
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.ExitFullScreen",
                                         props.preferredLanguages,
