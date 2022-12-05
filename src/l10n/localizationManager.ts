@@ -94,7 +94,7 @@ class LocalizationManagerImplementation {
         preferredLanguages: string[]
     ): [string, string] | [undefined, undefined] {
         const translations = this.l10nDictionary.get(id);
-        if (!translations) {
+        if (!translations || !preferredLanguages) {
             return [undefined, undefined];
         }
 
