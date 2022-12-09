@@ -15,31 +15,21 @@ import React, { useState } from "react";
 // The latter two effects probably indicate that I have not yet figured out how to
 // configure webpack to really do tree-shaking, even in our production build.
 
-//tslint:disable-next-line:no-submodule-imports
 import AppBar from "@material-ui/core/AppBar";
-//tslint:disable-next-line:no-submodule-imports
 import Toolbar from "@material-ui/core/Toolbar";
-//tslint:disable-next-line:no-submodule-imports
 import IconButton from "@material-ui/core/IconButton";
-//tslint:disable-next-line:no-submodule-imports
 import ArrowBack from "@material-ui/icons/ArrowBack";
-//tslint:disable-next-line:no-submodule-imports
 import MoreHoriz from "@material-ui/icons/MoreHoriz";
-//tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
-//tslint:disable-next-line:no-submodule-imports
 import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
-//tslint:disable-next-line:no-submodule-imports
 import Language from "@material-ui/icons/Language";
-//tslint:disable-next-line:no-submodule-imports
 import Fullscreen from "@material-ui/icons/Fullscreen";
-//tslint:disable-next-line:no-submodule-imports
 import FullscreenExit from "@material-ui/icons/FullscreenExit";
 import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
 import theme, { bloomHighlight } from "./bloomPlayerTheme";
 import { ThemeProvider } from "@material-ui/styles";
-import { createMuiTheme } from "@material-ui/core";
+import { createTheme } from "@material-ui/core/styles";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
@@ -186,7 +176,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     // Secondary is the normal bloom red.
     // Primary is whatever color the icon should be when we are reading an image description.
     // In this case, I've used the same yellow that's used for audio highlighting.
-    const imageDescIconTheme = createMuiTheme({
+    const imageDescIconTheme = createTheme({
         palette: {
             primary: { main: bloomHighlight },
             secondary: { main: theme.palette.secondary.main }
@@ -200,6 +190,11 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const readImageDescriptionsOrNot: JSX.Element = (
         <ThemeProvider theme={imageDescIconTheme}>
             <ImageDescriptionIcon
+                aria-label={
+                    props.readImageDescriptions
+                        ? "Read image descriptions"
+                        : "Ignore image descriptions"
+                }
                 titleAccess={
                     props.readImageDescriptions
                         ? ignoreImageDescriptions
@@ -257,6 +252,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                     >
                         {window === window.top ? (
                             <ArrowBack
+                                aria-label="Go Back"
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Back",
                                     props.preferredLanguages,
@@ -265,6 +261,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             />
                         ) : (
                             <MoreHoriz
+                                aria-label="More Menu"
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.More",
                                     props.preferredLanguages,
@@ -292,6 +289,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 {props.bookLanguages.length > 1 && (
                     <IconButton
                         className={controlButtonClass}
+                        aria-label="Choose Language"
                         color={"secondary"}
                         onClick={() => {
                             setLanguageMenuOpen(true);
@@ -315,6 +313,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                 {!props.videoPreviewMode && (
                     <IconButton
                         color="secondary"
+                        aria-label="PlayPause"
                         onClick={() => {
                             if (props.pausedChanged) {
                                 props.pausedChanged(!props.paused);
@@ -334,6 +333,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         >
                             {document.fullscreenElement == null ? (
                                 <Fullscreen
+                                    aria-label="Full Screen"
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.FullScreen",
                                         props.preferredLanguages,
@@ -342,6 +342,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                                 />
                             ) : (
                                 <FullscreenExit
+                                    aria-label="Exit Full Screen"
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.ExitFullScreen",
                                         props.preferredLanguages,

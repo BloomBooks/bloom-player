@@ -25,12 +25,7 @@ import { IconButton } from "@material-ui/core";
 //tslint:disable-next-line:no-submodule-imports
 import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
 import { LocalizationManager } from "./l10n/localizationManager";
-import {
-    withStyles,
-    makeStyles,
-    createMuiTheme
-} from "@material-ui/core/styles";
-import { MuiThemeProvider } from "@material-ui/core/styles";
+import { withStyles, createTheme } from "@material-ui/core/styles";
 // We don't want to call this thing a slider in Bloom Player, because the control that actually holds
 // the pages is already known as a slider, so the two would get confused.
 import DragBar from "@material-ui/core/Slider";
@@ -678,7 +673,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     // We can do a stylesheet trick to make the icon itself white, but the only way I can find
     // to also affect the hover shadow is to make a very local theme that just applies to the
     // overlay button.
-    const bigButtonOverlayTheme = createMuiTheme({
+    const bigButtonOverlayTheme = createTheme({
         palette: {
             primary: { main: "#000", contrastText: "#FFF" },
             secondary: { main: "#FFF" }
