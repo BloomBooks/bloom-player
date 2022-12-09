@@ -5,11 +5,12 @@
 // in a Bloom page.
 
 import { ActivityContext } from "./ActivityContext";
+import { IActivityObject } from "./activityManager";
 
 // Because we don't actually talk to the activity, this class doesn't do anything,
 // it just adapts the iframe to the bloom-player activity system.
 
-export default class IframeActivity {
+export default class IframeActivity implements IActivityObject {
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
     // we are using a javascript class to make sure that we get a fresh start,
@@ -21,7 +22,7 @@ export default class IframeActivity {
         console.log("iframe activity constructed");
     }
     // Do just those things that we only want to do once per read of the book.
-    public prepare(activityContext: ActivityContext) {}
+    public initializePageHtml(activityContext: ActivityContext) {}
     public showingPage() {
         console.log("iframe activity showingPage");
     }

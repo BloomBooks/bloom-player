@@ -19,7 +19,7 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
     constructor(pageElement: HTMLElement) {}
 
     // Do just those things that we only want to do once per read of the book.
-    public prepare(activityContext: ActivityContext) {}
+    public initializePageHtml(activityContext: ActivityContext) {}
 
     public showingPage(activityContext: ActivityContext) {
         this.activityContext = activityContext;

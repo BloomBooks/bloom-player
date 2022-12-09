@@ -84,11 +84,6 @@ export default class Narration {
         this.swiperInstance = newSwiperInstance;
     }
 
-    private currentLang: string;
-    public setCurrentLanguage(activeLanguageCode: string): void {
-        this.currentLang = activeLanguageCode;
-    }
-
     // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
     // As long as there is audio on the page, this method will play it.
     public playAllSentences(page: HTMLElement | null): void {
@@ -897,83 +892,33 @@ export default class Narration {
               );
     }
 
-    // When changing the language on a page, this function may be called before the DOM is
-    // fully displayed, so we can't depend on simply testing display to determine whether
-    // an editable div is visible and thus a playable div.  Firefox 60 initializes
-    // display="block" for all editable divs while newer browsers initialize it to null.
-    // The optional isForPlayButtonDisplay indicates (if true) that all the caller wants is
-    // a non-empty array if the Play button is supposed to be displayed and the divs returned
-    // will not actually be played.
-    private getPlayableDivs(
-        container: HTMLElement,
-        isForPlayButtonDisplay?: boolean
-    ) {
+    private getPlayableDivs(container: HTMLElement) {
         // We want to play any audio we have from divs the user can see.
         // This is a crude test, but currently we always use display:none to hide unwanted languages.
-        const editables = this.findAll(".bloom-editable", container);
-        if (
-            navigator.userAgent.indexOf("Firefox/60.0") > -1 &&
-            // Firefox 60 initializes display="block" everywhere instead of display=null.
-            // So, we check whether display="block" is set in all editable divs and return
-            // an empty array if we're retrieving divs to actually play.
-            // The normal rules are followed to allow the play button to show.  Of course,
-            // if there isn't any audio on this page, it may show the play button when
-            // it shouldn't, but working with obsolete software, one can't have everything...
-            !isForPlayButtonDisplay &&
-            !editables.some(e => window.getComputedStyle(e).display !== "block")
-        ) {
-            // All of them are 'block', so nothing has been settled yet for actual visibility
-            // and thus playability.  Things will work okay if the user decides to click on
-            // the Play button later since the display="none" styles will have been set by then.
-            return [];
-        }
-        return editables.filter(e => {
-            const display = window.getComputedStyle(e).display;
-            if (display && display !== "none") return true;
-            // We want the div for the current language even if display has not yet been set,
-            // but only in the case where we're trying to determine whether to display the
-            // Play button.  (Note, Firefox 60 never reaches this line in the code.)
-            return (
-                isForPlayButtonDisplay &&
-                !display &&
-                e.lang &&
-                e.lang === this.currentLang
-            );
-        });
-    }
-
-    // Optional page param is for use when 'playerPage' has NOT been initialized.
-    // Not using the optional param assumes 'playerPage' has been initialized
-    // Optional isForPlayButtonDisplay param indicates that we want the results only
-    // to control the display of the Play button.
-    private getPagePlayableDivs(
-        page?: HTMLElement,
-        isForPlayButtonDisplay?: boolean
-    ): HTMLElement[] {
-        return this.getPlayableDivs(
-            page ? page : this.playerPage,
-            isForPlayButtonDisplay
+        return this.findAll(".bloom-editable", container).filter(
+            e => window.getComputedStyle(e).display !== "none"
         );
     }
 
-    // Optional page param is for use when 'playerPage' has NOT been initialized.
+    // Optional param is for use when 'playerPage' has NOT been initialized.
     // Not using the optional param assumes 'playerPage' has been initialized
-    // Optional isForPlayButtonDisplay param indicates that we want the results only
-    // to control the display of the Play button.
-    private getPageAudioElements(
-        page?: HTMLElement,
-        isForPlayButtonDisplay?: boolean
-    ): HTMLElement[] {
+    private getPagePlayableDivs(page?: HTMLElement): HTMLElement[] {
+        return this.getPlayableDivs(page ? page : this.playerPage);
+    }
+
+    // Optional param is for use when 'playerPage' has NOT been initialized.
+    // Not using the optional param assumes 'playerPage' has been initialized
+    private getPageAudioElements(page?: HTMLElement): HTMLElement[] {
         return [].concat.apply(
             [],
-            this.getPagePlayableDivs(page, isForPlayButtonDisplay).map(x =>
+            this.getPagePlayableDivs(page).map(x =>
                 this.findAll(".audio-sentence", x, true)
             )
         );
     }
 
     public pageHasAudio(page: HTMLElement): boolean {
-        return this.getPageAudioElements(page, true).length ? true : false;
+        return this.getPageAudioElements(page).length ? true : false;
     }
 
     public play() {

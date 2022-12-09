@@ -28,7 +28,9 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
     }
 
     // Do just those things that we only want to do once per read of the book.
-    public prepare(activityContext: ActivityContext) {
+    // In the current implementation of activityManager, this is operating on a copy of the page html,
+    // NOT the real DOM the user will eventually interact with.
+    public initializePageHtml(activityContext: ActivityContext) {
         // These flags may be set for the edit-time experience. Remove them now that we're actually going to do the activity.
         activityContext.pageElement
             .querySelectorAll(".chosen-correct, .chosen-wrong")
