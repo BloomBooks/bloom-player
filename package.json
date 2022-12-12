@@ -36,6 +36,7 @@
         "build-dev": "shx rm -rf dist/ && webpack --config webpack.config.js",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest",
+        "test-storybook": "test-storybook --url http://localhost:9009",
         "//publish-clean": "strips out the scripts, dependencies, etc and then does `npm publish`",
         "publish-clean": "clean-publish"
     },
