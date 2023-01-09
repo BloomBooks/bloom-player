@@ -31,6 +31,7 @@ import { withStyles, createTheme } from "@material-ui/core/styles";
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./narration";
+import { roundToNearestEven } from "./utilities/mathUtils";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -91,6 +92,8 @@ interface IProps {
     startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
+    // the host, e.g. bloomdesktop, bloomlibrary, etc.
+    host?: string;
 }
 
 // This logic is not straightforward...
@@ -421,6 +424,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const pageHeight = landscape
             ? localMaxPageDimension * localAspectRatio
             : localMaxPageDimension;
+        const pageWidth = landscape
+            ? localMaxPageDimension
+            : localMaxPageDimension * localAspectRatio;
+
         // The current height of whatever must share the page with the adjusted document
         // At one point this could include some visible controls.
         // It almost works to compute
@@ -445,16 +452,17 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         }
         // How high the document needs to be to make it and the controls fit the window
         const desiredPageHeight = winHeight - controlsHeight;
-        let scaleFactor = desiredPageHeight / pageHeight;
+        const verticalScaleFactor = getVerticalScaleFactor({
+            pageWidth,
+            pageHeight,
+            desiredPageHeight
+        });
 
         // Similarly compute how we'd have to scale to fit horizontally.
         // Not currently trying to allow for controls left or right of page.
-        const pageWidth = landscape
-            ? localMaxPageDimension
-            : localMaxPageDimension * localAspectRatio;
         const desiredPageWidth = document.body.offsetWidth;
         const horizontalScaleFactor = desiredPageWidth / pageWidth;
-        scaleFactor = Math.min(scaleFactor, horizontalScaleFactor);
+        let scaleFactor = Math.min(verticalScaleFactor, horizontalScaleFactor);
         const actualPageHeight = pageHeight * scaleFactor;
 
         let width = (actualPageHeight * localAspectRatio) / scaleFactor;
@@ -470,6 +478,13 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         let newOutsideButtonPageClass = "";
 
         let leftMargin = Math.max((winWidth - pageWidth * scaleFactor) / 2, 0);
+
+        if (props.host?.toLowerCase() === "bloomdesktop") {
+            // In BloomDesktop, if leftMargin is not divisible by 2, there may be a small gap between the page and the prev/next buttons.
+            // Setting transform-origin to "left" (instead of the default center) is related to this somehow.
+            // See BL-11497
+            leftMargin = roundToNearestEven(leftMargin);
+        }
 
         // We may need to adjust scaleFactor and leftMargin to leave extra space for buttons;
         // see below. But on touch devices we usually don't need buttons and can use the
@@ -558,6 +573,40 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         if (!pageScaled) {
             setPageScaled(true);
         }
+    };
+
+    const getVerticalScaleFactor = (params: {
+        pageWidth: number;
+        pageHeight: number;
+        desiredPageHeight: number;
+    }) => {
+        const { pageWidth, pageHeight, desiredPageHeight } = params;
+        const verticalScaleFactorRaw = desiredPageHeight / pageHeight;
+
+        if (props.host?.toLowerCase() !== "bloomdesktop") {
+            // In most cases, we can just return this as is, the intuitive way.
+            return verticalScaleFactorRaw;
+        }
+
+        // Complicated way for BloomDesktop quirk (BL-11497)
+        //
+        // Now we've got the vertical scale factor in the intuitive way.
+        // However, if the post-scaling numbers produce fractional widths in the wrong way,
+        // we may see minor visual discrepancies in the BloomDesktop publish preview
+        // where a 1-pixel column of the next page is visible (either permanently or sometimes)
+        // or where the 1-pixel column is a blend of colors instead of a pure column.
+        // This can be fixed by tweaking the vertical scale factor so that
+        // the scaled horizontal numbers end up as whole numbers (at the expense of the vertical numbers)
+        // Given the left-to-right layout of both the prev/next buttons as well as the different pages of the book,
+        // it's problematic for the horizontal numbers to be fractional, but there seems to be no harm for the vertical numbers to be fractional
+        // since there's no neighboring page above, just a big swatch of background color where a fractional pixel
+        // off doesn't make any noticeable difference.
+        const impliedScaledPageWidth = pageWidth * verticalScaleFactorRaw;
+        const roundedScaledPageWidth = roundToNearestEven(
+            impliedScaledPageWidth
+        );
+        const verticalScaleFactorAdjusted = roundedScaledPageWidth / pageWidth;
+        return verticalScaleFactorAdjusted;
     };
 
     useEffect(() => {
@@ -997,6 +1046,7 @@ export function InitBloomPlayerControls() {
                 )}
                 startPage={startPage}
                 autoplayCount={autoplayCount}
+                host={getQueryStringParamAndUnencode("host")}
             />
         </ThemeProvider>,
         document.getElementById("root")

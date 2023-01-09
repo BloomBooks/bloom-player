@@ -108,6 +108,7 @@ function AddBloomPlayerStory(
                 extraButtons={extraButtons}
                 // startPage={1}
                 // autoplayCount={3}
+                host="testing"
             />
         );
     });
