@@ -465,7 +465,6 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // how much horizontal space do we have to spare, in the scaled pixels
         // which control the button size?
         const widthMargin = winWidth / scaleFactor - width;
-        const player = document.getElementsByClassName("bloomPlayer")[0];
         // To put the buttons outside, we need twice @navigationButtonWidth,
         // as defined in bloom-player.less.
         let newOutsideButtonPageClass = "";
