@@ -8,7 +8,7 @@ module.exports = merge(common, {
     devServer: {
         static: { directory: "./dist" },
         client: {
-            overlay: true
+            overlay: { errors: true, warnings: false }
         },
         devMiddleware: {
             index: "../index.html",
