@@ -6,10 +6,14 @@ module.exports = merge(common, {
     mode: "development",
     devtool: "source-map",
     devServer: {
-        contentBase: "./dist",
-        index: "../index.html",
-        writeToDisk: true,
-        overlay: true
+        static: { directory: "./dist" },
+        client: {
+            overlay: true
+        },
+        devMiddleware: {
+            index: "../index.html",
+            writeToDisk: true
+        }
     },
     plugins: [
         // Note: CopyPlugin says to use forward slashes.        // Note: the empty "to" options mean to just go to the output folder, which is "dist/"
