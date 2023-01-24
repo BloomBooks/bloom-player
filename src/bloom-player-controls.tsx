@@ -19,7 +19,8 @@ import React, { useState, useEffect, useRef, LegacyRef } from "react";
 import LangData from "./langData";
 import {
     getQueryStringParamAndUnencode,
-    getBooleanUrlParam
+    getBooleanUrlParam,
+    getNumericUrlParam
 } from "./utilities/urlUtils";
 import { IconButton } from "@material-ui/core";
 //tslint:disable-next-line:no-submodule-imports
@@ -31,7 +32,7 @@ import { withStyles, createTheme } from "@material-ui/core/styles";
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./narration";
-import { roundToNearestEven } from "./utilities/mathUtils";
+import { roundToNearestK } from "./utilities/mathUtils";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -92,8 +93,32 @@ interface IProps {
     startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
-    // the host, e.g. bloomdesktop, bloomlibrary, etc.
-    host?: string;
+    // Advanced and optional
+    // In some contexts (like BloomDesktop), fractional pixels can cause an annoying little column
+    // at the border of the page and the prev/next buttons.
+    // You may see the next page peeking through,
+    // or a sliver of background color between the two elements instead of the elements being flush.
+    // Ensuring round numbers or numbers divisible by a certain amount can help fix the misalignment.
+    // It is upon the caller to figure out if this is necessary/if so, what it should be rounded to.
+    // (It's very complicated for bloom-player to generalize what rounding is necessary)
+    // See BL-11497
+    //
+    // If defined to a positive number, the pageWidth will be rounded such that they are divisible by the specified number
+    // Undefined means "no rounding" (default behavior)
+    roundPageWidthToNearestK?: number | undefined;
+    // Advanced and optional
+    // In some contexts (like BloomDesktop), fractional pixels can cause an annoying little column
+    // at the border of the page and the prev/next buttons.
+    // You may see the next page peeking through,
+    // or a sliver of background color between the two elements instead of the elements being flush.
+    // Ensuring round numbers or numbers divisible by a certain amount can help fix the misalignment.
+    // It is upon the caller to figure out if this is necessary/if so, what it should be rounded to.
+    // (It's very complicated for bloom-player to generalize what rounding is necessary)
+    // See BL-11497
+    //
+    // If defined to a positive number, the left and right margin will be rounded such that they are divisible by the specified number
+    // Undefined means "no rounding" (default behavior)
+    roundMarginToNearestK?: number | undefined;
 }
 
 // This logic is not straightforward...
@@ -458,10 +483,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             desiredPageHeight
         });
 
-        // Similarly compute how we'd have to scale to fit horizontally.
-        // Not currently trying to allow for controls left or right of page.
-        const desiredPageWidth = document.body.offsetWidth;
-        const horizontalScaleFactor = desiredPageWidth / pageWidth;
+        const horizontalScaleFactor = getHorizontalScaleFactor(pageWidth);
         let scaleFactor = Math.min(verticalScaleFactor, horizontalScaleFactor);
         const actualPageHeight = pageHeight * scaleFactor;
 
@@ -479,11 +501,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
         let leftMargin = Math.max((winWidth - pageWidth * scaleFactor) / 2, 0);
 
-        if (props.host?.toLowerCase() === "bloomdesktop") {
+        if (props.roundMarginToNearestK) {
             // In BloomDesktop, if leftMargin is not divisible by 2, there may be a small gap between the page and the prev/next buttons.
-            // Setting transform-origin to "left" (instead of the default center) is related to this somehow.
-            // See BL-11497
-            leftMargin = roundToNearestEven(leftMargin);
+            // The pixelDensityMultiplier and setting transform-origin to "left" (instead of the default center) are related to this somehow,
+            // but the relationship is not clear.  See BL-11497
+            leftMargin = roundToNearestK(
+                leftMargin,
+                props.roundMarginToNearestK
+            );
         }
 
         // We may need to adjust scaleFactor and leftMargin to leave extra space for buttons;
@@ -583,7 +608,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const { pageWidth, pageHeight, desiredPageHeight } = params;
         const verticalScaleFactorRaw = desiredPageHeight / pageHeight;
 
-        if (props.host?.toLowerCase() !== "bloomdesktop") {
+        if (!props.roundPageWidthToNearestK) {
             // In most cases, we can just return this as is, the intuitive way.
             return verticalScaleFactorRaw;
         }
@@ -602,11 +627,27 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // since there's no neighboring page above, just a big swatch of background color where a fractional pixel
         // off doesn't make any noticeable difference.
         const impliedScaledPageWidth = pageWidth * verticalScaleFactorRaw;
-        const roundedScaledPageWidth = roundToNearestEven(
-            impliedScaledPageWidth
+        const roundedScaledPageWidth = roundToNearestK(
+            impliedScaledPageWidth,
+            props.roundPageWidthToNearestK
         );
         const verticalScaleFactorAdjusted = roundedScaledPageWidth / pageWidth;
         return verticalScaleFactorAdjusted;
+    };
+
+    // Similarly compute how we'd have to scale to fit horizontally.
+    // Not currently trying to allow for controls left or right of page.
+    const getHorizontalScaleFactor = (pageWidth: number) => {
+        let desiredPageWidth = document.body.offsetWidth;
+
+        if (props.roundPageWidthToNearestK) {
+            desiredPageWidth = roundToNearestK(
+                desiredPageWidth,
+                props.roundPageWidthToNearestK
+            );
+        }
+
+        return desiredPageWidth / pageWidth;
     };
 
     useEffect(() => {
@@ -1046,7 +1087,12 @@ export function InitBloomPlayerControls() {
                 )}
                 startPage={startPage}
                 autoplayCount={autoplayCount}
-                host={getQueryStringParamAndUnencode("host")}
+                roundPageWidthToNearestK={getNumericUrlParam(
+                    "roundPageWidthToNearestK"
+                )}
+                roundMarginToNearestK={getNumericUrlParam(
+                    "roundMarginToNearestK"
+                )}
             />
         </ThemeProvider>,
         document.getElementById("root")

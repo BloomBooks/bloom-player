@@ -35,7 +35,6 @@ const MotionBookTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
         }
         initialLanguageCode="fr"
         autoplay={"motion"}
-        host="testing"
     />
 );
 
@@ -133,7 +132,6 @@ const DavidAndGoliathTemplate: ComponentStory<typeof BloomPlayerControls> = args
             "https://s3.amazonaws.com/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
         }
         initialLanguageCode="en"
-        host="testing"
     />
 );
 
@@ -231,7 +229,6 @@ const BigFishTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
             "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
         }
         initialLanguageCode="tpi"
-        host="testing"
     />
 );
 
