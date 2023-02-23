@@ -586,6 +586,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         this.props.activeLanguageCode)
             ) {
                 this.updateDivVisibilityByLangCode();
+                this.updateOverlayPositionsByLangCode();
                 // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
                 // If we haven't called it, it will get called subsequently.
                 if (this.finishUpCalled) {
@@ -1214,6 +1215,76 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.music.play();
                 }
             }
+        }
+    }
+
+    private getAllPrimaryImageContainersOnPage() {
+        const unfilteredContainers = this.htmlElement?.ownerDocument.getElementsByClassName(
+            "bloom-imageContainer"
+        );
+        if (!unfilteredContainers) {
+            return [];
+        }
+        return Array.from(unfilteredContainers).filter(
+            (el: Element) =>
+                el.parentElement!.closest(".bloom-imageContainer") === null
+        ) as HTMLElement[];
+    }
+
+    private updateOverlayPositionsByLangCode(): void {
+        if (!this.props.activeLanguageCode || !this.htmlElement) {
+            return; // shouldn't happen, just a precaution
+        }
+        try {
+            const langVernacular = this.props.activeLanguageCode;
+            this.getAllPrimaryImageContainersOnPage().forEach(container => {
+                Array.from(
+                    container.getElementsByClassName("bloom-textOverPicture")
+                ).forEach(top => {
+                    const editable = Array.from(
+                        top.getElementsByClassName("bloom-editable")
+                    ).find(e => e.getAttribute("lang") === langVernacular);
+                    if (editable) {
+                        const alternatesString = editable.getAttribute(
+                            "data-bubble-alternate"
+                        );
+                        if (alternatesString) {
+                            const alternate = JSON.parse(
+                                alternatesString.replace(/`/g, '"')
+                            ) as IAlternate;
+                            top.setAttribute("style", alternate.style);
+                        }
+                    }
+                });
+                // If we have an alternate SVG for this language, activate it.
+                const altSvg = Array.from(
+                    container.getElementsByClassName("comical-alternate")
+                ).find(svg => svg.getAttribute("data-lang") === langVernacular);
+                // if we don't find one, don't need to do anything.
+                // Possibly this image container doesn't have overlays. Possibly
+                // the right svg is already switched to be the active one. Possibly the
+                // book was made by an older version of Bloom without multilingual overlay
+                // support.
+                if (altSvg) {
+                    const currentSvg = container.getElementsByClassName(
+                        "comical-generated"
+                    )[0];
+                    if (currentSvg) {
+                        // should always be true
+                        // demote it to alternate
+                        currentSvg.classList.remove("comical-generated");
+                        currentSvg.classList.add("comical-alternate");
+                        currentSvg.setAttribute("style", "display: none");
+                    }
+                    // and promote the alternate to live
+                    altSvg.classList.remove("comical-alternate");
+                    altSvg.classList.add("comical-generated");
+                    altSvg.removeAttribute("style");
+                }
+            });
+        } catch (ex) {
+            // So, we can't position the bubbles just right. Shouldn't be too big a disaster.
+            console.error(ex);
         }
     }
 
@@ -2830,4 +2901,12 @@ function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
         null
     );
     return imgDescParas.snapshotLength > 0;
+}
+
+// Relevant part of the interface we expect for the object stored as json in data-bubble-alternates.
+// (There is more structure inside tails, but BP doesn't even use the tails data at all.)
+interface IAlternate {
+    lang: string;
+    style: string;
+    tails: object[];
 }
