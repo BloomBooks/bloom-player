@@ -694,6 +694,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         }
         LangData.selectNewLanguageCode(languageData, newActiveLanguageCode);
         setActiveLanguageCode(newActiveLanguageCode);
+
+        // Stops playback of the old language
+        //
+        // Note: This should be safe when changing the language after the initial load.
+        // This function isn't currently called when the book is first loaded
+        // But, if it ever were, I'm not so sure that ${paused} should always be set to true.
+        // Sometimes the book is supposed to start playing immediately upon load, no?
+        setPaused(true);
     };
 
     const updateControlsWhenOpeningNewBook = (
@@ -866,9 +874,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
                 activeLanguageCode={activeLanguageCode}
-                onLanguageChanged={(isoCode: string) =>
-                    handleLanguageChanged(isoCode)
-                }
+                onLanguageChanged={handleLanguageChanged}
                 canShowFullScreen={!props.hideFullScreenButton}
                 extraButtons={props.extraButtons}
                 bookHasImageDescriptions={bookHasImageDescriptions}

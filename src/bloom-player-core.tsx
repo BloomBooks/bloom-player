@@ -948,6 +948,29 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(
                         BloomPlayerCore.currentPageIndex
                     );
+
+                    // When the language changes, we also want to update
+                    // whether the page has audio, music, video, etc.
+                    // so that BloomPlayerControls can update whether ${showPlayPause} should be true or not.
+                    if (
+                        this.props.reportPageProperties &&
+                        BloomPlayerCore.currentPage
+                    ) {
+                        BloomPlayerCore.currentPageHasVideo = Video.pageHasVideo(
+                            BloomPlayerCore.currentPage
+                        );
+
+                        // Informs containing react controls (in the same frame)
+                        this.props.reportPageProperties({
+                            hasAudio: this.narration.pageHasAudio(
+                                BloomPlayerCore.currentPage
+                            ),
+                            hasMusic: this.music.pageHasMusic(
+                                BloomPlayerCore.currentPage
+                            ),
+                            hasVideo: BloomPlayerCore.currentPageHasVideo
+                        });
+                    }
                 }, 200);
             }
         }
