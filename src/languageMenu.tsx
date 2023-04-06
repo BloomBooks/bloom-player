@@ -15,7 +15,7 @@ import LangData from "./langData";
 
 interface ILanguageMenuProps {
     languages: LangData[];
-    onClose: (value: string) => void;
+    onClose: (value: string) => void; // Handler that runs when the menu closes. ${value} is the ISO code of the language the user selected, or "" if no change was made.
 }
 
 export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = props => {

@@ -866,9 +866,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
                 activeLanguageCode={activeLanguageCode}
-                onLanguageChanged={(isoCode: string) =>
-                    handleLanguageChanged(isoCode)
-                }
+                onLanguageChanged={handleLanguageChanged}
                 canShowFullScreen={!props.hideFullScreenButton}
                 extraButtons={props.extraButtons}
                 bookHasImageDescriptions={bookHasImageDescriptions}

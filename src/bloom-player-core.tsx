@@ -943,11 +943,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }, 500);
         } else {
             if (BloomPlayerCore.currentPage) {
-                // We need to replace the old currentPage with the corresponding one created from the updated content.
                 window.setTimeout(() => {
-                    BloomPlayerCore.currentPage = this.getPageAtSwiperIndex(
-                        BloomPlayerCore.currentPageIndex
-                    );
+                    // Presumably, the language was just changed.
+                    // Reset the index / re-show the page
+                    // Even though we're setting it to the same index, setIndex and showingPage have other useful/necessary side effects such as:
+                    // * Replace BloomPlayerCore.currentPage with the new page created from the updated content
+                    // * Update the Play/Pause button visibility based on the new language
+                    // * Stops the playback of the old language's audio (if in Play mode)
+                    // * Starts the playback of the new language's audio (if in Play mode)
+                    // * Update whether scrollbars should appear
+                    // * etc.
+                    this.setIndex(BloomPlayerCore.currentPageIndex);
+                    this.showingPage(BloomPlayerCore.currentPageIndex);
                 }, 200);
             }
         }
