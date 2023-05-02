@@ -95,6 +95,7 @@ interface IProps {
         canRotate: boolean;
         preferredLanguages: string[];
         pageNumbers: string[]; // one per page, from data-page-number; some empty
+        isRtl: boolean;
     }) => void;
 
     // 'controlsCallback' feeds information about the book's contents and other things
@@ -158,7 +159,9 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
-    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    // This is based on logical page order, not the (possibly reversed) order we show them.
+    startPage?: number;
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
 }
@@ -777,13 +780,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const page = pages[i] as HTMLElement;
             const pageId = page.getAttribute("id");
             if (pageId) {
-                pageMap[pageId] = i;
+                pageMap[pageId] = this.metaDataObject.isRtl
+                    ? pages.length - 1 - i
+                    : i;
             }
             const landscape = this.setPageSizeClass(page);
 
             // this used to be done for us by react-slick, but swiper does not.
             // Since it's used by at least page-api code, it's easiest to just stick it in.
             page.setAttribute("data-index", i.toString(10));
+            const pageNumbers = Array.from(pages).map(
+                p => p.getAttribute("data-page-number") ?? ""
+            );
+            if (this.metaDataObject.isRtl) {
+                pageNumbers.reverse();
+            }
             // Now we have all the information we need to call reportBookProps if it is set.
             if (i === 0 && this.props.reportBookProperties) {
                 // Informs containing react controls (in the same frame)
@@ -796,9 +807,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // We pass these up to the client, typically for use in the page number control.
                     // This allows the page numbers it shows as labels to reflect the actual page numbers shown on the
                     // page, which typically don't correspond to the page index, since xmatter pages are not numbered.
-                    pageNumbers: Array.from(pages).map(
-                        p => p.getAttribute("data-page-number") ?? ""
-                    )
+                    pageNumbers,
+                    isRtl: this.metaDataObject.isRtl
                 });
             }
             if (isNewBook) {
@@ -840,6 +850,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             ) {
                 swiperContent.push(page.outerHTML);
             }
+        }
+        if (this.metaDataObject.isRtl) {
+            // I don't like this much, but actually reversing the pages is the only way I can think
+            // of to make the page-turning animations work properly. The pages have to be laid
+            // out in reverse order in the (mostly-hidden) div that gets clipped to show the current
+            // pages or the transition.
+            swiperContent.reverse();
         }
         if (this.props.showContextPages) {
             swiperContent.push(""); // blank page to fill the space right of last.
@@ -893,7 +910,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 pageIdToIndexMap: pageMap,
                 styleRules: combinedStyle,
                 isLoading: false,
-                currentSwiperIndex: this.props.startPage ?? 0
+                currentSwiperIndex: adjustStartPage(
+                    this.props.startPage,
+                    swiperContent.length,
+                    this.metaDataObject.isRtl
+                )
             });
         } else {
             this.setState({
@@ -914,7 +935,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 this.startingUpSwiper = false; // transition phase is over
 
-                var startPage = this.props.startPage ?? 0;
+                var startPage = adjustStartPage(
+                    this.props.startPage,
+                    swiperContent.length,
+                    this.metaDataObject.isRtl
+                );
                 // console.log(
                 //     "setting index and page to " +
                 //         startPage +
@@ -1976,6 +2001,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         this.narration.setIncludeImageDescriptions(
             this.props.shouldReadImageDescriptions && this.hasImageDescriptions
         );
+        const startPage = adjustStartPage(
+            this.props.startPage,
+            this.state.pages.length,
+            this.metaDataObject.isRtl
+        );
         const swiperParams: any = {
             // This is how we'd expect to make the next/prev buttons show up.
             // However, swiper puts them inside the swiper-container div, which has position:relative
@@ -2070,7 +2100,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // of the slide to show.) (There's possibly some drastic redesign that would let the
             // current page be a fully controlled paramter. But maybe not...react-id-slider is a
             // thin layer over something that isn't fully React.)
-            swiperParams.activeSlideKey = this.props.startPage?.toString();
+            swiperParams.activeSlideKey = startPage.toString();
         }
 
         let bloomPlayerClass = "bloomPlayer";
@@ -2090,6 +2120,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         } else if (showNavigationButtonsEvenOnTouchDevices) {
             bloomPlayerClass += " showNavigationButtonsEvenOnTouchDevices";
+        }
+
+        var prevPageLabel = LocalizationManager.getTranslation(
+            "Button.Prev",
+            this.props.preferredUiLanguages,
+            "Previous Page"
+        );
+        var nextPageLabel = LocalizationManager.getTranslation(
+            "Button.Next",
+            this.props.preferredUiLanguages,
+            "Next Page"
+        );
+        if (this.metaDataObject.isRtl) {
+            const temp = prevPageLabel;
+            prevPageLabel = nextPageLabel;
+            nextPageLabel = temp;
         }
 
         // multiple classes help make rules more specific than those in the book's stylesheet
@@ -2225,13 +2271,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     focus, but it isn't placed correctly on our buttons for
                     some reason */}
                     <IconButton className={"nav-button"} disableRipple={true}>
-                        <ArrowBack
-                            titleAccess={LocalizationManager.getTranslation(
-                                "Button.Prev",
-                                this.props.preferredUiLanguages,
-                                "Previous Page"
-                            )}
-                        />
+                        <ArrowBack titleAccess={prevPageLabel} />
                     </IconButton>
                 </div>
                 <div
@@ -2251,13 +2291,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }}
                 >
                     <IconButton className={"nav-button"} disableRipple={true}>
-                        <ArrowForward
-                            titleAccess={LocalizationManager.getTranslation(
-                                "Button.Next",
-                                this.props.preferredUiLanguages,
-                                "Next Page"
-                            )}
-                        />
+                        <ArrowForward titleAccess={nextPageLabel} />
                     </IconButton>
                 </div>
             </div>
@@ -2314,13 +2348,32 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (this.shouldAutoPlay()) {
             const autoplayCount = this.props.autoplayCount ?? 0;
-            const startPage = this.props.startPage ?? 0;
-            const lastPage = this.swiperInstance.slides.length - 1;
-            let lastPageToAutoplay = this.props.autoplayCount
-                ? Math.min(startPage + autoplayCount - 1, lastPage)
-                : lastPage;
+            const isRtl = this.metaDataObject.isRtl;
+            const startPage = adjustStartPage(
+                this.props.startPage,
+                this.state.pages.length,
+                isRtl
+            );
+            const lastPage = isRtl ? 0 : this.swiperInstance.slides.length - 1;
+            let lastPageToAutoPlay = lastPage;
+            if (this.props.autoplayCount) {
+                if (isRtl) {
+                    lastPageToAutoPlay = Math.max(
+                        startPage - autoplayCount + 1,
+                        0
+                    );
+                } else {
+                    lastPageToAutoPlay = Math.min(
+                        startPage + autoplayCount - 1,
+                        lastPage
+                    );
+                }
+            }
+            let reachedLastPage = isRtl
+                ? this.swiperInstance.activeIndex <= lastPageToAutoPlay
+                : this.swiperInstance.activeIndex >= lastPageToAutoPlay;
 
-            if (this.swiperInstance.activeIndex >= lastPageToAutoplay) {
+            if (reachedLastPage) {
                 // Stop any music that is still playing. The book is done. (Also helps with accuracy of reportSoundsLogged).
                 this.music.pause();
                 if (this.props.shouldReportSoundLog) {
@@ -2329,7 +2382,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 clearSoundLog();
                 reportPlaybackComplete({});
             } else {
-                this.swiperInstance.slideNext();
+                if (isRtl) {
+                    this.swiperInstance.slidePrev();
+                } else {
+                    this.swiperInstance.slideNext();
+                }
             }
         }
     };
@@ -2908,6 +2965,19 @@ function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
         null
     );
     return imgDescParas.snapshotLength > 0;
+}
+
+export function adjustStartPage(
+    startPage: number | undefined,
+    pageCount: number,
+    isRtl: boolean
+): number {
+    var start = startPage ?? 0;
+    if (isRtl) {
+        return pageCount - 1 - start;
+    } else {
+        return start;
+    }
 }
 
 // Relevant part of the interface we expect for the object stored as json in data-bubble-alternates.

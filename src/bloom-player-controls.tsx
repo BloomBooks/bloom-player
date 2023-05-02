@@ -2,7 +2,7 @@
 BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to preview the
 book inside of the Bloom:Publish:Android screen.
 */
-import { BloomPlayerCore } from "./bloom-player-core";
+import { BloomPlayerCore, adjustStartPage } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
 import {
     onBackClicked,
@@ -175,6 +175,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     // default is to center BP vertically; various versions of blorg should pass this as false.
     const doVerticalCentering =
         props.centerVertically === undefined ? true : props.centerVertically;
+    const [pageNumbers, setPageNumbers] = useState([""]);
+    const [isRtl, setIsRtl] = useState(false);
 
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
     // And now (BL-9871) we allow activities to manipulate our controls too.
@@ -192,9 +194,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 setAutoplay(data.autoplay);
             }
         } else if (data.reset) {
-            setPageNumberControlPos(props.startPage ?? 0);
+            // I'm not 100% sure this can't be called before we have pageNumbers, but if it is,
+            // isRtl will have its default value of false, which means the length is not used.
+            const resetTo = adjustStartPage(
+                props.startPage,
+                pageNumbers?.length,
+                isRtl
+            );
+            setPageNumberControlPos(resetTo);
             if (pageNumberSetter.current) {
-                pageNumberSetter.current(props.startPage ?? 0);
+                pageNumberSetter.current(resetTo);
             }
         } else if (data.controlAction) {
             handleControlMessage(data.controlAction as string);
@@ -208,9 +217,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     );
 
     const [pageNumberControlPos, setPageNumberControlPos] = useState(
+        // We would like to use adjustStartPage here, but in the initial render we don't
+        // yet know whether the book is RTL or how many pages it has, so we can't.
+        // If necessary it will get adjusted when we get that information from the
+        // bloom-player-core component.
         props.startPage ?? 0
     );
-    const [pageNumbers, setPageNumbers] = useState([""]);
     const [hidingNavigationButtons, setHidingNavigationButtons] = useState(
         false
     );
@@ -359,6 +371,16 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             page = currentSwiperElt.getElementsByClassName(
                 "bloom-page"
             )[0] as HTMLElement;
+            if (!page) {
+                // At one point when I was working on the right-to-left mode, things got out of alignment
+                // somehow, so that the swiper-slide-active wass not on the right element during startup.
+                // This led to an infinite loop trying to find a bloom-page on an empty swiper page.
+                // But at this stage, all pages have the right orientation, so we can afford to use any
+                // real page we can find. I decided to leave this fall-back in for robustness.
+                page = document.getElementsByClassName(
+                    "bloom-page"
+                )[0] as HTMLElement;
+            }
         }
         // note that these are independent: we could have received a pageStylesInstalled signal, but
         // the page isn't loaded in the slider yet.
@@ -903,6 +925,18 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         [uiLang].concat(bookProps.preferredLanguages)
                     );
                     setPageNumbers(bookProps.pageNumbers);
+                    if (bookProps.isRtl) {
+                        // The bloom-player-core has reversed the pages, so we can scroll through them
+                        // in the 'right' order with animations. So the index of the first page
+                        // we want to see will be different from the index in reading order.
+                        setPageNumberControlPos(
+                            adjustStartPage(
+                                props.startPage,
+                                bookProps.pageNumbers.length,
+                                bookProps.isRtl
+                            )
+                        );
+                    }
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
@@ -965,7 +999,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     }
                 }}
                 shouldReportSoundLog={props.shouldReportSoundLog}
-                startPage={props.startPage}
+                startPage={props.startPage} // core will handle RTL itself
                 autoplayCount={props.autoplayCount}
             />
             {showAppBar && !props.videoPreviewMode && (
