@@ -825,6 +825,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         }
     })(DragBar);
 
+    const theme = createTheme({
+        direction: "rtl"
+    });
+
     return (
         <div
             className="reactRoot"
@@ -970,36 +974,38 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             />
             {showAppBar && !props.videoPreviewMode && (
                 <div id="pageNumberControl" className="MuiToolbar-gutters">
-                    <PageChooserBar
-                        valueLabelDisplay="on"
-                        min={1}
-                        max={pageNumbers.length}
-                        step={1}
-                        disabled={hidingNavigationButtons}
-                        defaultValue={pageNumberControlPos + 1}
-                        // tempting to use onChange here, which would make the pages try to follow
-                        // But this gets difficult, because most of the invisible pages are stubs
-                        // until we select them. And even if we could get them instantiated as needed,
-                        // continuous scrolling would probably be too slow to allow the page number control to be
-                        // responsive. So wait until we release.
-                        onChangeCommitted={(ev, val: number) => {
-                            if (val - 1 != pageNumberControlPos) {
-                                setPageNumberControlPos(val - 1);
-                                if (pageNumberSetter.current) {
-                                    pageNumberSetter.current(val - 1);
+                    <ThemeProvider theme={theme}>
+                        <PageChooserBar
+                            valueLabelDisplay="on"
+                            min={1}
+                            max={pageNumbers.length}
+                            step={1}
+                            disabled={hidingNavigationButtons}
+                            defaultValue={pageNumberControlPos + 1}
+                            // tempting to use onChange here, which would make the pages try to follow
+                            // But this gets difficult, because most of the invisible pages are stubs
+                            // until we select them. And even if we could get them instantiated as needed,
+                            // continuous scrolling would probably be too slow to allow the page number control to be
+                            // responsive. So wait until we release.
+                            onChangeCommitted={(ev, val: number) => {
+                                if (val - 1 != pageNumberControlPos) {
+                                    setPageNumberControlPos(val - 1);
+                                    if (pageNumberSetter.current) {
+                                        pageNumberSetter.current(val - 1);
+                                    }
                                 }
-                            }
-                        }}
-                        valueLabelFormat={(val, index) => {
-                            return pageNumbers[val - 1];
-                        }}
-                        marks={[
-                            {
-                                value: pageNumbers.length,
-                                label: pageNumbers.length.toString()
-                            }
-                        ]}
-                    />
+                            }}
+                            valueLabelFormat={(val, index) => {
+                                return pageNumbers[val - 1];
+                            }}
+                            marks={[
+                                {
+                                    value: pageNumbers.length,
+                                    label: pageNumbers.length.toString()
+                                }
+                            ]}
+                        />
+                    </ThemeProvider>
                 </div>
             )}
         </div>

@@ -116,7 +116,7 @@ We just make them follow the main content normally. */
     // these buttons are positioned relative to the slider, our preview.
     // Usually the buttons are outside the slider, just touching it; but this
     // takes them outside our phone's display. This puts them just inside it.
-    .swiper-button-next {
+    .swiper-button-right {
         border-radius: @button-radius 0 0 @button-radius;
         // The white icons (hover) were produced from artwork/page right icon.svg by
         // - saving in inkscape as plain svg,
@@ -134,7 +134,7 @@ We just make them follow the main content normally. */
         //     background-image: url("data:image/svg+xml,%3Csvg xmlns:dc='http://purl.org/dc/elements/1.1/' xmlns:cc='http://creativecommons.org/ns%23' xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns%23' xmlns:svg='http://www.w3.org/2000/svg' xmlns='http://www.w3.org/2000/svg' id='svg8' version='1.1' viewBox='0 0 27.970858 38.994908' height='38.994907mm' width='27.970858mm'%3E%3Cdefs id='defs2' /%3E%3Cmetadata id='metadata5'%3E%3Crdf:RDF%3E%3Ccc:Work rdf:about=''%3E%3Cdc:format%3Eimage/svg+xml%3C/dc:format%3E%3Cdc:type rdf:resource='http://purl.org/dc/dcmitype/StillImage' /%3E%3Cdc:title%3E%3C/dc:title%3E%3C/cc:Work%3E%3C/rdf:RDF%3E%3C/metadata%3E%3Cg transform='translate(-141.18819,-97.448151)' id='layer1'%3E%3Cpath id='path828' d='m 149.59443,97.63443 -7.81763,7.81763 11.02487,11.42578 -11.42577,11.09168 8.15171,8.28536 19.44386,-19.5775 z' style='fill:%23ffffff;stroke:%23ffffff;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1' /%3E%3C/g%3E%3C/svg%3E");
         // }
     }
-    .swiper-button-prev {
+    .swiper-button-left {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
         // Not quite sure why this is needed on the left button and not the right;
@@ -251,11 +251,11 @@ We just make them follow the main content normally. */
 
 .bloomPlayer.smallOutsideButtons,
 .bloomPlayer.largeOutsideButtons {
-    .swiper-button-next {
+    .swiper-button-right {
         // curved on right, flush on left.
         border-radius: 0 @button-radius @button-radius 0;
     }
-    .swiper-button-prev {
+    .swiper-button-left {
         // curved on left, flush on right.
         border-radius: @button-radius 0 0 @button-radius;
     }
@@ -274,13 +274,13 @@ We just make them follow the main content normally. */
 
 @smallButtonSize: 0.8em;
 .bloomPlayer:not(.largeOutsideButtons) {
-    .swiper-button-next {
+    .swiper-button-right {
         right: 0;
         button {
             padding-left: 2px;
         }
     }
-    .swiper-button-prev {
+    .swiper-button-left {
         left: 0;
         button {
             padding-right: 2px;
@@ -306,10 +306,10 @@ We just make them follow the main content normally. */
     .swiper-button-prev {
         width: @smallNavigationButtonWidth;
     }
-    .swiper-button-next {
+    .swiper-button-right {
         right: -1 * @smallNavigationButtonWidth;
     }
-    .swiper-button-prev {
+    .swiper-button-left {
         left: -1 * @smallNavigationButtonWidth;
     }
 }
@@ -318,10 +318,10 @@ We just make them follow the main content normally. */
     .swiper-button-prev {
         width: @largeNavigationButtonWidth;
     }
-    .swiper-button-next {
+    .swiper-button-right {
         right: -1 * @largeNavigationButtonWidth;
     }
-    .swiper-button-prev {
+    .swiper-button-left {
         left: -1 * @largeNavigationButtonWidth;
     }
 }
@@ -450,6 +450,16 @@ We just make them follow the main content normally. */
     .swiper-button-prev {
         display: none;
     }
+}
+
+// These two override rules I can't find that I think must be in Swiper itself
+// somewhere and which mess things up in RTL mode.
+.bloomPlayer .swiper-button-prev.swiper-button-right {
+    left: unset !important;
+}
+
+.bloomPlayer .swiper-button-next.swiper-button-left {
+    right: unset !important;
 }
 
 /* override the rule in bloom-preview that puts a border at the bottom of each page
