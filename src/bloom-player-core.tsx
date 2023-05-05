@@ -88,6 +88,7 @@ interface IProps {
     // possible we might want it if we end up with rotation-related controls. Note that the
     // same information is made available via postMessage if the control's window has a parent.
     reportBookProperties?: (properties: {
+        isRtl: boolean;
         landscape: boolean;
         // Logical additions, but we don't need them yet and they cost something to compute
         // hasActivities: boolean;
@@ -798,7 +799,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // page, which typically don't correspond to the page index, since xmatter pages are not numbered.
                     pageNumbers: Array.from(pages).map(
                         p => p.getAttribute("data-page-number") ?? ""
-                    )
+                    ),
+                    isRtl: this.metaDataObject.isRtl
                 });
             }
             if (isNewBook) {

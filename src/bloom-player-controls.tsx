@@ -211,6 +211,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         props.startPage ?? 0
     );
     const [pageNumbers, setPageNumbers] = useState([""]);
+    const [isRtl, setIsRtl] = useState(false);
     const [hidingNavigationButtons, setHidingNavigationButtons] = useState(
         false
     );
@@ -829,6 +830,39 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         direction: "rtl"
     });
 
+    const pageChooserBar = (
+        <PageChooserBar
+            valueLabelDisplay="on"
+            min={1}
+            max={pageNumbers.length}
+            step={1}
+            disabled={hidingNavigationButtons}
+            defaultValue={pageNumberControlPos + 1}
+            // tempting to use onChange here, which would make the pages try to follow
+            // But this gets difficult, because most of the invisible pages are stubs
+            // until we select them. And even if we could get them instantiated as needed,
+            // continuous scrolling would probably be too slow to allow the page number control to be
+            // responsive. So wait until we release.
+            onChangeCommitted={(ev, val: number) => {
+                if (val - 1 != pageNumberControlPos) {
+                    setPageNumberControlPos(val - 1);
+                    if (pageNumberSetter.current) {
+                        pageNumberSetter.current(val - 1);
+                    }
+                }
+            }}
+            valueLabelFormat={(val, index) => {
+                return pageNumbers[val - 1];
+            }}
+            marks={[
+                {
+                    value: pageNumbers.length,
+                    label: pageNumbers.length.toString()
+                }
+            ]}
+        />
+    );
+
     return (
         <div
             className="reactRoot"
@@ -907,6 +941,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         [uiLang].concat(bookProps.preferredLanguages)
                     );
                     setPageNumbers(bookProps.pageNumbers);
+                    setIsRtl(bookProps.isRtl);
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={p => {
@@ -974,38 +1009,13 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             />
             {showAppBar && !props.videoPreviewMode && (
                 <div id="pageNumberControl" className="MuiToolbar-gutters">
-                    <ThemeProvider theme={theme}>
-                        <PageChooserBar
-                            valueLabelDisplay="on"
-                            min={1}
-                            max={pageNumbers.length}
-                            step={1}
-                            disabled={hidingNavigationButtons}
-                            defaultValue={pageNumberControlPos + 1}
-                            // tempting to use onChange here, which would make the pages try to follow
-                            // But this gets difficult, because most of the invisible pages are stubs
-                            // until we select them. And even if we could get them instantiated as needed,
-                            // continuous scrolling would probably be too slow to allow the page number control to be
-                            // responsive. So wait until we release.
-                            onChangeCommitted={(ev, val: number) => {
-                                if (val - 1 != pageNumberControlPos) {
-                                    setPageNumberControlPos(val - 1);
-                                    if (pageNumberSetter.current) {
-                                        pageNumberSetter.current(val - 1);
-                                    }
-                                }
-                            }}
-                            valueLabelFormat={(val, index) => {
-                                return pageNumbers[val - 1];
-                            }}
-                            marks={[
-                                {
-                                    value: pageNumbers.length,
-                                    label: pageNumbers.length.toString()
-                                }
-                            ]}
-                        />
-                    </ThemeProvider>
+                    {isRtl ? (
+                        <ThemeProvider theme={theme}>
+                            {pageChooserBar}
+                        </ThemeProvider>
+                    ) : (
+                        pageChooserBar
+                    )}
                 </div>
             )}
         </div>
