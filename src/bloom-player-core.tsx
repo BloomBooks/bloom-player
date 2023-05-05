@@ -88,6 +88,7 @@ interface IProps {
     // possible we might want it if we end up with rotation-related controls. Note that the
     // same information is made available via postMessage if the control's window has a parent.
     reportBookProperties?: (properties: {
+        isRtl: boolean;
         landscape: boolean;
         // Logical additions, but we don't need them yet and they cost something to compute
         // hasActivities: boolean;
@@ -798,7 +799,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // page, which typically don't correspond to the page index, since xmatter pages are not numbered.
                     pageNumbers: Array.from(pages).map(
                         p => p.getAttribute("data-page-number") ?? ""
-                    )
+                    ),
+                    isRtl: this.metaDataObject.isRtl
                 });
             }
             if (isNewBook) {
@@ -1987,6 +1989,22 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // },
             getSwiper: s => {
                 this.swiperInstance = s;
+                if (this.metaDataObject.isRtl && this.swiperInstance) {
+                    // These kluges cause swiper to display the pages in reverse order.
+                    // We are digging deep into the current implementation of Swiper; this might
+                    // not work with any other version.
+                    // The latest Swiper apparently has a method to do this. We should use it,
+                    // even if this still works, if we upgrade. But when we upgrade, we really want
+                    // to switch to the React support that is now provided by the core Swiper
+                    // component. And that is currently in transition as Swiper converts to a
+                    // web component. It doesn't feel like a good time to attempt the conversion.
+                    this.swiperInstance.el?.setAttribute("dir", "rtl");
+                    // These two steps for some reason don't seem to be needed when loading an RTL
+                    // book in storybook, but in Bloom Editor preview, without them, we get
+                    // blank content for all but the first page.
+                    this.swiperInstance.rtl = true;
+                    this.swiperInstance.rtlTranslate = true;
+                }
             },
             simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
             touchStartPreventDefault: false, // If true, would prevent the default, which would cause niceScroll not to receive mousedown events.
@@ -2208,7 +2226,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </Swiper>
                 <div
                     className={
-                        "swiper-button-prev" +
+                        "swiper-button-prev " +
+                        (this.metaDataObject.isRtl
+                            ? "swiper-button-right"
+                            : "swiper-button-left") +
                         (this.props.hideSwiperButtons ||
                         this.state.currentSwiperIndex === 0
                             ? " swiper-button-disabled"
@@ -2225,18 +2246,31 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     focus, but it isn't placed correctly on our buttons for
                     some reason */}
                     <IconButton className={"nav-button"} disableRipple={true}>
-                        <ArrowBack
-                            titleAccess={LocalizationManager.getTranslation(
-                                "Button.Prev",
-                                this.props.preferredUiLanguages,
-                                "Previous Page"
-                            )}
-                        />
+                        {this.metaDataObject.isRtl ? (
+                            <ArrowForward
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.Prev",
+                                    this.props.preferredUiLanguages,
+                                    "Previous Page"
+                                )}
+                            />
+                        ) : (
+                            <ArrowBack
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.Prev",
+                                    this.props.preferredUiLanguages,
+                                    "Previous Page"
+                                )}
+                            />
+                        )}
                     </IconButton>
                 </div>
                 <div
                     className={
-                        "swiper-button-next" +
+                        "swiper-button-next " +
+                        (this.metaDataObject.isRtl
+                            ? "swiper-button-left"
+                            : "swiper-button-right") +
                         (this.props.hideSwiperButtons ||
                         this.state.currentSwiperIndex >=
                             this.state.pages.length - 1
@@ -2251,13 +2285,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }}
                 >
                     <IconButton className={"nav-button"} disableRipple={true}>
-                        <ArrowForward
-                            titleAccess={LocalizationManager.getTranslation(
-                                "Button.Next",
-                                this.props.preferredUiLanguages,
-                                "Next Page"
-                            )}
-                        />
+                        {this.metaDataObject.isRtl ? (
+                            <ArrowBack
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.Next",
+                                    this.props.preferredUiLanguages,
+                                    "Next Page"
+                                )}
+                            />
+                        ) : (
+                            <ArrowForward
+                                titleAccess={LocalizationManager.getTranslation(
+                                    "Button.Next",
+                                    this.props.preferredUiLanguages,
+                                    "Next Page"
+                                )}
+                            />
+                        )}
                     </IconButton>
                 </div>
             </div>
