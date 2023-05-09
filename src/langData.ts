@@ -318,15 +318,25 @@ export default class LangData {
             if (mainDiv.classList.contains(audioClass)) {
                 return true;
             }
-            const audioSpan = body.ownerDocument!.evaluate(
+            const audioSpans = body.ownerDocument!.evaluate(
                 ".//span[contains(@class, '" + audioClass + "')]",
                 mainDiv,
                 null,
-                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
                 null
-            ).singleNodeValue;
-            if (audioSpan) {
-                return true;
+            );
+            // An audio sentence only counts as in this language if the CLOSEST
+            // lang attribute matches. Sometimes mainDiv is something further out,
+            // in which case, that audioSpan can't qualify the book as having audio
+            // in that language.
+            for (let jdx = 0; jdx < audioSpans.snapshotLength; jdx++) {
+                const audioSpan = audioSpans.snapshotItem(jdx) as HTMLElement;
+                if (
+                    audioSpan.closest("[lang]")?.getAttribute("lang") ===
+                    isoCode
+                ) {
+                    return true;
+                }
             }
         }
         return false;
