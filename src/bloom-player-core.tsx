@@ -50,6 +50,10 @@ import {
     kLocalStorageBookUrlKey
 } from "./bloomPlayerAnalytics";
 import { autoPlayType } from "./bloom-player-controls";
+import {
+    setCurrentPage,
+    setPlayerUrlPrefix
+} from "./activities/dragActivities/dragActivityNarration";
 
 export enum PlaybackMode {
     NewPage, // starting a new page ready to play
@@ -463,12 +467,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ? this.sourceUrl
                     : this.sourceUrl + "/" + filename + ".htm";
 
-                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
+                let urlPrefixT = haveFullPath
                     ? this.sourceUrl.substring(
                           0,
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
+                if (!urlPrefixT.startsWith("http")) {
+                    // Only in storybook with local books?
+                    urlPrefixT = window.location.origin + "/" + urlPrefixT;
+                }
+                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = urlPrefixT;
+                setPlayerUrlPrefix(this.music.urlPrefix);
                 // Note: this does not currently seem to work when using the storybook fileserver.
                 // I hypothesize that it automatically filters files starting with a period,
                 // so asking for .distribution fails even if the local book folder (e.g., Testing
@@ -2829,6 +2839,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
+        setCurrentPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
@@ -2842,6 +2853,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     sentBloomNotification: boolean = false;
 
     public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
+        if (this.activityManager.getActivityManagesSound()) {
+            return; // we don't just want to play them all, the activity code will do it selectively.
+        }
         BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPlaying;
         if (!bloomPage) return;
         this.narration.setSwiper(this.swiperInstance);

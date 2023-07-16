@@ -128,5 +128,10 @@
             "scripts",
             "engines"
         ]
+    },
+    "packageManager": "yarn@1.22.19",
+    "volta": {
+        "node": "16.14.0",
+        "yarn": "1.22.19"
     }
 }
