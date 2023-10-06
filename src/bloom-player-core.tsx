@@ -1887,6 +1887,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     }
                 }
             });
+
+            // A ":root" selector doesn't work in this scoped css context.
+            // Change all ":root" references to ".bloomPlayer-page", which is the level just above .bloom-page.
+            // We're using this instead of .bloom-page directly so that a selector like `:root .bloom-page` would still work.
+            combinedStyle = combinedStyle.replace(
+                /:root/g,
+                ".bloomPlayer-page"
+            );
             return combinedStyle;
         } catch (err) {
             this.HandleLoadingError(err);
