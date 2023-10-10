@@ -526,7 +526,11 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             newOutsideButtonPageClass = "largeOutsideButtons";
         } else if (widthMargin > smallNavigationButtonWidth * 2) {
             newOutsideButtonPageClass = "smallOutsideButtons";
-        } else if (winWidth > 407 && navigator.userAgent.includes("Chrome")) {
+        } else if (
+            winWidth > 407 &&
+            navigator.userAgent.includes("Chrome") &&
+            !props.hideSwiperButtons
+        ) {
             // This nasty kludge is to work around a bug in Chrome 85.
             // In browsers based on that engine, when the next-page button is overlaid on
             // the page and the window is more than 407px wide, it disappears (BL-8936; see also BL-8944).
@@ -535,10 +539,21 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             // (below that, the bug doesn't happen, and screen space is more precious).
             // Some style rules suppress the shrinking on touch devices except for activity pages,
             // since we don't need to show the buttons at all.
-            scaleFactor *= 0.9;
-            leftMargin = Math.max((winWidth - pageWidth * scaleFactor) / 2, 0);
-            newOutsideButtonPageClass =
-                "smallOutsideButtons extraScalingForChrome85Bug";
+            // The bug had been fixed in Chrome by version 90 according to my testing.  (Chrome is
+            // at version 117 at the time of this writing.  Nothing between version 86 and 90 was
+            // available to download for testing, and 86 dev still had the bug.)
+            const versionMatch = new RegExp(" Chrome/([0-9]+).");
+            const matchArray = versionMatch.exec(navigator.userAgent);
+            const version = parseInt(matchArray![1]);
+            if (version && version < 90) {
+                scaleFactor *= 0.9;
+                leftMargin = Math.max(
+                    (winWidth - pageWidth * scaleFactor) / 2,
+                    0
+                );
+                newOutsideButtonPageClass =
+                    "smallOutsideButtons extraScalingForChrome85Bug";
+            }
         }
         if (newOutsideButtonPageClass !== outsideButtonPageClass) {
             setOutsideButtonPageClass(newOutsideButtonPageClass);
