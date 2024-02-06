@@ -208,7 +208,8 @@ interface IPlayerPageOptions {
 }
 
 const kSelectorForPotentialNiceScrollElements =
-    ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on";
+    ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on, " +
+    ".scrollable"; // we added .scrollable for branding cases where the boilerplate text also needs to scroll
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
