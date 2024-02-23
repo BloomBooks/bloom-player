@@ -62,11 +62,20 @@ above the page so that page numbers will increment.*/
     display: inline-block;
     white-space: pre-wrap;
 }
-// Note: :not(classA, classB) syntax not supported by some browsers, notably FF60.
-// Use :not(classB):not(classB) syntax instead!!!
-span.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight),
-div.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight) p {
+
+span.ui-audioCurrent,
+div.ui-audioCurrent p {
     background-color: @audioHighlighting;
+}
+
+// To override highlighting color rules both above and from the book itself
+// We originally did this with :not() clauses in the previous rule, but that
+// made it too specific so the user couldn't override the color, and even if
+// we used :where() to make it less specific, the correction wouldn't have
+// applied to the user's custom-colored highlights
+.ui-suppressHighlight,
+.ui-disableHighlight {
+    background-color: transparent !important;
 }
 
 .ui-audioCurrent .ui-enableHighlight {
