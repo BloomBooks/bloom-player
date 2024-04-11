@@ -587,7 +587,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     prevProps.activeLanguageCode !==
                         this.props.activeLanguageCode)
             ) {
-                this.updateDivVisibilityByLangCode();
+                this.updateDivVisibilityByLangCode(prevState.isLoading);
                 this.updateOverlayPositionsByLangCode();
                 // If we have previously called finishup, we need to call it again to set the swiper pages correctly.
                 // If we haven't called it, it will get called subsequently.
@@ -824,7 +824,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.bookInfo.questionCount++;
                 }
             }
-            this.showOrHideTitle2AndL1OnlyText(page, usingDefaultLang);
+            this.showOrHideL1OnlyText(page, usingDefaultLang);
 
             // look for activities on this page
             const isActivity = isActivityPage(page);
@@ -963,31 +963,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    // If a book is displayed in its original language, the author may well want to also see a title
-    // in the corresponding national language. Typically default rules or author styles will make
-    // the two titles appropriate sizes.
-    // When the user selects a different language, showing the published national language as well is
-    // less appropriate. It may not be the national language of any country where the chosen language
-    // is spoken. Worse, the book may have been published in a monolingual collection, where the
-    // vernacular and national languages are the same. When a different language is chosen,
-    // what was originally a single, possibly very large, title in the book's only language
-    // suddenly becomes a (possibly smaller) title in the chosen language followed by a possibly
-    // larger one in the original language (previously marked both bloom-content1 and
-    // bloom-contentNational1, now with just the second class making it visible).
-    // We decided (BL-9256) that Title-On-Cover should not display in the national language
-    // unless we are displaying the book's default language or unless the national language IS
-    // the main one we're showing (that is, it has bloom-content1 as well as bloom-contentNational1).
-    //
-    // Later, we also added the book language and topic to this because we are only able to display
-    // them in L1. So if the user changes languages, we hide the incorrect language and the topic
-    // which would otherwise be displayed in the wrong language. BL-11133.
+    // If a book is displayed in some language other than the one it was primarily published in,
+    // We don't show the topic or the book language, because we are only able to display
+    // them in L1, and in fact the language would be wrong. So if the user changes languages,
+    // we hide the incorrect language and the topic. BL-11133.
     //
     // Don't be tempted to achieve this by returning conditionally created rules from assembleStyleSheets.
     // That was our original implementation, but if state.styleRules gets set more than once for a book,
     // it wreaks havoc on scoped styles. See BL-9504.
-    private showOrHideTitle2AndL1OnlyText(page: Element, show: boolean) {
+    private showOrHideL1OnlyText(page: Element, show: boolean) {
         page.querySelectorAll(
-            ".Title-On-Cover-style.bloom-contentNational1, .Title-On-Title-Page-style.bloom-contentNational1, .coverBottomBookTopic, .coverBottomLangName"
+            ".coverBottomBookTopic, .coverBottomLangName"
         ).forEach(elementToShowOrHide => {
             // bloom-content1 should never be hidden here, nor should anything if show is true.
             if (
@@ -1298,12 +1284,31 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    // Go through all .bloom-editable divs turning visibility off/on based on the activeLanguage (isoCode).
-    // When using the language chooser, the activeLanguage should be treated as if it were the L1/Vernacular language
-    private updateDivVisibilityByLangCode(): void {
+    // If a book is displayed in its original language, the author may well want to also see a title
+    // in the corresponding national language. Typically default rules or author styles will make
+    // the two titles appropriate sizes. And the original design of the book may support showing
+    // two or even three languages in each content block.
+    // When the user selects a different language, showing the published national language as well is
+    // less appropriate. It may not be the national language of any country where the chosen language
+    // is spoken. Worse, the book may have been published in a monolingual collection, where the
+    // vernacular and national languages are the same. When a different language is chosen,
+    // what was originally a single, possibly very large, title in the book's only language
+    // suddenly becomes a (possibly smaller) title in the chosen language followed by a possibly
+    // larger one in the original language (previously marked both bloom-content1 and
+    // bloom-contentNational1, now with just the second class making it visible).
+    // And the chosen language may take up more space than the original language, so bi- or tri-lingual
+    // content blocks may overflow.
+    // We decided (BL-9256) that in fields that display the book's primary language (V or auto),
+    // if the user has chosen a different language, we will only show that chosen language.
+    private updateDivVisibilityByLangCode(firstRunForThisBook: boolean): void {
         if (!this.props.activeLanguageCode || !this.htmlElement) {
             return; // shouldn't happen, just a precaution
         }
+
+        const bookLanguages = this.bookInfo.getPreferredTranslationLanguages();
+        const usingDefaultLang =
+            bookLanguages[0] === this.props.activeLanguageCode ||
+            !this.props.activeLanguageCode;
 
         // The newly selected language will be treated as the new, current vernacular language.
         // (It may or may not be the same as the original vernacular language at the time of publishing)
@@ -1336,6 +1341,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             const dataDefaultLangs = dataDefaultLangsAttr
                 ? dataDefaultLangsAttr.split(/,| /)
                 : [];
+            const isVernacularBlock =
+                dataDefaultLangs == null ||
+                dataDefaultLangs.length === 0 ||
+                !dataDefaultLangs[0] ||
+                dataDefaultLangs.includes("V") ||
+                BloomPlayerCore.areStringsEqualInvariantCultureIgnoreCase(
+                    dataDefaultLangs[0],
+                    "auto"
+                );
 
             const childElts = groupElement.childNodes;
             for (let iEdit = 0; iEdit < childElts.length; iEdit++) {
@@ -1347,85 +1361,42 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 ) {
                     continue;
                 }
-
-                const divLang = divElement.getAttribute("lang");
-
-                const shouldShow = BloomPlayerCore.shouldNormallyShowEditable(
-                    divLang || "",
-                    dataDefaultLangs,
-                    langVernacular,
-                    divElement
-                );
-
-                if (shouldShow) {
-                    divElement.classList.add(visibilityClass);
-
-                    // Note: Well, the BloomDesktop C# code technically removes anything beginning with "bloom-visibility-code"
-                    // before checking if should show,
-                    // but handling just the "-on" and "-off" suffixes seems sufficient and makes the code simpler.
-                    divElement.classList.remove("bloom-visibility-code-off");
-                } else {
-                    divElement.classList.remove(visibilityClass);
+                if (firstRunForThisBook) {
+                    // Assume Bloom-desktop got it right. Save the classes it set.
+                    divElement.setAttribute(
+                        "data-original-class",
+                        divElement.getAttribute("class") || ""
+                    );
+                } else if (usingDefaultLang) {
+                    // go back to the original classes from bloom desktop
+                    divElement.setAttribute(
+                        "class",
+                        divElement.getAttribute("data-original-class") || ""
+                    );
+                } else if (isVernacularBlock) {
+                    // only the one that matches activeLanguage should be visible
+                    const lang = divElement.getAttribute("lang");
+                    if (lang === langVernacular) {
+                        divElement.classList.add(visibilityClass);
+                        // We don't want any behavior triggered by things like bloom-contentNational1, for example.
+                        // It may be that language, but in this state it's more important that it is the selected book language.
+                        Array.from(divElement.classList).forEach(className => {
+                            if (className.startsWith("bloom-content")) {
+                                divElement.classList.remove(className);
+                            }
+                        });
+                        // Depending on whether the field is controlled by the appearance system, one of these
+                        // classes may activate style rules appropriate to the main book language.
+                        divElement.classList.add("bloom-content1");
+                        divElement.classList.add("bloom-contentFirst");
+                    } else {
+                        divElement.classList.remove(visibilityClass);
+                        // We don't care about the other classes since it isn't going to be seen at all.
+                    }
                 }
-
-                // Since we potentially change the Language1 (aka Vernacular language), we should ideally update which divs have bloom-content1
-                // In addition to maintaining consistency, it also allows divs in the new L1 to receive L1-specific CSS.
-                //     e.g. the title receives special formatting if it contains "bloom-content1" class
-                // Another benefit is that if the old L3 becomes the new L1, then having "bloom-content1" applied
-                //     allows the new L1 divs to appear above the L2 in diglot books, whereas if not then the new L1 would be below old L2
-                if (divLang === langVernacular) {
-                    divElement.classList.add("bloom-content1");
-                } else {
-                    divElement.classList.remove("bloom-content1");
-                }
+                // (If it's not a vernacular block, the choices originally made by Bloom-desktop are still correct.)
+                // (Well, there are a couple of exceptions, handled by showOrHideL1OnlyText)
             }
-        }
-    }
-
-    // Returns true if the editable should be visible.
-    // The "Normally" means ignoring user overrides via .bloom-visibility-user-on/off
-    //   Note: Even though there were some plans for user overrides, it doesn't seem like it's actually really supported / working.
-    //   So, this function should be responsible for basically entirely determining the visibility.
-    //
-    // This function is modeled as much as possible on BloomDesktop's src/BloomExe/Book/TranslationGroupManager.cs ShouldNormallyShowEditable()
-    private static shouldNormallyShowEditable(
-        lang: string, // The language of the editable in question
-        dataDefaultLanguages: string[] | null | undefined,
-        settingsLang1: string,
-        divElement: HTMLElement
-    ): boolean {
-        const matchesContent2 = divElement.classList.contains("bloom-content2");
-        const matchesContent3 = divElement.classList.contains("bloom-content3");
-
-        if (
-            dataDefaultLanguages == null ||
-            dataDefaultLanguages.length === 0 ||
-            !dataDefaultLanguages[0] ||
-            this.areStringsEqualInvariantCultureIgnoreCase(
-                dataDefaultLanguages[0],
-                "auto"
-            )
-        ) {
-            return lang === settingsLang1 || matchesContent2 || matchesContent3;
-        } else {
-            // Note there are (perhaps unfortunately) two different labelling systems, but they have a 1-to-1 correspondence:
-            // The V/N1/N2 system feels natural in vernacular book contexts
-            // The L1/L2/L3 system is more natural in source book contexts.
-            return (
-                (lang === settingsLang1 &&
-                    dataDefaultLanguages.includes("V")) ||
-                (lang === settingsLang1 &&
-                    dataDefaultLanguages.includes("L1")) ||
-                (this.isDivInL2(divElement) &&
-                    dataDefaultLanguages.includes("N1")) ||
-                (this.isDivInL2(divElement) &&
-                    dataDefaultLanguages.includes("L2")) ||
-                (this.isDivInL3(divElement) &&
-                    dataDefaultLanguages.includes("N2")) ||
-                (this.isDivInL3(divElement) &&
-                    dataDefaultLanguages.includes("L3")) ||
-                dataDefaultLanguages.includes(lang) // a literal language id, e.g. "en" (used by template starter)
-            );
         }
     }
 
