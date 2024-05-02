@@ -50,7 +50,6 @@ interface IProps {
     showBackButton: boolean;
     hideFullScreenButton: boolean;
     centerVertically?: boolean;
-    showContextPages?: boolean;
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
     initialLanguageCode?: string;
     // when used in the Bloom Editor video recording publish panel, initializes the state of various
@@ -935,7 +934,6 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 ref={coreRef as LegacyRef<BloomPlayerCore>}
                 url={props.url}
                 landscape={windowLandscape}
-                showContextPages={props.showContextPages}
                 paused={paused}
                 preferredUiLanguages={preferredUiLanguages}
                 pageStylesAreNowInstalled={() => {
