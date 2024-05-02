@@ -73,7 +73,6 @@ interface IProps {
     // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
     url: string;
     landscape: boolean; // whether viewing as landscape or portrait
-    showContextPages?: boolean;
     // ``paused`` allows the parent to control pausing of audio. We expect we may supply
     // a click/touch event callback if needed to support pause-on-touch.
     paused?: boolean;
@@ -736,9 +735,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         const pages = this.htmlElement.getElementsByClassName("bloom-page");
         const swiperContent: string[] = [];
-        if (this.props.showContextPages) {
-            swiperContent.push(""); // blank page to fill the space left of first.
-        }
         if (isNewBook) {
             this.bookInfo.totalNumberedPages = 0;
             this.bookInfo.questionCount = 0;
@@ -810,8 +806,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // but due to a bug (BL-7303) many published books may have that on back-matter pages.
                 const hasPageNum = page.classList.contains("numberedPage");
                 if (hasPageNum) {
-                    this.indexOflastNumberedPage =
-                        i + (this.props.showContextPages ? 1 : 0);
+                    this.indexOflastNumberedPage = i;
                     this.bookInfo.totalNumberedPages++;
                 }
                 if (
@@ -843,9 +838,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             ) {
                 swiperContent.push(page.outerHTML);
             }
-        }
-        if (this.props.showContextPages) {
-            swiperContent.push(""); // blank page to fill the space right of last.
         }
         if (isNewBook) {
             const head = this.htmlElement.getElementsByTagName("head")[0];
@@ -2127,10 +2119,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         return (
                             <div
                                 key={index}
-                                className={
-                                    "page-preview-slide " +
-                                    this.getSlideClass(index)
-                                }
+                                className={"page-preview-slide"}
                                 onClick={e => {
                                     if (
                                         !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
@@ -2366,21 +2355,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             autoPlay = false;
         }
         return autoPlay;
-    }
-
-    // Get a class to apply to a particular slide. This is used to apply the
-    // contextPage class to the slides before and after the current one.
-    private getSlideClass(itemIndex: number): string {
-        if (!this.props.showContextPages) {
-            return "";
-        }
-        if (
-            itemIndex === this.state.currentSwiperIndex ||
-            itemIndex === this.state.currentSwiperIndex + 2
-        ) {
-            return "contextPage";
-        }
-        return "";
     }
 
     // Called from slideChangeTransitionStart
