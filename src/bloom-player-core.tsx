@@ -10,7 +10,9 @@ import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
 import "style-scoped/scoped.min.js";
 import "swiper/dist/css/swiper.min.css";
-import "./bloom-player.less";
+import "./bloom-player-ui.less";
+import "./bloom-player-content.less";
+import "./bloom-player-pre-appearance-system-book.less";
 import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
@@ -229,7 +231,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // we are ready to start any audio or animation. Its purpose is twofold:
     // - during this phase, we want to force swiper to be on the desired startPage.
     // Once we're done with that process, we want to allow it to move.
-    // - during this phase, we tyically get notifications that swiper is on, or moving to,
+    // - during this phase, we typically get notifications that swiper is on, or moving to,
     // the current page. These normally trigger audio and animation-related side effects. We don't
     // want those until we're ready to start.
     // Note: this is very similar to the !state.isFinishUpForNewBookComplete but at the moment
@@ -1674,7 +1676,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         //
         // Previously, this conditionally included some file:// urls for Android which were
         // conditionally included because they caused problems for Safari on iOS. That is why
-        // they are here instead of bloom-player.less. In their current state,
+        // they are here instead of bloom-player-content.less. In their current state,
         // I believe they could be moved there. But we may need conditional logic again...
         stylesheet.innerText = `
             @font-face {
@@ -1802,6 +1804,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.makeFontStylesheet(fullHref);
             } else {
                 promises.push(axios.get(fullHref));
+                if (fullHref.endsWith("/appearance.css")) {
+                    this.bookInfo.hasAppearanceSystem = true;
+                }
             }
         }
         const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
@@ -2159,8 +2164,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             // The above will put in the class attribute that was on the body
                                             // now we want to overwrite that with those same classes, but add
                                             // this bloomPlayer-page one.
-                                            className={`bloomPlayer-page ${this
-                                                .state.importedBodyAttributes[
+                                            className={`bloomPlayer-page ${
+                                                this.bookInfo
+                                                    .hasAppearanceSystem
+                                                    ? "appearance-system"
+                                                    : ""
+                                            } ${this.state
+                                                .importedBodyAttributes[
                                                 "class"
                                             ] ?? ""}`}
                                             // Note: the contents of `slide` are what was in the .htm originally.
