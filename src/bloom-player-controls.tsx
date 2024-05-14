@@ -496,7 +496,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // which control the button size?
         const widthMargin = winWidth / scaleFactor - width;
         // To put the buttons outside, we need twice @navigationButtonWidth,
-        // as defined in bloom-player.less.
+        // as defined in bloom-player-ui.less.
         let newOutsideButtonPageClass = "";
 
         let leftMargin = Math.max((winWidth - pageWidth * scaleFactor) / 2, 0);
@@ -517,7 +517,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const leftMarginDevice = leftMargin;
         const scaleFactorDevice = scaleFactor;
 
-        // should match that defined in bloom-player.less
+        // should match that defined in bloom-player-ui.less
         const smallNavigationButtonWidth = 30;
         const largeNavigationButtonWidth = 100;
         if (widthMargin > largeNavigationButtonWidth * 2) {

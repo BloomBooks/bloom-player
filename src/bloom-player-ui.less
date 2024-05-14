@@ -1,13 +1,12 @@
-/* These rules mostly tweak fixed print layouts, currently enforcing 16x9 layout,
-like Bloom Reader, and overriding rules, mainly from previewMode.css, that we don't
-want in this control.
-Much of it could go away if we exclude previewMode.css, or if we end up with a server
-process which produces an htm file in the Bloom Reader state, or if we re-architect so
-there is some simple way like a root class to toggle a book's appearance to BR mode.*/
+/*
+ These rules style the bloom-player UI itself.
+
+ Do not include rules which modify the book content here.
+ Those belong in bloom-player-content.less. Or better yet, in the book.
+*/
 
 @hoverNextPrevButtonBar: #cbcbcb;
 @disabledButton: darkgray; // #a9a9a9
-@audioHighlighting: yellow; // #ffff00
 
 @bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
 @bloomRed: #d65649; // also defined in bloomPlayerTheme.ts
@@ -19,61 +18,10 @@ above the page so that page numbers will increment.*/
     counter-reset: pageNumber;
 }
 
-// if we put a scroll-bar on the contents of a bubble, we must NOT let it
-// be display:flex since that doesn't work with our nice scroll bar library
-// (the content starts centered and there's no way to scroll up to see the start).
-.scrolling-bubble {
-    display: block !important;
-}
 // The player is hidden until it is scaled. Note that we want to make measurements
 // of its original size, so it has to be present in the DOM, just not showing on the screen.
 .hidePlayer {
     visibility: hidden;
-}
-
-// For chrome and safari, we can deal with highlighting overlapping lines. See BL-7442.
-// This media query is supposed to be a way to detect Chrome/Safari.
-// Actually: this did not prevent it from applying in Firefox,: @media screen and (-webkit-min-device-pixel-ratio: 0) {
-// Nor did this: @supports (-webkit-appearance: none) {
-/*@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    span.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight) {
-        background: linear-gradient(@audioHighlighting, @audioHighlighting);
-        background-blend-mode: overlay;
-        mix-blend-mode: overlay;
-    }
-}*/
-
-// The above doesn't work on Firefox (through FF 68) (or in Bloom or 2019-era Edge). For those, we can at least
-// deal with the most common case of overlap (the book title on the cover) by just
-// treating the text as a rectangle. And it's fine that this will show this way in Chrome too:
-.Title-On-Cover-style
-    span.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight) {
-    display: inline-block;
-    white-space: pre-wrap;
-}
-
-span.ui-audioCurrent,
-div.ui-audioCurrent p {
-    background-color: @audioHighlighting;
-}
-
-// To override highlighting color rules both above and from the book itself
-// We originally did this with :not() clauses in the previous rule, but that
-// made it too specific so the user couldn't override the color, and even if
-// we used :where() to make it less specific, the correction wouldn't have
-// applied to the user's custom-colored highlights
-.ui-suppressHighlight,
-.ui-disableHighlight {
-    background-color: transparent !important;
-}
-
-.ui-audioCurrent .ui-enableHighlight {
-    background-color: @audioHighlighting;
-}
-
-div.ui-audioCurrentImg {
-    box-sizing: border-box;
-    border: 5px solid @audioHighlighting;
 }
 
 /* the default positioning of these dots is inside the page area, but our pages overlap them.
@@ -183,68 +131,6 @@ We just make them follow the main content normally. */
         &.swiper-button-disabled {
             display: none;
         }
-    }
-
-    // Make it so the text isn't selectable
-    // (This was added because when we set swiper's touchStartPreventDefault to false,
-    // the clicks were allowed to go through again and a double-click on text was capable of selecting it)
-    .bloom-editable {
-        -ms-user-select: none;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        -khtml-user-select: none;
-        user-select: none;
-    }
-
-    // BL-7162 text blocks should be scrollable if they overflow in 16 x 9 format.
-    // However this can actually make stuff that used to fit stop fitting.
-    // Where "line-height:normal" is ok, it largely fixes it. But just imposing that everywhere
-    // is risky. So I (JH) am trying a the following approach. Admittedly, this is all a
-    // bit of a hack and carries some risk. As we harvest more things, I may repent. For now, 3 steps:
-
-    // 1) In the interior we are conservative and just let scrolls appear, even at the risk of sometimes showing one
-    // (and thus pushing something off the bottom that would otherwise have been visible):
-    .bloom-editable.bloom-visibility-code-on {
-        // Hidden because we let jquery.niceScroll control the scrollbars instead.
-        overflow-y: hidden !important; // unfortunately this needs !important to override 2 basePage.less rules
-
-        // Flexboxes default to flex-shrink: 1, but we don't want paragraphs (or probably anything) to shrink if they're overflowing.
-        // (we add a scrollbar instead).  See BL-10217)
-        p {
-            flex-shrink: 0;
-        }
-    }
-    // it would be more elegant to embed this rule in the one above, but I can't figure out
-    // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
-    // but INSIDE the .bloom-player that wraps around all this.
-    .bloom-textOverPicture .bloom-editable.bloom-visibility-code-on {
-        // (BL-7911 -> BL-8076) The first fix made overflow hidden. Actually we want overflow to show,
-        // but not generate scroll bars (that's 'visible').
-        overflow-y: visible !important;
-        &.scrolling-bubble {
-            // In this case, though, we're doing the nice-scroll scroll bars even in a bubble,
-            // and that requires overflow hidden, so we don't get a regular scroll
-            // bar on our parent as well.
-            overflow-y: hidden !important;
-        }
-    }
-
-    // 2) for metadata pages, we (for now) risk changing the line-height. Experimentally, which works well:
-    // Don't try and apply this to the book title: BookTitles have a good reason to have
-    // a lineheight that is less than "normal" (which will override the below rule), because else multi-line
-    // titles spread out and look awful:    .frontCover.cover .bloom-translationGroup.bookTitle,
-    .titlePage,
-    .credits {
-        .bloom-editable {
-            // this can (and is) still be over-ridden by styles in the book. See Title-On-Title-Page for an example where it gets overridden.
-            line-height: normal !important; // fixes problems with showing y scroll when not needed.
-        }
-    }
-
-    // 3), on the cover, which is has a very dynamic layout, we just don't do scrollbars:
-    .bloom-page.cover .bloom-editable {
-        overflow-y: visible !important;
     }
 }
 
@@ -461,32 +347,6 @@ We just make them follow the main content normally. */
     right: unset !important;
 }
 
-/* override the rule in bloom-preview that puts a border at the bottom of each page
-to separate the pages in a continuous scrolling view. Unfortunately that rule is
-!important so the only way to beat it is to be !important too. We also need more than
- two classes. */
-.bloomPlayer .bloomPlayer-page div.bloom-page {
-    border-bottom: initial !important;
-}
-
-// Less can't do arithmetic with pixels and mm, and most of our page
-// dimensions are in mm, so I'm doing everything related to page dimensions
-// that way, on the (print) assumption of 96px/inch.
-@pageNumberBottomMargin: 0.529mm; // 2px
-
-/* we're giving pages in this control less margin than in regular previews,
-so we need the page number further down to reduce the chance of overlap.
-For an online reader we're also going for centered page numbers.
-We need the repeated .bloomPlayer class to make the rule take precedence
-over anything in our standard stylesheets, though still allowing for
-!important in a custom CSS to beat us. */
-.bloomPlayer.bloomPlayer.bloomPlayer .numberedPage::after {
-    bottom: @pageNumberBottomMargin;
-    left: calc(50% - 10px);
-    right: unset;
-    text-align: left;
-}
-
 .reactRoot {
     height: 100%;
     // The natural thing to do here would be width:100%, which is what we want.
@@ -497,50 +357,6 @@ over anything in our standard stylesheets, though still allowing for
     min-width: 100%;
     *width: 100%; // IE6
 }
-
-// For A5 pages read online, we want to keep the size of the marginBox
-// the same as when we lay out for a real printed A5 page, so that books
-// formatted for that will be sure to look right (though in some reader
-// contexts, text might be too small).
-// However, we typically don't need much margin, either on a device or
-// in a web browser. The reduced page size allows for a 10px margin
-// on left, right, and top, with a little more at the bottom to fit
-// the page number in. When the page is then scaled to fit the viewport,
-// we make the content as big as it can reasonably be.
-// We need a lot of .bloomPlayer repeats to beat some rather complex
-// rules, especially for marginBox width, which is usually slightly
-// increased on the cover where there is no gutter margin. Since our
-// cover page has pretty smart automatic layout, we think we can get
-// away with forcing everything to the usual width of a content page.
-// We also need to beat various rules for different left positioning
-// on cover, left, and right pages.
-// Enhance: we may eventually want to do this for more page sizes,
-// but A5Portrait is by far the most important.
-@A5MarginBoxWidth: 108mm; // standard size from other stylesheets
-@A5MarginBoxHeight: 180mm;
-@bloomPlayerMargin: 2.64mm; // 10px for top/left/right
-@pageNumberHeight: 7.93mm; // 30px, typical height for Bloom page number
-@pageNumberMargin: 1.77mm; // measured in existing page
-@totalHorizontalMargin: @bloomPlayerMargin * 2;
-@totalVerticalMargin: @bloomPlayerMargin + @pageNumberMargin + @pageNumberHeight +
-    @pageNumberBottomMargin;
-@A5DevicePageWidth: @A5MarginBoxWidth + @totalHorizontalMargin;
-@A5DevicePageHeight: @A5MarginBoxHeight + @totalVerticalMargin;
-
-// Disabled for now because it messes up books made with our new comic template,
-// which has pages with no margin at all.
-// .bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer.bloomPlayer
-//     .bloom-page.A5Portrait {
-//     min-height: @A5DevicePageHeight;
-//     max-height: @A5DevicePageHeight;
-//     min-width: @A5DevicePageWidth;
-//     max-width: @A5DevicePageWidth;
-//     .marginBox {
-//         left: @bloomPlayerMargin;
-//         width: @A5MarginBoxWidth;
-//         top: @bloomPlayerMargin;
-//     }
-// }
 
 .control-bar .button.disabled {
     color: @disabledButton;
@@ -585,29 +401,6 @@ body,
     background-color: @bloomGrey;
 }
 
-// Styles the special div we create for motion books. It is put at the root of the page and hides
-// it completely while containing the preview.
-// Note that this div is made by cloning the imageContainer, then making a few modifications. So
-// it will have any classes the imageContainer has.  Beware of rules that might override the ones
-// here, which are critical for making the motion-book animation fill the page and cover the other
-// content.
-.bloom-page div.bloom-imageContainer.hidePage {
-    height: 100%;
-    width: 100%;
-    position: absolute !important; // !important should not be needed, but there's a bug in FF45.
-    left: 0;
-    top: 0;
-    z-index: 2000;
-    background-color: black; // hide anything not covered by image
-}
-
-// If we're trying to hide the page, then the sibling elements must have a lower z-index
-// for stacking.
-// See https://issues.bloomlibrary.org/youtrack/issue/BL-7452 for details.
-.hidePage ~ * {
-    z-index: 1;
-}
-
 .loadingSpinner {
     display: block !important;
     margin-left: auto;
@@ -634,10 +427,4 @@ body,
 .errorDetails {
     font-size: 9pt;
     word-wrap: break-word; // error details may contain a very long URL with no spaces; we want to see all of it.
-}
-
-// BL-7517 Older books had a tabindex attribute, which newer versions of .bloomd files remove.
-// When the attribute is present, tapping on the div causes it to be bordered in orange. (See BL-6849 too.)
-*[tabindex]:focus {
-    outline: none;
 }

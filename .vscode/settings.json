@@ -7,7 +7,7 @@
         "statusBar.noFolderBackground": "#D65649",
         "statussBar.prominentBackground": "#D65649"
     },
-    "cSpell.words": ["editables", "Xmatter"],
+    "cSpell.words": ["editables", "swiper", "tabindex", "Xmatter"],
     "cSpell.ignorePaths": [
         "package-lock.json",
         "node_modules",

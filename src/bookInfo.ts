@@ -18,6 +18,8 @@ export class BookInfo {
     public totalNumberedPages = 0; // found in book
     public questionCount = 0; // comprehension questions found in book
 
+    public hasAppearanceSystem: boolean;
+
     private brandingProjectName = "";
     private bookInstanceId = "";
     private bookTitle = "";
