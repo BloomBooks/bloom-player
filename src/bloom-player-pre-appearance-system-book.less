@@ -14,7 +14,7 @@
     to separate the pages in a continuous scrolling view. Unfortunately that rule is
     !important so the only way to beat it is to be !important too. We also need more than
     two classes. */
-    .bloomPlayer .bloomPlayer-page div.bloom-page {
+    .bloomPlayer & div.bloom-page {
         border-bottom: initial !important;
     }
 
@@ -29,7 +29,7 @@
     We need the repeated .bloomPlayer class to make the rule take precedence
     over anything in our standard stylesheets, though still allowing for
     !important in a custom CSS to beat us. */
-    .bloomPlayer.bloomPlayer.bloomPlayer .numberedPage::after {
+    .bloomPlayer.bloomPlayer.bloomPlayer & .numberedPage::after {
         bottom: @pageNumberBottomMargin;
         left: calc(50% - 10px);
         right: unset;
