@@ -27,7 +27,7 @@ import Fullscreen from "@material-ui/icons/Fullscreen";
 import FullscreenExit from "@material-ui/icons/FullscreenExit";
 import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
-import theme, { bloomHighlight } from "./bloomPlayerTheme";
+import theme, { bloomYellow } from "./bloomPlayerTheme";
 import { ThemeProvider } from "@material-ui/styles";
 import { createTheme } from "@material-ui/core/styles";
 
@@ -178,7 +178,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     // In this case, I've used the same yellow that's used for audio highlighting.
     const imageDescIconTheme = createTheme({
         palette: {
-            primary: { main: bloomHighlight },
+            primary: { main: bloomYellow },
             secondary: { main: theme.palette.secondary.main }
         }
     });

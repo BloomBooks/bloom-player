@@ -150,11 +150,16 @@ export default class Narration {
         audioElements.forEach(audioElement => {
             // FYI, don't need to process the bloom-linebreak spans. Nothing bad happens, just unnecessary.
             const matches = this.findAll(
-                "span:not(.bloom-linebreak)",
+                "span[id]:not(.bloom-linebreak)",
                 audioElement,
                 true
             );
             matches.forEach(element => {
+                // Remove all existing highlight classes from element and element's descendants.
+                // These shouldn't be in the dom as the editor is supposed to clean them up,
+                // but we have seen at least on case where it didn't. BL-13428.
+                this.removeHighlightClasses(element);
+
                 // Simple check to help ensure that elements that don't need to be modified will remain untouched.
                 // This doesn't consider whether text that shouldn't be highlighted is already in inside an
                 // element with highlight disabled, but that's ok. The code down the stack checks that.
@@ -166,6 +171,16 @@ export default class Narration {
                     this.fixHighlightingInNode(element, element);
                 }
             });
+        });
+    }
+
+    // Remove all existing highlight classes from element and element's descendants.
+    private removeHighlightClasses(element: HTMLElement) {
+        element.classList.remove(kDisableHighlightClass);
+        element.classList.remove(kEnableHighlightClass);
+
+        Array.from(element.children).forEach((child: HTMLElement) => {
+            this.removeHighlightClasses(child);
         });
     }
 
