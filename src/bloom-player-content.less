@@ -13,7 +13,11 @@
  Note, styling for the bloom-player UI itself goes in bloom-player-ui.less.
 */
 
-@audioHighlighting: yellow; // #ffff00 - also defined in bloomPlayerTheme.ts
+// This was originally "yellow," but it probably always should have been #FEBF00 which is "bloom-yellow"
+// and what Bloom editor has shown, at least for a very long time.
+// For newer (5.5+) books, this should be supplied by the editor. But some bugs caused it to show sometimes.
+// Hopefully, as of BL-13428, those are now resolved. But we still need it for older books, anyway.
+@audioHighlighting: #febf00; // also defined in bloomPlayerTheme.ts
 
 .bloomPlayer {
     // For chrome and safari, we can deal with highlighting overlapping lines. See BL-7442.
