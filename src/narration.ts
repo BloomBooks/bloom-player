@@ -134,13 +134,15 @@ export default class Narration {
         return;
     }
 
-    // Match space or &nbsp; (\u00a0). Must have three or more in a row to match.
-    // Note: Multi whitespace text probably contains a bunch of &nbsp; followed by a single normal space at the end.
-    private multiSpaceRegex = /[ \u00a0]{3,}/;
+    // Match space or &nbsp; (\u00a0) or &ZeroWidthSpace; (\u200b). Must have three or more in a row to match.
+    // Geckofx would typically give something like `&nbsp;&nbsp;&nbsp; ` but wv2 usually gives something like `&nbsp; &nbsp; `
+    private multiSpaceRegex = /[ \u00a0\u200b]{3,}/;
     private multiSpaceRegexGlobal = new RegExp(this.multiSpaceRegex, "g");
 
     /**
      * Finds and fixes any elements on the page that should have their audio-highlighting disabled.
+     *
+     * Note, all this logic is essentially duplicated from BloomDesktop where there are quite a few unit tests.
      */
     private fixHighlighting() {
         // Note: Only relevant when playing by sentence (but note, this can make Record by Text Box -> Split or Record by Sentence, Play by Sentence)
@@ -266,7 +268,8 @@ export default class Narration {
                     match.startIndex
                 );
                 lastMatchEndIndex = match.endIndex;
-                newNodes.push(this.makeHighlightedSpan(preMatchText));
+                if (preMatchText)
+                    newNodes.push(this.makeHighlightedSpan(preMatchText));
 
                 newNodes.push(document.createTextNode(match.text));
 
