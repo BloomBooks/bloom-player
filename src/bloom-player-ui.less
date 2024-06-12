@@ -11,6 +11,17 @@
 @bloomGrey: #2e2e2e; // also defined in bloomPlayerTheme.ts
 @bloomRed: #d65649; // also defined in bloomPlayerTheme.ts
 
+/* Don't show outlines on the next/previous buttons. */
+/* When all the rules were in one .less file, this was labeled as ensuring
+   that old books which didn't strip tabindex wouldn't get unwanted borders on
+   text fields. So when I split out the files, I relegated it to bloom-player-pre-appearance-system-book.less.
+   But that actually caused a UI regression (BL-13590). I'm putting it back here the way
+   it was originally in case there is another scenario this was being applied to inadvertently.
+   But, in theory, this rule should really be written more specifically to apply only to the elements that need it. */
+*[tabindex]:focus {
+    outline: none;
+}
+
 /* The rules in the book reset this counter at the body level, but since we scope our
 rules to apply at a lower level, that rule doesn't work. We need to reset at a level
 above the page so that page numbers will increment.*/
