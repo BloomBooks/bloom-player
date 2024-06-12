@@ -890,7 +890,7 @@ export default class Narration {
     // Also filters out imageDescriptions if we aren't supposed to be reading them.
     private findAll(
         expr: string,
-        container: HTMLElement,
+        container: HTMLElement | undefined = undefined,
         includeSelf: boolean = false
     ): HTMLElement[] {
         // querySelectorAll checks all the descendants
