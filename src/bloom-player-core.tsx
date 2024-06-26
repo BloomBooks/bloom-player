@@ -1340,6 +1340,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 dataDefaultLangs.length === 0 ||
                 !dataDefaultLangs[0] ||
                 dataDefaultLangs.includes("V") ||
+                dataDefaultLangs.includes("L1") ||
                 BloomPlayerCore.areStringsEqualInvariantCultureIgnoreCase(
                     dataDefaultLangs[0],
                     "auto"
@@ -1847,7 +1848,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // It is somewhat awkward to do this in a method called assembleStyleSheets,
                     // but this is the best way to access the information currently.
                     // See further comments in getNationalLanguagesFromCssStyles.
+                    //
+                    // settingsCollectionStyles.css was replaced with defaultLangStyles.css.
+                    // We have to check for both for older books.
                     if (
+                        result.config!.url!.endsWith(
+                            "/defaultLangStyles.css"
+                        ) ||
                         result.config!.url!.endsWith(
                             "/settingsCollectionStyles.css"
                         )
