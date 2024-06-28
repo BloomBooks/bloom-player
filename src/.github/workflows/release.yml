@@ -1,0 +1,44 @@
+name: Build-Test-Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+            # Keep in sync with volta -> node version in package.json
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Build package
+        run: yarn build
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run tests
+        run: yarn test
+
+#   release:
+#     needs: build
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Publish to npm
+#         run: npm run publish-clean
+#         env:
+#           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
