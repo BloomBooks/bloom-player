@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build:
+  build-test-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,20 +25,11 @@ jobs:
       - name: Build package
         run: yarn build
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Run tests
         run: yarn test
 
-#   release:
-#     needs: build
-#     runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Publish to npm
-#         run: npm run publish-clean
-#         env:
-#           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+    #   - name: Publish to npm
+    #     run: npm run publish-clean
+    #     env:
+    #       NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
