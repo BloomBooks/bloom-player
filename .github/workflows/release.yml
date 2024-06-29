@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
             # Keep in sync with volta -> node version in package.json
-          node-version: 16
+          node-version: 20
 
       - name: Install dependencies
         run: yarn
@@ -28,8 +28,15 @@ jobs:
       - name: Run tests
         run: yarn test
 
+      - name: Create clean package ready to publish
+        # strips out the scripts, dependencies, etc.
+        run: npx clean-publish --without-publish --temp-dir package
 
-    #   - name: Publish to npm
-    #     run: npm run publish-clean
+      - name: Switch to package directory
+        run: cd package
+
+    #   - name: Publish package
     #     env:
-    #       NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    #     run: npx semantic-release
