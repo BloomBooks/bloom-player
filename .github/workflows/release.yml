@@ -28,12 +28,10 @@ jobs:
       - name: Run tests
         run: yarn test
 
-      - name: Create clean package ready to publish
-        # strips out the scripts, dependencies, etc.
-        run: npx clean-publish --without-publish --temp-dir package
-
-      - name: Switch to package directory
-        run: cd package
+      - name: Clean up package.json
+        # We used to use the clean-publish package to do this, but when
+        # we switched to using semantic-release, we had to do it manually.
+        run: npm pkg delete scripts && npm pkg delete devDependencies && npm pkg delete dependencies
 
       - name: Publish package
         env:

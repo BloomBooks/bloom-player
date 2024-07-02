@@ -27,9 +27,7 @@
         "build-dev": "shx rm -rf dist/ && webpack --config webpack.config.js",
         "tslint": "tslint  --project tsconfig.json",
         "test": "jest",
-        "test-storybook": "test-storybook --url http://localhost:9009",
-        "//publish-clean": "strips out the scripts, dependencies, etc and then does `npm publish`",
-        "publish-clean": "clean-publish"
+        "test-storybook": "test-storybook --url http://localhost:9009"
     },
     "dependencies": {
         "@material-ui/core": "^4.12.3",
@@ -71,7 +69,6 @@
         "babel-jest": "^27.4.6",
         "babel-loader": "^8.0.6",
         "before-build-webpack": "^0.2.11",
-        "clean-publish": "^4.0.1",
         "concurrently": "^4.1.1",
         "copy-webpack-plugin": "^5.0.4",
         "css-loader": "^2.1.1",
@@ -113,14 +110,6 @@
         "dist/*.css",
         "dist/*.tsv"
     ],
-    "clean-publish": {
-        "packageManager": "yarn",
-        "fields": [
-            "dependencies",
-            "scripts",
-            "engines"
-        ]
-    },
     "volta": {
         "node": "16.14.0",
         "yarn": "1.22.19"
