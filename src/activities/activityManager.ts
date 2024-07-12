@@ -3,6 +3,7 @@ import { ActivityContext } from "./ActivityContext";
 const iframeModule = require("./iframeActivity.ts");
 const simpleDomChoiceActivityModule = require("./domActivities/SimpleDomChoice.ts");
 const simpleCheckboxQuizModule = require("./domActivities/SimpleCheckboxQuiz.ts");
+const dragToDestinationModule = require("./dragActivities/DragToDestination.ts");
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {
@@ -35,6 +36,7 @@ export interface IActivityRequirements {
     dragging?: boolean;
     clicking?: boolean;
     typing?: boolean;
+    soundManagement?: boolean; // suppress normal sound (and music, and animation)
 }
 
 // This is the object (implemented by us, not the activity) that represents our own
@@ -60,6 +62,20 @@ export class ActivityManager {
         this.builtInActivities[
             simpleCheckboxQuizModule.dataActivityID
         ] = simpleCheckboxQuizModule as IActivityModule;
+        this.builtInActivities[
+            "drag-to-destination"
+        ] = dragToDestinationModule as IActivityModule;
+        // Review: currently these two use the same module. A lot of stuff is shared, all the way down to the
+        // prepareActivity() function in dragActivityRuntime. But a good many specialized TOP types are
+        // specific to one of the three and not needed for the others. It may be helpful to tease things
+        // apart more, for example, three separate implementations of IActivityModule and PrepareActivity
+        // which call common code for the setup tasks common to all three.
+        this.builtInActivities[
+            "sort-sentence"
+        ] = dragToDestinationModule as IActivityModule;
+        this.builtInActivities[
+            "word-chooser-slider"
+        ] = dragToDestinationModule as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
         return (
@@ -76,6 +92,12 @@ export class ActivityManager {
     public getActivityAbsorbsTyping(): boolean {
         return (
             !!this.currentActivity && !!this.currentActivity.requirements.typing
+        );
+    }
+    public getActivityManagesSound(): boolean {
+        return (
+            !!this.currentActivity &&
+            !!this.currentActivity.requirements.soundManagement
         );
     }
     private currentActivity: IActivityInformation | undefined;

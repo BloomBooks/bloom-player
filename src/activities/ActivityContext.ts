@@ -98,7 +98,7 @@ export class ActivityContext {
 
     public playSound(url) {
         const player = this.getPagePlayer();
-        player.setAttribute("src", url);
+        player.setAttribute("src", url.default);
         player.play();
     }
 
@@ -136,6 +136,16 @@ export class ActivityContext {
             listener
         });
         target.addEventListener(name, listener, options);
+    }
+
+    public removeEventListener(
+        name: string,
+        target: Element,
+        listener: EventListener,
+        options?: AddEventListenerOptions | undefined
+    ) {
+        // we could try to remove it from this.listeners, but it's harmless to remove it again
+        target.removeEventListener(name, listener, options);
     }
 
     // this is called by the activity manager after it stops the activity.

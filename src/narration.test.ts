@@ -1,4 +1,4 @@
-import { sortAudioElements } from "./narrationUtils";
+import { sortAudioElements } from "./narration";
 import { createDiv, createPara, createSpan } from "./test/testHelper";
 
 test("sortAudioElements with no tabindexes preserves order", () => {
