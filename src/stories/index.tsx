@@ -201,10 +201,6 @@ AddBloomPlayerStory(
     "testbooks/Bloom5.4-activities/Bloom5.4-activities.htm"
 );
 AddBloomPlayerStory(
-    "Activity/Dragging",
-    "testbooks/Word%20Slider/Word%20Slider.htm"
-);
-AddBloomPlayerStory(
     "Book with two audio sentences on cover",
     "https://s3.amazonaws.com/bloomharvest/namitaj%40chetana.org.in/78c7e561-ce24-4e5d-ad0a-6af141d9d0af/bloomdigital%2findex.htm"
 );

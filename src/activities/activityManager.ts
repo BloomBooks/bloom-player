@@ -24,6 +24,10 @@ export interface IActivityObject {
     // This is acting on the real DOM, so this is the time to set up event handlers, etc.
     showingPage: (context: ActivityContext) => void;
 
+    // This is called in place of the normal code that plays sound and animations when the page first appears,
+    // if the activity's requirements specify soundManagement: true.
+    doInitialSoundAndAnimation?: (context: ActivityContext) => void;
+
     stop: () => void;
 }
 // Constructing stuff from interfaces has problems with typescript at the moment.
@@ -36,7 +40,10 @@ export interface IActivityRequirements {
     dragging?: boolean;
     clicking?: boolean;
     typing?: boolean;
-    soundManagement?: boolean; // suppress normal sound (and music, and animation)
+    // suppress normal sound (and music, and animation)
+    // If this is true, the activity should implement doInitialSoundAndAnimation
+    // if anything should autoplay when the page appears.
+    soundManagement?: boolean;
 }
 
 // This is the object (implemented by us, not the activity) that represents our own
@@ -62,19 +69,28 @@ export class ActivityManager {
         this.builtInActivities[
             simpleCheckboxQuizModule.dataActivityID
         ] = simpleCheckboxQuizModule as IActivityModule;
-        this.builtInActivities[
-            "drag-to-destination"
-        ] = dragToDestinationModule as IActivityModule;
-        // Review: currently these two use the same module. A lot of stuff is shared, all the way down to the
+
+        // Review: currently these all use the same module. A lot of stuff is shared, all the way down to the
         // prepareActivity() function in dragActivityRuntime. But a good many specialized TOP types are
-        // specific to one of the three and not needed for the others. It may be helpful to tease things
+        // specific to one of them and not needed for the others. It may be helpful to tease things
         // apart more, for example, three separate implementations of IActivityModule and PrepareActivity
-        // which call common code for the setup tasks common to all three.
+        // which call common code for the setup tasks common to all three. OTOH, in some ways it is simpler
+        // to have it all in one place, and just do the appropriate initialization based on what kind of
+        // draggables we find.
         this.builtInActivities[
-            "sort-sentence"
+            "drag-to-destination" // not currently used
         ] = dragToDestinationModule as IActivityModule;
         this.builtInActivities[
-            "word-chooser-slider"
+            "drag-letter-to-target"
+        ] = dragToDestinationModule as IActivityModule;
+        this.builtInActivities[
+            "drag-image-to-target"
+        ] = dragToDestinationModule as IActivityModule;
+        this.builtInActivities[
+            "drag-sort-sentence"
+        ] = dragToDestinationModule as IActivityModule;
+        this.builtInActivities[
+            "word-chooser-slider" // not used yet
         ] = dragToDestinationModule as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
@@ -217,6 +233,14 @@ export class ActivityManager {
             activityContext.pageElement.setAttribute(
                 "data-activity-state",
                 "prepared"
+            );
+        }
+    }
+
+    public doInitialSoundAndAnimation() {
+        if (this.currentActivity && this.currentActivity.runningObject) {
+            this.currentActivity.runningObject.doInitialSoundAndAnimation?.(
+                this.currentActivity.context!
             );
         }
     }

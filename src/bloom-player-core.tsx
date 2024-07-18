@@ -51,8 +51,8 @@ import {
     kLocalStorageBookUrlKey
 } from "./bloomPlayerAnalytics";
 import { autoPlayType } from "./bloom-player-controls";
-import { setCurrentPage } from "./narration";
 import {
+    setCurrentPage as setCurrentNarrationPage,
     currentPlaybackMode,
     setCurrentPlaybackMode,
     PlaybackMode,
@@ -65,10 +65,10 @@ import {
     PlayFailed,
     PlayCompleted,
     ToggleImageDescription,
-    pause,
-    getCurrentPage,
-    play,
-    hidingPage,
+    pauseNarration,
+    getCurrentNarrationPage,
+    playNarration,
+    hidingPage as hidingNarrationPage,
     pageHasAudio,
     setIncludeImageDescriptions,
     playAllSentences
@@ -473,17 +473,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ? this.sourceUrl
                     : this.sourceUrl + "/" + filename + ".htm";
 
-                let urlPrefixT = haveFullPath
+                this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
                           0,
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
-                if (!urlPrefixT.startsWith("http")) {
+                if (!this.urlPrefix.startsWith("http")) {
                     // Only in storybook with local books?
-                    urlPrefixT = window.location.origin + "/" + urlPrefixT;
+                    this.urlPrefix =
+                        window.location.origin + "/" + this.urlPrefix;
                 }
-                this.music.urlPrefix = this.urlPrefix = urlPrefixT;
+                this.music.urlPrefix = this.urlPrefix;
                 setPlayerUrlPrefix(this.music.urlPrefix);
                 // Note: this does not currently seem to work when using the storybook fileserver.
                 // I hypothesize that it automatically filters files starting with a period,
@@ -544,10 +545,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         }
 
                         this.animation.PlayAnimations = this.bookInfo.playAnimations;
-                        console.log(
-                            "animation.PlayAnimations",
-                            this.animation.PlayAnimations
-                        );
 
                         this.collectBodyAttributes(body);
                         this.makeNonEditable(body);
@@ -1145,13 +1142,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.handleToggleImageDescription.bind(this)
         );
         // allows narration to ask whether swiping to this page is still in progress.
+        // This doesn't seem to be super reliable, so that narration code also keeps track of
+        // how long it's been since we switched pages.
         setTestIsSwipeInProgress(() => {
-            console.log(
-                "animating: " +
-                    this.swiperInstance +
-                    " " +
-                    this.swiperInstance?.animating
-            );
             return this.swiperInstance?.animating;
         });
         setLogNarration(url => logSound(url, 1));
@@ -1202,7 +1195,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
             if (
-                BloomPlayerCore.currentPage !== getCurrentPage() ||
+                BloomPlayerCore.currentPage !== getCurrentNarrationPage() ||
                 currentPlaybackMode === PlaybackMode.MediaFinished
             ) {
                 this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
@@ -1210,7 +1203,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (currentPlaybackMode === PlaybackMode.VideoPaused) {
                     this.video.play(); // sets currentPlaybackMode = VideoPlaying
                 } else {
-                    play(); // sets currentPlaybackMode = AudioPlaying
+                    playNarration(); // sets currentPlaybackMode = AudioPlaying
                     this.animation.PlayAnimation();
                     this.music.play();
                 }
@@ -1437,11 +1430,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private pauseAllMultimedia() {
-        const temp = currentPlaybackMode;
         if (currentPlaybackMode === PlaybackMode.VideoPlaying) {
             this.video.pause(); // sets currentPlaybackMode = VideoPaused
         } else if (currentPlaybackMode === PlaybackMode.AudioPlaying) {
-            pause(); // sets currentPlaybackMode = AudioPaused
+            pauseNarration(); // sets currentPlaybackMode = AudioPaused
             this.animation.PauseAnimation();
         }
         // Music keeps playing after all video, narration, and animation have finished.
@@ -2400,7 +2392,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // its continued playing.
             this.video.hidingPage();
             this.video.HandlePageBeforeVisible(bloomPage);
-            hidingPage();
+            hidingNarrationPage();
             this.music.hidingPage();
             if (
                 currentPlaybackMode === PlaybackMode.AudioPaused ||
@@ -2798,7 +2790,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
-        setCurrentPage(bloomPage);
+        setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
@@ -2813,6 +2805,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
         if (this.activityManager.getActivityManagesSound()) {
+            this.activityManager.doInitialSoundAndAnimation();
             return; // we don't just want to play them all, the activity code will do it selectively.
         }
         setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
