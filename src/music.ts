@@ -1,10 +1,11 @@
 import LiteEvent from "./event";
-import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
+import { BloomPlayerCore } from "./bloom-player-core";
 import {
     logSound,
     logSoundPaused,
     logSoundRepeat
 } from "./videoRecordingSupport";
+import { PlaybackMode, currentPlaybackMode } from "./narration";
 
 interface ISelection {
     id: number;
@@ -48,7 +49,7 @@ export class Music {
 
     private listen() {
         this.setMusicSourceAndVolume();
-        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPaused) {
+        if (currentPlaybackMode === PlaybackMode.AudioPaused) {
             this.getPlayer().pause();
         } else {
             this.playerPlay();

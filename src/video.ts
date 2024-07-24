@@ -1,6 +1,11 @@
 import LiteEvent from "./event";
-import { BloomPlayerCore, PlaybackMode } from "./bloom-player-core";
+import { BloomPlayerCore } from "./bloom-player-core";
 import { isMacOrIOS } from "./utilities/osUtils";
+import {
+    currentPlaybackMode,
+    setCurrentPlaybackMode,
+    PlaybackMode
+} from "./narration";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
@@ -65,7 +70,7 @@ export class Video {
                 });
             }
         };
-        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPaused) {
+        if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement.pause();
         } else {
             const videoElement = this.currentVideoElement;
@@ -134,14 +139,14 @@ export class Video {
     }
 
     public play() {
-        if (BloomPlayerCore.currentPlaybackMode == PlaybackMode.VideoPlaying) {
+        if (currentPlaybackMode === PlaybackMode.VideoPlaying) {
             return; // no change.
         }
         const videoElement = this.currentVideoElement;
         if (!videoElement) {
             return; // no change
         }
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
+        setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
         // If it has ended, it's going to replay from the beginning, even though
         // (to prevent an abrupt visual effect) we didn't reset currentTime when it ended.
         this.videoStartTime = this.videoEnded ? 0 : videoElement.currentTime;
@@ -149,11 +154,11 @@ export class Video {
     }
 
     public pause() {
-        if (BloomPlayerCore.currentPlaybackMode == PlaybackMode.VideoPaused) {
+        if (currentPlaybackMode == PlaybackMode.VideoPaused) {
             return;
         }
         this.pauseCurrentVideo();
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPaused;
+        setCurrentPlaybackMode(PlaybackMode.VideoPaused);
     }
 
     private pauseCurrentVideo() {

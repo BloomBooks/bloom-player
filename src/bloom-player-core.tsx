@@ -13,7 +13,6 @@ import "swiper/dist/css/swiper.min.css";
 import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
-import Narration from "./narration";
 import LiteEvent from "./event";
 import { Animation } from "./animation";
 import { IPageVideoComplete, Video } from "./video";
@@ -52,17 +51,29 @@ import {
     kLocalStorageBookUrlKey
 } from "./bloomPlayerAnalytics";
 import { autoPlayType } from "./bloom-player-controls";
-
-export enum PlaybackMode {
-    NewPage, // starting a new page ready to play
-    NewPageMediaPaused, // starting a new page in the "paused" state
-    VideoPlaying, // video is playing
-    VideoPaused, // video is paused
-    AudioPlaying, // narration and/or animation are playing (or possibly finished)
-    AudioPaused, // narration and/or animation are paused
-    MediaFinished // video, narration, and/or animation has played (possibly no media to play)
-    // Note that music can be playing when the state is either AudioPlaying or MediaFinished.
-}
+import {
+    setCurrentPage as setCurrentNarrationPage,
+    currentPlaybackMode,
+    setCurrentPlaybackMode,
+    PlaybackMode,
+    listenForPlayDuration,
+    setTestIsSwipeInProgress,
+    setLogNarration,
+    setPlayerUrlPrefix,
+    computeDuration,
+    PageNarrationComplete,
+    PlayFailed,
+    PlayCompleted,
+    ToggleImageDescription,
+    pauseNarration,
+    getCurrentNarrationPage,
+    playNarration,
+    hidingPage as hidingNarrationPage,
+    pageHasAudio,
+    setIncludeImageDescriptions,
+    playAllSentences
+} from "./narration";
+import { logSound } from "./videoRecordingSupport";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -276,7 +287,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private metaDataObject: any | undefined;
     private htmlElement: HTMLHtmlElement | undefined;
 
-    private narration: Narration;
     private animation: Animation;
     private music: Music;
     private video: Video;
@@ -288,8 +298,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private static currentPageIndex: number;
     private static currentPageHasVideo: boolean;
     private currentPageHidesNavigationButtons: boolean = false;
-
-    public static currentPlaybackMode: PlaybackMode;
 
     private indexOflastNumberedPage: number;
 
@@ -465,12 +473,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     ? this.sourceUrl
                     : this.sourceUrl + "/" + filename + ".htm";
 
-                this.music.urlPrefix = this.narration.urlPrefix = this.urlPrefix = haveFullPath
+                this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
                           0,
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
+                if (!this.urlPrefix.startsWith("http")) {
+                    // Only in storybook with local books?
+                    this.urlPrefix =
+                        window.location.origin + "/" + this.urlPrefix;
+                }
+                this.music.urlPrefix = this.urlPrefix;
+                setPlayerUrlPrefix(this.music.urlPrefix);
                 // Note: this does not currently seem to work when using the storybook fileserver.
                 // I hypothesize that it automatically filters files starting with a period,
                 // so asking for .distribution fails even if the local book folder (e.g., Testing
@@ -1088,15 +1103,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     };
 
-    private handlePageDurationAvailable = (
-        pageElement: HTMLElement | undefined
-    ) => {
-        this.animation.HandlePageDurationAvailable(
-            pageElement!,
-            this.narration.PageDuration
-        );
-    };
-
     private handlePlayFailed = () => {
         this.setState({ inPauseForced: true });
         if (this.props.setForcedPausedCallback) {
@@ -1105,8 +1111,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     };
 
     private handlePlayCompleted = () => {
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.MediaFinished;
-        this.props.imageDescriptionCallback(false);
+        setCurrentPlaybackMode(PlaybackMode.MediaFinished);
+        this.props.imageDescriptionCallback(false); // whether or not we were before, now we're certainly not playing one.
     };
 
     private handleToggleImageDescription = (inImageDescription: boolean) => {
@@ -1124,26 +1130,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.handlePageVideoComplete
             );
         }
-        if (!this.narration) {
-            this.narration = new Narration();
-            this.narration.PageDurationAvailable = new LiteEvent<HTMLElement>();
-            this.narration.PageNarrationComplete = new LiteEvent<HTMLElement>();
-            this.narration.PlayFailed = new LiteEvent<HTMLElement>();
-            this.narration.PlayCompleted = new LiteEvent<HTMLElement>();
-            this.narration.ToggleImageDescription = new LiteEvent<boolean>();
+        if (!this.animation) {
             this.animation = new Animation();
-            this.narration.PageDurationAvailable.subscribe(
-                this.handlePageDurationAvailable
-            );
-            this.narration.PageNarrationComplete.subscribe(
-                this.handlePageNarrationComplete
-            );
-            this.narration.PlayFailed.subscribe(this.handlePlayFailed);
-            this.narration.PlayCompleted.subscribe(this.handlePlayCompleted);
-            this.narration.ToggleImageDescription.subscribe(
-                this.handleToggleImageDescription
-            );
         }
+
+        PageNarrationComplete.subscribe(this.handlePageNarrationComplete);
+        PlayFailed.subscribe(this.handlePlayFailed);
+        PlayCompleted.subscribe(this.handlePlayCompleted);
+        listenForPlayDuration(this.storeAudioAnalytics.bind(this));
+        ToggleImageDescription.subscribe(
+            this.handleToggleImageDescription.bind(this)
+        );
+        // allows narration to ask whether swiping to this page is still in progress.
+        // This doesn't seem to be super reliable, so that narration code also keeps track of
+        // how long it's been since we switched pages.
+        setTestIsSwipeInProgress(() => {
+            return this.swiperInstance?.animating;
+        });
+        setLogNarration(url => logSound(url, 1));
+
         if (!this.music) {
             this.music = new Music();
             this.music.PlayFailed = new LiteEvent<HTMLElement>();
@@ -1182,25 +1187,23 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private handlePausePlay() {
+        // props indicates the state we want to be in, typically from the BloomPlayerControls state.
+        // Calling this method indicates we are not in that state, so we need to change it to match.
         if (this.props.paused) {
             this.pauseAllMultimedia();
         } else {
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
             if (
-                BloomPlayerCore.currentPage !== this.narration.playerPage ||
-                BloomPlayerCore.currentPlaybackMode ===
-                    PlaybackMode.MediaFinished
+                BloomPlayerCore.currentPage !== getCurrentNarrationPage() ||
+                currentPlaybackMode === PlaybackMode.MediaFinished
             ) {
                 this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
             } else {
-                if (
-                    BloomPlayerCore.currentPlaybackMode ===
-                    PlaybackMode.VideoPaused
-                ) {
+                if (currentPlaybackMode === PlaybackMode.VideoPaused) {
                     this.video.play(); // sets currentPlaybackMode = VideoPlaying
                 } else {
-                    this.narration.play(); // sets currentPlaybackMode = AudioPlaying
+                    playNarration(); // sets currentPlaybackMode = AudioPlaying
                     this.animation.PlayAnimation();
                     this.music.play();
                 }
@@ -1420,26 +1423,17 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private unsubscribeAllEvents() {
         this.video.PageVideoComplete.unsubscribe(this.handlePageVideoComplete);
-        this.narration.PageDurationAvailable.unsubscribe(
-            this.handlePageDurationAvailable
-        );
-        this.narration.PageNarrationComplete.unsubscribe(
-            this.handlePageNarrationComplete
-        );
-        this.narration.PlayFailed.unsubscribe(this.handlePlayFailed);
-        this.narration.PlayCompleted.unsubscribe(this.handlePlayCompleted);
-        this.narration.ToggleImageDescription.unsubscribe(
-            this.handleToggleImageDescription
-        );
+        PageNarrationComplete.unsubscribe(this.handlePageNarrationComplete);
+        PlayFailed.unsubscribe(this.handlePlayFailed);
+        PlayCompleted.unsubscribe(this.handlePlayCompleted);
+        ToggleImageDescription.unsubscribe(this.handleToggleImageDescription);
     }
 
     private pauseAllMultimedia() {
-        if (BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPlaying) {
+        if (currentPlaybackMode === PlaybackMode.VideoPlaying) {
             this.video.pause(); // sets currentPlaybackMode = VideoPaused
-        } else if (
-            BloomPlayerCore.currentPlaybackMode === PlaybackMode.AudioPlaying
-        ) {
-            this.narration.pause(); // sets currentPlaybackMode = AudioPaused
+        } else if (currentPlaybackMode === PlaybackMode.AudioPlaying) {
+            pauseNarration(); // sets currentPlaybackMode = AudioPaused
             this.animation.PauseAnimation();
         }
         // Music keeps playing after all video, narration, and animation have finished.
@@ -1959,7 +1953,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 </>
             );
         }
-        this.narration.setIncludeImageDescriptions(
+        setIncludeImageDescriptions(
             this.props.shouldReadImageDescriptions && this.hasImageDescriptions
         );
         const swiperParams: any = {
@@ -2339,7 +2333,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!page) {
             return;
         }
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.MediaFinished;
+        setCurrentPlaybackMode(PlaybackMode.MediaFinished);
         // TODO: at this point, signal BloomPlayerControls to switch the pause button to show play.
 
         if (this.shouldAutoPlay()) {
@@ -2386,7 +2380,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             //console.log("aborting setIndex because still starting up");
             return;
         }
-        clearTimeout(this.narration.pageNarrationCompleteTimer);
         this.setState({ currentSwiperIndex: index });
         const bloomPage = this.getPageAtSwiperIndex(index);
         if (bloomPage) {
@@ -2399,17 +2392,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // its continued playing.
             this.video.hidingPage();
             this.video.HandlePageBeforeVisible(bloomPage);
-            this.narration.hidingPage();
+            hidingNarrationPage();
             this.music.hidingPage();
             if (
-                BloomPlayerCore.currentPlaybackMode ===
-                    PlaybackMode.AudioPaused ||
-                BloomPlayerCore.currentPlaybackMode === PlaybackMode.VideoPaused
+                currentPlaybackMode === PlaybackMode.AudioPaused ||
+                currentPlaybackMode === PlaybackMode.VideoPaused
             ) {
-                BloomPlayerCore.currentPlaybackMode =
-                    PlaybackMode.NewPageMediaPaused;
+                setCurrentPlaybackMode(PlaybackMode.NewPageMediaPaused);
             } else {
-                BloomPlayerCore.currentPlaybackMode = PlaybackMode.NewPage;
+                setCurrentPlaybackMode(PlaybackMode.NewPage);
             }
         }
     }
@@ -2515,7 +2506,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (this.props.reportPageProperties) {
                 // Informs containing react controls (in the same frame)
                 this.props.reportPageProperties({
-                    hasAudio: this.narration.pageHasAudio(bloomPage),
+                    hasAudio: pageHasAudio(bloomPage),
                     hasMusic: this.music.pageHasMusic(bloomPage),
                     hasVideo: BloomPlayerCore.currentPageHasVideo
                 });
@@ -2742,26 +2733,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     // called by narration.ts
-    public static storeAudioAnalytics(duration: number): void {
+    public storeAudioAnalytics(duration: number): void {
         if (duration < 0.001 || Number.isNaN(duration)) {
             return;
         }
 
-        const player = BloomPlayerCore.currentPagePlayer;
-        player.bookInteraction.totalAudioDuration += duration;
+        this.bookInteraction.totalAudioDuration += duration;
 
-        if (player.isXmatterPage()) {
+        if (this.isXmatterPage()) {
             // Our policy is only to count non-xmatter audio pages. BL-7334.
             return;
         }
 
-        if (!player.bookInteraction.reportedAudioOnCurrentPage) {
-            player.bookInteraction.reportedAudioOnCurrentPage = true;
-            player.bookInteraction.audioPageShown(
+        if (!this.bookInteraction.reportedAudioOnCurrentPage) {
+            this.bookInteraction.reportedAudioOnCurrentPage = true;
+            this.bookInteraction.audioPageShown(
                 BloomPlayerCore.currentPageIndex
             );
         }
-        player.sendUpdateOfBookProgressReportToExternalContext();
+        this.sendUpdateOfBookProgressReportToExternalContext();
     }
 
     public static storeVideoAnalytics(duration: number) {
@@ -2800,9 +2790,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
+        setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
-            BloomPlayerCore.currentPlaybackMode = PlaybackMode.VideoPlaying;
+            setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
             this.video.HandlePageVisible(bloomPage);
             this.music.pause(); // in case we have audio from previous page
         } else {
@@ -2813,17 +2804,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     sentBloomNotification: boolean = false;
 
     public playAudioAndAnimation(bloomPage: HTMLElement | undefined) {
-        BloomPlayerCore.currentPlaybackMode = PlaybackMode.AudioPlaying;
+        if (this.activityManager.getActivityManagesSound()) {
+            this.activityManager.doInitialSoundAndAnimation();
+            return; // we don't just want to play them all, the activity code will do it selectively.
+        }
+        setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
         if (!bloomPage) return;
-        this.narration.setSwiper(this.swiperInstance);
-        // When we have computed it, this will raise PageDurationComplete,
-        // which calls an animation method to start the image animation.
-        this.narration.computeDuration(bloomPage);
+
+        const duration = computeDuration(bloomPage);
+        this.animation.HandlePageDurationAvailable(bloomPage!, duration);
 
         // Tail end of the method, happens at once if we're not posting, only after
         // the post completes if we are.
         const finishUp = () => {
-            this.narration.playAllSentences(bloomPage);
+            playAllSentences(bloomPage);
             if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
                 this.animation.HandlePageBeforeVisible(bloomPage);
             }
