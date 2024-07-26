@@ -479,11 +479,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                           Math.max(slashIndex, encodedSlashIndex)
                       )
                     : this.sourceUrl;
-                if (!this.urlPrefix.startsWith("http")) {
-                    // Only in storybook with local books?
-                    this.urlPrefix =
-                        window.location.origin + "/" + this.urlPrefix;
-                }
                 this.music.urlPrefix = this.urlPrefix;
                 setPlayerUrlPrefix(this.music.urlPrefix);
                 // Note: this does not currently seem to work when using the storybook fileserver.
