@@ -6,12 +6,11 @@
 // For now, in Bloom desktop, this file is only used in the Play tab of drag activities,
 // so both live there. In Bloom player, both live in the root src directory.
 // In the long run, the answer is probably a folder, or even an npm package, for all
-// the stuff that the two progams share...or maybe we can make bloom player publish
+// the stuff that the two programs share...or maybe we can make bloom player publish
 // these files along with the output bundle and have bloom desktop use them from there.
 // For now, though, it's much easier to just edit them and have them built automatically
 // than to have this code in another repo.
 
-import { get } from "jquery";
 import {
     kAudioSentence,
     playAllAudio,

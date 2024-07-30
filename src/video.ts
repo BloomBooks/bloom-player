@@ -11,42 +11,41 @@ import {
 
 export interface IPageVideoComplete {
     page: HTMLElement;
-    video: HTMLElement;
+    videos: HTMLVideoElement[];
 }
 
 export class Video {
     private currentPage: HTMLDivElement;
     private currentVideoElement: HTMLVideoElement | undefined;
+    private currentVideoStartTime: number = 0;
+    private isPlayingSingleVideo: boolean = false;
 
     public PageVideoComplete: LiteEvent<IPageVideoComplete>;
 
     public static pageHasVideo(page: HTMLElement): boolean {
-        return !!page.getElementsByTagName("video").length;
+        return !!Video.getVideoElements(page).length;
     }
-
-    private videoStartTime: number;
-    private videoEnded: boolean;
 
     // Work we prefer to do before the page is visible. This makes sure that when the video
     // is loaded it will begin to play automatically.
-    // Enhance: someday we may need to handle multiple videos per page?
     public HandlePageBeforeVisible(page: HTMLElement) {
         this.currentPage = page as HTMLDivElement;
         if (!Video.pageHasVideo(this.currentPage)) {
             this.currentVideoElement = undefined;
             return;
         }
-        this.currentVideoElement = this.getFirstVideo() as HTMLVideoElement;
-        if (this.currentVideoElement.hasAttribute("controls")) {
-            this.currentVideoElement.removeAttribute("controls");
-        }
-        if (!this.currentVideoElement.hasAttribute("playsinline")) {
-            this.currentVideoElement.setAttribute("playsinline", "true");
-        }
-        if (this.currentVideoElement.currentTime !== 0) {
-            // in case we previously played this video and are returning to this page...
-            this.currentVideoElement.currentTime = 0;
-        }
+        this.getVideoElements().forEach(videoElement => {
+            if (videoElement.hasAttribute("controls")) {
+                videoElement.removeAttribute("controls");
+            }
+            if (!videoElement.hasAttribute("playsinline")) {
+                videoElement.setAttribute("playsinline", "true");
+            }
+            if (videoElement.currentTime !== 0) {
+                // in case we previously played this video and are returning to this page...
+                videoElement.currentTime = 0;
+            }
+        });
     }
 
     public HandlePageVisible(bloomPage: HTMLElement) {
@@ -55,29 +54,13 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
-        this.currentVideoElement = this.getFirstVideo() as HTMLVideoElement;
-        this.videoEnded = false;
-        this.currentVideoElement.onended = (ev: Event) => {
-            this.videoEnded = true;
-            this.reportVideoPlayed(
-                (ev.target as HTMLVideoElement).currentTime -
-                    this.videoStartTime
-            );
-            if (this.PageVideoComplete) {
-                this.PageVideoComplete.raise({
-                    page: bloomPage,
-                    video: this.currentVideoElement!
-                });
-            }
-        };
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
-            this.currentVideoElement.pause();
+            this.currentVideoElement?.pause();
         } else {
-            const videoElement = this.currentVideoElement;
             if (!isMacOrIOS()) {
                 // Delay the start of the video by a little bit so the user can get oriented (BL-6985)
                 window.setTimeout(() => {
-                    this.playVideoCallback(videoElement, bloomPage);
+                    this.playAllVideo(this.getVideoElements());
                 }, 1000);
             } else {
                 // To auto-play a video w/sound on Apple Webkit browsers, the JS that invokes video.play()
@@ -91,66 +74,41 @@ export class Video {
                 // However, when I tried to detect audio tracks, it didn't detect the correct result
                 // the first time a video with audio was loaded, even when I tried checking the readyState.
                 // So, for now we'll just do this for all videos on Mac or iOS, even if they don't have audio tracks.
-                this.playVideoCallback(videoElement, bloomPage);
+                this.playAllVideo(this.getVideoElements());
             }
         }
     }
 
-    private playVideoCallback(
-        videoElement: HTMLVideoElement,
-        bloomPage: HTMLElement
-    ) {
-        // When we go to a new page with a video on it, we delay 1 second to allow the user to get
-        // oriented to the new page. During that second, it's just possible that the user went on to
-        // another page. Better check and not play the video, if that's the case.
-        // Storybook "General video with audio" can be used to test this.
-        if (this.currentPage !== bloomPage) {
-            return;
-        }
-        this.videoStartTime = videoElement.currentTime;
-        const promise = videoElement.play();
-        if (promise) {
-            promise.catch(reason => {
-                console.log(reason);
-                if (this.PageVideoComplete) {
-                    this.PageVideoComplete.raise({
-                        page: bloomPage,
-                        video: videoElement
-                    });
-                }
-            });
-        }
+    private static getVideoElements(page: HTMLElement): HTMLVideoElement[] {
+        return Array.from(page.getElementsByClassName("bloom-videoContainer"))
+            .map(container => container.getElementsByTagName("video")[0])
+            .filter(video => video !== undefined);
     }
-
-    // At this point anyway, we just play the first video on the page. I think we'll have other UI problems
-    // to address before we get around to dealing with multiple videos on a page, so we'll just assume we play
-    // the first one for now.
-    private getFirstVideo(): HTMLVideoElement | undefined {
-        const videoContainers = this.currentPage.getElementsByClassName(
-            "bloom-videoContainer"
-        );
-        if (videoContainers.length === 0) {
-            return undefined;
-        }
-        // There should only be one... but in any case we'll just play the first.
-        const container = videoContainers[0];
-        const videoElements = container.getElementsByTagName("video");
-        return videoElements.length === 0 ? undefined : videoElements[0];
+    private getVideoElements(): HTMLVideoElement[] {
+        return Video.getVideoElements(this.currentPage);
     }
 
     public play() {
         if (currentPlaybackMode === PlaybackMode.VideoPlaying) {
             return; // no change.
         }
-        const videoElement = this.currentVideoElement;
-        if (!videoElement) {
-            return; // no change
-        }
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-        // If it has ended, it's going to replay from the beginning, even though
-        // (to prevent an abrupt visual effect) we didn't reset currentTime when it ended.
-        this.videoStartTime = this.videoEnded ? 0 : videoElement.currentTime;
-        videoElement.play();
+        if (this.isPlayingSingleVideo)
+            this.playAllVideo([this.currentVideoElement!]);
+        else this.resumePlayAllVideo();
+    }
+
+    private resumePlayAllVideo() {
+        const allVideoElements = this.getVideoElements();
+        let videoElements = allVideoElements;
+        if (this.currentVideoElement) {
+            // get subset of allVideoElements starting with currentVideoElement
+            const startIndex = allVideoElements.indexOf(
+                this.currentVideoElement
+            );
+            videoElements = allVideoElements.slice(startIndex);
+        }
+        this.playAllVideo(videoElements);
     }
 
     public pause() {
@@ -173,7 +131,7 @@ export class Video {
         ) {
             // It's playing, and we're about to stop it...report how long it's been going.
             this.reportVideoPlayed(
-                videoElement.currentTime - this.videoStartTime
+                videoElement.currentTime - this.currentVideoStartTime
             );
         }
         videoElement.pause();
@@ -185,5 +143,58 @@ export class Video {
 
     public hidingPage() {
         this.pauseCurrentVideo(); // but don't set paused state.
+    }
+
+    public replaySingleVideo(video: HTMLVideoElement) {
+        this.isPlayingSingleVideo = true;
+        this.playAllVideo([video]);
+    }
+
+    // Play the specified elements, one after the other. When the last completes, raise the PageVideoComplete event.
+    //
+    // Note, there is a very similar function in narration.ts. It would be nice to combine them, but
+    // this one must be here and must be part of the Video class so it can handle play/pause, analytics, etc.
+    public playAllVideo(elements: HTMLVideoElement[]) {
+        if (elements.length === 0) {
+            this.currentVideoElement = undefined;
+            this.isPlayingSingleVideo = false;
+            if (this.PageVideoComplete) {
+                this.PageVideoComplete.raise({
+                    page: this.currentPage,
+                    videos: this.getVideoElements()
+                });
+            }
+            return;
+        }
+
+        const video = elements[0];
+
+        // If we somehow get into a state where the video is not on the current page, don't continue.
+        const pageForVideo = video.closest(".bloom-page") as HTMLDivElement;
+        if (this.currentPage !== pageForVideo) {
+            this.currentVideoElement = undefined;
+            return;
+        }
+
+        this.currentVideoElement = video;
+        video.addEventListener(
+            "ended",
+            () => {
+                this.reportVideoPlayed(
+                    video.currentTime - this.currentVideoStartTime
+                );
+                this.playAllVideo(elements.slice(1));
+            },
+            { once: true }
+        );
+        setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+        this.currentVideoStartTime = video.currentTime || 0;
+        const promise = video.play();
+
+        // If there is an error, try to continue with the next video.
+        promise?.catch(reason => {
+            console.error("Video play failed", reason);
+            this.playAllVideo(elements.slice(1));
+        });
     }
 }

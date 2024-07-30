@@ -1220,7 +1220,12 @@ export function hidingPage() {
 
 // Play the specified elements, one after the other. When the last completes (or at once if the array is empty),
 // perform the 'then' action (typically used to play narration, which we put after videos).
-// Todo: Bloom Player version, at least, should work with play/pause/resume/change page architecture.
+//
+// Note, there is a very similar function in narration.ts. It would be nice to combine them, but
+// there are various reasons that is difficult at the moment. e.g.:
+// 1. See comment below about sharing code with Bloom Desktop.
+// 2. The other version handles play/pause which doesn't apply in BloomDesktop.
+//
 // (This function would be more natural in video.ts. But at least for now I'm trying to minimize the
 // number of source files shared with Bloom Desktop, and we need this for Bloom Games.)
 export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
@@ -1244,5 +1249,11 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
     );
     // Review: do we need to do something to let the rest of the world know about this?
     setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-    video.play();
+
+    const promise = video.play();
+    // If there is an error, try to continue with the next video.
+    promise?.catch(reason => {
+        console.error("Video play failed", reason);
+        this.playAllVideo(elements.slice(1), then);
+    });
 }
