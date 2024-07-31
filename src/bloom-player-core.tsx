@@ -1007,77 +1007,79 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private showReplayButton(pageVideoData: IPageVideoComplete | undefined) {
-        if (!pageVideoData?.video || !pageVideoData!.page) {
-            return; // paranoia, and allows us to assume they are defined without ! everywhere.
-        }
-        const parent = pageVideoData.video.parentElement!;
-        let replayButton = document.getElementById("replay-button");
-        if (!replayButton) {
-            replayButton = document.createElement("div");
-            replayButton.setAttribute("id", "replay-button");
-            replayButton.style.position = "absolute";
-            replayButton.style.display = "none";
-            ReactDOM.render(
-                <Replay
-                    style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
-                    onClick={args => {
-                        // in storybook, I was seeing the page jump around as I clicked the button.
-                        // Guessing it was somehow caused by something higher up also responding to
-                        // the click, I put these in to try to stop it, but didn't succeed.
-                        // If we get the behavior in production, we'll need to try some more.
-                        args.preventDefault();
-                        args.stopPropagation();
-                        // This not only starts the video, it should put everything in the right
-                        // state, including stopping any audio. If we change our minds about
-                        // always playing video first, or decide to support more than one video
-                        // on a page, we'll need something smarter here.
-                        this.resetForNewPageAndPlay(
-                            BloomPlayerCore.currentPage!
-                        );
-                    }}
-                    onTouchStart={args => {
-                        // This prevents the toolbar from toggling if we start a touch on the Replay button.
-                        // If the touch ends up being a tap, then onClick will get processed too.
-                        this.setState({ ignorePhonyClick: true });
-                    }}
-                    onMouseDown={args => {
-                        // another attempt to stop the jumping around.
-                        args.stopPropagation();
-                    }}
-                />,
-                replayButton
+        pageVideoData?.videos.forEach((video, index) => {
+            const parent = video.parentElement!;
+            let replayButton = document.getElementById(
+                `replay-button-${index}`
             );
-        }
-        // from https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent
-        // const UA = navigator.userAgent;
-        // const isWebkit =
-        //     /\b(iPad|iPhone|iPod)\b/.test(UA) &&
-        //     /WebKit/.test(UA) &&
-        //     !/Edge/.test(UA) &&
-        //     !window.MSStream;
-        //if (isWebkit || /chrome/.test(UA.toLowerCase())) {
-        // Due to a bug in Chrome and Safari (and probably other Webkit-based browsers),
-        // we can't be sure the button will show up if we place it over the video
-        // So, instead, we hide the video to make room for it. That can seem a very abrupt change,
-        // so we fade the video out before replacing it with the button.
-        // We have tried keeping the behavior in the 'else' commented out below, which we would
-        // prefer, for those browsers which can do it correctly; but it has proved too difficult
-        // to detect which those are.
-        parent.insertBefore(replayButton, pageVideoData.video); // there but still display:none
-        pageVideoData.video.classList.add("fade-out");
-        setTimeout(() => {
-            pageVideoData.video.style.display = "none";
-            replayButton!.style.display = "block";
-            pageVideoData.video.classList.remove("fade-out");
-        }, 1000);
-        // } else {
-        //     // On correctly-implemented browsers, it's neater to just overlay the button on top of the video.
-        //     // keeping this code in case we decide to try again sometime, and to remember what we'd like to
-        //     // do, but it will likely be a long time before we can be sure no problem browsers are around any more.
-        //     replayButton.style.position = "absolute";
-        //     parent.appendChild(replayButton);
-        //     replayButton!.style.display = "block";
-        // }
+            if (!replayButton) {
+                replayButton = document.createElement("div");
+                replayButton.setAttribute("id", `replay-button-${index}`);
+                replayButton.classList.add("replay-button");
+                replayButton.style.position = "absolute";
+                replayButton.style.display = "none";
+                ReactDOM.render(
+                    <Replay
+                        style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
+                        onClick={args => {
+                            // in storybook, I was seeing the page jump around as I clicked the button.
+                            // Guessing it was somehow caused by something higher up also responding to
+                            // the click, I put these in to try to stop it, but didn't succeed.
+                            // If we get the behavior in production, we'll need to try some more.
+                            args.preventDefault();
+                            args.stopPropagation();
+
+                            video.style.display = "block";
+                            if (replayButton)
+                                // replayButton is always defined, but TS doesn't know that.
+                                replayButton.style.display = "none";
+                            this.video.replaySingleVideo(video);
+                        }}
+                        onTouchStart={args => {
+                            // This prevents the toolbar from toggling if we start a touch on the Replay button.
+                            // If the touch ends up being a tap, then onClick will get processed too.
+                            this.setState({ ignorePhonyClick: true });
+                        }}
+                        onMouseDown={args => {
+                            // another attempt to stop the jumping around.
+                            args.stopPropagation();
+                        }}
+                    />,
+                    replayButton
+                );
+            }
+
+            // from https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent
+            // const UA = navigator.userAgent;
+            // const isWebkit =
+            //     /\b(iPad|iPhone|iPod)\b/.test(UA) &&
+            //     /WebKit/.test(UA) &&
+            //     !/Edge/.test(UA) &&
+            //     !window.MSStream;
+            //if (isWebkit || /chrome/.test(UA.toLowerCase())) {
+            // Due to a bug in Chrome and Safari (and probably other Webkit-based browsers),
+            // we can't be sure the button will show up if we place it over the video
+            // So, instead, we hide the video to make room for it. That can seem a very abrupt change,
+            // so we fade the video out before replacing it with the button.
+            // We have tried keeping the behavior in the 'else' commented out below, which we would
+            // prefer, for those browsers which can do it correctly; but it has proved too difficult
+            // to detect which those are.
+            parent.insertBefore(replayButton, video); // there but still display:none
+            video.classList.add("fade-out");
+            setTimeout(() => {
+                video.style.display = "none";
+                replayButton!.style.display = "block";
+                video.classList.remove("fade-out");
+            }, 1000);
+            // } else {
+            //     // On correctly-implemented browsers, it's neater to just overlay the button on top of the video.
+            //     // keeping this code in case we decide to try again sometime, and to remember what we'd like to
+            //     // do, but it will likely be a long time before we can be sure no problem browsers are around any more.
+            //     replayButton.style.position = "absolute";
+            //     parent.appendChild(replayButton);
+            //     replayButton!.style.display = "block";
+            // }
+        });
     }
 
     // We need named functions for each LiteEvent handler, so that we can unsubscribe them
@@ -2768,20 +2770,24 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
     }
+
     // This should only be called when NOT paused, because it will begin to play audio and highlighting
     // and animation from the beginning of the page.
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
         if (this.props.paused) {
             return; // shouldn't call when paused
         }
-        const replayButton = document.getElementById("replay-button");
-        if (replayButton) {
-            replayButton.style.display = "none";
-            const video = replayButton.parentElement?.getElementsByTagName(
-                "video"
-            )[0];
-            if (video) {
-                video.style.display = "";
+        const replayButtons = document.getElementsByClassName("replay-button");
+        if (replayButtons) {
+            for (let i = 0; i < replayButtons.length; i++) {
+                const replayButton = replayButtons[i] as HTMLElement;
+                replayButton.style.display = "none";
+                const video = replayButton.parentElement?.getElementsByTagName(
+                    "video"
+                )[0];
+                if (video) {
+                    video.style.display = "";
+                }
             }
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
