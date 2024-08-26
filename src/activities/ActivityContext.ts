@@ -75,13 +75,15 @@ export class ActivityContext {
         // NB: if this stops working in storybook; the file should be found because the package.json
         // script that starts storybook has a "--static-dir" option that should include the folder
         // containing the standard activity sounds.
-        // require on an mp3 gives us some sort of module object where the url of the sound is its 'default'
-        this.playSound(rightAnswer.default);
+        // require on an mp3 in storybook gives us some sort of module object where the url of the sound is its 'default'
+        // whatever we're doing to build the production version, require on the mp3 gives us the url directly.
+        this.playSound(rightAnswer.default ?? rightAnswer);
     }
 
     public playWrong() {
         // require on an mp3 gives us some sort of module object where the url of the sound is its 'default'
-        this.playSound(wrongAnswer.default);
+        // whatever we're doing to build the production version, require on the mp3 gives us the url directly.
+        this.playSound(wrongAnswer.default ?? wrongAnswer);
     }
 
     private getPagePlayer(): any {
