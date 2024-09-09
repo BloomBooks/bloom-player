@@ -1049,36 +1049,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 );
             }
 
-            // from https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent
-            // const UA = navigator.userAgent;
-            // const isWebkit =
-            //     /\b(iPad|iPhone|iPod)\b/.test(UA) &&
-            //     /WebKit/.test(UA) &&
-            //     !/Edge/.test(UA) &&
-            //     !window.MSStream;
-            //if (isWebkit || /chrome/.test(UA.toLowerCase())) {
-            // Due to a bug in Chrome and Safari (and probably other Webkit-based browsers),
-            // we can't be sure the button will show up if we place it over the video
-            // So, instead, we hide the video to make room for it. That can seem a very abrupt change,
-            // so we fade the video out before replacing it with the button.
-            // We have tried keeping the behavior in the 'else' commented out below, which we would
-            // prefer, for those browsers which can do it correctly; but it has proved too difficult
-            // to detect which those are.
-            parent.insertBefore(replayButton, video); // there but still display:none
-            video.classList.add("fade-out");
-            setTimeout(() => {
-                video.style.display = "none";
-                replayButton!.style.display = "block";
-                video.classList.remove("fade-out");
-            }, 1000);
-            // } else {
-            //     // On correctly-implemented browsers, it's neater to just overlay the button on top of the video.
-            //     // keeping this code in case we decide to try again sometime, and to remember what we'd like to
-            //     // do, but it will likely be a long time before we can be sure no problem browsers are around any more.
-            //     replayButton.style.position = "absolute";
-            //     parent.appendChild(replayButton);
-            //     replayButton!.style.display = "block";
-            // }
+            replayButton.style.position = "absolute";
+            parent.appendChild(replayButton);
+            replayButton!.style.display = "block";
         });
     }
 
