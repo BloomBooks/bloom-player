@@ -35,9 +35,12 @@ export class Video {
             return;
         }
         this.getVideoElements().forEach(videoElement => {
-            if (videoElement.hasAttribute("controls")) {
-                videoElement.removeAttribute("controls");
-            }
+            videoElement.setAttribute("controls", "controls");
+            videoElement.setAttribute("disablepictureinpicture", "true");
+            videoElement.setAttribute(
+                "controlsList",
+                "noplaybackrate nofullscreen nodownload noremoteplayback"
+            );
             if (!videoElement.hasAttribute("playsinline")) {
                 videoElement.setAttribute("playsinline", "true");
             }
