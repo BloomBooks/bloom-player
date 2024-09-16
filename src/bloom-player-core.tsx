@@ -1330,12 +1330,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     continue;
                 }
                 if (firstRunForThisBook) {
-                    // Assume Bloom-desktop got it right. Save the classes it set.
+                    // Assume Bloom-desktop got it right for when usingDefaultLang. Save the classes it set.
+                    // (But keep going...the first run might NOT be usingDefaultLang.)
                     divElement.setAttribute(
                         "data-original-class",
                         divElement.getAttribute("class") || ""
                     );
-                } else if (usingDefaultLang) {
+                }
+                if (usingDefaultLang) {
                     // go back to the original classes from bloom desktop
                     divElement.setAttribute(
                         "class",
