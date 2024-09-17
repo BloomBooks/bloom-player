@@ -2103,7 +2103,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     if (
                                         !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
                                         this.props.onContentClick &&
-                                        !this.activityManager.getActivityAbsorbsClicking()
+                                        !this.activityManager.getActivityAbsorbsClicking() &&
+                                        // clicks in video containers are probably aimed at the video controls.
+                                        // I tried adding another click handler to the video container with stopPropagation,
+                                        // but for some reason it didn't work.
+                                        !(e.target as HTMLElement).closest(
+                                            ".bloom-videoContainer"
+                                        )
                                     ) {
                                         this.props.onContentClick(e);
                                     }
