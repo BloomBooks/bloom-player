@@ -74,6 +74,7 @@ import {
     playAllSentences
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
+import { playSoundOf } from "./dragActivityRuntime";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -2501,6 +2502,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             BloomPlayerCore.addScrollbarsToPage(bloomPage);
+            const soundItems = Array.from(
+                bloomPage.querySelectorAll("[data-sound]")
+            );
+            soundItems.forEach((elt: HTMLElement) => {
+                elt.addEventListener("click", playSoundOf);
+            });
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
     }
 
