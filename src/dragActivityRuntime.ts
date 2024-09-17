@@ -18,7 +18,12 @@ import {
     urlPrefix
 } from "./narration";
 
-let targetPositions: { x: number; y: number }[] = [];
+let targetPositions: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}[] = [];
 let originalPositions = new Map<HTMLElement, { x: number; y: number }>();
 let currentPage: HTMLElement | undefined;
 // Action to invoke if the user clicks a change page button.
@@ -82,6 +87,12 @@ export function prepareActivity(
         }
     );
 
+    // By default, a shadow of any image can be dragged (e.g., to a paint program).
+    // We want only dragging that is part of the game to be possible.
+    Array.from(page.getElementsByTagName("img")).forEach((img: HTMLElement) => {
+        img.setAttribute("draggable", "false");
+    });
+
     // Record the positions of targets as snap locations and the original positions of draggables.
     // Add event listeners to draggables to start dragging.
     targetPositions = [];
@@ -96,13 +107,32 @@ export function prepareActivity(
         if (target) {
             const x = target.offsetLeft;
             const y = target.offsetTop;
-            targetPositions.push({ x, y });
+            targetPositions.push({
+                x,
+                y,
+                width: target.offsetWidth,
+                height: target.offsetHeight
+            });
             targets.push(target);
         }
         // if it has data-bubble-id, it should be draggable, just not needed
         // for the right answer.
         originalPositions.set(elt, { x: elt.offsetLeft, y: elt.offsetTop });
         elt.addEventListener("pointerdown", startDrag, { capture: true });
+    });
+
+    const videos = Array.from(page.getElementsByTagName("video"));
+    videos.forEach(video => {
+        video.addEventListener("pointerdown", playVideo);
+        if (
+            video
+                .closest(".bloom-textOverPicture")
+                ?.hasAttribute("data-bubble-id")
+        ) {
+            // don't want to show controls on these, because they are typically too small,
+            // and the play time is short enough that just click-to-play is fine
+            video.classList.add("bloom-ui-no-controls");
+        }
     });
 
     // Add event listeners to (other) text items that should play audio when clicked.
@@ -194,6 +224,11 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
     );
 };
 
+const playVideo = (e: MouseEvent) => {
+    const video = e.currentTarget as HTMLVideoElement;
+    video.play();
+};
+
 // Cleans up whatever prepareACtivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
@@ -215,6 +250,16 @@ export function undoPrepareActivity(page: HTMLElement) {
     page.querySelectorAll("[data-bubble-id]").forEach((elt: HTMLElement) => {
         elt.removeEventListener("pointerdown", startDrag, { capture: true });
     });
+
+    Array.from(page.getElementsByTagName("img")).forEach((img: HTMLElement) => {
+        img.removeAttribute("draggable");
+    });
+
+    const videos = Array.from(page.getElementsByTagName("video"));
+    videos.forEach(video => {
+        video.removeEventListener("pointerdown", playVideo);
+        video.classList.remove("bloom-ui-no-controls");
+    });
     const checkButtons = Array.from(
         page.getElementsByClassName("check-button")
     );
@@ -235,6 +280,9 @@ export function undoPrepareActivity(page: HTMLElement) {
         elt.removeEventListener("click", performTryAgain);
     });
 
+    // In Bloom Player, this will have been done by other play code, since data-sound is not
+    // specfic to games. But we're adding a listener for the same function, so it doesn't matter.
+    // In Bloom desktop, we need this to make cliking data-sound elements work in Play mode.
     const soundItems = Array.from(page.querySelectorAll("[data-sound]"));
     soundItems.forEach((elt: HTMLElement) => {
         elt.removeEventListener("click", playSoundOf);
@@ -252,12 +300,16 @@ export function undoPrepareActivity(page: HTMLElement) {
     // });
 }
 
-const playSoundOf = (e: MouseEvent) => {
+export const playSoundOf = (e: MouseEvent) => {
     const elt = e.currentTarget as HTMLElement;
     const soundFile = elt.getAttribute("data-sound");
     if (soundFile) {
         playSound(elt, soundFile);
     }
+    // Not needed in Play tab, but in Bloom Player, the click would otherwise cause
+    // a toggle between full screen and showing toolbars.
+    e.preventDefault();
+    e.stopPropagation();
 };
 
 const playAudioOfTarget = (e: PointerEvent) => {
@@ -315,6 +367,9 @@ export function playInitialElements(page: HTMLElement) {
         }
         if (top.classList.contains("draggable-text")) {
             return false; // draggable items are played only when clicked
+        }
+        if (top.hasAttribute("data-bubble-id")) {
+            return false; // another indication of a draggable item; in fact, the one above might be obsolete
         }
         if (top.classList.contains("drag-item-order-sentence")) {
             return false; // This would give away the answer
@@ -413,8 +468,10 @@ const showCorrect = (e: MouseEvent) => {
             if (!target) {
                 return; // this one is not required to be in a right place
             }
-            const x = target.offsetLeft;
-            const y = target.offsetTop;
+            const x =
+                target.offsetLeft + (target.offsetWidth - elt.offsetWidth) / 2;
+            const y =
+                target.offsetTop + (target.offsetHeight - elt.offsetHeight) / 2;
             elt.style.left = x + "px";
             elt.style.top = y + "px";
         });
@@ -464,6 +521,7 @@ const startDrag = (e: PointerEvent) => {
     target.addEventListener("pointerup", stopDrag);
     target.addEventListener("pointermove", elementDrag);
     playAudioOf(target);
+    target.classList.add("bloom-ui-dragging");
 };
 
 const elementDrag = (e: PointerEvent) => {
@@ -477,13 +535,16 @@ const elementDrag = (e: PointerEvent) => {
     let xBest = x;
     let yBest = y;
     for (const slot of targetPositions) {
-        const deltaX = slot.x - x;
-        const deltaY = slot.y - y;
+        const offsetX = (slot.width - dragTarget.offsetWidth) / 2;
+        const offsetY = (slot.height - dragTarget.offsetHeight) / 2;
+        // if this target were centered in this slot, it would be at slot.x + offsetX, slot.y + offsetY
+        const deltaX = slot.x + offsetX - x;
+        const deltaY = slot.y + offsetY - y;
         const delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         if (delta < deltaMin) {
             deltaMin = delta;
-            xBest = slot.x;
-            yBest = slot.y;
+            xBest = slot.x + offsetX;
+            yBest = slot.y + offsetY;
         }
     }
     if (deltaMin < 50) {
@@ -503,6 +564,7 @@ const stopDrag = (e: PointerEvent) => {
         dragTarget.style.top = oldPosition?.y + "px";
         dragTarget.style.left = oldPosition?.x + "px";
     }
+    dragTarget.classList.remove("bloom-ui-dragging");
     dragTarget.removeEventListener("pointerup", stopDrag);
     dragTarget.removeEventListener("pointermove", elementDrag);
 
@@ -515,10 +577,7 @@ const stopDrag = (e: PointerEvent) => {
         if (elt === dragTarget) {
             return;
         }
-        if (
-            elt.offsetLeft === dragTarget.offsetLeft &&
-            elt.offsetTop === dragTarget.offsetTop
-        ) {
+        if (rightPosition(elt, dragTarget)) {
             const originalPosition = originalPositions.get(elt);
             if (originalPosition) {
                 elt.style.left = originalPosition.x + "px";
@@ -535,16 +594,18 @@ const getVisibleText = (elt: HTMLElement): string => {
         .join(" ");
 };
 
-const rightPosition = (
-    elt: HTMLElement,
-    correctX: number,
-    correctY: number
-) => {
-    const actualX = elt.offsetLeft;
-    const actualY = elt.offsetTop;
+const rightPosition = (draggableToCheck: HTMLElement, target: HTMLElement) => {
+    const actualX = draggableToCheck.offsetLeft;
+    const actualY = draggableToCheck.offsetTop;
+    const correctX =
+        target.offsetLeft +
+        (target.offsetWidth - draggableToCheck.offsetWidth) / 2;
+    const correctY =
+        target.offsetTop +
+        (target.offsetHeight - draggableToCheck.offsetHeight) / 2;
     return (
-        // Since anything correct should be snapped, using a range probably isn't necessary
-        Math.abs(correctX - actualX) < 0.5 && Math.abs(correctY - actualY) < 0.5
+        // At least a half-pixel error can occur just from centering the draggable in the target.
+        Math.abs(correctX - actualX) < 0.6 && Math.abs(correctY - actualY) < 0.6
     );
 };
 
@@ -647,10 +708,7 @@ function checkDraggables(page: HTMLElement) {
             return;
         }
 
-        const correctX = target.offsetLeft;
-        const correctY = target.offsetTop;
-
-        if (!rightPosition(draggableToCheck, correctX, correctY)) {
+        if (!rightPosition(draggableToCheck, target)) {
             // It's not in the expected place. But perhaps one with the same text is?
             // This only applies if it's a text item.
             // (don't use getElementsByClassName here...there could be a TG on an image description of
@@ -673,7 +731,7 @@ function checkDraggables(page: HTMLElement) {
                     if (getVisibleText(otherDraggable) !== visibleText) {
                         return false; // only interested in ones with the same text
                     }
-                    return rightPosition(otherDraggable, correctX, correctY);
+                    return rightPosition(otherDraggable, target);
                 })
             ) {
                 allCorrect = false;
@@ -937,43 +995,60 @@ export function copyContentToTarget(draggable: HTMLElement) {
     if (!target) {
         return;
     }
-    // We want to copy the content of the draggale, with several exceptions.
+    // We want to copy the content of the draggable, with several exceptions.
     // To reduce flicker, we do the manipulations on a temporary element, and
     // only copy into the actual target if there is actually a change.
     // (Flicker is particularly likely with changes that don't affect the
     // target, like adding and removing the image editing buttons.)
-    const temp = target.ownerDocument.createElement("div");
-    temp.innerHTML = draggable.innerHTML;
+    let throwAway = target.ownerDocument.createElement("div");
+    throwAway.innerHTML = draggable.innerHTML;
 
     // Don't need the bubble controls
-    Array.from(temp.getElementsByClassName("bloom-ui")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("bloom-ui")).forEach(e => {
         e.remove();
     });
     // Nor the image editing controls.
-    Array.from(temp.getElementsByClassName("imageOverlayButton")).forEach(e => {
-        e.remove();
-    });
-    Array.from(temp.getElementsByClassName("imageButton")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("imageOverlayButton")).forEach(
+        e => {
+            e.remove();
+        }
+    );
+    Array.from(throwAway.getElementsByClassName("imageButton")).forEach(e => {
         e.remove();
     });
     // Bloom has integrity checks for duplicate ids, and we don't need them in the duplicate content.
-    Array.from(temp.querySelectorAll("[id]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[id]")).forEach(e => {
         e.removeAttribute("id");
     });
-    Array.from(temp.getElementsByClassName("hoverUp")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("hoverUp")).forEach(e => {
         // Produces at least a change in background color that we don't want.
         e.classList.remove("hoverUp");
     });
     // Content is not editable inside the target.
-    Array.from(temp.querySelectorAll("[contenteditable]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[contenteditable]")).forEach(e => {
         e.removeAttribute("contenteditable");
     });
     // Nor should we able to tab to it, or focus it.
-    Array.from(temp.querySelectorAll("[tabindex]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[tabindex]")).forEach(e => {
         e.removeAttribute("tabindex");
     });
-    if (target.innerHTML !== temp.innerHTML) {
-        target.innerHTML = temp.innerHTML;
+    const imageContainer = throwAway.getElementsByClassName(
+        "bloom-imageContainer"
+    )[0] as HTMLElement;
+    if (imageContainer) {
+        // We need another layer to manage clipping and centering. The one we were going to
+        // throw away becomes the wrapper, and we add a new throwAway outside it
+        const wrapper = throwAway;
+        throwAway = target.ownerDocument.createElement("div");
+        throwAway.appendChild(wrapper);
+        wrapper.classList.add("bloom-targetWrapper");
+        // We need the image container size to match the draggable size so that we get the
+        // same cropping.
+        imageContainer.style.width = draggable.style.width;
+        imageContainer.style.height = draggable.style.height;
+    }
+    if (target.innerHTML !== throwAway.innerHTML) {
+        target.innerHTML = throwAway.innerHTML;
     }
 }
 
