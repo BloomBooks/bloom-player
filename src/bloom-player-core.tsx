@@ -1008,14 +1008,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private showReplayButton(pageVideoData: IPageVideoComplete | undefined) {
+        const pageNumber =
+            pageVideoData?.page.getAttribute("data-page-number") ?? 0;
         pageVideoData?.videos.forEach((video, index) => {
             const parent = video.parentElement!;
             let replayButton = document.getElementById(
-                `replay-button-${index}`
+                `replay-button-${pageNumber}-${index}`
             );
             if (!replayButton) {
                 replayButton = document.createElement("div");
-                replayButton.setAttribute("id", `replay-button-${index}`);
+                replayButton.setAttribute(
+                    "id",
+                    `replay-button-${pageNumber}-${index}`
+                );
                 replayButton.classList.add("replay-button");
                 replayButton.style.position = "absolute";
                 replayButton.style.display = "none";
