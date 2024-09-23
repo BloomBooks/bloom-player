@@ -439,3 +439,10 @@ body,
     font-size: 9pt;
     word-wrap: break-word; // error details may contain a very long URL with no spaces; we want to see all of it.
 }
+
+// Hide the native play/pause button on Android.
+// Otherwise, it becomes redundant with the replay button we add ourselves.
+// See BL-12299.
+video::-webkit-media-controls-overlay-play-button {
+    display: none;
+}
