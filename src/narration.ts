@@ -44,6 +44,19 @@ export enum PlaybackMode {
 
 export let currentPlaybackMode: PlaybackMode = PlaybackMode.NewPage;
 export function setCurrentPlaybackMode(mode: PlaybackMode) {
+    if (
+        currentPlaybackMode === PlaybackMode.AudioPlaying &&
+        mode === PlaybackMode.NewPage
+    ) {
+        const mediaPlayer = getPlayer();
+        if (mediaPlayer) {
+            // Make sure the audio stops (pauses) before we move on to the next page.  (See BL-13905.)
+            // Make the current playing element the only one in the stack for the playEnded() method
+            // to process.
+            elementsToPlayConsecutivelyStack = [mediaPlayer];
+            playEnded();
+        }
+    }
     currentPlaybackMode = mode;
 }
 
