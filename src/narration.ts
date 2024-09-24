@@ -19,6 +19,7 @@
 // and video
 
 import LiteEvent from "./event";
+import { hideVideoError, showVideoError } from "./video";
 // Note: trying to avoid other imports, as part of the process of moving this code to a module
 // that can be shared with BloomDesktop.
 
@@ -1247,26 +1248,42 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
         return;
     }
     const video = elements[0];
-    // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is played to the end.
-    // I have not figured out why. It may be something to do with how we are trimming them.
-    // In Bloom Desktop, this is worked around by raising the ended event when we detect that it has paused past the end point
-    // in resetToStartAfterPlayingToEndPoint.
-    // In BloomPlayer,I don't think this is a problem. Videos are trimmed when published, so we always play to the
-    // real end (unless the user pauses). So one way or another, we should get the ended event.
-    video.addEventListener(
-        "ended",
-        () => {
-            playAllVideo(elements.slice(1), then);
-        },
-        { once: true }
-    );
-    // Review: do we need to do something to let the rest of the world know about this?
-    setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
 
-    const promise = video.play();
     // If there is an error, try to continue with the next video.
-    promise?.catch(reason => {
-        console.error("Video play failed", reason);
-        this.playAllVideo(elements.slice(1), then);
-    });
+    if (
+        video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
+        video.readyState === HTMLMediaElement.HAVE_NOTHING
+    ) {
+        showVideoError(video);
+        this.playAllVideo(elements.slice(1));
+    } else {
+        hideVideoError(video);
+        // Review: do we need to do something to let the rest of the world know about this?
+        setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+        const promise = video.play();
+        promise
+            .then(() => {
+                // The promise resolves when the video starts playing. We want to know when it ends.
+                // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is
+                // played to the end.  I have not figured out why. It may be something to do with how we are
+                // trimming the videos.
+                // In Bloom Desktop, this is worked around by raising the ended event when we detect that it has
+                // paused past the end point in resetToStartAfterPlayingToEndPoint.
+                // In BloomPlayer,I don't think this is a problem. Videos are trimmed when published, so we always
+                // play to the real end (unless the user pauses). So one way or another, we should get the ended
+                // event.
+                video.addEventListener(
+                    "ended",
+                    () => {
+                        playAllVideo(elements.slice(1), then);
+                    },
+                    { once: true }
+                );
+            })
+            .catch(reason => {
+                console.error("Video play failed", reason);
+                showVideoError(video);
+                this.playAllVideo(elements.slice(1), then);
+            });
+    }
 }
