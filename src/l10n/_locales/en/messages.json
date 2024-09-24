@@ -50,5 +50,9 @@
     "Button.IgnoreImageDescriptions": {
         "message": "Ignore Image Descriptions",
         "description": "tooltip for the button to disable reading image descriptions"
+    },
+    "Video.BadVideoMessage": {
+        "message": "Sorry, this video cannot be played in this browser.",
+        "description": "message displayed when a video is invalid or missing"
     }
 }

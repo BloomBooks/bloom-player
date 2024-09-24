@@ -6,6 +6,7 @@ import {
     setCurrentPlaybackMode,
     PlaybackMode
 } from "./narration";
+import { LocalizationManager } from "./l10n/localizationManager";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
@@ -13,6 +14,15 @@ export interface IPageVideoComplete {
     page: HTMLElement;
     videos: HTMLVideoElement[];
 }
+
+const uiLang = LocalizationManager.getBloomUiLanguage();
+const preferredUiLanguages = uiLang === "en" ? [uiLang] : [uiLang, "en"];
+
+const badVideoMessage = LocalizationManager.getTranslation(
+    "Video.BadVideoMessage",
+    preferredUiLanguages,
+    "Sorry, this video cannot be played in this browser."
+);
 
 export class Video {
     private currentPage: HTMLDivElement;
@@ -178,26 +188,65 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
-
         this.currentVideoElement = video;
-        video.addEventListener(
-            "ended",
-            () => {
-                this.reportVideoPlayed(
-                    video.currentTime - this.currentVideoStartTime
-                );
-                this.playAllVideo(elements.slice(1));
-            },
-            { once: true }
-        );
-        setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-        this.currentVideoStartTime = video.currentTime || 0;
-        const promise = video.play();
 
         // If there is an error, try to continue with the next video.
-        promise?.catch(reason => {
-            console.error("Video play failed", reason);
+        if (
+            video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
+            video.readyState === HTMLMediaElement.HAVE_NOTHING
+        ) {
+            showVideoError(video);
             this.playAllVideo(elements.slice(1));
-        });
+        } else {
+            hideVideoError(video);
+            setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+            this.currentVideoStartTime = video.currentTime || 0;
+            const promise = video.play();
+            promise
+                .then(() => {
+                    // The promise resolves when the video starts playing. We want to know when it ends.
+                    video.addEventListener(
+                        "ended",
+                        () => {
+                            this.reportVideoPlayed(
+                                video.currentTime - this.currentVideoStartTime
+                            );
+                            this.playAllVideo(elements.slice(1));
+                        },
+                        { once: true }
+                    );
+                })
+                .catch(reason => {
+                    console.error("Video play failed", reason);
+                    showVideoError(video);
+                    this.playAllVideo(elements.slice(1));
+                });
+        }
+    }
+}
+
+export function showVideoError(video: HTMLVideoElement): void {
+    const parent = video.parentElement;
+    if (parent) {
+        const divs = parent.getElementsByClassName("video-error-message");
+        if (divs.length === 0) {
+            const msgDiv = parent.ownerDocument.createElement("div");
+            msgDiv.className = "video-error-message normal-style";
+            msgDiv.textContent = badVideoMessage;
+            msgDiv.style.display = "block";
+            msgDiv.style.color = "white";
+            msgDiv.style.position = "absolute";
+            msgDiv.style.left = "10%";
+            msgDiv.style.top = "10%";
+            msgDiv.style.width = "80%";
+            parent.appendChild(msgDiv);
+        }
+    }
+}
+export function hideVideoError(video: HTMLVideoElement): void {
+    const parent = video.parentElement;
+    if (parent) {
+        const divs = parent.getElementsByClassName("video-error-message");
+        while (divs.length > 1) parent.removeChild(divs[0]);
     }
 }

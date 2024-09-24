@@ -1016,6 +1016,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 `replay-button-${pageNumber}-${index}`
             );
             if (!replayButton) {
+                if (
+                    video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
+                    video.readyState === HTMLMediaElement.HAVE_NOTHING
+                ) {
+                    return; // don't create replay button if video is bad
+                }
                 replayButton = document.createElement("div");
                 replayButton.setAttribute(
                     "id",
@@ -1054,7 +1060,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     replayButton
                 );
             }
-
             replayButton.style.position = "absolute";
             parent.appendChild(replayButton);
             replayButton!.style.display = "block";
