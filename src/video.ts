@@ -4,9 +4,10 @@ import { isMacOrIOS } from "./utilities/osUtils";
 import {
     currentPlaybackMode,
     setCurrentPlaybackMode,
-    PlaybackMode
+    PlaybackMode,
+    hideVideoError,
+    showVideoError
 } from "./narration";
-import { LocalizationManager } from "./l10n/localizationManager";
 
 // class Video contains functionality to get videos to play properly in bloom-player
 
@@ -14,15 +15,6 @@ export interface IPageVideoComplete {
     page: HTMLElement;
     videos: HTMLVideoElement[];
 }
-
-const uiLang = LocalizationManager.getBloomUiLanguage();
-const preferredUiLanguages = uiLang === "en" ? [uiLang] : [uiLang, "en"];
-
-const badVideoMessage = LocalizationManager.getTranslation(
-    "Video.BadVideoMessage",
-    preferredUiLanguages,
-    "Sorry, this video cannot be played in this browser."
-);
 
 export class Video {
     private currentPage: HTMLDivElement;
@@ -222,31 +214,5 @@ export class Video {
                     this.playAllVideo(elements.slice(1));
                 });
         }
-    }
-}
-
-export function showVideoError(video: HTMLVideoElement): void {
-    const parent = video.parentElement;
-    if (parent) {
-        const divs = parent.getElementsByClassName("video-error-message");
-        if (divs.length === 0) {
-            const msgDiv = parent.ownerDocument.createElement("div");
-            msgDiv.className = "video-error-message normal-style";
-            msgDiv.textContent = badVideoMessage;
-            msgDiv.style.display = "block";
-            msgDiv.style.color = "white";
-            msgDiv.style.position = "absolute";
-            msgDiv.style.left = "10%";
-            msgDiv.style.top = "10%";
-            msgDiv.style.width = "80%";
-            parent.appendChild(msgDiv);
-        }
-    }
-}
-export function hideVideoError(video: HTMLVideoElement): void {
-    const parent = video.parentElement;
-    if (parent) {
-        const divs = parent.getElementsByClassName("video-error-message");
-        while (divs.length > 1) parent.removeChild(divs[0]);
     }
 }
