@@ -19,7 +19,6 @@
 // and video
 
 import LiteEvent from "./event";
-import { hideVideoError, showVideoError } from "./video";
 // Note: trying to avoid other imports, as part of the process of moving this code to a module
 // that can be shared with BloomDesktop.
 
@@ -1285,5 +1284,37 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
                 showVideoError(video);
                 this.playAllVideo(elements.slice(1), then);
             });
+    }
+}
+
+// These methods live here instead of video.ts because video.ts is already importing
+// from narration.ts, and we don't want to create a circular dependency.
+
+// We're living with this message not being localized.
+const badVideoMessage = "Sorry, this video cannot be played in this browser.";
+
+export function showVideoError(video: HTMLVideoElement): void {
+    const parent = video.parentElement;
+    if (parent) {
+        const divs = parent.getElementsByClassName("video-error-message");
+        if (divs.length === 0) {
+            const msgDiv = parent.ownerDocument.createElement("div");
+            msgDiv.className = "video-error-message normal-style";
+            msgDiv.textContent = badVideoMessage;
+            msgDiv.style.display = "block";
+            msgDiv.style.color = "white";
+            msgDiv.style.position = "absolute";
+            msgDiv.style.left = "10%";
+            msgDiv.style.top = "10%";
+            msgDiv.style.width = "80%";
+            parent.appendChild(msgDiv);
+        }
+    }
+}
+export function hideVideoError(video: HTMLVideoElement): void {
+    const parent = video.parentElement;
+    if (parent) {
+        const divs = parent.getElementsByClassName("video-error-message");
+        while (divs.length > 1) parent.removeChild(divs[0]);
     }
 }
