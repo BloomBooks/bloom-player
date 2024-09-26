@@ -21,6 +21,7 @@ import { LocalizationManager } from "./l10n/localizationManager";
 import {
     reportAnalytics,
     reportPlaybackComplete,
+    sendMessageToHost,
     setAmbientAnalyticsProperties,
     updateBookProgressReport
 } from "./externalContext";
@@ -314,6 +315,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         document.addEventListener("keydown", e =>
             this.handleDocumentLevelKeyDown(e)
         );
+
+        // Clicking on any element that has a data-href attribute will be treated as a link.
+        // This is the simplest way to handle such links that may be scattered on different
+        // types of elements throughout the book.  See BL-13879.
+        document.addEventListener("click", e =>
+            this.handleDocumentLevelClick(e)
+        );
+
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
         // everything still works (but there could well be some state that we didn't test). So we're leaving
@@ -328,6 +337,41 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
             // or, of course, you can try it actually in Bloom desktop.
             setTimeout(() => this.repairFF60Offset(), 2000);
+        }
+    }
+
+    handleDocumentLevelClick(e: any) {
+        const targetElement = (e.target as HTMLElement).closest(
+            "[data-href]"
+        ) as HTMLElement;
+        if (targetElement && targetElement.attributes["data-href"]) {
+            const href = targetElement.attributes["data-href"].value as string;
+            if (href) {
+                if (href.startsWith("#")) {
+                    // This is a link to a page in the book.  We can handle going there.
+                    const pageId = href.substring(1);
+                    const pageIndex = this.state.pageIdToIndexMap[pageId];
+                    if (pageIndex !== undefined) {
+                        this.swiperInstance?.slideTo(pageIndex);
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                } else if (href.startsWith("bloomnav://")) {
+                    // This is a link to a page in another book. We need to send a message to the host.
+                    sendMessageToHost({ messageType: "bloomnav", href: href });
+                    e.preventDefault();
+                    e.stopPropagation();
+                } else if (
+                    href.startsWith("http://") ||
+                    href.startsWith("https://")
+                ) {
+                    // This is a generic external link. We open it in a new window or tab.
+                    // (The host possibly could intercept this and open a browser to handle it.)
+                    window.open(href, "_blank", "noreferrer");
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
         }
     }
 
