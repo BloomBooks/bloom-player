@@ -8,9 +8,8 @@
 # Read the commit message from the file passed as an argument
 COMMIT_MSG=$(cat "$1")
 
-# Check if the commit message contains a colon.
-# This is a super basic validation and could certainly be improved.
-if ! echo "$COMMIT_MSG" | grep -q ":"; then
+# Check if the commit message starts with an expected keyword followed by a colon.
+if ! echo "$COMMIT_MSG" | grep -q "^\(fix\|feat\|chore\):"; then
     echo "Improper commit message for semantic-release."
     echo "Please use the format 'type: message'"
     echo "e.g. chore: Updated README"
