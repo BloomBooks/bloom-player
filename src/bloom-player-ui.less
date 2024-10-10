@@ -247,24 +247,6 @@ We just make them follow the main content normally. */
     }
 }
 
-.bloomPlayer .replay-button {
-    font-size: 45px;
-    left: calc(50% - 22px);
-    top: calc(50% - 22px);
-}
-
-.fade-out {
-    animation: fadeOut ease 1s;
-}
-@keyframes fadeOut {
-    0% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0.2;
-    }
-}
-
 // I positioned this absolutely so that, although we allow space for it when computing the
 // overall zoom factor for the main page slider, it doesn't otherwise affect the positioning
 // of everything, which is quite complex. Also, this will work even if we later decide that
@@ -445,4 +427,55 @@ body,
 // See BL-12299.
 video::-webkit-media-controls-overlay-play-button {
     display: none;
+}
+
+@videoIconSize: 30px;
+@videoIconPadding: 0px;
+
+div.videoControlContainer {
+    position: absolute;
+    top: calc(50% - @videoIconSize / 2);
+    height: @videoIconSize + 2 * @videoIconPadding;
+    width: @videoIconSize + 2 * @videoIconPadding;
+    padding: @videoIconPadding;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+svg.videoControl {
+    height: @videoIconSize;
+}
+
+// never shown at the same time, so same location is fine.
+.videoPlayIcon,
+.videoPauseIcon {
+    left: calc(50% - @videoIconSize - 5px); // always the left of two icons
+}
+
+.videoReplayIcon {
+    left: calc(50% + 5px); // always the right of two icons
+}
+
+// Show play and replay when paused
+.bloom-videoContainer.paused {
+    .videoControlContainer {
+        &.videoPlayIcon,
+        &.videoReplayIcon {
+            display: flex;
+        }
+    }
+}
+
+// Show pause and replay when playing and hovered.
+.bloom-videoContainer.playing:hover {
+    .videoControlContainer {
+        &.videoPauseIcon,
+        &.videoReplayIcon {
+            display: flex;
+        }
+    }
 }
