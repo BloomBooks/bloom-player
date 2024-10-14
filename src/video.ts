@@ -57,6 +57,7 @@ export class Video {
         }
         this.getVideoElements().forEach(videoElement => {
             videoElement.removeAttribute("controls");
+            videoElement.addEventListener("click", this.handleVideoClick);
             const playButton = this.wrapVideoIcon(
                 videoElement,
                 // Alternatively, we could import the Material UI icon, make this file a TSX, and use
@@ -68,7 +69,6 @@ export class Video {
                 "videoPlayIcon"
             );
             playButton.addEventListener("click", this.handlePlayClick);
-            videoElement.addEventListener("click", this.handlePlayClick);
             const pauseButton = this.wrapVideoIcon(
                 videoElement,
                 getPauseIcon("#ffffff"),
@@ -153,6 +153,15 @@ export class Video {
         } else {
             // a video we were not currently playing, start from the beginning.
             this.replaySingleVideo(video);
+        }
+    };
+
+    private handleVideoClick = (ev: MouseEvent) => {
+        const video = ev.currentTarget as HTMLVideoElement;
+        if (video.paused) {
+            this.handlePlayClick(ev);
+        } else {
+            this.handlePauseClick(ev);
         }
     };
 
