@@ -1051,65 +1051,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private showReplayButton(pageVideoData: IPageVideoComplete | undefined) {
-        const pageNumber =
-            pageVideoData?.page.getAttribute("data-page-number") ?? 0;
-        pageVideoData?.videos.forEach((video, index) => {
-            const parent = video.parentElement!;
-            let replayButton = document.getElementById(
-                `replay-button-${pageNumber}-${index}`
-            );
-            if (!replayButton) {
-                if (
-                    video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
-                    video.readyState === HTMLMediaElement.HAVE_NOTHING
-                ) {
-                    return; // don't create replay button if video is bad
-                }
-                replayButton = document.createElement("div");
-                replayButton.setAttribute(
-                    "id",
-                    `replay-button-${pageNumber}-${index}`
-                );
-                replayButton.classList.add("replay-button");
-                replayButton.style.position = "absolute";
-                replayButton.style.display = "none";
-                ReactDOM.render(
-                    <Replay
-                        style={{ backgroundColor: "rgba(255,255,255,0.5)" }}
-                        onClick={args => {
-                            // in storybook, I was seeing the page jump around as I clicked the button.
-                            // Guessing it was somehow caused by something higher up also responding to
-                            // the click, I put these in to try to stop it, but didn't succeed.
-                            // If we get the behavior in production, we'll need to try some more.
-                            args.preventDefault();
-                            args.stopPropagation();
-
-                            video.style.display = "block";
-                            if (replayButton)
-                                // replayButton is always defined, but TS doesn't know that.
-                                replayButton.style.display = "none";
-                            this.video.replaySingleVideo(video);
-                        }}
-                        onTouchStart={args => {
-                            // This prevents the toolbar from toggling if we start a touch on the Replay button.
-                            // If the touch ends up being a tap, then onClick will get processed too.
-                            this.setState({ ignorePhonyClick: true });
-                        }}
-                        onMouseDown={args => {
-                            // another attempt to stop the jumping around.
-                            args.stopPropagation();
-                        }}
-                    />,
-                    replayButton
-                );
-            }
-            replayButton.style.position = "absolute";
-            parent.appendChild(replayButton);
-            replayButton!.style.display = "block";
-        });
-    }
-
     // We need named functions for each LiteEvent handler, so that we can unsubscribe them
     // when we are about to unmount.
     private handlePageVideoComplete = pageVideoData => {
@@ -1117,14 +1058,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // If the user if flipping pages rapidly, video completed events can overlap.
         if (pageVideoData!.page === BloomPlayerCore.currentPage) {
             this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
-            if (!this.props.hideSwiperButtons) {
-                // Replay isn't technically a swiper button, but it's the same sort of navigational
-                // control and wants to be hidden in the same circumstances, currently both preview
-                // and recording-in-progress in publish-to-video.
-                this.showReplayButton(pageVideoData);
-            }
-            // } else {
-            //     console.log(`DEBUG: ignoring out of sequence page audio`);
         }
     };
 
@@ -2818,19 +2751,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
         if (this.props.paused) {
             return; // shouldn't call when paused
-        }
-        const replayButtons = document.getElementsByClassName("replay-button");
-        if (replayButtons) {
-            for (let i = 0; i < replayButtons.length; i++) {
-                const replayButton = replayButtons[i] as HTMLElement;
-                replayButton.style.display = "none";
-                const video = replayButton.parentElement?.getElementsByTagName(
-                    "video"
-                )[0];
-                if (video) {
-                    video.style.display = "";
-                }
-            }
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
         setCurrentNarrationPage(bloomPage);
