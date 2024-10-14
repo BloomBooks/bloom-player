@@ -59,6 +59,11 @@ export class Video {
             videoElement.removeAttribute("controls");
             const playButton = this.wrapVideoIcon(
                 videoElement,
+                // Alternatively, we could import the Material UI icon, make this file a TSX, and use
+                // ReactDom.render to render the icon into the div. But just creating the SVG
+                // ourselves (as these methods do) seems more natural to me. We would not be using
+                // React for anything except to make use of an image which unfortunately is only
+                // available by default as a component.
                 getPlayIcon("#ffffff"),
                 "videoPlayIcon"
             );
@@ -191,9 +196,6 @@ export class Video {
     public handlePauseClick = (ev: MouseEvent) => {
         ev.stopPropagation(); // we don't want the navigation bar to toggle on and off
         ev.preventDefault();
-        (ev.target as HTMLElement)
-            ?.closest(".bloom-videoContainer")
-            ?.classList.add("paused");
         this.pause();
     };
 
@@ -226,6 +228,7 @@ export class Video {
                 videoElement.currentTime - this.currentVideoStartTime
             );
         }
+        videoElement?.closest(".bloom-videoContainer")?.classList.add("paused");
         videoElement.pause();
     }
 
