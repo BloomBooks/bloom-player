@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+import path from "path";
+import fs from "fs";
 
 export default defineConfig({
     build: {
@@ -40,14 +42,6 @@ export default defineConfig({
         }
     },
     plugins: [
-        {
-            name: "before-build",
-            buildStart() {
-                // TODO
-                // Fetch and combine translations here
-                console.log("Before build tasks");
-            }
-        },
         viteStaticCopy({
             targets: [
                 {
@@ -60,6 +54,40 @@ export default defineConfig({
                     dest: "./"
                 }
             ]
-        })
+        }),
+        useCacheBustingHashPlugin()
     ]
 });
+function useCacheBustingHashPlugin() {
+    return {
+        name: "copy-html-plugin",
+        writeBundle(options, bundle) {
+            // this doesn't actually know the hash, but it can find
+            // the file name and use it in the html
+            const jsFile = Object.keys(bundle).find(
+                fileName =>
+                    fileName.startsWith("bloomPlayer") &&
+                    fileName.endsWith(".js")
+            );
+            if (!jsFile) {
+                return;
+            }
+
+            const srcHtmlPath = path.resolve(__dirname, "src/bloomplayer.htm");
+            const destHtmlPath = path.resolve(
+                __dirname,
+                "dist/bloomplayer.htm"
+            );
+
+            let htmlContent = fs.readFileSync(srcHtmlPath, "utf-8");
+
+            // Replace the script tag
+            htmlContent = htmlContent.replace(
+                /<script src="bloomPlayer\.js"><\/script>/,
+                `<script src="${jsFile}"></script>`
+            );
+
+            fs.writeFileSync(destHtmlPath, htmlContent);
+        }
+    };
+}
