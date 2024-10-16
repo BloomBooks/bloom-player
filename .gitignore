@@ -17,3 +17,5 @@ testBooks/sample-dom-activity/Activity.css
 src/bloom-player.css
 
 *.bak
+
+*storybook.log
