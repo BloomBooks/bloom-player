@@ -17,16 +17,12 @@
         "// 'dev' will build, watch, start a server, and open a chrome browser with CORS disabled": " ",
         "// you can edit index-for-developing.html to point to different books": " ",
         "dev": "vite",
-        "storybook": "storybook dev -p 6006",
-        "storybook-inner": "start-storybook --static-dir ./,./src/activities,./src/activities/legacyQuizHandling -p 9009 --ci",
-        "chrome-on-storybook-port": "chrome http://localhost:9009/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
+        "//storybook-inner": "start-storybook --static-dir ./,./src/activities,./src/activities/legacyQuizHandling -p 9009 --ci",
         "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": " ",
         "build": "vite build",
         "tslint": "tslint  --project tsconfig.json",
         "test": "vitest",
-        "test-storybook": "test-storybook --url http://localhost:9009",
-        "prepare": "husky install",
-        "build-storybook": "storybook build"
+        "prepare": "husky install"
     },
     "dependencies": {
         "@material-ui/core": "^4.12.3",
@@ -42,7 +38,6 @@
         "vitest": "^2.1.3"
     },
     "devDependencies": {
-        "@chromatic-com/storybook": "1.9.0",
         "@crowdin/crowdin-api-client": "^1.10.4",
         "@types/jquery": "^3.5.5",
         "@types/jquery.nicescroll": "^3.7.1",
@@ -52,14 +47,12 @@
         "concurrently": "^4.1.1",
         "editorconfig": "^0.15.3",
         "eslint": "^8.4.1",
-        "eslint-plugin-storybook": "^0.9.0",
         "globule": "^1.2.1",
         "husky": "8",
         "less": "^4.2.0",
         "prettier": "^3.3.3",
         "semantic-release": "19.0.5",
         "shx": "^0.3.2",
-        "storybook": "8.3.5",
         "tslint": "^5.15.0",
         "tslint-config-prettier": "^1.18.0",
         "tslint-react": "^4.0.0",
