@@ -1,6 +1,6 @@
 import { ActivityContext } from "../ActivityContext";
 import { IActivityObject } from "../activityManager";
-
+import styles from "./SimpleCheckboxQuiz.css?inline";
 // The value we store to indicate that at some point the user
 // chose this answer. We don't really need the value, because if the key for
 // that answer has a value, it will be this. But may as well
@@ -24,9 +24,7 @@ class SimpleCheckboxQuiz implements IActivityObject {
     public showingPage(activityContext: ActivityContext) {
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
-        activityContext.addActivityStylesForPage(
-            require("!!raw-loader!./SimpleCheckboxQuiz.css").default,
-        );
+        activityContext.addActivityStylesForPage(styles);
 
         //------------ Code for managing the choice radio buttons -------
         // Initialize the choice radio buttons, arranging for the appropriate click actions

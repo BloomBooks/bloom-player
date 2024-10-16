@@ -1,9 +1,5 @@
 import { ActivityContext } from "../ActivityContext";
 import { IActivityObject } from "../activityManager";
-// tslint:disable-next-line: no-submodule-imports
-/* Not using. See comment below:
-    const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
-    .default;*/
 
 // This class is intentionally very generic. All it needs is that the html of the
 // page it is given should have some objects (translation groups or images) that have
