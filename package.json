@@ -21,7 +21,7 @@
         "storybook-inner": "start-storybook --static-dir ./,./src/activities,./src/activities/legacyQuizHandling -p 9009 --ci",
         "chrome-on-storybook-port": "chrome http://localhost:9009/ --disable-web-security --disable-gpu --user-data-dir=%temp%/chromeTemp",
         "// note: shx cp is the same as unix cp, but cross platform. So a bit different semantics than Windows copy": " ",
-        "build": "shx rm -rf dist/ && vite build",
+        "build": "vite build",
         "tslint": "tslint  --project tsconfig.json",
         "test": "vitest",
         "test-storybook": "test-storybook --url http://localhost:9009",
