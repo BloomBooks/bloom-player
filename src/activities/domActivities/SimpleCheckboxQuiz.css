@@ -16,6 +16,14 @@
 .simple-comprehension-quiz .checkbox-and-textbox-choice {
     display: flex;
     z-index: 0;
+    /* without this, each choice extends to the full width of the container */
+    /* that means you can click on empty space to the right of the text and accidentally select the choice */
+    /* this could also interfere with trying to swipe to the next page */
+    /* note that everything from the container down to the paragraph has to have width: fit-content */
+    width: fit-content;
+    * {
+        width: fit-content;
+    }
     /* Checkmark is done as a rotated half-bordered box that is the :before of the div */
 }
 .simple-comprehension-quiz .checkbox-and-textbox-choice input {
