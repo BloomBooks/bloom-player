@@ -3,7 +3,7 @@ import { IActivityObject, IActivityRequirements } from "../activityManager";
 import {
     playInitialElements,
     prepareActivity,
-    undoPrepareActivity
+    undoPrepareActivity,
 } from "../../dragActivityRuntime";
 // tslint:disable-next-line: no-submodule-imports
 /* Not using. See comment below:
@@ -17,7 +17,7 @@ import {
 
 // Note that you won't find any code using this directly. Instead,
 // it gets used by the ActivityManager as the default export of this module.
-export default class DragToDestinationActivity implements IActivityObject {
+class DragToDestinationActivity implements IActivityObject {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -52,9 +52,9 @@ export default class DragToDestinationActivity implements IActivityObject {
         // Bloom Player may also add drag-activity-correct or drag-activity-wrong to this element,
         // after checking an answer, or drag-activity-solution when showing the answer.
         activityContext.pageElement.parentElement?.classList.add(
-            "drag-activity-play"
+            "drag-activity-play",
         );
-        prepareActivity(activityContext.pageElement, next => {
+        prepareActivity(activityContext.pageElement, (next) => {
             // Move to the next or previous page. None of our current bloom game activities use this, but it's available
             // if we create an activity with built-in next/previous page buttons.
             if (next) {
@@ -75,7 +75,7 @@ export default class DragToDestinationActivity implements IActivityObject {
                 "drag-activity-start", // I don't think Bloom Player will ever add this, but just in case.
                 "drag-activity-correct",
                 "drag-activity-wrong",
-                "drag-activity-solution"
+                "drag-activity-solution",
             );
         }
     }
@@ -86,6 +86,10 @@ export function activityRequirements(): IActivityRequirements {
         dragging: true, // this activity is all about dragging things around, we don't want dragging to change pages
         clicking: true, // not sure we need this, but can we actually support dragging without supporting clicking?
         typing: false,
-        soundManagement: true // many sounds played only after specific events.
+        soundManagement: true, // many sounds played only after specific events.
     };
 }
+export default {
+    default: DragToDestinationActivity,
+    activityRequirements,
+};
