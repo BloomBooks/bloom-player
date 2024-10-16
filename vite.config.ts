@@ -6,22 +6,29 @@ import fs from "fs";
 export default defineConfig({
     build: {
         outDir: "dist",
+
         rollupOptions: {
             input: {
-                bloomPlayer: "./src/bloom-player-root.ts"
+                bloomPlayer: "./src/bloom-player-root.ts",
             },
             output: {
                 entryFileNames: "bloomPlayer.[hash].js",
                 globals: {
-                    BloomPlayer: "window.BloomPlayer"
-                }
-            }
-        }
+                    BloomPlayer: "window.BloomPlayer",
+                },
+            },
+        },
+        target: "esnext", // review: did this for the dynamic import
+        dynamicImportVarsOptions: {
+            warnOnError: true,
+            exclude: [],
+        },
     },
+
     server: {
         open: "/index-for-developing.html",
         watch: {
-            ignored: ["node_modules/**"]
+            ignored: ["node_modules/**"],
         },
         // This is one way to get around CORS restrictions when trying to access s3 resources.
         // It requires using '/s3' as a prefix on the url in our html files rather than
@@ -31,15 +38,15 @@ export default defineConfig({
             "/s3": {
                 target: "https://s3.amazonaws.com",
                 changeOrigin: true,
-                rewrite: path => path.replace(/^\/s3/, "")
-            }
-        }
+                rewrite: (path) => path.replace(/^\/s3/, ""),
+            },
+        },
     },
 
     css: {
         preprocessorOptions: {
-            less: {}
-        }
+            less: {},
+        },
     },
     plugins: [
         viteStaticCopy({
@@ -47,17 +54,19 @@ export default defineConfig({
                 {
                     src: "index-for-developing.html",
                     dest: "./",
-                    rename: "index.html"
+                    rename: "index.html",
                 },
                 {
                     src: "src/bloomplayer-for-developing.htm",
-                    dest: "./"
-                }
-            ]
+                    dest: "./",
+                },
+            ],
         }),
-        useCacheBustingHashPlugin()
-    ]
+
+        useCacheBustingHashPlugin(),
+    ],
 });
+
 function useCacheBustingHashPlugin() {
     return {
         name: "copy-html-plugin",
@@ -65,9 +74,9 @@ function useCacheBustingHashPlugin() {
             // this doesn't actually know the hash, but it can find
             // the file name and use it in the html
             const jsFile = Object.keys(bundle).find(
-                fileName =>
+                (fileName) =>
                     fileName.startsWith("bloomPlayer") &&
-                    fileName.endsWith(".js")
+                    fileName.endsWith(".js"),
             );
             if (!jsFile) {
                 return;
@@ -76,7 +85,7 @@ function useCacheBustingHashPlugin() {
             const srcHtmlPath = path.resolve(__dirname, "src/bloomplayer.htm");
             const destHtmlPath = path.resolve(
                 __dirname,
-                "dist/bloomplayer.htm"
+                "dist/bloomplayer.htm",
             );
 
             let htmlContent = fs.readFileSync(srcHtmlPath, "utf-8");
@@ -84,10 +93,10 @@ function useCacheBustingHashPlugin() {
             // Replace the script tag
             htmlContent = htmlContent.replace(
                 /<script src="bloomPlayer\.js"><\/script>/,
-                `<script src="${jsFile}"></script>`
+                `<script src="${jsFile}"></script>`,
             );
 
             fs.writeFileSync(destHtmlPath, htmlContent);
-        }
+        },
     };
 }
