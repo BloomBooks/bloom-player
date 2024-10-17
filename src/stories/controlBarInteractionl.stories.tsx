@@ -1,7 +1,7 @@
 import React from "react";
 import { Meta, StoryFn } from "@storybook/react";
 import { within, userEvent } from "@storybook/testing-library";
-import { expect } from "@storybook/jest";
+import { expect } from "@storybook/test";
 import { ControlBar } from "../controlBar";
 import LangData from "../langData";
 
