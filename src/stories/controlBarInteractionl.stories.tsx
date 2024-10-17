@@ -1,5 +1,5 @@
 import React from "react";
-import { ComponentStory, ComponentMeta } from "@storybook/react";
+import { Meta, StoryFn } from "@storybook/react";
 import { within, userEvent } from "@storybook/testing-library";
 import { expect } from "@storybook/jest";
 import { ControlBar } from "../controlBar";
@@ -8,10 +8,10 @@ import LangData from "../langData";
 // The format of the tests here is from https://storybook.js.org/docs/react/writing-stories/play-function
 export default {
     title: "Interaction Tests/Control Bar",
-    component: ControlBar
-} as ComponentMeta<typeof ControlBar>;
+    component: ControlBar,
+} as Meta<typeof ControlBar>;
 
-const Template: ComponentStory<typeof ControlBar> = args => (
+const Template: StoryFn<typeof ControlBar> = (args) => (
     <ControlBar
         {...args}
         visible={true}
@@ -21,7 +21,7 @@ const Template: ComponentStory<typeof ControlBar> = args => (
         bookLanguages={[
             new LangData("Sokoro", "sok"),
             new LangData("Englishy", "en"),
-            new LangData("frenchy", "fr")
+            new LangData("frenchy", "fr"),
         ]}
         activeLanguageCode="fr"
         canGoBack={true}
