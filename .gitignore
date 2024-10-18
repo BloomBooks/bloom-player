@@ -6,10 +6,6 @@ updateFiles.bat
 
 debug.log
 
-/src/l10n/l10n-all.json
-/src/l10n/_locales/*
-!/src/l10n/_locales/en
-
 src/activities/domActivities/multipleChoiceDomActivity.css
 
 testBooks/sample-dom-activity/Activity.css
@@ -19,3 +15,5 @@ src/bloom-player.css
 *.bak
 
 *storybook.log
+src/l10n/bloom-player
+
