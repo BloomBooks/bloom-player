@@ -63,12 +63,12 @@ export default defineConfig(({ command }) => {
                         {
                             src: "src/bloomplayer-for-developing.htm",
                             dest: "./",
-                },
-            ],
-        }),
+                        },
+                    ],
+                }),
 
-        useCacheBustingHashPlugin(),
-    ],
+            useCacheBustingHashPlugin(),
+        ],
     };
 });
 
@@ -76,13 +76,20 @@ function useCacheBustingHashPlugin() {
     return {
         name: "copy-html-plugin",
         writeBundle(options, bundle) {
-            // this doesn't actually know the hash, but it can find
-            // the file name and use it in the html
+            // Find the JS file
             const jsFile = Object.keys(bundle).find(
                 (fileName) =>
                     fileName.startsWith("bloomPlayer") &&
                     fileName.endsWith(".js"),
             );
+
+            // Find the CSS file
+            const cssFile = Object.keys(bundle).find(
+                (fileName) =>
+                    fileName.startsWith("bloomPlayer") &&
+                    fileName.endsWith(".css"),
+            );
+
             if (!jsFile) {
                 return;
             }
@@ -97,9 +104,16 @@ function useCacheBustingHashPlugin() {
 
             // Replace the script tag
             htmlContent = htmlContent.replace(
-                /<script src="bloomPlayer\.js"><\/script>/,
+                /<script src="bloomPlayer-HASH\.js"><\/script>/,
                 `<script src="${jsFile}"></script>`,
             );
+
+            if (cssFile) {
+                htmlContent = htmlContent.replace(
+                    /<link rel="stylesheet" href="bloomPlayer-HASH\.css"\s*\/?>/,
+                    `<link rel="stylesheet" href="${cssFile}">`,
+                );
+            }
 
             fs.writeFileSync(destHtmlPath, htmlContent);
         },

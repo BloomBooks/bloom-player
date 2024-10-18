@@ -6,6 +6,8 @@
 
 <head>
     <meta charset="UTF-8" />
+    <!-- At build time, we replace this with the actual css file -->
+    <link rel="stylesheet" href="bloomPlayer-HASH.css">
 </head>
 
 <!-- About the background-color here... the bloomPlayer.js will set the background color
@@ -16,7 +18,7 @@
 
     <!-- At build time, we replace the target of this script tag to point at the
      the bloom player bundle with the cache-busting hash in its name. -->
-    <script src="bloomPlayer.js"></script>
+    <script src="bloomPlayer-HASH.js"></script>
 </body>
 
 
