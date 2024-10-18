@@ -3,7 +3,8 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 import fs from "fs";
 
-export default defineConfig({
+export default defineConfig(({ command }) => {
+    return {
     build: {
         outDir: "dist",
 
@@ -49,6 +50,7 @@ export default defineConfig({
         },
     },
     plugins: [
+            command === "serve" && // only want these when we do "vite dev", not when we do "vite build"
         viteStaticCopy({
             targets: [
                 {
@@ -65,6 +67,7 @@ export default defineConfig({
 
         useCacheBustingHashPlugin(),
     ],
+    };
 });
 
 function useCacheBustingHashPlugin() {
