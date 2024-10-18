@@ -5,62 +5,64 @@ import fs from "fs";
 
 export default defineConfig(({ command }) => {
     return {
-    build: {
-        outDir: "dist",
+        build: {
+            outDir: "dist",
 
-        rollupOptions: {
-            input: {
-                bloomPlayer: "./src/bloom-player-root.ts",
+            rollupOptions: {
+                input: {
+                    bloomPlayer: "./src/bloom-player-root.ts",
+                },
+                output: {
+                    entryFileNames: "bloomPlayer.[hash].js",
+                    globals: {
+                        BloomPlayer: "window.BloomPlayer",
+                    },
+                    // avoid the /assets folder in order to match what webpack was doing
+                    assetFileNames: "[name]-[hash].[ext]",
+                },
             },
-            output: {
-                entryFileNames: "bloomPlayer.[hash].js",
-                globals: {
-                    BloomPlayer: "window.BloomPlayer",
+            target: "esnext", // review: did this for the dynamic import
+            dynamicImportVarsOptions: {
+                warnOnError: true,
+                exclude: [],
+            },
+        },
+
+        server: {
+            open: "/index-for-developing.html",
+            watch: {
+                ignored: ["node_modules/**"],
+            },
+            // This is one way to get around CORS restrictions when trying to access s3 resources.
+            // It requires using '/s3' as a prefix on the url in our html files rather than
+            // the actual bloomlibrary.org url.
+            // Alternatively, we could always launch the browser with security disabled.
+            proxy: {
+                "/s3": {
+                    target: "https://s3.amazonaws.com",
+                    changeOrigin: true,
+                    rewrite: (path) => path.replace(/^\/s3/, ""),
                 },
             },
         },
-        target: "esnext", // review: did this for the dynamic import
-        dynamicImportVarsOptions: {
-            warnOnError: true,
-            exclude: [],
-        },
-    },
 
-    server: {
-        open: "/index-for-developing.html",
-        watch: {
-            ignored: ["node_modules/**"],
-        },
-        // This is one way to get around CORS restrictions when trying to access s3 resources.
-        // It requires using '/s3' as a prefix on the url in our html files rather than
-        // the actual bloomlibrary.org url.
-        // Alternatively, we could always launch the browser with security disabled.
-        proxy: {
-            "/s3": {
-                target: "https://s3.amazonaws.com",
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/s3/, ""),
+        css: {
+            preprocessorOptions: {
+                less: {},
             },
         },
-    },
-
-    css: {
-        preprocessorOptions: {
-            less: {},
-        },
-    },
-    plugins: [
+        plugins: [
             command === "serve" && // only want these when we do "vite dev", not when we do "vite build"
-        viteStaticCopy({
-            targets: [
-                {
-                    src: "index-for-developing.html",
-                    dest: "./",
-                    rename: "index.html",
-                },
-                {
-                    src: "src/bloomplayer-for-developing.htm",
-                    dest: "./",
+                viteStaticCopy({
+                    targets: [
+                        {
+                            src: "index-for-developing.html",
+                            dest: "./",
+                            rename: "index.html",
+                        },
+                        {
+                            src: "src/bloomplayer-for-developing.htm",
+                            dest: "./",
                 },
             ],
         }),
