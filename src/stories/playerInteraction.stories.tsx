@@ -31,7 +31,7 @@ const MotionBookTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
         hideFullScreenButton={true}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
+            "s3/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
         }
         initialLanguageCode="fr"
         autoplay={"motion"}
@@ -129,7 +129,7 @@ const DavidAndGoliathTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
         locationOfDistFolder={"/dist/"}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
+            "s3/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
         }
         initialLanguageCode="en"
     />
@@ -225,7 +225,7 @@ const BigFishTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
         locationOfDistFolder={"/dist/"}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
+            "s3/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
         }
         initialLanguageCode="tpi"
     />

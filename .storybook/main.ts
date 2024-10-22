@@ -1,14 +1,16 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 // get the vite config one level up
-import viteConfig from "../vite.config";
+import viteConfigFn from "../vite.config";
 
+const proxy = viteConfigFn({
+    command: "serve",
+    mode: "development",
+}).server!.proxy;
 const config: StorybookConfig = {
     stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
     addons: [
-        "@storybook/addon-onboarding",
         "@storybook/addon-links",
         "@storybook/addon-essentials",
-        "@chromatic-com/storybook",
         "@storybook/addon-interactions",
     ],
     framework: {
@@ -20,7 +22,7 @@ const config: StorybookConfig = {
         const server = {
             ...config.server,
             proxy: {
-                ...viteConfig.server.proxy,
+                ...proxy,
             },
         };
 
