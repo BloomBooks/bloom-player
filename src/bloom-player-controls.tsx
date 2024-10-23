@@ -10,7 +10,7 @@ import {
     hideNavBar,
     reportBookProperties,
     setExternalControlCallback,
-    logError
+    logError,
 } from "./externalContext";
 import { ControlBar, IExtraButton, IVideoSettings } from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
@@ -20,7 +20,7 @@ import LangData from "./langData";
 import {
     getQueryStringParamAndUnencode,
     getBooleanUrlParam,
-    getNumericUrlParam
+    getNumericUrlParam,
 } from "./utilities/urlUtils";
 import { IconButton } from "@material-ui/core";
 //tslint:disable-next-line:no-submodule-imports
@@ -39,7 +39,7 @@ import { roundToNearestK } from "./utilities/mathUtils";
 // image descriptions.
 
 export type autoPlayType = "yes" | "no" | "motion"; // default "motion" means autoplay only motion books
-interface IProps {
+export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     // Url of the bloom book (folder). Should be a valid, well-formed URL
     // e.g. any special chars in the path or book title should be appropriately encoded using URL (percent) encoding
     // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
@@ -168,8 +168,9 @@ function getWindowSize() {
     return { width, height };
 }
 
-export const BloomPlayerControls: React.FunctionComponent<IProps &
-    React.HTMLProps<HTMLDivElement>> = props => {
+export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
+    props,
+) => {
     const [autoplay, setAutoplay] = useState(props.autoplay);
     // default is to center BP vertically; various versions of blorg should pass this as false.
     const doVerticalCentering =
@@ -178,7 +179,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     // Allows an external controller (such as Bloom Reader) to manipulate our controls
     // And now (BL-9871) we allow activities to manipulate our controls too.
     // If we arrive here, our messageType is "control".
-    setExternalControlCallback(data => {
+    setExternalControlCallback((data) => {
         if (data.pause) {
             canExternallyResume = !paused;
             setPaused(true);
@@ -203,24 +204,22 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const [pageScaled, setPageScaled] = useState(false);
 
     const [showAppBar, setShowAppBar] = useState<boolean>(
-        props.initiallyShowAppBar
+        props.initiallyShowAppBar,
     );
 
     const [pageNumberControlPos, setPageNumberControlPos] = useState(
-        props.startPage ?? 0
+        props.startPage ?? 0,
     );
     const [pageNumbers, setPageNumbers] = useState([""]);
     const [isRtl, setIsRtl] = useState(false);
-    const [hidingNavigationButtons, setHidingNavigationButtons] = useState(
-        false
-    );
+    const [hidingNavigationButtons, setHidingNavigationButtons] =
+        useState(false);
 
     // When we're in storybook we won't get a new page when we change the book,
     // so we need to be able to detect that the book changed and thus do new size calculations.
     const [previousUrl, setPreviousUrl] = useState<string>("");
-    const [previousPageClass, setPreviousPageClass] = useState(
-        "Device16x9Portrait"
-    );
+    const [previousPageClass, setPreviousPageClass] =
+        useState("Device16x9Portrait");
 
     // while the initiallyShowAppBar prop won't change in production, it can change
     // when we're tinkering with storybook. The statement above won't re-run if
@@ -245,7 +244,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const initialPreferredUiLanguages =
         uiLang === "en" ? [uiLang] : [uiLang, "en"];
     const [preferredUiLanguages, setPreferredUiLanguages] = useState(
-        initialPreferredUiLanguages
+        initialPreferredUiLanguages,
     );
 
     useEffect(() => {
@@ -272,19 +271,14 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     // hold onto it through multiple renders, so a ref is appropriate.
     const pageNumberSetter = useRef<(pn: number) => void>();
 
-    const [
-        shouldReadImageDescriptions,
-        setShouldReadImageDescriptions
-    ] = useState(true);
-    const [bookHasImageDescriptions, setBookHasImageDescriptions] = useState(
-        false
-    );
+    const [shouldReadImageDescriptions, setShouldReadImageDescriptions] =
+        useState(true);
+    const [bookHasImageDescriptions, setBookHasImageDescriptions] =
+        useState(false);
 
     // Is narration.ts currently reading an image description aloud?
-    const [
-        nowReadingImageDescription,
-        setNowReadingImageDescription
-    ] = useState(false);
+    const [nowReadingImageDescription, setNowReadingImageDescription] =
+        useState(false);
 
     // the point of this is just to have an ever-increasing number; each time the number
     // is increased, it will cause the useEffect to scale the page to the window again.
@@ -293,7 +287,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // NB: if we instead said "resizeTrigger+1", the closure would capture the value of
         // scalePageToWindowTrigger the first time through, and so it would never change. So we instead
         // provide a function, and react will supply us with the current value.
-        setScalePageToWindowTrigger(currentValue => currentValue + 1);
+        setScalePageToWindowTrigger((currentValue) => currentValue + 1);
     };
 
     const [outsideButtonPageClass, setOutsideButtonPageClass] = useState("");
@@ -304,16 +298,15 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         pageStylesInstalled,
         scalePageToWindowTrigger,
         windowLandscape,
-        props.useOriginalPageSize
+        props.useOriginalPageSize,
     ]);
 
     // One-time cleanup when this component is being removed
     useEffect(() => {
         return () => {
             // Likely this only matters for Storybook where the main dom remains the same for multiple books
-            const scaleStyleSheet = document.getElementById(
-                "scale-style-sheet"
-            );
+            const scaleStyleSheet =
+                document.getElementById("scale-style-sheet");
             if (scaleStyleSheet) {
                 scaleStyleSheet.parentNode!.removeChild(scaleStyleSheet);
             }
@@ -336,7 +329,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 break;
             default:
                 console.log(
-                    "'handleControlMessage' received an unknown message."
+                    "'handleControlMessage' received an unknown message.",
                 );
                 return;
         }
@@ -352,12 +345,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         // We need to work from the page that is currently visible. Others may not have the right
         // orientation class set.
         const currentSwiperElt = document.getElementsByClassName(
-            "swiper-slide-active"
+            "swiper-slide-active",
         )[0] as HTMLElement;
         let page: HTMLElement | null = null;
         if (currentSwiperElt) {
             page = currentSwiperElt.getElementsByClassName(
-                "bloom-page"
+                "bloom-page",
             )[0] as HTMLElement;
         }
         // note that these are independent: we could have received a pageStylesInstalled signal, but
@@ -416,7 +409,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             // we won't get variation on every page.)
             localMaxPageDimension = Math.max(
                 page.offsetHeight,
-                page.offsetWidth
+                page.offsetWidth,
             );
             localAspectRatio =
                 Math.min(page.offsetHeight, page.offsetWidth) /
@@ -468,9 +461,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             if (appbar) {
                 controlsHeight += appbar.offsetHeight;
             }
-            const pageNumberControl = document.getElementById(
-                "pageNumberControl"
-            );
+            const pageNumberControl =
+                document.getElementById("pageNumberControl");
             if (pageNumberControl) {
                 controlsHeight += pageNumberControl.offsetHeight;
             }
@@ -480,7 +472,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const verticalScaleFactor = getVerticalScaleFactor({
             pageWidth,
             pageHeight,
-            desiredPageHeight
+            desiredPageHeight,
         });
 
         const horizontalScaleFactor = getHorizontalScaleFactor(pageWidth);
@@ -507,7 +499,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             // but the relationship is not clear.  See BL-11497
             leftMargin = roundToNearestK(
                 leftMargin,
-                props.roundMarginToNearestK
+                props.roundMarginToNearestK,
             );
         }
 
@@ -548,7 +540,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 scaleFactor *= 0.9;
                 leftMargin = Math.max(
                     (winWidth - pageWidth * scaleFactor) / 2,
-                    0
+                    0,
                 );
                 newOutsideButtonPageClass =
                     "smallOutsideButtons extraScalingForChrome85Bug";
@@ -584,7 +576,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 (winHeight - actualPageHeight - controlsHeight) / 2; // don't count controlsHeight in what we move down
             if (amountToMoveDown > 0) {
                 translateString = `translate(0, ${amountToMoveDown.toFixed(
-                    0
+                    0,
                 )}px) `;
                 // console.log(`** translating down ${amountToMoveDown}px`);
                 // console.log(`   winHeight ${winHeight}px`);
@@ -607,8 +599,9 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 transform: ${translateString}scale(${scaleFactorDevice});
             }
         }
-        .bloomPlayer-page {height: ${actualPageHeight /
-            scaleFactor}px; overflow: hidden;}`;
+        .bloomPlayer-page {height: ${
+            actualPageHeight / scaleFactor
+        }px; overflow: hidden;}`;
         //alert("scale page to window completed");
         if (!pageScaled) {
             setPageScaled(true);
@@ -644,7 +637,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         const impliedScaledPageWidth = pageWidth * verticalScaleFactorRaw;
         const roundedScaledPageWidth = roundToNearestK(
             impliedScaledPageWidth,
-            props.roundPageWidthToNearestK
+            props.roundPageWidthToNearestK,
         );
         const verticalScaleFactorAdjusted = roundedScaledPageWidth / pageWidth;
         return verticalScaleFactorAdjusted;
@@ -658,7 +651,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         if (props.roundPageWidthToNearestK) {
             desiredPageWidth = roundToNearestK(
                 desiredPageWidth,
-                props.roundPageWidthToNearestK
+                props.roundPageWidthToNearestK,
             );
         }
 
@@ -714,17 +707,17 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const updateControlsWhenOpeningNewBook = (
         bookLanguages: LangData[],
         bookHasImageDescriptions: boolean,
-        setPageNumber: (pn: number) => void
+        setPageNumber: (pn: number) => void,
     ): void => {
         pageNumberSetter.current = setPageNumber;
         let languageCode: string | undefined = undefined;
         if (props.videoSettings) {
             const videoSettings = JSON.parse(
-                props.videoSettings
+                props.videoSettings,
             ) as IVideoSettings;
             languageCode = videoSettings.lang!;
             setShouldReadImageDescriptions(
-                videoSettings.imageDescriptions ?? false
+                videoSettings.imageDescriptions ?? false,
             );
         }
 
@@ -736,7 +729,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
 
         if (
             languageCode &&
-            bookLanguages.map(l => l.Code).includes(languageCode)
+            bookLanguages.map((l) => l.Code).includes(languageCode)
         ) {
             LangData.selectNewLanguageCode(bookLanguages, languageCode);
         }
@@ -757,12 +750,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const playString = LocalizationManager.getTranslation(
         "Audio.Play",
         preferredUiLanguages,
-        "Play"
+        "Play",
     );
     const readAloudString = LocalizationManager.getTranslation(
         "Audio.ReadAloud",
         preferredUiLanguages,
-        "Read Aloud"
+        "Read Aloud",
     );
     const playLabel = hasAudio ? readAloudString : playString;
 
@@ -780,8 +773,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
     const bigButtonOverlayTheme = createTheme({
         palette: {
             primary: { main: "#000", contrastText: "#FFF" },
-            secondary: { main: "#FFF" }
-        }
+            secondary: { main: "#FFF" },
+        },
     });
 
     const handleToggleImageDescription = (inImageDescription: boolean) => {
@@ -794,7 +787,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         root: {
             color: bloomRed,
             height: 2,
-            padding: "15px 0"
+            padding: "15px 0",
         },
         active: {},
         valueLabel: {
@@ -806,42 +799,42 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             top: -31,
             "& *": {
                 background: bloomRed,
-                color: "white"
+                color: "white",
                 // color: "#000"
-            }
+            },
         },
         track: {
             height: 4,
-            opacity: 0.5
+            opacity: 0.5,
         },
         rail: {
             height: 2,
             opacity: 0.5,
-            backgroundColor: bloomRed
+            backgroundColor: bloomRed,
         },
         mark: {
             // we don't want the mark to show up on the track, it's just there for the label
             // that shows the total number of pages. (That could change if we use marks for bookmarks.)
-            backgroundColor: "transparent"
+            backgroundColor: "transparent",
         },
         markActive: {
             // Yet another default applies when it's selected, so override it again.
-            backgroundColor: "transparent"
+            backgroundColor: "transparent",
         },
         markLabel: {
             top: 20,
             fontSize: "0.6rem",
-            color: bloomRed
+            color: bloomRed,
         },
         markLabelActive: {
             top: 20,
             fontSize: "0.6rem",
-            color: bloomRed
-        }
+            color: bloomRed,
+        },
     })(DragBar);
 
     const rtlTheme = createTheme({
-        direction: "rtl"
+        direction: "rtl",
     });
 
     const pageChooserBar = (
@@ -871,8 +864,8 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             marks={[
                 {
                     value: pageNumbers.length,
-                    label: pageNumbers.length.toString()
-                }
+                    label: pageNumbers.length.toString(),
+                },
             ]}
         />
     );
@@ -882,31 +875,33 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
             className="reactRoot"
             // gives an error when react sees `paused`, which isn't an HtmlElement attribute {...rest} // Allow all standard div props
         >
-            {// If present, this needs to be the very first element so that,
-            // without messing with tabindex, it will be the first thing a
-            // screen reader comes to, since it's the most likely thing for
-            // a blind reader to want to do when it's present.
-            browserForcedPaused && (
-                <React.Fragment>
-                    <div className="bigButtonOverlay">
-                        <ThemeProvider theme={bigButtonOverlayTheme}>
-                            <IconButton
-                                color="secondary"
-                                onClick={() => {
-                                    setBrowserForcedPaused(false);
-                                    setPaused(false);
-                                }}
-                            >
-                                <PlayCircleOutline
-                                    titleAccess={playLabel}
-                                    preserveAspectRatio="xMidYMid meet"
-                                />
-                            </IconButton>
-                        </ThemeProvider>
-                    </div>
-                    <div className="behindBigButtonOverlay" />
-                </React.Fragment>
-            )}
+            {
+                // If present, this needs to be the very first element so that,
+                // without messing with tabindex, it will be the first thing a
+                // screen reader comes to, since it's the most likely thing for
+                // a blind reader to want to do when it's present.
+                browserForcedPaused && (
+                    <React.Fragment>
+                        <div className="bigButtonOverlay">
+                            <ThemeProvider theme={bigButtonOverlayTheme}>
+                                <IconButton
+                                    color="secondary"
+                                    onClick={() => {
+                                        setBrowserForcedPaused(false);
+                                        setPaused(false);
+                                    }}
+                                >
+                                    <PlayCircleOutline
+                                        titleAccess={playLabel}
+                                        preserveAspectRatio="xMidYMid meet"
+                                    />
+                                </IconButton>
+                            </ThemeProvider>
+                        </div>
+                        <div className="behindBigButtonOverlay" />
+                    </React.Fragment>
+                )
+            }
             <ControlBar
                 canGoBack={props.showBackButton}
                 visible={showAppBar}
@@ -940,10 +935,10 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     setPageStylesInstalled(true);
                 }}
                 locationOfDistFolder={props.locationOfDistFolder}
-                reportBookProperties={bookProps => {
+                reportBookProperties={(bookProps) => {
                     const bookPropsObj = {
                         landscape: bookProps.landscape,
-                        canRotate: bookProps.canRotate
+                        canRotate: bookProps.canRotate,
                         //hasActivities: bookProps.hasActivities,
                         //hasAnimation: bookProps.hasAnimation
                     };
@@ -951,13 +946,13 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                     // Android WebView and html iframe
                     reportBookProperties(bookPropsObj);
                     setPreferredUiLanguages(
-                        [uiLang].concat(bookProps.preferredLanguages)
+                        [uiLang].concat(bookProps.preferredLanguages),
                     );
                     setPageNumbers(bookProps.pageNumbers);
                     setIsRtl(bookProps.isRtl);
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
-                setForcedPausedCallback={p => {
+                setForcedPausedCallback={(p) => {
                     if (p) {
                         setPaused(p);
                         // This assumes that the only reason the core control pauses
@@ -976,12 +971,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         setBrowserForcedPaused(false);
                     }
                 }}
-                reportPageProperties={pageProps => {
+                reportPageProperties={(pageProps) => {
                     setHasAudio(pageProps.hasAudio);
                     setHasMusic(pageProps.hasMusic);
                     setHasVideo(pageProps.hasVideo);
                 }}
-                onContentClick={e => {
+                onContentClick={(e) => {
                     if (props.allowToggleAppBar) {
                         setShowAppBar(!showAppBar);
                         // Note: we could get the useEffect() to run this by listing
@@ -991,7 +986,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                         window.setTimeout(
                             rerunScalePageToWindow,
                             // just a moment after the animation is done
-                            kCssTransitionTime + 50
+                            kCssTransitionTime + 50,
                         );
                     }
                 }}
@@ -1006,12 +1001,12 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
                 extraClassNames={pageScaled ? "" : "hidePlayer"}
                 shouldReadImageDescriptions={shouldReadImageDescriptions}
                 imageDescriptionCallback={handleToggleImageDescription}
-                pageChanged={n => {
+                pageChanged={(n) => {
                     if (n != pageNumberControlPos) {
                         setPageNumberControlPos(n);
                     }
                 }}
-                hidingNavigationButtonsCallback={hiding => {
+                hidingNavigationButtonsCallback={(hiding) => {
                     if (hiding != hidingNavigationButtons) {
                         setHidingNavigationButtons(hiding);
                     }
@@ -1054,7 +1049,7 @@ function getExtraButtons(): IExtraButton[] {
     } catch (e) {
         console.error("Failed to parse extra button info " + JSON.stringify(e));
         logError(
-            "error decoding extraButtons param " + ebStringEncoded + ": " + e
+            "error decoding extraButtons param " + ebStringEncoded + ": " + e,
         );
         return [];
     }
@@ -1065,17 +1060,16 @@ function getExtraButtons(): IExtraButton[] {
 // function which turns the element with id 'root' into a BloomPlayerControls.
 export function InitBloomPlayerControls() {
     setDurationOfPagesWithoutNarration(
-        parseFloat(getQueryStringParamAndUnencode("defaultDuration", "3.0"))
+        parseFloat(getQueryStringParamAndUnencode("defaultDuration", "3.0")),
     );
     const autoplay = getQueryStringParamAndUnencode(
         "autoplay",
-        "motion"
+        "motion",
     )! as autoPlayType;
     const startPageString = getQueryStringParamAndUnencode("start-page");
     const startPage = startPageString ? parseInt(startPageString) : undefined;
-    const autoplayCountString = getQueryStringParamAndUnencode(
-        "autoplay-count"
-    );
+    const autoplayCountString =
+        getQueryStringParamAndUnencode("autoplay-count");
     const autoplayCount = startPageString
         ? parseInt(autoplayCountString)
         : undefined;
@@ -1086,12 +1080,12 @@ export function InitBloomPlayerControls() {
                 url={getQueryStringParamAndUnencode("url")}
                 allowToggleAppBar={getBooleanUrlParam(
                     "allowToggleAppBar",
-                    false
+                    false,
                 )}
                 showBackButton={getBooleanUrlParam("showBackButton", false)}
                 initiallyShowAppBar={getBooleanUrlParam(
                     "initiallyShowAppBar",
-                    true
+                    true,
                 )}
                 centerVertically={getBooleanUrlParam("centerVertically", true)}
                 initialLanguageCode={getQueryStringParamAndUnencode("lang")}
@@ -1100,11 +1094,11 @@ export function InitBloomPlayerControls() {
                 locationOfDistFolder={""}
                 useOriginalPageSize={getBooleanUrlParam(
                     "useOriginalPageSize",
-                    false
+                    false,
                 )}
                 hideFullScreenButton={getBooleanUrlParam(
                     "hideFullScreenButton",
-                    false
+                    false,
                 )}
                 autoplay={autoplay}
                 skipActivities={getBooleanUrlParam("skipActivities", false)}
@@ -1113,18 +1107,18 @@ export function InitBloomPlayerControls() {
                 extraButtons={getExtraButtons()}
                 shouldReportSoundLog={getBooleanUrlParam(
                     "reportSoundLog",
-                    false
+                    false,
                 )}
                 startPage={startPage}
                 autoplayCount={autoplayCount}
                 roundPageWidthToNearestK={getNumericUrlParam(
-                    "roundPageWidthToNearestK"
+                    "roundPageWidthToNearestK",
                 )}
                 roundMarginToNearestK={getNumericUrlParam(
-                    "roundMarginToNearestK"
+                    "roundMarginToNearestK",
                 )}
             />
         </ThemeProvider>,
-        document.getElementById("root")
+        document.getElementById("root"),
     );
 }
