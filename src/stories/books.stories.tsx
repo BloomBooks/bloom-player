@@ -126,6 +126,14 @@ export const LiveFromBloomEditor = () => {
     );
 };
 
+/* ---------------------- IMPORTANT --------------------------------------------------------------------
+In Storybook with vite, files in the public/ directory are served at the root path.
+Therefore, instead of /public/testBooks/Bloom5.4-activities, we use /testBooks/Bloom5.4-activities.
+
+And it's important that they are in /public, otherwise vite's HMR will inject all manor of stuff
+into the css files and they won't work.
+-------------------------------------------------------------------------------------------------------*/
+
 export const slq = AddBloomPlayerStory(
     "Activity/Landscape SL with Quiz",
     "s3/bloomharvest/educationforlife%40sil.org%2f6f6d82d5-e98d-445d-b4be-143df993c3c0/bloomdigital%2findex.htm",
@@ -182,7 +190,7 @@ export const ActivityThatLeadsToFF60SplitPage = AddBloomPlayerStory(
     "testBooks/Testing Away Again/index.htm",
 );
 ActivityThatLeadsToFF60SplitPage.storyName =
-    "Activity/Activity that leads to FF60 split page";
+    "Activity/Activity that leads to FF60 split page (local)";
 
 export const multilingualMotion = AddBloomPlayerStory(
     "Multilingual motion book - default language",
@@ -214,7 +222,8 @@ export const choiceActivities = AddBloomPlayerStory(
     "Activity/Choice activities from Bloom 5.4",
     "testBooks/Bloom5.4-activities/Bloom5.4-activities.htm",
 );
-choiceActivities.storyName = "Activity/Choice activities from Bloom 5.4";
+choiceActivities.storyName =
+    "Activity/Choice activities from Bloom 5.4 (local)";
 
 export const twoAudioSentences = AddBloomPlayerStory(
     "Book with two audio sentences on cover",
@@ -226,32 +235,33 @@ export const iframeActivity = AddBloomPlayerStory(
     "Activity/IFrame - Construct Runtime Game",
     "testBooks/sample-iframe-activity/index.htm",
 );
-iframeActivity.storyName = "Activity/IFrame - Construct Runtime Game";
+iframeActivity.storyName = "Activity/IFrame - Construct Runtime Game  (local)";
 
 export const activePresenterWidget = AddBloomPlayerStory(
     "Activity/ActivePresenter widget test",
     "testBooks/test-widget-iframe-messages/index.htm",
 );
-activePresenterWidget.storyName = "Activity/ActivePresenter widget test";
+activePresenterWidget.storyName =
+    "Activity/ActivePresenter widget test  (local)";
 
 export const canvasGame = AddBloomPlayerStory(
     "Activity/Canvas Game - Snake",
     "testBooks/sample-canvas-activity/index.htm",
 );
-canvasGame.storyName = "Activity/Canvas Game - Snake";
+canvasGame.storyName = "Activity/Canvas Game - Snake  (local)";
 
 export const widgetControlledNavigation = AddBloomPlayerStory(
     "Activity/Test widget-controlled navigation",
     "testBooks/test-widget-message-activity/index.htm",
 );
 widgetControlledNavigation.storyName =
-    "Activity/Test widget-controlled navigation";
+    "Activity/Test widget-controlled navigation  (local)";
 
 export const signLanguageWithTalking = AddBloomPlayerStory(
     "Sign language with talking & TOC",
     "testBooks/sign-language-with-talking-book/sign-language-with-talking-book.htm",
 );
-signLanguageWithTalking.storyName = "Sign language with talking & TOC";
+signLanguageWithTalking.storyName = "Sign language with talking & TOC  (local)";
 
 export const bookNotFound = AddBloomPlayerStory(
     "Book that isn't found",
@@ -263,7 +273,7 @@ export const encodingTest = AddBloomPlayerStory(
     // note, I could not test :, /, or ? because they are not allowed as part of the filename anyways.
     "testBooks/test %231/test %26 play%232.htm",
 );
-encodingTest.storyName = "Encoding test with # and &";
+encodingTest.storyName = "Encoding test with # and &  (local)";
 
 export const signLanguageWithSound = AddBloomPlayerStory(
     "Sign Language with TalkingBook sound",
