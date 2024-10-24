@@ -1,13 +1,13 @@
-import { defineConfig } from "vite";
+import { defineConfig, UserConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 import fs from "fs";
 
 export default defineConfig(({ command }) => {
-    return {
+    const config: UserConfig = {
         build: {
             outDir: "dist",
-
+            copyPublicDir: false, // Disables the copying of public/ directory during build
             rollupOptions: {
                 input: {
                     bloomPlayer: "./src/bloom-player-root.ts",
@@ -70,6 +70,7 @@ export default defineConfig(({ command }) => {
             useCacheBustingHashPlugin(),
         ],
     };
+    return config;
 });
 
 function useCacheBustingHashPlugin() {
