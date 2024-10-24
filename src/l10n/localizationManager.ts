@@ -1,13 +1,13 @@
-import i18nData from "./l10n-all.json"; // file created at build time
+import i18nData from "./all-messages.json"; // file created at build time
 
 // Handles loading and retrieving of localization data.
 //
-// l10n-all.json contains all the translation information.
+// all-messages.json contains all the translation information.
 // We build that file from Crowdin (or git) at build time.
 // We would call the class LocalizationManager, but we're using that
 // for the singleton.
 class LocalizationManagerImplementation {
-    // l10n-all.json has the following structure:
+    // all-messages.json has the following structure:
     // {
     //   "en": { "Sample.ID1": { "message": "First Sample English Text", "description": "..." },
     //           "Sample.ID2": { "message": "Second English Text", "description": "..." }
@@ -32,9 +32,9 @@ class LocalizationManagerImplementation {
 
         const i18nDataToUse = i18nDataOverride ? i18nDataOverride : i18nData;
 
-        Object.keys(i18nDataToUse).forEach(lang => {
+        Object.keys(i18nDataToUse).forEach((lang) => {
             const strings = i18nDataToUse[lang];
-            Object.keys(strings).forEach(stringId => {
+            Object.keys(strings).forEach((stringId) => {
                 let translations = this.l10nDictionary.get(stringId);
                 if (!translations) {
                     translations = new Map();
@@ -52,17 +52,17 @@ class LocalizationManagerImplementation {
     // for which a translation exists (on an element by element basis).
     public localizePages(
         ancestorElement: HTMLElement,
-        preferredLanguages: string[]
+        preferredLanguages: string[],
     ): void {
         const elementsToTranslate = ancestorElement.querySelectorAll(
-            ".bloom-page [data-i18n]"
+            ".bloom-page [data-i18n]",
         );
         if (elementsToTranslate) {
             // nodeList.forEach not supported in FF45, so we add Array.from()
-            Array.from(elementsToTranslate).forEach(elementToTranslate => {
+            Array.from(elementsToTranslate).forEach((elementToTranslate) => {
                 this.localizeElement(
                     elementToTranslate as HTMLElement,
-                    preferredLanguages
+                    preferredLanguages,
                 );
             });
         }
@@ -70,7 +70,7 @@ class LocalizationManagerImplementation {
 
     private localizeElement(
         element: HTMLElement,
-        preferredLanguages: string[]
+        preferredLanguages: string[],
     ): void {
         const key = element.dataset["i18n"];
         if (!key) {
@@ -79,7 +79,7 @@ class LocalizationManagerImplementation {
 
         const [translation, language] = this.getTranslationAndLanguage(
             key,
-            preferredLanguages
+            preferredLanguages,
         );
         if (translation && language) {
             element.innerText = translation;
@@ -91,7 +91,7 @@ class LocalizationManagerImplementation {
     // for which we have a translation.
     public getTranslationAndLanguage(
         id: string,
-        preferredLanguages: string[]
+        preferredLanguages: string[],
     ): [string, string] | [undefined, undefined] {
         const translations = this.l10nDictionary.get(id);
         if (!translations || !preferredLanguages) {
@@ -117,7 +117,7 @@ class LocalizationManagerImplementation {
     public getTranslation(
         id: string,
         preferredLanguages: string[],
-        defaultVal: string
+        defaultVal: string,
     ): string {
         const [result] = this.getTranslationAndLanguage(id, preferredLanguages);
         return result || defaultVal;

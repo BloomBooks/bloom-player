@@ -1,26 +1,26 @@
 import React from "react";
-import { ComponentStory, ComponentMeta } from "@storybook/react";
+import { StoryFn, Meta } from "@storybook/react";
 import {
     within,
     userEvent,
     waitFor,
-    fireEvent
+    fireEvent,
 } from "@storybook/testing-library";
-import { expect } from "@storybook/jest";
+import { expect } from "@storybook/test";
 import { BloomPlayerControls } from "../bloom-player-controls";
 
 // Function to emulate pausing between interactions
 const sleep = (ms: number): Promise<unknown> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 // The format of the tests here is from https://storybook.js.org/docs/react/writing-stories/play-function
 export default {
     title: "Interaction Tests/Player",
-    component: BloomPlayerControls
-} as ComponentMeta<typeof BloomPlayerControls>;
+    component: BloomPlayerControls,
+} as Meta<typeof BloomPlayerControls>;
 
-const MotionBookTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
+const MotionBookTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
     <BloomPlayerControls
         {...args}
         showBackButton={true}
@@ -31,7 +31,7 @@ const MotionBookTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
         hideFullScreenButton={true}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
+            "s3/bloomharvest/bloom.bible.stories%40gmail.com%2faf30a7ce-d146-4f07-8aa4-d11de08c4665/bloomdigital%2findex.htm"
         }
         initialLanguageCode="fr"
         autoplay={"motion"}
@@ -53,8 +53,8 @@ MotionPlayerTest.play = async ({ canvasElement }) => {
         {
             // need some extra time to get all the player pages loaded
             timeout: 3000,
-            interval: 200
-        }
+            interval: 200,
+        },
     );
 
     const player = within(playerContent);
@@ -87,7 +87,7 @@ MotionPlayerTest.play = async ({ canvasElement }) => {
     // Check out the languages menu, which is at an outer level from the original canvas.
     const outerElement = within((canvasElement as HTMLElement).parentElement!);
     const dialogTitle = await outerElement.findByText(
-        "Languages in this book:"
+        "Languages in this book:",
     );
     expect(dialogTitle).toBeInTheDocument();
 
@@ -120,7 +120,7 @@ MotionPlayerTest.play = async ({ canvasElement }) => {
     expect(player.getByText("111 나병환자 한사람")).toBeInTheDocument();
 };
 
-const DavidAndGoliathTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
+const DavidAndGoliathTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
     <BloomPlayerControls
         {...args}
         showBackButton={true}
@@ -129,7 +129,7 @@ const DavidAndGoliathTemplate: ComponentStory<typeof BloomPlayerControls> = args
         locationOfDistFolder={"/dist/"}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
+            "s3/bloomharvest/benjamin%40aconnectedplanet.org%2f130b6829-5367-4e5c-80d7-ec588aae5281/bloomdigital%2findex.htm"
         }
         initialLanguageCode="en"
     />
@@ -140,9 +140,8 @@ export const DavidAndGoliathPlayerTest = DavidAndGoliathTemplate.bind({});
 DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
     const canvas = within(canvasElement.querySelector("div.reactRoot"));
 
-    let pageNumberControl = await canvasElement.querySelector(
-        "#pageNumberControl"
-    );
+    let pageNumberControl =
+        await canvasElement.querySelector("#pageNumberControl");
     await waitFor(() => expect(pageNumberControl).not.toBeNull());
 
     // findByX methods combine the equivalent getByX() and waitFor().
@@ -152,8 +151,8 @@ DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
         {
             // need some extra time to get all the player pages loaded
             timeout: 3000,
-            interval: 200
-        }
+            interval: 200,
+        },
     );
     expect(playerContent).toBeInTheDocument();
     const playerDOM = within(playerContent);
@@ -166,7 +165,7 @@ DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
     // Adding the "hidden" option just makes buttons that are present but inaccessible get added
     // to the query.
     const allButtons = await playerDOM.findAllByRole("button", {
-        hidden: true
+        hidden: true,
     });
     expect(allButtons.length).toEqual(2);
     expect(allButtons[0]).not.toBeVisible();
@@ -182,7 +181,7 @@ DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
     const buttons = await playerDOM.findAllByRole("button");
     expect(buttons.length).toEqual(2);
     expect(
-        playerContent.querySelector("div.swiper-button-prev button")
+        playerContent.querySelector("div.swiper-button-prev button"),
     ).toBeEnabled();
 
     // Let's check on the page control slider
@@ -199,15 +198,15 @@ DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
     const sliderLocation = await sliderControl.getBoundingClientRect();
     await fireEvent.mouseDown(sliderControl, {
         clientX: sliderLocation.x + 6,
-        clientY: sliderLocation.y + 6
+        clientY: sliderLocation.y + 6,
     });
     await fireEvent.mouseMove(sliderControl, {
         clientX: sliderLocation.x + 30,
-        clientY: sliderLocation.y + 6
+        clientY: sliderLocation.y + 6,
     });
     await fireEvent.mouseUp(sliderControl, {
         clientX: sliderLocation.x + 30,
-        clientY: sliderLocation.y + 6
+        clientY: sliderLocation.y + 6,
     });
 
     // We can't really predict what the number in the slider will be, because moving the mouse 24 pixels
@@ -217,7 +216,7 @@ DavidAndGoliathPlayerTest.play = async ({ canvasElement }) => {
     expect(sliderControl.innerText).not.toEqual("");
 };
 
-const BigFishTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
+const BigFishTemplate: StoryFn<typeof BloomPlayerControls> = (args) => (
     <BloomPlayerControls
         {...args}
         showBackButton={false}
@@ -226,7 +225,7 @@ const BigFishTemplate: ComponentStory<typeof BloomPlayerControls> = args => (
         locationOfDistFolder={"/dist/"}
         useOriginalPageSize={true}
         url={
-            "https://s3.amazonaws.com/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
+            "s3/bloomharvest/educationforlife%40sil.org%2fbb97ab6e-651f-4681-9caf-7c6ce542e3a0/bloomdigital%2findex.htm"
         }
         initialLanguageCode="tpi"
     />
@@ -244,8 +243,8 @@ BigFishPlayerTest.play = async ({ canvasElement }) => {
         {
             // need some extra time to get all the player pages loaded
             timeout: 3000,
-            interval: 200
-        }
+            interval: 200,
+        },
     );
     expect(playerContent).toBeInTheDocument();
     const playerContentDOM = within(playerContent);
