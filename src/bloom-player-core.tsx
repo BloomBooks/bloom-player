@@ -23,12 +23,12 @@ import {
     reportPlaybackComplete,
     sendMessageToHost,
     setAmbientAnalyticsProperties,
-    updateBookProgressReport
+    updateBookProgressReport,
 } from "./externalContext";
 import {
     clearSoundLog,
     reportSoundsLogged,
-    sendStringToBloomApi
+    sendStringToBloomApi,
 } from "./videoRecordingSupport";
 import LangData from "./langData";
 import Replay from "@material-ui/icons/Replay";
@@ -49,7 +49,7 @@ import "jquery.nicescroll";
 import { getQueryStringParamAndUnencode } from "./utilities/urlUtils";
 import {
     kLocalStorageDurationKey,
-    kLocalStorageBookUrlKey
+    kLocalStorageBookUrlKey,
 } from "./bloomPlayerAnalytics";
 import { autoPlayType } from "./bloom-player-controls";
 import {
@@ -72,7 +72,7 @@ import {
     hidingPage as hidingNarrationPage,
     pageHasAudio,
     setIncludeImageDescriptions,
-    playAllSentences
+    playAllSentences,
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
@@ -123,7 +123,7 @@ interface IProps {
         // Provides the client a way to switch page numbers. It would feel more natural and React-y to
         // just pass current page number to bloom-player-controls as a property, but I don't think regenerating the whole
         // bloom-player-core to switch page numbers is a great idea.
-        setCurrentPage?: (pageNo: number) => void
+        setCurrentPage?: (pageNo: number) => void,
     ) => void;
 
     // A callback the client may supply to be notified whether navigation buttons are being hidden for this page.
@@ -277,7 +277,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
         this.legacyQuestionHandler = new LegacyQuestionHandler(
-            props.locationOfDistFolder
+            props.locationOfDistFolder,
         );
     }
 
@@ -292,7 +292,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         loadErrorHtml: "",
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
-        inPauseForced: false
+        inPauseForced: false,
     };
 
     // The book url we were passed as a URL param.
@@ -330,15 +330,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // To get this to fire consistently no matter where the focus is,
         // we have to attach to the document itself. No level of react component
         // seems to work (using the OnKeyDown prop). So we use good ol'-fashioned js.
-        document.addEventListener("keydown", e =>
-            this.handleDocumentLevelKeyDown(e)
+        document.addEventListener("keydown", (e) =>
+            this.handleDocumentLevelKeyDown(e),
         );
 
         // Clicking on any element that has a data-href attribute will be treated as a link.
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", e =>
-            this.handleDocumentLevelClick(e)
+        document.addEventListener("click", (e) =>
+            this.handleDocumentLevelClick(e),
         );
 
         // We only need to add these body-level listeners once.
@@ -381,7 +381,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     handleDocumentLevelClick(e: any) {
         const targetElement = (e.target as HTMLElement).closest(
-            "[data-href]"
+            "[data-href]",
         ) as HTMLElement;
         if (targetElement && targetElement.attributes["data-href"]) {
             const href = targetElement.attributes["data-href"].value as string;
@@ -448,10 +448,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     private repairFF60Offset() {
         try {
             let wrapper = document.getElementsByClassName(
-                "swiper-wrapper"
+                "swiper-wrapper",
             )[0] as HTMLElement;
             let current = document.getElementsByClassName(
-                "swiper-slide-active"
+                "swiper-slide-active",
             )[0] as HTMLElement;
             if (wrapper && current && this.msToContinueFF60RepairChecks > 0) {
                 let error =
@@ -466,7 +466,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         paddingPx.length === 0
                             ? 0
                             : parseFloat(
-                                  paddingPx.substring(0, paddingPx.length - 2)
+                                  paddingPx.substring(0, paddingPx.length - 2),
                               );
                     wrapper.style.paddingLeft = padding + error / scale + "px";
                 }
@@ -486,7 +486,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // don't consume extra power forever doing this check.
     private msToContinueFF60RepairChecks = 0;
 
-    private handleDocumentLevelKeyDown = e => {
+    private handleDocumentLevelKeyDown = (e) => {
         if (e.key === "Home") {
             this.goToFirstPage();
             e.preventDefault();
@@ -541,12 +541,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 if (slashIndex > encodedSlashIndex) {
                     filename = this.sourceUrl.substring(
                         slashIndex + 1,
-                        this.sourceUrl.length
+                        this.sourceUrl.length,
                     );
                 } else {
                     filename = this.sourceUrl.substring(
                         encodedSlashIndex + 3,
-                        this.sourceUrl.length
+                        this.sourceUrl.length,
                     );
                 }
                 // Note, The current best practice is actually to have the htm file always be "index.htm".
@@ -560,7 +560,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.urlPrefix = haveFullPath
                     ? this.sourceUrl.substring(
                           0,
-                          Math.max(slashIndex, encodedSlashIndex)
+                          Math.max(slashIndex, encodedSlashIndex),
                       )
                     : this.sourceUrl;
                 this.music.urlPrefix = this.urlPrefix;
@@ -573,28 +573,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 const distributionPromise = axios
                     .get(this.fullUrl(".distribution"))
                     .then(
-                        result => {
+                        (result) => {
                             return result;
                         },
                         // Very possibly the BloomPUB doesn't have this file. The only way to find this
                         // out is by the request failing. We don't consider this a 'real' failure and
                         // just fulfil the promise with an object indicating that distribution is an
                         // empty string.
-                        error => {
+                        (error) => {
                             return { data: "" };
-                        }
+                        },
                     );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise, distributionPromise])
-                    .then(result => {
-                        const [
-                            htmlResult,
-                            metadataResult,
-                            distributionResult
-                        ] = result;
+                    .then((result) => {
+                        const [htmlResult, metadataResult, distributionResult] =
+                            result;
                         this.metaDataObject = metadataResult?.data;
-                        this.distributionSource = (distributionResult as any).data;
+                        this.distributionSource = (
+                            distributionResult as any
+                        ).data;
                         // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
                         // and setting its innerHtml, since that leads to the browser trying to load all the
                         // urls referenced in the book, which is a waste and also won't work because we
@@ -603,13 +602,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         // we *think* bookDoc and bookHtmlElement get garbage collected
                         const bookDoc = parser.parseFromString(
                             htmlResult?.data,
-                            "text/html"
+                            "text/html",
                         );
-                        const bookHtmlElement = bookDoc.documentElement as HTMLHtmlElement;
+                        const bookHtmlElement =
+                            bookDoc.documentElement as HTMLHtmlElement;
 
-                        const body = bookHtmlElement.getElementsByTagName(
-                            "body"
-                        )[0];
+                        const body =
+                            bookHtmlElement.getElementsByTagName("body")[0];
 
                         this.bookInfo.setSomeBookInfoFromBody(body);
                         // contains conditions to limit this to one time only after assembleStyleSheets has completed.
@@ -623,20 +622,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             this.videoList = this.getVideoList(bookDoc);
                         }
 
-                        this.animation.PlayAnimations = this.bookInfo.playAnimations;
+                        this.animation.PlayAnimations =
+                            this.bookInfo.playAnimations;
 
                         this.collectBodyAttributes(body);
                         this.makeNonEditable(body);
                         this.htmlElement = bookHtmlElement;
 
-                        const firstPage = bookHtmlElement.getElementsByClassName(
-                            "bloom-page"
-                        )[0];
+                        const firstPage =
+                            bookHtmlElement.getElementsByClassName(
+                                "bloom-page",
+                            )[0];
                         this.originalPageClass = "Device16x9Portrait";
                         if (firstPage) {
-                            this.originalPageClass = BloomPlayerCore.getPageSizeClass(
-                                firstPage
-                            );
+                            this.originalPageClass =
+                                BloomPlayerCore.getPageSizeClass(firstPage);
                         }
                         // enhance: make this callback thing into a promise
                         this.legacyQuestionHandler.generateQuizPagesFromLegacyJSON(
@@ -645,10 +645,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             this.originalPageClass,
                             () => {
                                 this.finishUp();
-                            }
+                            },
                         );
                     })
-                    .catch(err => this.HandleLoadingError(err));
+                    .catch((err) => this.HandleLoadingError(err));
             } else if (
                 // Still the same book, we've already loaded the page data. But we may need to adjust the orientation
                 // class on each (nontrivial) page if
@@ -701,7 +701,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // for each page change and add any needed niceScrolls anyway. See BL-11070.
                 this.rootDiv
                     ?.querySelectorAll(kSelectorForPotentialNiceScrollElements)
-                    .forEach(group => {
+                    .forEach((group) => {
                         // The type definition is not correct for getNiceScroll; we expect it to return an array.
                         const groupNiceScroll = $(group).getNiceScroll() as any;
                         if (groupNiceScroll && groupNiceScroll.length > 0) {
@@ -760,7 +760,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.setState({
                 isLoading: false,
                 loadFailed: true,
-                loadErrorHtml: error.message
+                loadErrorHtml: error.message,
             });
         }
     }
@@ -803,12 +803,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // convert from the NamedNodeMap to a simple object:
         var x = {};
         for (var i = 0; i < originalBodyElement.attributes.length; i++) {
-            x[
-                originalBodyElement.attributes.item(i)!.nodeName
-            ] = originalBodyElement.attributes.item(i)!.nodeValue;
+            x[originalBodyElement.attributes.item(i)!.nodeName] =
+                originalBodyElement.attributes.item(i)!.nodeValue;
         }
         this.setState({
-            importedBodyAttributes: x
+            importedBodyAttributes: x,
         });
     }
 
@@ -830,14 +829,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             msg = "<p>This book (or some part of it) was not found.<p>";
             if (axiosError.config && axiosError.config.url) {
                 msg += `<p class='errorDetails'>${htmlEncode(
-                    axiosError.config.url
+                    axiosError.config.url,
                 )}</p>`;
             }
         }
         this.setState({
             isLoading: false,
             loadFailed: true,
-            loadErrorHtml: msg
+            loadErrorHtml: msg,
         });
     }
 
@@ -917,9 +916,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // This allows the page numbers it shows as labels to reflect the actual page numbers shown on the
                     // page, which typically don't correspond to the page index, since xmatter pages are not numbered.
                     pageNumbers: Array.from(pages).map(
-                        p => p.getAttribute("data-page-number") ?? ""
+                        (p) => p.getAttribute("data-page-number") ?? "",
                     ),
-                    isRtl: this.metaDataObject.isRtl
+                    isRtl: this.metaDataObject.isRtl,
                 });
             }
             if (isNewBook) {
@@ -949,7 +948,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.activityManager.initializePageHtml(
                     this.urlPrefix,
                     page,
-                    swiperContent.length
+                    swiperContent.length,
                 );
 
             if (
@@ -968,15 +967,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (this.metaDataObject) {
                 this.bookInfo.setSomeBookInfoFromMetadata(
                     this.metaDataObject,
-                    body
+                    body,
                 );
                 this.reportBookOpened(body);
             }
             if (this.props.controlsCallback) {
-                const languages = LangData.createLangDataArrayFromDomAndMetadata(
-                    body,
-                    this.metaDataObject
-                );
+                const languages =
+                    LangData.createLangDataArrayFromDomAndMetadata(
+                        body,
+                        this.metaDataObject,
+                    );
                 this.hasImageDescriptions = doesBookHaveImageDescriptions(body);
                 // Tell BloomPlayerControls which languages are available for the Language Menu
                 // and whether or not to bother with the readImageDescriptions toggle.
@@ -985,7 +985,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     this.hasImageDescriptions,
                     (pageNumber: number) => {
                         this.swiperInstance?.slideTo(pageNumber);
-                    }
+                    },
                 );
             }
         }
@@ -994,7 +994,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Otherwise, it wreaks havoc on scoped styles. See BL-9504.
         if (isNewBook) {
             const combinedStyle = await this.assembleStyleSheets(
-                this.htmlElement
+                this.htmlElement,
             );
             // We're about to start rendering with isLoading false. That means the spinning circle is
             // replaced with a swiper control showing the actual book contents. We need to do certain
@@ -1010,12 +1010,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 pageIdToIndexMap: pageMap,
                 styleRules: combinedStyle,
                 isLoading: false,
-                currentSwiperIndex: this.props.startPage ?? 0
+                currentSwiperIndex: this.props.startPage ?? 0,
             });
         } else {
             this.setState({
                 pages: swiperContent,
-                isLoading: false
+                isLoading: false,
             });
         }
 
@@ -1045,10 +1045,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.showingPage(startPage);
                 //This allows a user to tab to the prev/next buttons, and also makes the focus() call work
                 const nextButton = document.getElementsByClassName(
-                    "swiper-button-next"
+                    "swiper-button-next",
                 )[0] as HTMLElement;
                 const prevButton = document.getElementsByClassName(
-                    "swiper-button-prev"
+                    "swiper-button-prev",
                 )[0] as HTMLElement;
 
                 prevButton?.setAttribute("tabindex", "4");
@@ -1087,8 +1087,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // it wreaks havoc on scoped styles. See BL-9504.
     private showOrHideL1OnlyText(page: Element, show: boolean) {
         page.querySelectorAll(
-            ".coverBottomBookTopic, .coverBottomLangName"
-        ).forEach(elementToShowOrHide => {
+            ".coverBottomBookTopic, .coverBottomLangName",
+        ).forEach((elementToShowOrHide) => {
             // bloom-content1 should never be hidden here, nor should anything if show is true.
             if (
                 show ||
@@ -1110,7 +1110,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ) {
             LocalizationManager.localizePages(
                 document.body,
-                this.bookInfo.getPreferredTranslationLanguages()
+                this.bookInfo.getPreferredTranslationLanguages(),
             );
             this.isPagesLocalized = true;
         }
@@ -1118,7 +1118,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // We need named functions for each LiteEvent handler, so that we can unsubscribe them
     // when we are about to unmount.
-    private handlePageVideoComplete = pageVideoData => {
+    private handlePageVideoComplete = (pageVideoData) => {
         // Verify we're on the current page before playing audio (BL-10039)
         // If the user if flipping pages rapidly, video completed events can overlap.
         if (pageVideoData!.page === BloomPlayerCore.currentPage) {
@@ -1150,7 +1150,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.video = new Video();
             this.video.PageVideoComplete = new LiteEvent<IPageVideoComplete>();
             this.video.PageVideoComplete.subscribe(
-                this.handlePageVideoComplete
+                this.handlePageVideoComplete,
             );
         }
         if (!this.animation) {
@@ -1162,7 +1162,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         PlayCompleted.subscribe(this.handlePlayCompleted);
         listenForPlayDuration(this.storeAudioAnalytics.bind(this));
         ToggleImageDescription.subscribe(
-            this.handleToggleImageDescription.bind(this)
+            this.handleToggleImageDescription.bind(this),
         );
         // allows narration to ask whether swiping to this page is still in progress.
         // This doesn't seem to be super reliable, so that narration code also keeps track of
@@ -1170,7 +1170,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         setTestIsSwipeInProgress(() => {
             return this.swiperInstance?.animating;
         });
-        setLogNarration(url => logSound(url, 1));
+        setLogNarration((url) => logSound(url, 1));
 
         if (!this.music) {
             this.music = new Music();
@@ -1189,7 +1189,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         let url = this.props.url;
         if (url === undefined || "" === url.trim()) {
             throw new Error(
-                "The url parameter was empty. It should point to the url of a book."
+                "The url parameter was empty. It should point to the url of a book.",
             );
         }
         // Bloom Publish Preview uses this so that we get spinning wheel while working on making the bloomd
@@ -1235,15 +1235,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private getAllPrimaryImageContainersOnPage() {
-        const unfilteredContainers = this.htmlElement?.ownerDocument.getElementsByClassName(
-            "bloom-imageContainer"
-        );
+        const unfilteredContainers =
+            this.htmlElement?.ownerDocument.getElementsByClassName(
+                "bloom-imageContainer",
+            );
         if (!unfilteredContainers) {
             return [];
         }
         return Array.from(unfilteredContainers).filter(
             (el: Element) =>
-                el.parentElement!.closest(".bloom-imageContainer") === null
+                el.parentElement!.closest(".bloom-imageContainer") === null,
         ) as HTMLElement[];
     }
 
@@ -1253,20 +1254,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
         try {
             const langVernacular = this.props.activeLanguageCode;
-            this.getAllPrimaryImageContainersOnPage().forEach(container => {
+            this.getAllPrimaryImageContainersOnPage().forEach((container) => {
                 Array.from(
-                    container.getElementsByClassName("bloom-textOverPicture")
-                ).forEach(top => {
+                    container.getElementsByClassName("bloom-textOverPicture"),
+                ).forEach((top) => {
                     const editable = Array.from(
-                        top.getElementsByClassName("bloom-editable")
-                    ).find(e => e.getAttribute("lang") === langVernacular);
+                        top.getElementsByClassName("bloom-editable"),
+                    ).find((e) => e.getAttribute("lang") === langVernacular);
                     if (editable) {
                         const alternatesString = editable.getAttribute(
-                            "data-bubble-alternate"
+                            "data-bubble-alternate",
                         );
                         if (alternatesString) {
                             const alternate = JSON.parse(
-                                alternatesString.replace(/`/g, '"')
+                                alternatesString.replace(/`/g, '"'),
                             ) as IAlternate;
                             top.setAttribute("style", alternate.style);
                         }
@@ -1274,17 +1275,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 });
                 // If we have an alternate SVG for this language, activate it.
                 const altSvg = Array.from(
-                    container.getElementsByClassName("comical-alternate")
-                ).find(svg => svg.getAttribute("data-lang") === langVernacular);
+                    container.getElementsByClassName("comical-alternate"),
+                ).find(
+                    (svg) => svg.getAttribute("data-lang") === langVernacular,
+                );
                 // if we don't find one, don't need to do anything.
                 // Possibly this image container doesn't have overlays. Possibly
                 // the right svg is already switched to be the active one. Possibly the
                 // book was made by an older version of Bloom without multilingual overlay
                 // support.
                 if (altSvg) {
-                    const currentSvg = container.getElementsByClassName(
-                        "comical-generated"
-                    )[0];
+                    const currentSvg =
+                        container.getElementsByClassName(
+                            "comical-generated",
+                        )[0];
                     if (currentSvg) {
                         // should always be true
                         // demote it to alternate
@@ -1340,7 +1344,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.htmlElement,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
 
         const visibilityClass = "bloom-visibility-code-on";
@@ -1351,10 +1355,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             iTranGrps++
         ) {
             const groupElement = translationGroupDivs.snapshotItem(
-                iTranGrps
+                iTranGrps,
             ) as HTMLElement;
             const dataDefaultLangsAttr = groupElement.getAttribute(
-                "data-default-languages"
+                "data-default-languages",
             );
 
             // Split the string into array form instead, using delimiters "," or " "
@@ -1369,7 +1373,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 dataDefaultLangs.includes("L1") ||
                 BloomPlayerCore.areStringsEqualInvariantCultureIgnoreCase(
                     dataDefaultLangs[0],
-                    "auto"
+                    "auto",
                 );
 
             const childElts = groupElement.childNodes;
@@ -1387,14 +1391,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // (But keep going...the first run might NOT be usingDefaultLang.)
                     divElement.setAttribute(
                         "data-original-class",
-                        divElement.getAttribute("class") || ""
+                        divElement.getAttribute("class") || "",
                     );
                 }
                 if (usingDefaultLang) {
                     // go back to the original classes from bloom desktop
                     divElement.setAttribute(
                         "class",
-                        divElement.getAttribute("data-original-class") || ""
+                        divElement.getAttribute("data-original-class") || "",
                     );
                 } else if (isVernacularBlock) {
                     // only the one that matches activeLanguage should be visible
@@ -1403,11 +1407,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         divElement.classList.add(visibilityClass);
                         // We don't want any behavior triggered by things like bloom-contentNational1, for example.
                         // It may be that language, but in this state it's more important that it is the selected book language.
-                        Array.from(divElement.classList).forEach(className => {
-                            if (className.startsWith("bloom-content")) {
-                                divElement.classList.remove(className);
-                            }
-                        });
+                        Array.from(divElement.classList).forEach(
+                            (className) => {
+                                if (className.startsWith("bloom-content")) {
+                                    divElement.classList.remove(className);
+                                }
+                            },
+                        );
                         // Depending on whether the field is controlled by the appearance system, one of these
                         // classes may activate style rules appropriate to the main book language.
                         divElement.classList.add("bloom-content1");
@@ -1425,7 +1431,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     private static areStringsEqualInvariantCultureIgnoreCase(
         a: string,
-        b: string
+        b: string,
     ) {
         return a.localeCompare(b, "en-US", { sensitivity: "accent" }) === 0;
     }
@@ -1440,8 +1446,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     public componentWillUnmount() {
         this.pauseAllMultimedia();
-        document.removeEventListener("keydown", e =>
-            this.handleDocumentLevelKeyDown(e)
+        document.removeEventListener("keydown", (e) =>
+            this.handleDocumentLevelKeyDown(e),
         );
         this.unsubscribeAllEvents();
     }
@@ -1483,7 +1489,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // by our external container (Bloom Reader, Bloom Library, etc.)
     // when the parent reader determines that the session reading this book is finished.
     private sendUpdateOfBookProgressReportToExternalContext() {
-        const properties = this.bookInteraction.getProgressReportPropertiesForAnalytics();
+        const properties =
+            this.bookInteraction.getProgressReportPropertiesForAnalytics();
         // Pass the completed report to the externalContext version of this method which actually sends it.
         updateBookProgressReport("Pages Read", properties);
     }
@@ -1496,11 +1503,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             body,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
         for (let iedit = 0; iedit < editable.snapshotLength; iedit++) {
             (editable.snapshotItem(iedit) as HTMLElement).removeAttribute(
-                "contenteditable"
+                "contenteditable",
             );
         }
     }
@@ -1511,7 +1518,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.bookInfo.canRotate,
             this.props.landscape,
             this.props.useOriginalPageSize || this.bookInfo.hasFeature("comic"),
-            this.originalPageClass
+            this.originalPageClass,
         );
     }
 
@@ -1532,7 +1539,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         bookCanRotate: boolean,
         showLandscape: boolean,
         useOriginalPageSize: boolean,
-        originalPageClass: string
+        originalPageClass: string,
     ): boolean {
         let landscape = false;
         const sizeClass = this.getPageSizeClass(page);
@@ -1575,7 +1582,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             page,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
 
         for (let j = 0; j < srcElts.snapshotLength; j++) {
@@ -1595,7 +1602,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             page,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
         const regexp = new RegExp(/background-image:url\(['"](.*)['"]\)/);
 
@@ -1614,7 +1621,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 regexp,
                 // if we weren't using lazy-load:
                 //  "background-image:url('" + newUrl + "'"
-                ""
+                "",
             );
             item.setAttribute("style", newStyle);
             item.setAttribute("data-background", newUrl);
@@ -1642,9 +1649,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // a corresponding woff font in a standard location. We may even be able to pay to
     // provide some fonts there for book previewing that are NOT embeddable.
     private makeFontStylesheet(href: string): void {
-        axios.get(href).then(result => {
+        axios.get(href).then((result) => {
             let stylesheet = document.getElementById(
-                "fontCssStyleSheet"
+                "fontCssStyleSheet",
             ) as HTMLStyleElement;
             if (!stylesheet) {
                 stylesheet = document.createElement("style");
@@ -1658,7 +1665,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // single quotes, and double quotes. Note that we also have to
                 // handle possible parentheses in the file name.
                 /src:url\(['"]?(.*\.[^\)'"]*)['"]?\)/g,
-                "src:url('" + prefix + "/$1')"
+                "src:url('" + prefix + "/$1')",
             );
         });
         // no catch clause...if there's no fonts.css, we should never get a 'then' and
@@ -1670,7 +1677,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // content go, because @font-face rules don't work there.
     private makeAndikaStylesheet(): void {
         let stylesheet = document.getElementById(
-            "andikaCssStyleSheet"
+            "andikaCssStyleSheet",
         ) as HTMLStyleElement;
         if (!stylesheet) {
             stylesheet = document.createElement("style");
@@ -1813,7 +1820,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             doc,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
         const promises: Array<AxiosPromise<any>> = [];
         for (let i = 0; i < linkElts.snapshotLength; i++) {
@@ -1836,12 +1843,12 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         try {
             const results = await axios.all(
-                promises.map(promise =>
+                promises.map((promise) =>
                     promise.catch(
                         // if one stylesheet doesn't exist or whatever, keep going
-                        () => undefined
-                    )
-                )
+                        () => undefined,
+                    ),
+                ),
             );
 
             let combinedStyle = "";
@@ -1852,7 +1859,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 doc,
                 null,
                 XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                null
+                null,
             );
             for (let k = 0; k < styleElts.snapshotLength; k++) {
                 const styleElt = styleElts.snapshotItem(k) as HTMLElement;
@@ -1860,8 +1867,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             }
 
             // then add the stylesheet contents we just retrieved
-            results.forEach(result => {
+            results.forEach((result) => {
                 if (result && result.data) {
+                    console.log(
+                        "Loaded stylesheet: " + JSON.stringify(result.config),
+                    );
                     combinedStyle += result.data;
 
                     // It is somewhat awkward to do this in a method called assembleStyleSheets,
@@ -1872,10 +1882,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // We have to check for both for older books.
                     if (
                         result.config!.url!.endsWith(
-                            "/defaultLangStyles.css"
+                            "/defaultLangStyles.css",
                         ) ||
                         result.config!.url!.endsWith(
-                            "/settingsCollectionStyles.css"
+                            "/settingsCollectionStyles.css",
                         )
                     ) {
                         this.bookInfo.setLanguage2And3(result.data);
@@ -1888,8 +1898,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // We're using this instead of .bloom-page directly so that a selector like `:root .bloom-page` would still work.
             combinedStyle = combinedStyle.replace(
                 /:root/g,
-                ".bloomPlayer-page"
+                ".bloomPlayer-page",
             );
+            //console.log("***combinedStyle", combinedStyle);
             return combinedStyle;
         } catch (err) {
             this.HandleLoadingError(err);
@@ -1923,7 +1934,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     private getPlayerOptionsForPage(
-        bloomPage: HTMLElement
+        bloomPage: HTMLElement,
     ): IPlayerPageOptions | undefined {
         if (!bloomPage) {
             return undefined;
@@ -1944,7 +1955,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 "getPlayerOptionsForPage failed to parse json: " +
                     optionJson +
                     " with error " +
-                    e.message
+                    e.message,
             );
             return;
         }
@@ -1972,14 +1983,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     <div
                         className="loadErrorMessage"
                         dangerouslySetInnerHTML={{
-                            __html: this.state.loadErrorHtml
+                            __html: this.state.loadErrorHtml,
                         }}
                     />
                 </>
             );
         }
         setIncludeImageDescriptions(
-            this.props.shouldReadImageDescriptions && this.hasImageDescriptions
+            this.props.shouldReadImageDescriptions && this.hasImageDescriptions,
         );
         const swiperParams: any = {
             // This is how we'd expect to make the next/prev buttons show up.
@@ -1990,7 +2001,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             //     nextEl: ".swiper-button-next",
             //     prevEl: ".swiper-button-prev"
             // },
-            getSwiper: s => {
+            getSwiper: (s) => {
                 this.swiperInstance = s;
                 if (this.metaDataObject.isRtl && this.swiperInstance) {
                     // These kluges cause swiper to display the pages in reverse order.
@@ -2062,11 +2073,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // connection.. We want SOME limit so
                 // we don't keep using power for hours if the device is left on this page.
                 slideChangeTransitionEnd: () =>
-                    (this.msToContinueFF60RepairChecks = 30000)
+                    (this.msToContinueFF60RepairChecks = 30000),
             },
             keyboard: {
                 enabled: true,
-                onlyInViewport: false
+                onlyInViewport: false,
             },
             // Disable preloading of all images
             preloadImages: false,
@@ -2080,10 +2091,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             lazy: {
                 loadPrevNext: true,
                 loadOnTransitionStart: true,
-                loadPrevNextAmount: 2
+                loadPrevNextAmount: 2,
             },
             // This seems make it unnecessary to call Swiper.update at the end of componentDidUpdate.
-            shouldSwiperUpdate: true
+            shouldSwiperUpdate: true,
         };
         if (this.startingUpSwiper) {
             // When we first render swiper, we need to force it to the right page. But not later,
@@ -2126,7 +2137,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         ? " " + this.props.extraClassNames
                         : "")
                 }
-                ref={bloomplayer => (this.rootDiv = bloomplayer)}
+                ref={(bloomplayer) => (this.rootDiv = bloomplayer)}
             >
                 <Swiper
                     // key is necessary to guarantee we get a new swiper when this.shouldAutoPlay changes.
@@ -2151,7 +2162,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             <div
                                 key={index}
                                 className={"page-preview-slide"}
-                                onClick={e => {
+                                onClick={(e) => {
                                     if (
                                         !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
                                         this.props.onContentClick &&
@@ -2160,13 +2171,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                         // I tried adding another click handler to the video container with stopPropagation,
                                         // but for some reason it didn't work.
                                         !(e.target as HTMLElement).closest(
-                                            ".bloom-videoContainer"
+                                            ".bloom-videoContainer",
                                         )
                                     ) {
                                         this.props.onContentClick(e);
                                     }
                                     this.setState({
-                                        ignorePhonyClick: false
+                                        ignorePhonyClick: false,
                                     });
                                 }}
                             >
@@ -2201,19 +2212,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                                     .hasAppearanceSystem
                                                     ? "appearance-system"
                                                     : ""
-                                            } ${this.state
-                                                .importedBodyAttributes[
-                                                "class"
-                                            ] ?? ""}`}
+                                            } ${
+                                                this.state
+                                                    .importedBodyAttributes[
+                                                    "class"
+                                                ] ?? ""
+                                            }`}
                                             // Note: the contents of `slide` are what was in the .htm originally.
                                             // So you would expect that this would replace any changes made to the dom by the activity or other code.
                                             // You would expect that we would lose the answers a user made in an activity.
                                             // However it appears that React doesn't notice those changes and thus does nothing when we try to set
                                             // the HTML here to what it was originally; instead changes to the DOM are preserved.
                                             dangerouslySetInnerHTML={{
-                                                __html: slide
+                                                __html: slide,
                                             }}
-                                            ref={div =>
+                                            ref={(div) =>
                                                 this.fixInternalHyperlinks(div)
                                             }
                                         />
@@ -2247,7 +2260,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.slidePrevious()}
-                    onTouchStart={e => {
+                    onTouchStart={(e) => {
                         this.setState({ ignorePhonyClick: true });
                         // not needed, touch still causes a click, this can cause double page change
                         //this.slidePrevious();
@@ -2262,7 +2275,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Prev",
                                     this.props.preferredUiLanguages,
-                                    "Previous Page"
+                                    "Previous Page",
                                 )}
                             />
                         ) : (
@@ -2270,7 +2283,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Prev",
                                     this.props.preferredUiLanguages,
-                                    "Previous Page"
+                                    "Previous Page",
                                 )}
                             />
                         )}
@@ -2289,7 +2302,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                             : "")
                     }
                     onClick={() => this.slideNext()}
-                    onTouchStart={e => {
+                    onTouchStart={(e) => {
                         this.setState({ ignorePhonyClick: true });
                         // not needed, touch still causes a click, this can cause double page change
                         //this.slideNext();
@@ -2301,7 +2314,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Next",
                                     this.props.preferredUiLanguages,
-                                    "Next Page"
+                                    "Next Page",
                                 )}
                             />
                         ) : (
@@ -2309,7 +2322,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 titleAccess={LocalizationManager.getTranslation(
                                     "Button.Next",
                                     this.props.preferredUiLanguages,
-                                    "Next Page"
+                                    "Next Page",
                                 )}
                             />
                         )}
@@ -2330,21 +2343,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             return;
         }
         const anchors = Array.from(div.getElementsByTagName("a") ?? []);
-        anchors.forEach(a => {
+        anchors.forEach((a) => {
             const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
             if (href?.startsWith("#")) {
                 const pageId = href.substring(1);
                 const pageNum = this.state.pageIdToIndexMap[pageId];
                 if (pageNum !== undefined) {
                     a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
-                    a.onclick = ev => {
+                    a.onclick = (ev) => {
                         ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
                         ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
                         this.swiperInstance.slideTo(pageNum);
                     };
                 } else {
                     // no other kind of internal link makes sense, so let them be ignored.
-                    a.onclick = ev => {
+                    a.onclick = (ev) => {
                         ev.preventDefault();
                         ev.stopPropagation();
                     };
@@ -2445,7 +2458,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             return null; // unexpected
         }
         const bloomPage = swiperPage.getElementsByClassName(
-            "bloom-page"
+            "bloom-page",
         )[0] as HTMLElement;
         return bloomPage;
     }
@@ -2500,7 +2513,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             options && options.hideNavigation ? true : false;
         if (this.props.hidingNavigationButtonsCallback) {
             this.props.hidingNavigationButtonsCallback(
-                this.currentPageHidesNavigationButtons
+                this.currentPageHidesNavigationButtons,
             );
         }
         // Values this sets are used in the render of the new page, so it must NOT
@@ -2539,7 +2552,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.props.reportPageProperties({
                     hasAudio: pageHasAudio(bloomPage),
                     hasMusic: this.music.pageHasMusic(bloomPage),
-                    hasVideo: BloomPlayerCore.currentPageHasVideo
+                    hasVideo: BloomPlayerCore.currentPageHasVideo,
                 });
             }
 
@@ -2548,10 +2561,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.sendUpdateOfBookProgressReportToExternalContext();
 
             // these were hard to get right. If you change them, make sure to test both mouse and touch mode (simulated in Chrome)
-            this.swiperInstance.params.noSwiping = this.activityManager.getActivityAbsorbsDragging();
-            this.swiperInstance.params.touchRatio = this.activityManager.getActivityAbsorbsDragging()
-                ? 0
-                : 1;
+            this.swiperInstance.params.noSwiping =
+                this.activityManager.getActivityAbsorbsDragging();
+            this.swiperInstance.params.touchRatio =
+                this.activityManager.getActivityAbsorbsDragging() ? 0 : 1;
             // didn't seem to help: this.swiperInstance.params.allowTouchMove = false;
             if (this.activityManager.getActivityAbsorbsTyping()) {
                 this.swiperInstance.keyboard.disable();
@@ -2561,7 +2574,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
             BloomPlayerCore.addScrollbarsToPage(bloomPage);
             const soundItems = Array.from(
-                bloomPage.querySelectorAll("[data-sound]")
+                bloomPage.querySelectorAll("[data-sound]"),
             );
             soundItems.forEach((elt: HTMLElement) => {
                 elt.addEventListener("click", playSoundOf);
@@ -2645,7 +2658,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         (entries, ob) => {
                             // called more-or-less immediately for each child, but after the
                             // loop creates them all.
-                            entries.forEach(entry => {
+                            entries.forEach((entry) => {
                                 countOfObserversThatHaveReported++;
                                 ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
                                 // console.log("bounding: ");
@@ -2656,7 +2669,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 //     "ratio: " + entry.intersectionRatio
                                 // );
                                 var isBubble = !!entry.target.closest(
-                                    ".bloom-textOverPicture"
+                                    ".bloom-textOverPicture",
                                 );
                                 // In bloom desktop preview, we set width to 200% and then scale down by 50%.
                                 // This can lead to intersection ratios very slightly less than 1, probably due
@@ -2700,15 +2713,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     const overflow =
                                         (1 - entry.intersectionRatio) *
                                         entry.target.clientHeight;
-                                    const lineHeightPx = window.getComputedStyle(
-                                        entry.target
-                                    ).lineHeight;
+                                    const lineHeightPx =
+                                        window.getComputedStyle(
+                                            entry.target,
+                                        ).lineHeight;
                                     const lineHeight = parseFloat(
                                         // remove the trailing "px"
                                         lineHeightPx.substring(
                                             0,
-                                            lineHeightPx.length - 2
-                                        )
+                                            lineHeightPx.length - 2,
+                                        ),
                                     );
                                     overflowing =
                                         overflow >
@@ -2718,20 +2732,21 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                 if (
                                     overflowing &&
                                     scrollBlocks.indexOf(
-                                        entry.target.parentElement!
+                                        entry.target.parentElement!,
                                     ) < 0
                                 ) {
                                     scrollBlocks.push(
-                                        entry.target.parentElement!
+                                        entry.target.parentElement!,
                                     );
                                     // remove classes incompatible with niceScroll
-                                    const group = entry.target.parentElement!
-                                        .parentElement!;
+                                    const group =
+                                        entry.target.parentElement!
+                                            .parentElement!;
                                     group.classList.remove(
-                                        "bloom-vertical-align-center"
+                                        "bloom-vertical-align-center",
                                     );
                                     group.classList.remove(
-                                        "bloom-vertical-align-bottom"
+                                        "bloom-vertical-align-bottom",
                                     );
                                     if (isBubble) {
                                         // This is a way of forcing it not to be display-flex, which doesn't
@@ -2739,7 +2754,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                         // That library messes with the element style, so it seemed safer
                                         // not to do that myself.
                                         entry.target.parentElement!.classList.add(
-                                            "scrolling-bubble"
+                                            "scrolling-bubble",
                                         );
                                     }
                                 }
@@ -2757,16 +2772,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                         cursorwidth: "12px",
                                         cursorcolor: "#000000",
                                         cursoropacitymax: 0.1,
-                                        cursorborderradius: "12px" // Make the corner more rounded than the 5px default.
+                                        cursorborderradius: "12px", // Make the corner more rounded than the 5px default.
                                     });
                                     this.setupSpecialMouseTrackingForNiceScroll(
-                                        bloomPage
+                                        bloomPage,
                                     );
                                     scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
                                 }
                             });
                         },
-                        { root: elt }
+                        { root: elt },
                     );
                     countOfObserversExpectedToReport++;
                     observer.observe(firstChild!);
@@ -2806,7 +2821,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (
             ev.target instanceof HTMLDivElement &&
             (ev.target as HTMLDivElement).classList.contains(
-                "nicescroll-cursors"
+                "nicescroll-cursors",
             )
         ) {
             (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
@@ -2829,7 +2844,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         if (!this.bookInteraction.reportedAudioOnCurrentPage) {
             this.bookInteraction.reportedAudioOnCurrentPage = true;
             this.bookInteraction.audioPageShown(
-                BloomPlayerCore.currentPageIndex
+                BloomPlayerCore.currentPageIndex,
             );
         }
         this.sendUpdateOfBookProgressReportToExternalContext();
@@ -2849,7 +2864,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ) {
             player.bookInteraction.reportedVideoOnCurrentPage = true;
             player.bookInteraction.videoPageShown(
-                BloomPlayerCore.currentPageIndex
+                BloomPlayerCore.currentPageIndex,
             );
         }
         player.sendUpdateOfBookProgressReportToExternalContext();
@@ -2912,7 +2927,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             if (this.props.shouldReportSoundLog) {
                 sendStringToBloomApi(
                     "/publish/av/startRecording",
-                    this.videoList
+                    this.videoList,
                 ).then(finishUp);
                 return; // don't 'finishUp' until the post returns
             }
@@ -2957,7 +2972,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 }
 
 function htmlEncode(str: string): string {
-    return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, i => {
+    return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, (i) => {
         return "&#" + i.charCodeAt(0) + ";";
     });
 }
@@ -2971,7 +2986,7 @@ function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
         body,
         null,
         XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-        null
+        null,
     );
     if (imgDescDivs.snapshotLength > 0) return true;
     // Perhaps the user never split TextBox recordings into segments for image descriptions
@@ -2986,7 +3001,7 @@ function doesBookHaveImageDescriptions(body: HTMLBodyElement): boolean {
         body,
         null,
         XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-        null
+        null,
     );
     return imgDescParas.snapshotLength > 0;
 }

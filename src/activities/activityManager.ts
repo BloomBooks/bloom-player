@@ -1,9 +1,9 @@
 import { loadDynamically } from "./loadDynamically";
 import { ActivityContext } from "./ActivityContext";
-const iframeModule = require("./iframeActivity.ts");
-const simpleDomChoiceActivityModule = require("./domActivities/SimpleDomChoice.ts");
-const simpleCheckboxQuizModule = require("./domActivities/SimpleCheckboxQuiz.ts");
-const dragToDestinationModule = require("./dragActivities/DragToDestination.ts");
+import iframeModule from "./iframeActivity";
+import simpleDomChoiceActivityModule from "./domActivities/SimpleDomChoice";
+import simpleCheckboxQuizModule from "./domActivities/SimpleCheckboxQuiz";
+import dragToDestinationModule from "./dragActivities/DragToDestination";
 
 // This is the module that the activity has to implement (the file must export these functions)
 export interface IActivityModule {

@@ -1,13 +1,13 @@
 import { ActivityContext } from "../ActivityContext";
 import { IActivityObject } from "../activityManager";
-
+import styles from "./SimpleCheckboxQuiz.css?inline";
 // The value we store to indicate that at some point the user
 // chose this answer. We don't really need the value, because if the key for
 // that answer has a value, it will be this. But may as well
 // be consistent, in case we later add other options.
 const kChoiceWasSelectedAtOnePoint = "wasSelectedAtOnePoint";
 
-export default class SimpleCheckboxQuiz implements IActivityObject {
+class SimpleCheckboxQuiz implements IActivityObject {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -24,9 +24,7 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
     public showingPage(activityContext: ActivityContext) {
         this.activityContext = activityContext;
         // tslint:disable-next-line: no-submodule-imports
-        activityContext.addActivityStylesForPage(
-            require("!!raw-loader!./SimpleCheckboxQuiz.css").default
-        );
+        activityContext.addActivityStylesForPage(styles);
 
         //------------ Code for managing the choice radio buttons -------
         // Initialize the choice radio buttons, arranging for the appropriate click actions
@@ -39,7 +37,7 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
         //const observer = new MutationObserver(markEmptyChoices);
         //observer.observe(document.body, { characterData: true, subtree: true });
         const choices = this.activityContext.pageElement.getElementsByClassName(
-            "checkbox-and-textbox-choice"
+            "checkbox-and-textbox-choice",
         );
         Array.from(choices).forEach((choice: HTMLElement, index: number) => {
             const checkbox = this.getCheckBox(choice);
@@ -63,10 +61,10 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
             this.activityContext.addEventListener(
                 "click",
                 choice,
-                e => this.handleReadModeClick(e),
+                (e) => this.handleReadModeClick(e),
                 {
-                    capture: true
-                }
+                    capture: true,
+                },
             );
             // We only need to add these body-level listeners once.
             if (index === 0) {
@@ -110,7 +108,7 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
 
     private markEmptyChoices(): void {
         const choices = this.activityContext.pageElement.getElementsByClassName(
-            "checkbox-and-textbox-choice"
+            "checkbox-and-textbox-choice",
         );
         for (let i = 0; i < choices.length; i++) {
             if (this.hasVisibleContent(choices[i])) {
@@ -125,9 +123,9 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
         const editables = choice.getElementsByClassName("bloom-editable");
 
         return Array.from(editables).some(
-            e =>
+            (e) =>
                 e.classList.contains("bloom-visibility-code-on") &&
-                (e.textContent || "").trim() !== ""
+                (e.textContent || "").trim() !== "",
         );
     }
     private handleInputMouseEvent(event: Event) {
@@ -166,12 +164,12 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
 
         this.activityContext.storeSessionPageData(
             choiceKey,
-            kChoiceWasSelectedAtOnePoint
+            kChoiceWasSelectedAtOnePoint,
         );
 
         this.activityContext.reportScore(
             1 /*total possible on page*/,
-            correct ? 1 : 0 /*score*/
+            correct ? 1 : 0 /*score*/,
         );
     }
 
@@ -215,8 +213,8 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
         // what is my index among the other choices on the page
         const choices = Array.from(
             this.activityContext.pageElement.getElementsByClassName(
-                "checkbox-and-textbox-choice"
-            )
+                "checkbox-and-textbox-choice",
+            ),
         );
         const choiceIndex = choices.indexOf(choice);
         return "cbstate_" + choiceIndex;
@@ -242,11 +240,17 @@ export default class SimpleCheckboxQuiz implements IActivityObject {
     //     }
     // }
 }
-export const dataActivityID: string = "simple-checkbox-quiz";
-export function activityRequirements() {
+const dataActivityID: string = "simple-checkbox-quiz";
+function activityRequirements() {
     return {
         dragging: false,
         clicking: true,
-        typing: false
+        typing: false,
     };
 }
+// Combine both the class and the function into a single default export
+export default {
+    default: SimpleCheckboxQuiz,
+    activityRequirements,
+    dataActivityID,
+};

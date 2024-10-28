@@ -6,8 +6,8 @@ import {
 // import doesn't work here...if we really want it to
 // https://stackoverflow.com/questions/56782452/how-to-fix-module-not-found-for-audio-files-using-file-loader-images-css-an
 // has some ideas.
-const rightAnswer = require("./right_answer.mp3");
-const wrongAnswer = require("./wrong_answer.mp3");
+import rightAnswer from "./right_answer.mp3";
+import wrongAnswer from "./wrong_answer.mp3";
 
 // This is passed to an activity to give it things that it needs. It's mostly
 // a wrapper so that activities don't have direct knowledge of how parts outside

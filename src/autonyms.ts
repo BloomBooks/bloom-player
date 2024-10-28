@@ -1,5 +1,5 @@
 // tslint:disable-next-line: no-submodule-imports
-import autonymData from "raw-loader!./iso639-autonyms.tsv";
+import autonymData from "./iso639-autonyms.tsv?raw";
 
 // This class handles retrieving data from the 'iso639-autonyms.tsv' file.
 // iso639-autonyms.tsv originally came from https://github.com/bbqsrc/iso639-autonyms.
