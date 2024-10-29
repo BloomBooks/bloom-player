@@ -87,14 +87,14 @@ export class ActivityContext {
     }
 
     private getPagePlayer(): any {
-        let player = document.querySelector("#activity-sound-player") as any;
+        let player = document.getElementById("activity-sound-player") as any;
         if (player && !player.play) {
             player.remove();
             player = null;
         }
         if (!player) {
             player = document.createElement("audio");
-            player.setAttribute("id", "#activity-sound-player");
+            player.setAttribute("id", "activity-sound-player");
             document.body.appendChild(player);
         }
         return player;
