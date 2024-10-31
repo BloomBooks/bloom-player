@@ -1302,11 +1302,12 @@ export function showVideoError(video: HTMLVideoElement): void {
             msgDiv.className = "video-error-message normal-style";
             msgDiv.textContent = badVideoMessage;
             msgDiv.style.display = "block";
-            msgDiv.style.color = "white";
+            msgDiv.style.color = "black";
             msgDiv.style.position = "absolute";
             msgDiv.style.left = "10%";
             msgDiv.style.top = "10%";
             msgDiv.style.width = "80%";
+            msgDiv.style.fontSize = "x-large";
             parent.appendChild(msgDiv);
         }
     }
