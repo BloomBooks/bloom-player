@@ -765,6 +765,32 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    // nicescroll doesn't properly scale the padding at the top and left of the
+    // scrollable area of the languageGroup divs when the page is scaled.  This
+    // method sets offset values to correct for this.  It is called whenever the
+    // entire window resizes, which also scales the page before this is called.
+    // See BL-13796.
+    public static fixNiceScrollOffsets(page: HTMLElement, scale: number) {
+        page.querySelectorAll(kSelectorForPotentialNiceScrollElements).forEach(
+            group => {
+                // The type definition is not correct for getNiceScroll; we expect it to return an array.
+                const groupNiceScroll = $(group).getNiceScroll() as any;
+                if (groupNiceScroll && groupNiceScroll.length > 0) {
+                    let {
+                        topAdjust,
+                        leftAdjust
+                    } = BloomPlayerCore.ComputeNiceScrollOffsets(
+                        scale,
+                        group as HTMLElement
+                    );
+                    groupNiceScroll[0].opt.railoffset.top = -topAdjust;
+                    groupNiceScroll[0].opt.railoffset.left = -leftAdjust;
+                    groupNiceScroll[0].resize();
+                }
+            }
+        );
+    }
+
     private collectBodyAttributes(originalBodyElement: HTMLBodyElement) {
         // When working on the ABC-BARMM branding/XMatter pack, we discovered that the classes on the
         // Desktop body element were not getting passed into bloom-player.
@@ -2587,6 +2613,27 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         // no children, can't be overflowing
                         return;
                     }
+                    // nicescroll doesn't properly scale the padding at the top and left of the
+                    // scrollable area of the languageGroup divs when the page is scaled.  This
+                    // code sets offset values to correct for this.  The scale is determined by
+                    // looking for a style element with an id of "scale-style-sheet" and extracting
+                    // the scale from the transform property.  See BL-13796.
+                    let scale = 1;
+                    const scaleStyle = document.querySelector(
+                        "style#scale-style-sheet"
+                    );
+                    if (scaleStyle) {
+                        const match = scaleStyle.innerHTML.match(
+                            /transform:[a-z0-9, ()]* scale\((\d+(\.\d+)?)\)/
+                        );
+                        if (match) {
+                            scale = parseFloat(match[1]);
+                        }
+                    }
+                    let {
+                        topAdjust,
+                        leftAdjust
+                    } = BloomPlayerCore.ComputeNiceScrollOffsets(scale, elt);
                     // We don't really want continuous observation, but this is an elegant
                     // way to find out whether each child is entirely contained within its
                     // parent. Unlike computations involving coordinates, we don't have to
@@ -2703,6 +2750,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                     // configure nicescroll...ideally only once for all of them
                                     $(scrollBlocks).niceScroll({
                                         autohidemode: false,
+                                        railoffset: {
+                                            top: -topAdjust,
+                                            left: -leftAdjust
+                                        },
                                         cursorwidth: "12px",
                                         cursorcolor: "#000000",
                                         cursoropacitymax: 0.1,
@@ -2726,6 +2777,25 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 });
         }
     }
+
+    // nicescroll doesn't properly scale the padding at the top and left of the
+    // scrollable area of the languageGroup divs when the page is scaled.  This
+    // method computes offset values to correct for this.  See BL-13796.
+    private static ComputeNiceScrollOffsets(scale: number, elt: HTMLElement) {
+        let topAdjust = 0;
+        let leftAdjust = 0;
+        if (scale !== 1) {
+            const compStyles = window.getComputedStyle(elt.parentElement!);
+            const topPadding =
+                compStyles.getPropertyValue("padding-top") ?? "0";
+            const leftPadding =
+                compStyles.getPropertyValue("padding-left") ?? "0";
+            topAdjust = parseFloat(topPadding) * (scale - 1);
+            leftAdjust = parseFloat(leftPadding) * (scale - 1);
+        }
+        return { topAdjust, leftAdjust };
+    }
+
     static setupSpecialMouseTrackingForNiceScroll(bloomPage: Element) {
         bloomPage.removeEventListener("pointerdown", this.listenForPointerDown); // only want one!
         bloomPage.addEventListener("pointerdown", this.listenForPointerDown);

@@ -610,6 +610,7 @@ export const BloomPlayerControls: React.FunctionComponent<IProps &
         .bloomPlayer-page {height: ${actualPageHeight /
             scaleFactor}px; overflow: hidden;}`;
         //alert("scale page to window completed");
+        BloomPlayerCore.fixNiceScrollOffsets(page, scaleFactor);
         if (!pageScaled) {
             setPageScaled(true);
         }
