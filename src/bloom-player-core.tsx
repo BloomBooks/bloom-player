@@ -380,6 +380,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     }
 
     handleDocumentLevelClick(e: any) {
+        const hrefValue = (e.target as HTMLElement)?.attributes["href"]
+            ?.value as string;
+        if (hrefValue) {
+            if (hrefValue.startsWith("bloomnav://")) {
+                // This is a link to a page in another book. We need to send a message to the host.
+                this.handleBloomNavLink(hrefValue, e);
+            }
+            return;
+        }
         const targetElement = (e.target as HTMLElement).closest(
             "[data-href]"
         ) as HTMLElement;
@@ -397,9 +406,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     e.stopPropagation();
                 } else if (href.startsWith("bloomnav://")) {
                     // This is a link to a page in another book. We need to send a message to the host.
-                    sendMessageToHost({ messageType: "bloomnav", href: href });
-                    e.preventDefault();
-                    e.stopPropagation();
+                    this.handleBloomNavLink(href, e);
                 } else if (
                     href.startsWith("http://") ||
                     href.startsWith("https://")
@@ -412,6 +419,19 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 }
             }
         }
+    }
+
+    private handleBloomNavLink(href: string, e: any) {
+        const page = (e.target as HTMLElement).closest(".bloom-page");
+        sendMessageToHost({
+            messageType: "bloomnav",
+            href: href,
+            // used for backreference to the page that initiated the navigation
+            sourceUrl: this.sourceUrl,
+            sourcePageNumber: page?.getAttribute("data-page-number")
+        });
+        e.preventDefault();
+        e.stopPropagation();
     }
 
     private handleWindowFocus() {
