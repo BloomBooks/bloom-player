@@ -1,0 +1,26 @@
+name: Trigger TeamCity Builds
+
+on:
+  workflow_run:
+    workflows: ["Build-Test-Release"]
+    types:
+      - completed
+  workflow_dispatch:    # Allows manual triggering
+
+jobs:
+  trigger-teamcity:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Trigger TeamCity Build for Bloom Reader Alpha
+        uses: JetBrains/teamcity-github-action@v1
+        with:
+          server: ${{ secrets.TEAMCITY_URL }}
+          token: ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}
+          build-conf-id: 'Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish'
+      - name: Trigger TeamCity Build for Bloom Desktop Alpha
+        uses: JetBrains/teamcity-github-action@v1
+        with:
+          server: ${{ secrets.TEAMCITY_URL }}
+          token: ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}
+          build-conf-id: 'bt222'
