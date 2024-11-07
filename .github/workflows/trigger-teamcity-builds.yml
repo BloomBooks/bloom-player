@@ -13,14 +13,18 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Trigger TeamCity Build for Bloom Reader Alpha
-        uses: JetBrains/teamcity-github-action@v1
+        uses: fjogeleit/http-request-action@v1
         with:
-          server: ${{ secrets.TEAMCITY_URL }}
-          token: ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}
-          build-conf-id: 'Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish'
+          url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+          method: 'POST'
+          contentType: 'application/json'
+          customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+          data: '{"buildType": {"id": "Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish"}}'
       - name: Trigger TeamCity Build for Bloom Desktop Alpha
-        uses: JetBrains/teamcity-github-action@v1
+        uses: fjogeleit/http-request-action@v1
         with:
-          server: ${{ secrets.TEAMCITY_URL }}
-          token: ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}
-          build-conf-id: 'bt222'
+          url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+          method: 'POST'
+          contentType: 'application/json'
+          customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+          data: '{"buildType": {"id": "bt222"}}'
