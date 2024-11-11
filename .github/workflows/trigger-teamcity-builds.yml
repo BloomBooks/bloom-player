@@ -5,12 +5,13 @@ on:
     workflows: ["Build-Test-Release"]
     types:
       - completed
-  workflow_dispatch:    # Allows manual triggering
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   trigger-teamcity:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Either a manual run or the Build-Test-Release workflow has completed successfully and a new release was published to npm
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
     steps:
       - name: Trigger TeamCity Build for Bloom Reader Alpha
         uses: fjogeleit/http-request-action@v1
