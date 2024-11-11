@@ -24,7 +24,7 @@ jobs:
               run: yarn
 
             - name: Sync with crowdin
-              run: yarn crowdin:sync
+              run: yarn strings:sync
 
             - name: Build package
               run: yarn build
