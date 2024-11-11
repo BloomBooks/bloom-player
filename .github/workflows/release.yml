@@ -18,7 +18,7 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   # Keep in sync with volta -> node version in package.json
-                  node-version: 16
+                  node-version: 20
 
             - name: Install dependencies
               run: yarn
