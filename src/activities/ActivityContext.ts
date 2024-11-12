@@ -3,9 +3,6 @@ import {
     getPageData,
     storePageData
 } from "../page-api";
-// import doesn't work here...if we really want it to
-// https://stackoverflow.com/questions/56782452/how-to-fix-module-not-found-for-audio-files-using-file-loader-images-css-an
-// has some ideas.
 import rightAnswer from "./right_answer.mp3";
 import wrongAnswer from "./wrong_answer.mp3";
 
@@ -72,18 +69,21 @@ export class ActivityContext {
     }
 
     public playCorrect() {
-        // NB: if this stops working in storybook; the file should be found because the package.json
-        // script that starts storybook has a "--static-dir" option that should include the folder
-        // containing the standard activity sounds.
-        // require on an mp3 in storybook gives us some sort of module object where the url of the sound is its 'default'
-        // whatever we're doing to build the production version, require on the mp3 gives us the url directly.
-        this.playSound(rightAnswer.default ?? rightAnswer);
+        let path = rightAnswer;
+        if (path.startsWith("/")) {
+            // I can't figure out how to get rid of the leading slash in the path in the production build.
+            path = path.substring(1);
+        }
+        this.playSound(path);
     }
 
     public playWrong() {
-        // require on an mp3 gives us some sort of module object where the url of the sound is its 'default'
-        // whatever we're doing to build the production version, require on the mp3 gives us the url directly.
-        this.playSound(wrongAnswer.default ?? wrongAnswer);
+        let path = wrongAnswer;
+        if (path.startsWith("/")) {
+            // I can't figure out how to get rid of the leading slash in the path in the production build.
+            path = path.substring(1);
+        }
+        this.playSound(path);
     }
 
     private getPagePlayer(): any {

@@ -1,11 +1,6 @@
 import React from "react";
 import { StoryFn, Meta } from "@storybook/react";
-import {
-    within,
-    userEvent,
-    waitFor,
-    fireEvent,
-} from "@storybook/testing-library";
+import { within, userEvent, waitFor, fireEvent } from "@storybook/test";
 import { expect } from "@storybook/test";
 import { BloomPlayerControls } from "../bloom-player-controls";
 
