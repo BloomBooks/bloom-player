@@ -11,9 +11,7 @@ jobs:
   trigger-teamcity:
     runs-on: ubuntu-latest
     # Either a manual run or the Build-Test-Release workflow has completed successfully and a new release was published to npm
-    #if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
-    # ... except we haven't figured out the "and a new release was published to npm" part yet...
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
     steps:
         - name: Trigger TeamCity Build for alpha.bloomlibrary.org
           uses: fjogeleit/http-request-action@v1
