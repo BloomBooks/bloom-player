@@ -1,0 +1,404 @@
+{  "ar": {
+    "Button.Back": {
+        "message": "رجوع",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "az": {
+    "Audio.Pause": {
+        "message": "Fasilə etmək",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Gəri",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "bn": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "আপনাদের বোধশক্তির পরীক্ষা করুন",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "পিছনে",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "es": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Compruebe su comprensión",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Audio.Play": {
+        "message": "Reproducir",
+        "description": "tooltip for the button to play a motion book"
+    },
+    "Audio.ReadAloud": {
+        "message": "Leer en voz alta",
+        "description": "tooltip for the audio play button for talking books"
+    },
+    "Audio.Pause": {
+        "message": "Pausar",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Regresar",
+        "description": "tooltip for the button to go back to the main display"
+    },
+    "Button.More": {
+        "message": "Más",
+        "description": "tooltip for the button to go show detail view of book"
+    },
+    "Button.FullScreen": {
+        "message": "Pantalla completa",
+        "description": "tooltip for the display on full screen button"
+    },
+    "Button.ExitFullScreen": {
+        "message": "Salir de pantalla completa",
+        "description": "tooltip for the exit full screen button"
+    },
+    "Button.ChooseLanguage": {
+        "message": "Elija el idioma",
+        "description": "tooltip for the language menu button"
+    },
+    "Button.Next": {
+        "message": "Página siguiente",
+        "description": "tooltip for the next page button"
+    },
+    "Button.Prev": {
+        "message": "Página previa",
+        "description": "tooltip for the previous page button"
+    },
+    "Button.ReadImageDescriptions": {
+        "message": "Leer las descripciones de las imágenes",
+        "description": "tooltip for the button to enable reading image descriptions"
+    },
+    "Button.IgnoreImageDescriptions": {
+        "message": "Ignorar las descripciones de las imágenes",
+        "description": "tooltip for the button to disable reading image descriptions"
+    }
+},
+ "fr": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Contrôlez Votre Compréhension",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Audio.Play": {
+        "message": "Lecture",
+        "description": "tooltip for the button to play a motion book"
+    },
+    "Audio.ReadAloud": {
+        "message": "Lecture Livre Audio",
+        "description": "tooltip for the audio play button for talking books"
+    },
+    "Audio.Pause": {
+        "message": "Pause",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Retour",
+        "description": "tooltip for the button to go back to the main display"
+    },
+    "Button.More": {
+        "message": "Plus d’infos",
+        "description": "tooltip for the button to go show detail view of book"
+    },
+    "Button.FullScreen": {
+        "message": "Plein Écran",
+        "description": "tooltip for the display on full screen button"
+    },
+    "Button.ExitFullScreen": {
+        "message": "Sortir du mode Plein Ecran",
+        "description": "tooltip for the exit full screen button"
+    },
+    "Button.ChooseLanguage": {
+        "message": "Choisir Langue",
+        "description": "tooltip for the language menu button"
+    },
+    "Button.Next": {
+        "message": "Page Suivante",
+        "description": "tooltip for the next page button"
+    },
+    "Button.Prev": {
+        "message": "Page Précédente",
+        "description": "tooltip for the previous page button"
+    },
+    "Button.ReadImageDescriptions": {
+        "message": "Lire la Description des Images",
+        "description": "tooltip for the button to enable reading image descriptions"
+    },
+    "Button.IgnoreImageDescriptions": {
+        "message": "Ignorer la Description des Images",
+        "description": "tooltip for the button to disable reading image descriptions"
+    }
+},
+ "ha": {
+    "Button.Back": {
+        "message": "Baya",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "hi": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "अपनी समझ की जांचें",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "पीछे जाएं",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "id": {
+    "Button.Back": {
+        "message": "Kembali",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "kw": {
+    "Button.Back": {
+        "message": "War-dhelergh",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "lo": {
+    "Button.Back": {
+        "message": "ຄືນ",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "mam": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Ka'yinxa qa in ex toj twi'ya",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Audio.Play": {
+        "message": "B'inxa",
+        "description": "tooltip for the button to play a motion book"
+    },
+    "Audio.ReadAloud": {
+        "message": "Ok jawil u'jit kyuw",
+        "description": "tooltip for the audio play button for talking books"
+    },
+    "Audio.Pause": {
+        "message": "Maqonxa",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Tanjtz ti'ja",
+        "description": "tooltip for the button to go back to the main display"
+    },
+    "Button.More": {
+        "message": "Txqantl",
+        "description": "tooltip for the button to go show detail view of book"
+    }
+},
+ "my": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "သင်မည်မျှနားလည်ကို စစ်ဆေးရန်",
+        "description": "the heading on (some) quiz pages"
+    }
+},
+ "ne": {
+    "Button.Back": {
+        "message": "पछाडि",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "pbu": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "خپله پوهه وګوره",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "شاته",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "prs": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "درک خود را بررسی کنید",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "عقب",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "pt": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Verifique seu entendimento",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Audio.Play": {
+        "message": "Tocar",
+        "description": "tooltip for the button to play a motion book"
+    },
+    "Audio.ReadAloud": {
+        "message": "Ler em voz alta",
+        "description": "tooltip for the audio play button for talking books"
+    },
+    "Audio.Pause": {
+        "message": "Pausar",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Voltar",
+        "description": "tooltip for the button to go back to the main display"
+    },
+    "Button.More": {
+        "message": "Mais",
+        "description": "tooltip for the button to go show detail view of book"
+    },
+    "Button.FullScreen": {
+        "message": "Tela cheia",
+        "description": "tooltip for the display on full screen button"
+    },
+    "Button.ExitFullScreen": {
+        "message": "Sair da tela cheia",
+        "description": "tooltip for the exit full screen button"
+    },
+    "Button.ChooseLanguage": {
+        "message": "Selecionar o idioma",
+        "description": "tooltip for the language menu button"
+    },
+    "Button.Next": {
+        "message": "Próxima página",
+        "description": "tooltip for the next page button"
+    },
+    "Button.Prev": {
+        "message": "Página anterior",
+        "description": "tooltip for the previous page button"
+    },
+    "Button.ReadImageDescriptions": {
+        "message": "Ler descrições da imagem",
+        "description": "tooltip for the button to enable reading image descriptions"
+    },
+    "Button.IgnoreImageDescriptions": {
+        "message": "Ignorar Descrições da Imagem",
+        "description": "tooltip for the button to disable reading image descriptions"
+    }
+},
+ "quc": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Chawila le aweta'mab'al",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "Utzalixik",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "ru": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Проверьте ваше понимание",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "Назад",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "sw": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "Angalia Uelewa Wako",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Audio.Play": {
+        "message": "Cheza",
+        "description": "tooltip for the button to play a motion book"
+    },
+    "Audio.ReadAloud": {
+        "message": "Soma kwa sauti",
+        "description": "tooltip for the audio play button for talking books"
+    },
+    "Audio.Pause": {
+        "message": "Sitisha",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Nyuma",
+        "description": "tooltip for the button to go back to the main display"
+    },
+    "Button.More": {
+        "message": "Zaidi",
+        "description": "tooltip for the button to go show detail view of book"
+    },
+    "Button.FullScreen": {
+        "message": "Skrini kamili",
+        "description": "tooltip for the display on full screen button"
+    },
+    "Button.ExitFullScreen": {
+        "message": "Toka skrini kamili",
+        "description": "tooltip for the exit full screen button"
+    },
+    "Button.ChooseLanguage": {
+        "message": "Chagua lugha",
+        "description": "tooltip for the language menu button"
+    },
+    "Button.Next": {
+        "message": "Ukurasa unaofuata",
+        "description": "tooltip for the next page button"
+    },
+    "Button.Prev": {
+        "message": "Ukurasa uliopita",
+        "description": "tooltip for the previous page button"
+    },
+    "Button.ReadImageDescriptions": {
+        "message": "Soma Maelezo ya Picha",
+        "description": "tooltip for the button to enable reading image descriptions"
+    },
+    "Button.IgnoreImageDescriptions": {
+        "message": "Puuza Maelezo ya Picha",
+        "description": "tooltip for the button to disable reading image descriptions"
+    }
+},
+ "ta": {
+    "Button.Back": {
+        "message": "பின்",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "te": {
+    "Button.Back": {
+        "message": "తిరిగి",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "th": {
+    "Button.Back": {
+        "message": "กลับ",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "tl": {
+    "Button.Back": {
+        "message": "Bumalik",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "tr": {
+    "Button.Back": {
+        "message": "Geri",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "vi": {
+    "Audio.Pause": {
+        "message": "Tạm dừng",
+        "description": "tooltip for the audio (or motion) pause button"
+    },
+    "Button.Back": {
+        "message": "Quay Lại",
+        "description": "tooltip for the button to go back to the main display"
+    }
+},
+ "zh": {
+    "Quiz.CheckYourUnderstanding": {
+        "message": "检查理解",
+        "description": "the heading on (some) quiz pages"
+    },
+    "Button.Back": {
+        "message": "后退",
+        "description": "tooltip for the button to go back to the main display"
+    }
+} }

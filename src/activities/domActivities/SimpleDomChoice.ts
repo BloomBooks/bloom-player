@@ -1,9 +1,5 @@
 import { ActivityContext } from "../ActivityContext";
 import { IActivityObject } from "../activityManager";
-// tslint:disable-next-line: no-submodule-imports
-/* Not using. See comment below:
-    const activityCss = require("!!raw-loader!./multipleChoiceDomActivity.css")
-    .default;*/
 
 // This class is intentionally very generic. All it needs is that the html of the
 // page it is given should have some objects (translation groups or images) that have
@@ -11,7 +7,7 @@ import { IActivityObject } from "../activityManager";
 
 // Note that you won't find any code using this directly. Instead,
 // it gets used by the ActivityManager as the default export of this module.
-export default class MultipleChoiceDomActivity implements IActivityObject {
+class MultipleChoiceDomActivity implements IActivityObject {
     private activityContext: ActivityContext;
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
@@ -56,7 +52,7 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
         // because sort is supposed to get the same answer every time, we
         // are doing the randomizing ahead, before the sort.
         Array.from(container.childNodes)
-            .map(node => ({ node, randomValue: Math.random() }))
+            .map((node) => ({ node, randomValue: Math.random() }))
             .sort((a, b) => a.randomValue - b.randomValue)
             .forEach(({ node }) => container.appendChild(node));
     }
@@ -83,7 +79,7 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
                 activityContext.addEventListener(
                     "click",
                     button,
-                    correct ? this.onCorrectClick : this.onWrongClick
+                    correct ? this.onCorrectClick : this.onWrongClick,
                 );
             });
     }
@@ -92,7 +88,7 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
         this.activityContext.playCorrect();
         this.activityContext.reportScore(
             1 /*total possible on page*/,
-            1 /*score*/
+            1 /*score*/,
         );
     };
 
@@ -101,7 +97,7 @@ export default class MultipleChoiceDomActivity implements IActivityObject {
         this.activityContext.playWrong();
         this.activityContext.reportScore(
             1 /*total possible on page*/,
-            0 /*score*/
+            0 /*score*/,
         );
     };
 
@@ -114,6 +110,11 @@ export function activityRequirements() {
     return {
         dragging: true, // we don't actually use dragging, but we are getting accidental drags... maybe the swiper needs to be less sensitive
         clicking: true, // enhance: maybe when we say we have clicking, the swiper then becomes less sensitive?
-        typing: false
+        typing: false,
     };
 }
+// Combine both the class and the function into a single default export
+export default {
+    default: MultipleChoiceDomActivity,
+    activityRequirements,
+};

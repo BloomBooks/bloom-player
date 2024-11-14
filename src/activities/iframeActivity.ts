@@ -10,7 +10,7 @@ import { IActivityObject } from "./activityManager";
 // Because we don't actually talk to the activity, this class doesn't do anything,
 // it just adapts the iframe to the bloom-player activity system.
 
-export default class IframeActivity implements IActivityObject {
+class IframeActivity implements IActivityObject {
     // When a page that has this activity becomes the selected one, the bloom-player calls this.
     // We need to connect any listeners, start animation, etc. Here,
     // we are using a javascript class to make sure that we get a fresh start,
@@ -38,6 +38,10 @@ export function activityRequirements() {
     return {
         dragging: true,
         clicking: true,
-        typing: true
+        typing: true,
     };
 }
+export default {
+    default: IframeActivity,
+    activityRequirements,
+};
