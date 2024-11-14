@@ -39,7 +39,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
-
-      - name: Set output if new release published to npm
-        if: success() && (startsWith(github.event.head_commit.message, 'fix:') || startsWith(github.event.head_commit.message, 'feat:'))
-        run: echo "::set-output name=new_release_published::true"
