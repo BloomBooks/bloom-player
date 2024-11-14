@@ -11,21 +11,37 @@ jobs:
   trigger-teamcity:
     runs-on: ubuntu-latest
     # Either a manual run or the Build-Test-Release workflow has completed successfully and a new release was published to npm
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && (startsWith(github.event.workflow_run.head_commit.message, 'fix:') || startsWith(github.event.workflow_run.head_commit.message, 'feat:'))) }}
     steps:
-      - name: Trigger TeamCity Build for Bloom Reader Alpha
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
-          method: 'POST'
-          contentType: 'application/json'
-          customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
-          data: '{"buildType": {"id": "Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish"}}'
-      - name: Trigger TeamCity Build for Bloom Desktop Alpha
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
-          method: 'POST'
-          contentType: 'application/json'
-          customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
-          data: '{"buildType": {"id": "bt222"}}'
+        - name: Trigger TeamCity Build for alpha.bloomlibrary.org
+          uses: fjogeleit/http-request-action@v1
+          with:
+            url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+            method: 'POST'
+            contentType: 'application/json'
+            customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+            data: '{"buildType": {"id": "Bloom_BloomLibraryOrg_BloomLibraryAlphaAlphaBloomlibraryOrgContinuous"}}'
+        - name: Trigger TeamCity Build for Bloom Reader Alpha
+          uses: fjogeleit/http-request-action@v1
+          with:
+            url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+            method: 'POST'
+            contentType: 'application/json'
+            customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+            data: '{"buildType": {"id": "Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish"}}'
+        - name: Trigger TeamCity Build for Bloom Desktop Alpha
+          uses: fjogeleit/http-request-action@v1
+          with:
+            url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+            method: 'POST'
+            contentType: 'application/json'
+            customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+            data: '{"buildType": {"id": "bt222"}}'
+        - name: Trigger TeamCity Build for dev-alpha.bloomlibrary.org
+          uses: fjogeleit/http-request-action@v1
+          with:
+            url: '${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue'
+            method: 'POST'
+            contentType: 'application/json'
+            customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
+            data: '{"buildType": {"id": "Bloom_BloomLibraryOrg_BloomLibrary2masterDevAlphaBloomlibraryOrgContinuous"}}'
