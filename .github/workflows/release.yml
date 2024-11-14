@@ -24,8 +24,12 @@ jobs:
               run: yarn
 
             - name: Sync with crowdin
-              if: github.ref == 'refs/heads/master'
-              run: yarn strings:sync
+              run: |
+                  if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+                    yarn strings:sync
+                  else
+                    yarn strings:download
+                  fi
 
             - name: Build package
               run: yarn build

@@ -238,7 +238,7 @@
         "description": "tooltip for the audio play button for talking books"
     },
     "Audio.Pause": {
-        "message": "Pausa",
+        "message": "Pausar",
         "description": "tooltip for the audio (or motion) pause button"
     },
     "Button.Back": {
@@ -250,11 +250,11 @@
         "description": "tooltip for the button to go show detail view of book"
     },
     "Button.FullScreen": {
-        "message": "Ecrã inteiro",
+        "message": "Tela cheia",
         "description": "tooltip for the display on full screen button"
     },
     "Button.ExitFullScreen": {
-        "message": "Sair do modo de ecrã inteiro",
+        "message": "Sair da tela cheia",
         "description": "tooltip for the exit full screen button"
     },
     "Button.ChooseLanguage": {
