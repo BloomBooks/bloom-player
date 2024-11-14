@@ -1303,6 +1303,7 @@ export function showVideoError(video: HTMLVideoElement): void {
             msgDiv.textContent = badVideoMessage;
             msgDiv.style.display = "block";
             msgDiv.style.color = "black";
+            msgDiv.style.backgroundColor = "rgba(255, 255, 255, 0.5)"; // semi-transparent white
             msgDiv.style.position = "absolute";
             msgDiv.style.left = "10%";
             msgDiv.style.top = "10%";
