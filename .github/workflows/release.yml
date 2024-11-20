@@ -9,6 +9,8 @@ on:
 jobs:
     build-test-release:
         runs-on: ubuntu-latest
+        outputs:
+            new_release_published: ${{ steps.semantic_release.outputs.new_release_published }}
 
         steps:
             - name: Checkout code
@@ -46,7 +48,11 @@ jobs:
 
             - name: Publish package
               id: semantic_release
+              uses: cycjimmy/semantic-release-action@v4
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-              run: npx semantic-release
+
+            - name: Output
+              run: |
+                  echo "New Release Published: ${{ steps.semantic_release.outputs.new_release_published }}"
