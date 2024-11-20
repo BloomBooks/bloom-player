@@ -14,7 +14,7 @@ let soundsPlayed: SoundData[] = [];
 
 // Log, for later reporting with reportSoundsLogged, that we are starting to play
 // a sound with the specified src url at the specified volume.
-// Returns a number identifiying this particular sound which may later be passed
+// Returns a number identifying this particular sound which may later be passed
 // to other log functions.
 export function logSound(src: string, volume: Number): number {
     const index = soundsPlayed.length;
@@ -45,7 +45,7 @@ export function logSoundRepeat(index: number): number {
     const newIndex = soundsPlayed.length;
     soundsPlayed.push({
         ...soundsPlayed[index],
-        startTime: new Date().toISOString()
+        startTime: new Date().toISOString(),
     });
     return newIndex;
 }
@@ -57,13 +57,13 @@ export function reportSoundsLogged(): void {
     sendToBloomApi(
         "publish/av/soundLog",
         soundsPlayed,
-        "application/json; charset=utf-8"
+        "application/json; charset=utf-8",
     );
 }
 
 export function sendStringToBloomApi(
     urlSuffix: string,
-    data: any
+    data: any,
 ): AxiosPromise<any> {
     return sendToBloomApi(urlSuffix, data, "text/plain");
 }
@@ -71,11 +71,11 @@ export function sendStringToBloomApi(
 function sendToBloomApi(
     urlSuffix: string,
     data: any,
-    contentType: string
+    contentType: string,
 ): AxiosPromise<any> {
     return axios.post("/bloom/api/" + urlSuffix, data, {
         headers: {
-            "Content-Type": contentType
-        }
+            "Content-Type": contentType,
+        },
     });
 }

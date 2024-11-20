@@ -38,32 +38,33 @@ export class OldQuestionsConverter {
                 const marginBox = this.appendElementWithClass(
                     "div",
                     "marginBox",
-                    page
+                    page,
                 );
                 const quiz = this.appendElementWithClass(
                     "div",
                     "quiz",
-                    marginBox
+                    marginBox,
                 );
 
-                const checkYourUnderstandingString = LocalizationManager.getTranslation(
-                    "Quiz.CheckYourUnderstanding",
-                    [lang],
-                    "Check Your Understanding"
-                );
+                const checkYourUnderstandingString =
+                    LocalizationManager.getTranslation(
+                        "Quiz.CheckYourUnderstanding",
+                        [lang],
+                        "Check Your Understanding",
+                    );
                 this.appendTranslationGroup(
                     quiz,
                     checkYourUnderstandingString,
                     "QuizHeader-style",
                     lang, // Regardless of whether the string is actually this lang or a fallback, we need to put something and mark it down for {lang}
-                    "Quiz.CheckYourUnderstanding"
+                    "Quiz.CheckYourUnderstanding",
                 );
 
                 this.appendTranslationGroup(
                     quiz,
                     question.question,
                     "QuizQuestion-style",
-                    lang
+                    lang,
                 );
 
                 const answers = question.answers;
@@ -73,13 +74,13 @@ export class OldQuestionsConverter {
                     const answerDiv = this.appendElementWithClass(
                         "div",
                         "checkbox-and-textbox-choice",
-                        quiz
+                        quiz,
                     );
 
                     const input = this.appendElementWithClass(
                         "input",
                         "styled-check-box",
-                        answerDiv
+                        answerDiv,
                     ) as HTMLInputElement;
                     input.setAttribute("name", "Correct");
                     input.setAttribute("type", "checkbox");
@@ -87,19 +88,19 @@ export class OldQuestionsConverter {
                     const answerGroup = this.appendElementWithClass(
                         "div",
                         "bloom-translationGroup",
-                        answerDiv
+                        answerDiv,
                     );
 
                     this.appendElementWithClass(
                         "div",
                         "placeToPutVariableCircle",
-                        answerDiv
+                        answerDiv,
                     );
 
                     const answerEditable = this.appendElementWithClass(
                         "div",
                         "bloom-editable",
-                        answerGroup
+                        answerGroup,
                     );
                     answerEditable.classList.add("bloom-content1");
                     answerEditable.classList.add("bloom-visibility-code-on");
@@ -108,7 +109,7 @@ export class OldQuestionsConverter {
                     const answerPara = this.appendElementWithClass(
                         "p",
                         "",
-                        answerEditable
+                        answerEditable,
                     );
                     answerPara.textContent = answerText;
 
@@ -128,17 +129,17 @@ export class OldQuestionsConverter {
         text: string,
         className: string,
         lang: string,
-        l10nId?: string
+        l10nId?: string,
     ) {
         const group = this.appendElementWithClass(
             "div",
             "bloom-translationGroup",
-            parent
+            parent,
         );
         const editable = this.appendElementWithClass(
             "div",
             "bloom-editable",
-            group
+            group,
         );
         editable.classList.add("bloom-content1");
         editable.classList.add("bloom-visibility-code-on");
@@ -155,7 +156,7 @@ export class OldQuestionsConverter {
     private static appendElementWithClass(
         tag: string,
         className: string,
-        parent: HTMLElement
+        parent: HTMLElement,
     ): HTMLElement {
         const result = document.createElement(tag);
         if (className) {

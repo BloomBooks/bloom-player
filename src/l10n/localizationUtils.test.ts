@@ -47,10 +47,8 @@ BODY
     direction: ltr;
 }`;
 
-    const [
-        language2,
-        language3
-    ] = LocalizationUtils.getNationalLanguagesFromCssStyles(cssText);
+    const [language2, language3] =
+        LocalizationUtils.getNationalLanguagesFromCssStyles(cssText);
 
     expect(language2).toEqual("bbb");
     expect(language3).toEqual("ccc");

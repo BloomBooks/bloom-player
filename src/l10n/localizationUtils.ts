@@ -5,7 +5,7 @@ export class LocalizationUtils {
             return undefined;
         }
         const language1: string = (dataDiv.querySelector(
-            "div[data-book='contentLanguage1']"
+            "div[data-book='contentLanguage1']",
         ) as HTMLElement)!.innerHTML!.trim();
         if (language1) {
             return language1;
@@ -21,7 +21,7 @@ export class LocalizationUtils {
     // if the user changed settings and went straight to publish. I also wasn't convinced
     // bloom-contentNational2 would always exist.
     public static getNationalLanguagesFromCssStyles(
-        cssText: string
+        cssText: string,
     ): [string | undefined, string | undefined] {
         let language2: string | undefined;
         let language3: string | undefined;

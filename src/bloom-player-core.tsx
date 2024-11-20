@@ -349,7 +349,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             "pointerdown",
             "pointermove",
             "touchstart",
-            "touchmove"
+            "touchmove",
         ]) {
             // The purpose of this is to prevent Swiper allowing the page to be moved or
             // flicked when the user is trying to click on a video control.
@@ -358,7 +358,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // So we capture them at a higher level still, but only stop propagation if
             // in one of the choices.
             document.body.addEventListener(eventName, handleInputMouseEvent, {
-                capture: true
+                capture: true,
             });
         }
 
@@ -428,7 +428,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             href: href,
             // used for backreference to the page that initiated the navigation
             sourceUrl: this.sourceUrl,
-            sourcePageNumber: page?.getAttribute("data-page-number")
+            sourcePageNumber: page?.getAttribute("data-page-number"),
         });
         e.preventDefault();
         e.stopPropagation();
@@ -792,22 +792,20 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // See BL-13796.
     public static fixNiceScrollOffsets(page: HTMLElement, scale: number) {
         page.querySelectorAll(kSelectorForPotentialNiceScrollElements).forEach(
-            group => {
+            (group) => {
                 // The type definition is not correct for getNiceScroll; we expect it to return an array.
                 const groupNiceScroll = $(group).getNiceScroll() as any;
                 if (groupNiceScroll && groupNiceScroll.length > 0) {
-                    let {
-                        topAdjust,
-                        leftAdjust
-                    } = BloomPlayerCore.ComputeNiceScrollOffsets(
-                        scale,
-                        group as HTMLElement
-                    );
+                    let { topAdjust, leftAdjust } =
+                        BloomPlayerCore.ComputeNiceScrollOffsets(
+                            scale,
+                            group as HTMLElement,
+                        );
                     groupNiceScroll[0].opt.railoffset.top = -topAdjust;
                     groupNiceScroll[0].opt.railoffset.left = -leftAdjust;
                     groupNiceScroll[0].resize();
                 }
-            }
+            },
         );
     }
 
@@ -2653,20 +2651,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                     // the scale from the transform property.  See BL-13796.
                     let scale = 1;
                     const scaleStyle = document.querySelector(
-                        "style#scale-style-sheet"
+                        "style#scale-style-sheet",
                     );
                     if (scaleStyle) {
                         const match = scaleStyle.innerHTML.match(
-                            /transform:[a-z0-9, ()]* scale\((\d+(\.\d+)?)\)/
+                            /transform:[a-z0-9, ()]* scale\((\d+(\.\d+)?)\)/,
                         );
                         if (match) {
                             scale = parseFloat(match[1]);
                         }
                     }
-                    let {
-                        topAdjust,
-                        leftAdjust
-                    } = BloomPlayerCore.ComputeNiceScrollOffsets(scale, elt);
+                    let { topAdjust, leftAdjust } =
+                        BloomPlayerCore.ComputeNiceScrollOffsets(scale, elt);
                     // We don't really want continuous observation, but this is an elegant
                     // way to find out whether each child is entirely contained within its
                     // parent. Unlike computations involving coordinates, we don't have to
@@ -2787,7 +2783,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                         autohidemode: false,
                                         railoffset: {
                                             top: -topAdjust,
-                                            left: -leftAdjust
+                                            left: -leftAdjust,
                                         },
                                         cursorwidth: "12px",
                                         cursorcolor: "#000000",

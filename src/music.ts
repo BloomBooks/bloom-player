@@ -3,7 +3,7 @@ import { BloomPlayerCore } from "./bloom-player-core";
 import {
     logSound,
     logSoundPaused,
-    logSoundRepeat
+    logSoundRepeat,
 } from "./videoRecordingSupport";
 import { PlaybackMode, currentPlaybackMode } from "./narration";
 
@@ -91,7 +91,7 @@ export class Music {
                 selection = {
                     id: ++iSelection,
                     src: attrValue,
-                    volume: this.getMusicVolume(page)
+                    volume: this.getMusicVolume(page),
                 };
                 this.pageIdToSelectionMap.set(this.getPageId(page), selection);
             } else if (attrValue === null) {
@@ -99,7 +99,7 @@ export class Music {
                     // Music continues on this page
                     this.pageIdToSelectionMap.set(
                         this.getPageId(page),
-                        selection
+                        selection,
                     );
                 }
             } else {
@@ -115,7 +115,7 @@ export class Music {
 
     private getPlayer(): HTMLAudioElement {
         let player = document.querySelector(
-            "#music-player"
+            "#music-player",
         ) as HTMLAudioElement;
         if (!player) {
             player = document.createElement("audio") as HTMLAudioElement;
@@ -130,7 +130,7 @@ export class Music {
 
     private setMusicSourceAndVolume(): void {
         const selection = this.pageIdToSelectionMap.get(
-            this.getPageId(this.currentPage)
+            this.getPageId(this.currentPage),
         );
         if (selection === undefined) {
             this.selectionPlaying = undefined;
@@ -149,7 +149,7 @@ export class Music {
         // remember if no such file previously existed. So we add a bogus query string
         // based on the current time so that it asks the server for the file again.
         const url = this.currentMusicUrl(
-            music + "?nocache=" + new Date().getTime()
+            music + "?nocache=" + new Date().getTime(),
         );
         const player = this.getPlayer();
         player.setAttribute("src", music ? url : "");
@@ -159,7 +159,7 @@ export class Music {
         if (music) {
             this.musicLogIndex = logSound(
                 url,
-                volume.length ? Number(volume) : 1
+                volume.length ? Number(volume) : 1,
             );
         }
     }

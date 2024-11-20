@@ -7,14 +7,14 @@ const roundToNearestEvenCases = [
     [2.99, 2],
     [3, 4],
     [3.99, 4],
-    [4, 4]
+    [4, 4],
 ];
 test.each(roundToNearestEvenCases)(
     "roundToNearestK, k=2",
     (input, expected) => {
         const result = roundToNearestK(input, 2);
         expect(result).toEqual(expected);
-    }
+    },
 );
 
 const roundToNearest4Cases = [
@@ -24,7 +24,7 @@ const roundToNearest4Cases = [
     [2, 4],
     [3, 4],
     [3.99, 4],
-    [4, 4]
+    [4, 4],
 ];
 
 test.each(roundToNearest4Cases)("roundToNearestK, k=4", (input, expected) => {

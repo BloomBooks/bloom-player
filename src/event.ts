@@ -17,10 +17,10 @@ export default class LiteEvent<T> implements ILiteEvent<T> {
     }
 
     public unsubscribe(handler: (data?: T) => void) {
-        this.handlers = this.handlers.filter(h => h !== handler);
+        this.handlers = this.handlers.filter((h) => h !== handler);
     }
 
     public raise(data?: T) {
-        this.handlers.slice(0).forEach(h => h(data));
+        this.handlers.slice(0).forEach((h) => h(data));
     }
 }

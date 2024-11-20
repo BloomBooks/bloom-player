@@ -1,12 +1,12 @@
 import { TransientPageDataSingleton } from "./transientPageData";
 import {
     getBooleanUrlParam,
-    getQueryStringParamAndUnencode
+    getQueryStringParamAndUnencode,
 } from "./utilities/urlUtils";
 
 import {
     track,
-    /*useTrack,*/ updateBookProgress
+    /*useTrack,*/ updateBookProgress,
 } from "./bloomPlayerAnalytics";
 
 /* Functions
@@ -64,7 +64,7 @@ export function reportAnalytics(event: string, properties: any) {
         sendMessageToHost({
             messageType: "sendAnalytics",
             event,
-            params: { ...ambientAnalyticsProps, ...properties }
+            params: { ...ambientAnalyticsProps, ...properties },
         });
     }
 }
@@ -72,14 +72,14 @@ export function reportAnalytics(event: string, properties: any) {
 export function reportBookProperties(properties: any) {
     sendMessageToHost({
         messageType: "reportBookProperties",
-        params: { ...properties }
+        params: { ...properties },
     });
 }
 
 export function reportPlaybackComplete(properties: any) {
     sendMessageToHost({
         messageType: "playbackComplete",
-        params: { ...properties }
+        params: { ...properties },
     });
 }
 
@@ -106,7 +106,7 @@ export function updateBookProgressReport(event: string, properties: any) {
         sendMessageToHost({
             messageType: "updateBookProgressReport",
             event,
-            params: { ...ambientAnalyticsProps, ...properties }
+            params: { ...ambientAnalyticsProps, ...properties },
         });
     }
 }
@@ -166,7 +166,7 @@ export function requestCapabilities(callback: (data: any) => void) {
     // something starts to queue up window messages some time before it starts to
     // process them. But it's definitely not enough to just request once immediately.
     let retryLimit = 20;
-    const receiveCapabilities = data => {
+    const receiveCapabilities = (data) => {
         if (!gotCapabilities) {
             gotCapabilities = true;
         }
@@ -200,7 +200,7 @@ export function receiveMessage(data: any) {
             "receiveMessage failed to parse json: " +
                 data +
                 " with error " +
-                e.message
+                e.message,
         );
         return;
     }
@@ -228,7 +228,7 @@ export function receiveMessage(data: any) {
 // window.addEventListener. However, for some time the code had document.addEventListener, and this
 // apparently worked in BloomReader-RN. It's just possible we will need to do both when we resume
 // work on that program.
-window.addEventListener("message", data => {
+window.addEventListener("message", (data) => {
     // something sends us an empty message, which we haven't figured out, but know we can ignore
     if (!data || !data.data || data.data.length === 0) {
         //console.log("returning early");

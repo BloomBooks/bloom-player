@@ -7,8 +7,8 @@ export const bloomYellow = "#febf00"; // also in bloom-player-content.less
 const theme = createTheme({
     palette: {
         primary: { main: bloomGrey, contrastText: bloomRed },
-        secondary: { main: bloomRed }
-    }
+        secondary: { main: bloomRed },
+    },
 });
 
 export default theme;

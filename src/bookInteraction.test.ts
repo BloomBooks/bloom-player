@@ -3,7 +3,8 @@ import { BookInteraction } from "./bookInteraction";
 test("pagesShown getProgressReportPropertiesForAnalytics", () => {
     const bookInteraction = new BookInteraction();
 
-    let progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    let progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(progressReportPropertiesForAnalytics.audioPages).toEqual(0);
     expect(progressReportPropertiesForAnalytics.nonAudioPages).toEqual(0);
     expect(progressReportPropertiesForAnalytics.videoPages).toEqual(0);
@@ -18,14 +19,16 @@ test("pagesShown getProgressReportPropertiesForAnalytics", () => {
     bookInteraction.audioPageShown(4);
     bookInteraction.videoPageShown(1);
 
-    progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(progressReportPropertiesForAnalytics.audioPages).toEqual(2);
     expect(progressReportPropertiesForAnalytics.nonAudioPages).toEqual(3);
     expect(progressReportPropertiesForAnalytics.videoPages).toEqual(1);
 
     bookInteraction.clearPagesShown();
 
-    progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(progressReportPropertiesForAnalytics.audioPages).toEqual(0);
     expect(progressReportPropertiesForAnalytics.nonAudioPages).toEqual(0);
     expect(progressReportPropertiesForAnalytics.videoPages).toEqual(0);
@@ -33,22 +36,25 @@ test("pagesShown getProgressReportPropertiesForAnalytics", () => {
 
 test("lastNumberedPageWasRead", () => {
     const bookInteraction = new BookInteraction();
-    let progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    let progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(
-        progressReportPropertiesForAnalytics.lastNumberedPageRead
+        progressReportPropertiesForAnalytics.lastNumberedPageRead,
     ).toBeFalsy();
 
     bookInteraction.lastNumberedPageWasRead = true;
 
-    progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(
-        progressReportPropertiesForAnalytics.lastNumberedPageRead
+        progressReportPropertiesForAnalytics.lastNumberedPageRead,
     ).toBeTruthy();
 });
 
 test("totalAudioDuration and totalVideoDuration", () => {
     const bookInteraction = new BookInteraction();
-    let progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    let progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(progressReportPropertiesForAnalytics.audioDuration).toEqual(0);
     expect(progressReportPropertiesForAnalytics.videoDuration).toEqual(0);
 
@@ -57,7 +63,8 @@ test("totalAudioDuration and totalVideoDuration", () => {
 
     bookInteraction.totalVideoDuration += 100;
 
-    progressReportPropertiesForAnalytics = bookInteraction.getProgressReportPropertiesForAnalytics();
+    progressReportPropertiesForAnalytics =
+        bookInteraction.getProgressReportPropertiesForAnalytics();
     expect(progressReportPropertiesForAnalytics.audioDuration).toEqual(30);
     expect(progressReportPropertiesForAnalytics.videoDuration).toEqual(100);
 });

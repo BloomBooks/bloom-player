@@ -1,7 +1,7 @@
 import {
     reportScoreForCurrentPage,
     getPageData,
-    storePageData
+    storePageData,
 } from "../page-api";
 import rightAnswer from "./right_answer.mp3";
 import wrongAnswer from "./wrong_answer.mp3";
@@ -27,7 +27,7 @@ export class ActivityContext {
         pageIndex: number,
         pageDiv: HTMLElement,
         analyticsCategory: string,
-        pagesToGroupForAnalytics?: number[]
+        pagesToGroupForAnalytics?: number[],
     ) {
         this.pageIndex = pageIndex;
         this.pageElement = pageDiv;
@@ -40,14 +40,14 @@ export class ActivityContext {
     public reportScore(possiblePoints: number, actualPoints: number) {
         // please leave this log in... if we could make it only show in storybook, we would
         console.log(
-            `ActivityContext.reportScoreForCurrentPage(<page>, ${possiblePoints}, ${actualPoints},${this.analyticsCategory})`
+            `ActivityContext.reportScoreForCurrentPage(<page>, ${possiblePoints}, ${actualPoints},${this.analyticsCategory})`,
         );
         reportScoreForCurrentPage(
             this.pageIndex,
             possiblePoints,
             actualPoints,
             this.analyticsCategory,
-            this.pagesToGroupForAnalytics
+            this.pagesToGroupForAnalytics,
         );
     }
 
@@ -63,7 +63,7 @@ export class ActivityContext {
     public storeSessionPageData(key: string, value: string) {
         // please leave this log in... if we could  make it only show in storybook, we would
         console.log(
-            `ActivityContext.storePageData(<page>, '${key}', '${value}')`
+            `ActivityContext.storePageData(<page>, '${key}', '${value}')`,
         );
         storePageData(this.pageIndex, key, value);
     }
@@ -108,9 +108,8 @@ export class ActivityContext {
 
     public addActivityStylesForPage(css: string) {
         if (!this.pageElement.querySelector("[data-activity-stylesheet]")) {
-            const style = this.pageElement.ownerDocument!.createElement(
-                "style"
-            );
+            const style =
+                this.pageElement.ownerDocument!.createElement("style");
             style.setAttribute("data-activity-stylesheet", ""); // value doesn't matter
             // REVIEW: Scoped styles have been removed from the spec, so we are using
             // a polyfill,  https://github.com/samthor/scoped, which is not very commonly used
@@ -131,13 +130,13 @@ export class ActivityContext {
         name: string,
         target: Element,
         listener: EventListener,
-        options?: AddEventListenerOptions | undefined
+        options?: AddEventListenerOptions | undefined,
     ) {
         // store the info we need in order to detach the listener when we are stop()ed
         this.listeners.push({
             name,
             target,
-            listener
+            listener,
         });
         target.addEventListener(name, listener, options);
     }
@@ -145,15 +144,15 @@ export class ActivityContext {
     // this is called by the activity manager after it stops the activity.
     public stop() {
         // detach all the listeners
-        this.listeners.forEach(l =>
-            l.target.removeEventListener(l.name, l.listener)
+        this.listeners.forEach((l) =>
+            l.target.removeEventListener(l.name, l.listener),
         );
     }
 
     private sendMessageToPlayer(message: string) {
         const activityMessage = {
             messageType: "control",
-            controlAction: message
+            controlAction: message,
         };
         //console.log(`Sent activity navigation message to Player: ${message}`);
         const messageJson = JSON.stringify(activityMessage);

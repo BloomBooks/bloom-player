@@ -75,7 +75,7 @@ class SimpleCheckboxQuiz implements IActivityObject {
                     "pointerdown",
                     "pointermove",
                     "touchstart",
-                    "touchmove"
+                    "touchmove",
                 ]) {
                     // The purpose of this is to prevent Swiper allowing the page to be moved or
                     // flicked when the user is trying to click on a choice.
@@ -86,10 +86,10 @@ class SimpleCheckboxQuiz implements IActivityObject {
                     this.activityContext.addEventListener(
                         eventName,
                         choice.ownerDocument.body,
-                        e => this.handleInputMouseEvent(e),
+                        (e) => this.handleInputMouseEvent(e),
                         {
-                            capture: true
-                        }
+                            capture: true,
+                        },
                     );
                 }
             }
@@ -131,7 +131,7 @@ class SimpleCheckboxQuiz implements IActivityObject {
     private handleInputMouseEvent(event: Event) {
         if (
             (event.target as HTMLElement).closest(
-                ".checkbox-and-textbox-choice"
+                ".checkbox-and-textbox-choice",
             )
         ) {
             // Stop Swier from seeing events on these elements.

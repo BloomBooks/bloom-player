@@ -3,7 +3,7 @@ export function createDiv({
     classAttr,
     content,
     tabindex,
-    parent
+    parent,
 }: {
     id?: string;
     classAttr?: string;
@@ -17,7 +17,7 @@ export function createDiv({
         classAttr,
         content,
         tabindex,
-        parent
+        parent,
     });
 }
 
@@ -25,7 +25,7 @@ export function createDataDivItem({
     key,
     lang,
     content,
-    parent
+    parent,
 }: {
     key: string;
     lang: string;
@@ -47,7 +47,7 @@ export function createSpan(params: {
 }): HTMLElement {
     return createElement({
         tag: "span",
-        ...params
+        ...params,
     });
 }
 
@@ -60,7 +60,7 @@ export function createPara(params: {
 }): HTMLElement {
     return createElement({
         tag: "p",
-        ...params
+        ...params,
     });
 }
 
@@ -70,7 +70,7 @@ export function createElement({
     classAttr,
     content,
     tabindex,
-    parent
+    parent,
 }: {
     tag: string;
     id?: string;

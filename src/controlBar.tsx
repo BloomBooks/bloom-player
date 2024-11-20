@@ -79,7 +79,9 @@ export interface IVideoSettings {
     imageDescriptions?: boolean;
 }
 
-export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
+export const ControlBar: React.FunctionComponent<IControlBarProps> = (
+    props,
+) => {
     const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
     // The "single" class triggers the change in color of the globe icon
@@ -135,7 +137,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         const settings: IVideoSettings = {
             lang: props.activeLanguageCode,
             imageDescriptions: props.readImageDescriptions,
-            ...newSettings
+            ...newSettings,
         };
         // To achieve our goal that Bloom Editor can send this string back to another instance
         // of BP through the videoSettings URL param without needing to interpret its contents,
@@ -144,14 +146,14 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
         // it as JSON; but then Bloom Editor would have to know how to re-encode it as a URL param.
         sendStringToBloomApi(
             "publish/av/videoSettings",
-            encodeURIComponent(JSON.stringify(settings))
+            encodeURIComponent(JSON.stringify(settings)),
         );
     };
 
     const pauseLabel = LocalizationManager.getTranslation(
         "Audio.Pause",
         props.preferredLanguages,
-        "Pause"
+        "Pause",
     );
 
     const playOrPause = props.paused ? (
@@ -163,13 +165,13 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const readImageDescriptions = LocalizationManager.getTranslation(
         "Button.ReadImageDescriptions",
         props.preferredLanguages,
-        "Read Image Descriptions"
+        "Read Image Descriptions",
     );
 
     const ignoreImageDescriptions = LocalizationManager.getTranslation(
         "Button.IgnoreImageDescriptions",
         props.preferredLanguages,
-        "Ignore Image Descriptions"
+        "Ignore Image Descriptions",
     );
 
     // A modified Mui theme just for the image description icon.
@@ -179,8 +181,8 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     const imageDescIconTheme = createTheme({
         palette: {
             primary: { main: bloomYellow },
-            secondary: { main: theme.palette.secondary.main }
-        }
+            secondary: { main: theme.palette.secondary.main },
+        },
     });
 
     // Using a Mui SvgIcon object here (the "ImageDescriptionIcon") simplifies opacity, accessibility
@@ -209,7 +211,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
     );
 
     const extraButtons = props.extraButtons
-        ? props.extraButtons.map(eb => (
+        ? props.extraButtons.map((eb) => (
               <IconButton
                   key={eb.id}
                   color="secondary"
@@ -233,44 +235,46 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
             position="relative" // Keeps the AppBar from floating
         >
             <Toolbar>
-                {// The logic here is:
-                // - Bloom reader: window === window.top, canGoBack true => Arrow
-                // - Bloom Library, came from detail view: don't need a button at all,
-                // (use browser back button), canGoBack will be passed false.
-                // - Bloom library, not from detail view: canGoBack is true, but not really going back;
-                // it will go to detail view ("more") which in this case is not 'back'.
-                // We may eventually want separate canShowMore and moreClicked props
-                // but for now it feels like more complication than we need.
-                props.canGoBack && !props.videoPreviewMode && (
-                    <IconButton
-                        color="secondary"
-                        onClick={() => {
-                            if (props.backClicked) {
-                                props.backClicked();
-                            }
-                        }}
-                    >
-                        {window === window.top ? (
-                            <ArrowBack
-                                aria-label="Go Back"
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.Back",
-                                    props.preferredLanguages,
-                                    "Back"
-                                )}
-                            />
-                        ) : (
-                            <MoreHoriz
-                                aria-label="More Menu"
-                                titleAccess={LocalizationManager.getTranslation(
-                                    "Button.More",
-                                    props.preferredLanguages,
-                                    "More"
-                                )}
-                            />
-                        )}
-                    </IconButton>
-                )}
+                {
+                    // The logic here is:
+                    // - Bloom reader: window === window.top, canGoBack true => Arrow
+                    // - Bloom Library, came from detail view: don't need a button at all,
+                    // (use browser back button), canGoBack will be passed false.
+                    // - Bloom library, not from detail view: canGoBack is true, but not really going back;
+                    // it will go to detail view ("more") which in this case is not 'back'.
+                    // We may eventually want separate canShowMore and moreClicked props
+                    // but for now it feels like more complication than we need.
+                    props.canGoBack && !props.videoPreviewMode && (
+                        <IconButton
+                            color="secondary"
+                            onClick={() => {
+                                if (props.backClicked) {
+                                    props.backClicked();
+                                }
+                            }}
+                        >
+                            {window === window.top ? (
+                                <ArrowBack
+                                    aria-label="Go Back"
+                                    titleAccess={LocalizationManager.getTranslation(
+                                        "Button.Back",
+                                        props.preferredLanguages,
+                                        "Back",
+                                    )}
+                                />
+                            ) : (
+                                <MoreHoriz
+                                    aria-label="More Menu"
+                                    titleAccess={LocalizationManager.getTranslation(
+                                        "Button.More",
+                                        props.preferredLanguages,
+                                        "More",
+                                    )}
+                                />
+                            )}
+                        </IconButton>
+                    )
+                }
                 <div
                     className="filler" // this is set to flex-grow, making the following icons right-aligned.
                 />
@@ -279,7 +283,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                         onClick={() => {
                             props.onReadImageDescriptionToggled();
                             reportVideoSettings({
-                                imageDescriptions: !props.readImageDescriptions
+                                imageDescriptions: !props.readImageDescriptions,
                             });
                         }}
                     >
@@ -299,7 +303,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                             titleAccess={LocalizationManager.getTranslation(
                                 "Button.ChooseLanguage",
                                 props.preferredLanguages,
-                                "Choose Language"
+                                "Choose Language",
                             )}
                         />
                     </IconButton>
@@ -337,7 +341,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.FullScreen",
                                         props.preferredLanguages,
-                                        "Full Screen"
+                                        "Full Screen",
                                     )}
                                 />
                             ) : (
@@ -346,7 +350,7 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = props => {
                                     titleAccess={LocalizationManager.getTranslation(
                                         "Button.ExitFullScreen",
                                         props.preferredLanguages,
-                                        "Exit Full Screen"
+                                        "Exit Full Screen",
                                     )}
                                 />
                             )}

@@ -38,7 +38,7 @@ const converted = OldQuestionsConverter.convert(
             "lang":"sp",
             "onlyForBloomReader1": true}
         ]`,
-    "Device16x9Portrait"
+    "Device16x9Portrait",
 );
 
 test("got three pages", () => {
@@ -54,7 +54,7 @@ test("pages have expected classes", () => {
         expect(div.classList).toContain("numberedPage");
         expect(div.classList).toContain("Device16x9Portrait");
         expect(div.getAttribute("data-analyticsCategories")).toBe(
-            "comprehension"
+            "comprehension",
         );
     }
 });
@@ -75,7 +75,7 @@ const checkTranslationGroup = (
     group: HTMLElement,
     paraContent: string,
     editableStyle: string,
-    lang: string
+    lang: string,
 ) => {
     expect(group.classList).toContain("bloom-translationGroup");
     expect(group.childElementCount).toBe(1);
@@ -99,7 +99,7 @@ test("correct header", () => {
         headerGroup,
         "Check Your Understanding",
         "QuizHeader-style",
-        "sp"
+        "sp",
     );
 });
 
@@ -109,14 +109,14 @@ test("correct questions", () => {
         firstQuestion,
         "How did the boy lose his cap",
         "QuizQuestion-style",
-        "sp"
+        "sp",
     );
     const secondQuestion = getQuestionTranslationGroup(converted[1]);
     checkTranslationGroup(
         secondQuestion,
         "What did the moon do?",
         "QuizQuestion-style",
-        "sp"
+        "sp",
     );
 
     const thirdQuestion = getQuestionTranslationGroup(converted[2]);
@@ -124,7 +124,7 @@ test("correct questions", () => {
         thirdQuestion,
         "Why use old questions?",
         "QuizQuestion-style",
-        "sp"
+        "sp",
     );
 });
 
@@ -137,7 +137,7 @@ const checkAnswer = (
     answer: HTMLElement,
     paraContent: string,
     lang: string,
-    correct: boolean
+    correct: boolean,
 ) => {
     expect(answer.classList).toContain("checkbox-and-textbox-choice");
     if (correct) {

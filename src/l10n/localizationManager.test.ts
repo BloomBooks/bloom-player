@@ -7,28 +7,28 @@ beforeAll(() => {
         en: {
             "Sample.ID": {
                 message: "Sample English Text",
-                description: "This is a test."
-            }
+                description: "This is a test.",
+            },
         },
         fr: {
             "Sample.ID": {
                 message: "Sample French Text",
-                description: "This is a test."
-            }
+                description: "This is a test.",
+            },
         },
         hi: {
             "Sample.ID": {
                 message: "Sample Hindi Text",
-                description: "This is a test."
-            }
+                description: "This is a test.",
+            },
         },
         sp: {
             // We don't expect this to ever happen in real data
             "Sample.ID.WithoutEnglish": {
                 message: "Sample Spanish Text",
-                description: "This is a test."
-            }
-        }
+                description: "This is a test.",
+            },
+        },
     });
 });
 

@@ -9,7 +9,7 @@ const cases = [
     ["blind, talkingBook", "talkingBook", true],
     ["talkingBook:en", "talkingBook", true],
     ["", "blind", false],
-    ["blind", "talkingBook", false]
+    ["blind", "talkingBook", false],
 ];
 test.each(cases)(
     "hasFeature",
@@ -17,11 +17,11 @@ test.each(cases)(
         const bookInfo = new BookInfo();
         bookInfo.setSomeBookInfoFromMetadata(
             { features: featuresString, bloomdVersion: 1 },
-            document.body as HTMLBodyElement
+            document.body as HTMLBodyElement,
         );
 
         expect(bookInfo.hasFeature(input)).toEqual(expected);
-    }
+    },
 );
 
 test("setSomeBookInfoFromHead defaults verified", () => {
@@ -73,19 +73,19 @@ test("setSomeBookInfoFromBody values set", () => {
         key: "contentLanguage1",
         lang: "*",
         content: "es",
-        parent: dataDiv
+        parent: dataDiv,
     });
     const copyrightDiv = createDataDivItem({
         key: "copyright",
         lang: "*",
         content: "Copyright © 2019, this guy",
-        parent: dataDiv
+        parent: dataDiv,
     });
     const origCopyrightDiv = createDataDivItem({
         key: "originalCopyright",
         lang: "*",
         content: "Copyright © 2019, The original guy",
-        parent: dataDiv
+        parent: dataDiv,
     });
 
     const bookInfo = new BookInfo();
@@ -99,7 +99,7 @@ test("setSomeBookInfoFromBody values set", () => {
     expect(ambientAnalyticsProps.contentLang).toEqual("es");
     expect(ambientAnalyticsProps.copyrightHolder).toEqual("this guy");
     expect(ambientAnalyticsProps.originalCopyrightHolder).toEqual(
-        "The original guy"
+        "The original guy",
     );
 });
 
@@ -114,7 +114,7 @@ test("setSomeBookInfoFromMetadata", () => {
         publisher: "my publisher",
         originalPublisher: "my original publisher",
         features: "blind,talkingBook",
-        bloomdVersion: "1"
+        bloomdVersion: "1",
     };
     const body = document.body as HTMLBodyElement;
 
@@ -127,7 +127,7 @@ test("setSomeBookInfoFromMetadata", () => {
     expect(ambientAnalyticsProps.originalTitle).toEqual("My Original Title");
     expect(ambientAnalyticsProps.publisher).toEqual("my publisher");
     expect(ambientAnalyticsProps.originalPublisher).toEqual(
-        "my original publisher"
+        "my original publisher",
     );
     expect(ambientAnalyticsProps.features).toEqual("blind,talkingBook");
     expect(ambientAnalyticsProps.bookshelves).toEqual("");
@@ -140,8 +140,8 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromTags", () => {
         tags: [
             "bookshelf:my bookshelf",
             "otherTag:my other tag",
-            "bookshelf:my other bookshelf"
-        ]
+            "bookshelf:my other bookshelf",
+        ],
     };
     const body = document.body as HTMLBodyElement;
 
@@ -149,7 +149,7 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromTags", () => {
 
     const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
     expect(ambientAnalyticsProps.bookshelves).toEqual(
-        "my bookshelf,my other bookshelf"
+        "my bookshelf,my other bookshelf",
     );
 });
 
@@ -157,7 +157,7 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromBookshelvesField", () => {
     const bookInfo = new BookInfo();
 
     const metadata = {
-        bookshelves: ["my bookshelf", "my other bookshelf"]
+        bookshelves: ["my bookshelf", "my other bookshelf"],
     };
     const body = document.body as HTMLBodyElement;
 
@@ -165,7 +165,7 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromBookshelvesField", () => {
 
     const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
     expect(ambientAnalyticsProps.bookshelves).toEqual(
-        "my bookshelf,my other bookshelf"
+        "my bookshelf,my other bookshelf",
     );
 });
 
@@ -177,8 +177,8 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromTagsAndBookshelvesField", () =>
         tags: [
             "bookshelf:my bookshelf",
             "otherTag:my other tag",
-            "bookshelf:my other bookshelf"
-        ]
+            "bookshelf:my other bookshelf",
+        ],
     };
     const body = document.body as HTMLBodyElement;
 
@@ -186,7 +186,7 @@ test("setSomeBookInfoFromMetadata_bookshelvesFromTagsAndBookshelvesField", () =>
 
     const ambientAnalyticsProps = bookInfo.getAmbientAnalyticsProps();
     expect(ambientAnalyticsProps.bookshelves).toEqual(
-        "my bookshelf,my other bookshelf 2,my other bookshelf"
+        "my bookshelf,my other bookshelf 2,my other bookshelf",
     );
 });
 
@@ -197,7 +197,8 @@ test("getPreferredTranslationLanguages, 1 language", () => {
     [lang='aaa']`;
     const bookInfo = createBookInfoWithLanguages("aaa", cssText);
 
-    const preferredTranslationLanguages = bookInfo.getPreferredTranslationLanguages();
+    const preferredTranslationLanguages =
+        bookInfo.getPreferredTranslationLanguages();
     expect(preferredTranslationLanguages.length).toEqual(1);
     expect(preferredTranslationLanguages[0]).toEqual("aaa");
 });
@@ -210,7 +211,8 @@ test("getPreferredTranslationLanguages, 2 languages", () => {
     [lang='bbb']`;
     const bookInfo = createBookInfoWithLanguages("aaa", cssText);
 
-    const preferredTranslationLanguages = bookInfo.getPreferredTranslationLanguages();
+    const preferredTranslationLanguages =
+        bookInfo.getPreferredTranslationLanguages();
     expect(preferredTranslationLanguages.length).toEqual(2);
     expect(preferredTranslationLanguages[0]).toEqual("aaa");
     expect(preferredTranslationLanguages[1]).toEqual("bbb");
@@ -225,7 +227,8 @@ test("getPreferredTranslationLanguages, 3 languages", () => {
     [lang='ccc']`;
     const bookInfo = createBookInfoWithLanguages("aaa", cssText);
 
-    const preferredTranslationLanguages = bookInfo.getPreferredTranslationLanguages();
+    const preferredTranslationLanguages =
+        bookInfo.getPreferredTranslationLanguages();
     expect(preferredTranslationLanguages.length).toEqual(3);
     expect(preferredTranslationLanguages[0]).toEqual("aaa");
     expect(preferredTranslationLanguages[1]).toEqual("bbb");
@@ -240,7 +243,7 @@ function createBookInfoWithLanguages(lang1: string, cssText: string): BookInfo {
         key: "contentLanguage1",
         lang: "*",
         content: lang1,
-        parent: dataDiv
+        parent: dataDiv,
     });
     const bookInfo = new BookInfo();
     bookInfo.setSomeBookInfoFromBody(body);

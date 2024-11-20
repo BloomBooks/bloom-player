@@ -22,7 +22,7 @@ export class BookInteraction {
             audioDuration: this.totalAudioDuration,
             videoDuration: this.totalVideoDuration,
             lastNumberedPageRead: this.lastNumberedPageWasRead,
-            readDuration: Math.floor((Date.now() - this.beginReadTime) / 1000) // seconds spent reading this book
+            readDuration: Math.floor((Date.now() - this.beginReadTime) / 1000), // seconds spent reading this book
         };
     }
 

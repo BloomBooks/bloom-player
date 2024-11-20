@@ -6,24 +6,24 @@
 // to a non-checked call.
 export function getQueryStringParamAndUnencode(
     paramName: string,
-    defaultValue?: any
+    defaultValue?: any,
 ): string {
     return getStringUrlParam(paramName, defaultValue);
 }
 
 export function getStringUrlParam(
     paramName: string,
-    defaultValue: string
+    defaultValue: string,
 ): string;
 export function getStringUrlParam(
     paramName: string,
-    defaultValue?: string | undefined
+    defaultValue?: string | undefined,
 ): string | undefined;
 export function getStringUrlParam(
     paramName: string,
-    defaultValue?: string | undefined
+    defaultValue?: string | undefined,
 ): string | undefined {
-    return getUrlParam(paramName, s => s, defaultValue);
+    return getUrlParam(paramName, (s) => s, defaultValue);
 }
 /**
  * Finds the specified query param string in the URL and returns the deserialized value
@@ -35,7 +35,7 @@ export function getStringUrlParam(
 export function getUrlParam<T>(
     paramName: string,
     deserializeCallback: (s: string) => T,
-    defaultValue: T
+    defaultValue: T,
 ): T {
     const values = parseUriComponent(window.location.search);
     if (
@@ -64,7 +64,7 @@ export function parseUriComponent(searchPortionOfLocation: string): object {
 
 export function getBooleanUrlParam(
     paramName: string,
-    defaultValue: boolean
+    defaultValue: boolean,
 ): boolean {
     const toBool = (s: string) => s.toLowerCase() === "true";
     return getUrlParam(paramName, toBool, defaultValue);

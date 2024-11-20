@@ -38,7 +38,7 @@ export enum PlaybackMode {
     VideoPaused, // video is paused
     AudioPlaying, // narration and/or animation are playing (or possibly finished)
     AudioPaused, // narration and/or animation are paused
-    MediaFinished // video, narration, and/or animation has played (possibly no media to play)
+    MediaFinished, // video, narration, and/or animation has played (possibly no media to play)
     // Note that music can be playing when the state is either AudioPlaying or MediaFinished.
 }
 
@@ -144,7 +144,7 @@ export function sortAudioElements(input: HTMLElement[]): HTMLElement[] {
         // Otherwise, determined by the numerical order of tab indexes.
         return parseInt(x.tabindex, 10) - parseInt(y.tabindex, 10);
     });
-    return keyedItems.map(x => x.item);
+    return keyedItems.map((x) => x.item);
 }
 
 function getTgTabIndex(input: HTMLElement): string | null {
@@ -355,14 +355,14 @@ function fixHighlighting(audioElements: HTMLElement[]) {
     // Note: Only relevant when playing by sentence (but note, this can make Record by Text Box -> Split or Record by Sentence, Play by Sentence)
     // Play by Text Box highlights the whole paragraph and none of this really matters.
     // (the span selector won't match anyway)
-    audioElements.forEach(audioElement => {
+    audioElements.forEach((audioElement) => {
         // FYI, don't need to process the bloom-linebreak spans. Nothing bad happens, just unnecessary.
         const matches = findAll(
             "span[id]:not(.bloom-linebreak)",
             audioElement,
-            true
+            true,
         );
-        matches.forEach(element => {
+        matches.forEach((element) => {
             // Remove all existing highlight classes from element and element's descendants.
             // These shouldn't be in the dom as the editor is supposed to clean them up,
             // but we have seen at least on case where it didn't. BL-13428.
@@ -371,9 +371,8 @@ function fixHighlighting(audioElements: HTMLElement[]) {
             // Simple check to help ensure that elements that don't need to be modified will remain untouched.
             // This doesn't consider whether text that shouldn't be highlighted is already in inside an
             // element with highlight disabled, but that's ok. The code down the stack checks that.
-            const containsNonHighlightText = !!element.innerText.match(
-                multiSpaceRegex
-            );
+            const containsNonHighlightText =
+                !!element.innerText.match(multiSpaceRegex);
 
             if (containsNonHighlightText) {
                 fixHighlightingInNode(element, element);
@@ -411,7 +410,7 @@ function fixHighlightingInNode(node: Node, startingSpan: HTMLSpanElement) {
     } else {
         // Recursive case
         const childNodesCopy = Array.from(node.childNodes); // Make a copy because node.childNodes is being mutated
-        childNodesCopy.forEach(childNode => {
+        childNodesCopy.forEach((childNode) => {
             fixHighlightingInNode(childNode, startingSpan);
         });
     }
@@ -422,11 +421,11 @@ function fixHighlightingInNode(node: Node, startingSpan: HTMLSpanElement) {
  */
 function fixHighlightingInTextNode(
     textNode: Node,
-    startingSpan: HTMLSpanElement
+    startingSpan: HTMLSpanElement,
 ) {
     if (textNode.nodeType !== Node.TEXT_NODE) {
         throw new Error(
-            "Invalid argument to fixMultiSpaceInTextNode: node must be a TextNode"
+            "Invalid argument to fixMultiSpaceInTextNode: node must be a TextNode",
         );
     }
 
@@ -446,12 +445,12 @@ function fixHighlightingInTextNode(
     while (
         (regexResult = multiSpaceRegexGlobal.exec(textNode.nodeValue)) != null
     ) {
-        regexResult.forEach(matchingText => {
+        regexResult.forEach((matchingText) => {
             matches.push({
                 text: matchingText,
                 startIndex:
                     multiSpaceRegexGlobal.lastIndex - matchingText.length,
-                endIndex: multiSpaceRegexGlobal.lastIndex // the index of the first character to exclude
+                endIndex: multiSpaceRegexGlobal.lastIndex, // the index of the first character to exclude
             });
         });
     }
@@ -468,7 +467,7 @@ function fixHighlightingInTextNode(
 
             const preMatchText = textNode.nodeValue.slice(
                 lastMatchEndIndex,
-                match.startIndex
+                match.startIndex,
             );
             lastMatchEndIndex = match.endIndex;
             if (preMatchText) newNodes.push(makeHighlightedSpan(preMatchText));
@@ -515,7 +514,7 @@ function playCurrentInternal() {
         const mediaPlayer = getPlayer();
         if (mediaPlayer) {
             const element = getCurrentNarrationPage().querySelector(
-                `#${currentAudioId}`
+                `#${currentAudioId}`,
             );
             if (!element || !canPlayAudio(element)) {
                 playEnded();
@@ -528,16 +527,16 @@ function playCurrentInternal() {
             subElementsWithTimings = [];
 
             const timingsStr: string | null = element.getAttribute(
-                "data-audioRecordingEndTimes"
+                "data-audioRecordingEndTimes",
             );
             if (timingsStr) {
                 const childSpanElements = element.querySelectorAll(
-                    `span.${kSegmentClass}`
+                    `span.${kSegmentClass}`,
                 );
                 const fields = timingsStr.split(" ");
                 const subElementCount = Math.min(
                     fields.length,
-                    childSpanElements.length
+                    childSpanElements.length,
                 );
 
                 for (let i = subElementCount - 1; i >= 0; --i) {
@@ -547,7 +546,7 @@ function playCurrentInternal() {
                     }
                     subElementsWithTimings.push([
                         childSpanElements.item(i),
-                        durationSecs
+                        durationSecs,
                     ]);
                 }
             } else {
@@ -559,7 +558,7 @@ function playCurrentInternal() {
             const currentSegment = element as HTMLElement;
             if (currentSegment && ToggleImageDescription) {
                 ToggleImageDescription?.raise(
-                    isImageDescriptionSegment(currentSegment)
+                    isImageDescriptionSegment(currentSegment),
                 );
             }
 
@@ -607,7 +606,7 @@ function handlePlayPromise(promise: Promise<void>, player?: HTMLMediaElement) {
                 reason
                     .toString()
                     .includes(
-                        "The play() request was interrupted by a call to pause()."
+                        "The play() request was interrupted by a call to pause().",
                     )
             ) {
                 // We were getting this error Aug 2020. I tried wrapping the line above which calls mediaPlayer.play()
@@ -617,7 +616,7 @@ function handlePlayPromise(promise: Promise<void>, player?: HTMLMediaElement) {
                 // I fixed that in bloom-player-core. But I wanted to document the possible setTimeout fix here
                 // in case this issue ever comes up for a different reason.
                 console.log(
-                    "See comment in narration.ts for possibly useful information regarding this error."
+                    "See comment in narration.ts for possibly useful information regarding this error.",
                 );
             }
 
@@ -650,7 +649,7 @@ function handlePlayPromise(promise: Promise<void>, player?: HTMLMediaElement) {
 // startTimeInSecs is an optional fallback that will be used in case the currentTime cannot be determined from the audio player element.
 function highlightNextSubElement(
     originalSessionNum: number,
-    startTimeInSecs: number = 0
+    startTimeInSecs: number = 0,
 ) {
     // the item should not be popped off the stack until it's completely done with.
     const subElementCount = subElementsWithTimings.length;
@@ -666,11 +665,11 @@ function highlightNextSubElement(
     setHighlightTo({
         newElement: element,
         shouldScrollToElement: true,
-        disableHighlightIfNoAudio: false
+        disableHighlightIfNoAudio: false,
     });
 
     const mediaPlayer: HTMLMediaElement = document.getElementById(
-        "bloom-audio-player"
+        "bloom-audio-player",
     )! as HTMLMediaElement;
     let currentTimeInSecs: number = mediaPlayer.currentTime;
     if (currentTimeInSecs <= 0) {
@@ -710,7 +709,7 @@ function onSubElementHighlightTimeEnded(originalSessionNum: number) {
     }
 
     const mediaPlayer: HTMLMediaElement = document.getElementById(
-        "bloom-audio-player"
+        "bloom-audio-player",
     )! as HTMLMediaElement;
     if (mediaPlayer.ended || mediaPlayer.error) {
         // audio playback ended. No need to highlight anything else.
@@ -749,15 +748,14 @@ function removeAudioCurrent(around: HTMLElement = document.body) {
     // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
     // For safety we get rid of all existing ones.
     const audioCurrentArray = Array.from(
-        around.ownerDocument.getElementsByClassName("ui-audioCurrent")
+        around.ownerDocument.getElementsByClassName("ui-audioCurrent"),
     );
 
     for (let i = 0; i < audioCurrentArray.length; i++) {
         audioCurrentArray[i].classList.remove("ui-audioCurrent");
     }
-    const currentImg = around.ownerDocument.getElementsByClassName(
-        "ui-audioCurrentImg"
-    )[0];
+    const currentImg =
+        around.ownerDocument.getElementsByClassName("ui-audioCurrentImg")[0];
     if (currentImg) {
         currentImg.classList.remove("ui-audioCurrentImg");
     }
@@ -766,13 +764,13 @@ function removeAudioCurrent(around: HTMLElement = document.body) {
 function setSoundAndHighlight(
     newElement: Element,
     disableHighlightIfNoAudio: boolean,
-    oldElement?: Element | null | undefined
+    oldElement?: Element | null | undefined,
 ) {
     setHighlightTo({
         newElement,
         shouldScrollToElement: true, // Always true in bloom-player version
         disableHighlightIfNoAudio,
-        oldElement
+        oldElement,
     });
     setSoundFrom(newElement);
 }
@@ -781,7 +779,7 @@ function setHighlightTo({
     newElement,
     shouldScrollToElement,
     disableHighlightIfNoAudio,
-    oldElement
+    oldElement,
 }: ISetHighlightParams) {
     // This should happen even if oldElement and newElement are the same.
     if (shouldScrollToElement) {
@@ -897,7 +895,7 @@ function scrollElementIntoView(element: Element) {
         // Seems to reduce unnecessary scrolling compared to start (aka true) or end (aka false).
         // Refer to https://drafts.csswg.org/cssom-view/#scroll-an-element-into-view,
         // which seems to imply that it won't do any scrolling if the two relevant edges are already inside.
-        block: "nearest"
+        block: "nearest",
 
         // horizontal alignment is controlled by "inline". We'll leave it as its default ("nearest")
         // which typically won't move things at all horizontally
@@ -922,7 +920,7 @@ function setSoundFrom(element: Element) {
 }
 
 function getFirstAudioSentenceWithinElement(
-    element: Element | null
+    element: Element | null,
 ): Element | null {
     const audioSentences = getAudioSegmentsWithinElement(element);
     if (!audioSentences || audioSentences.length === 0) {
@@ -979,7 +977,7 @@ function updatePlayerStatus() {
     // other contexts.
     player.setAttribute(
         "src",
-        url + "?nocache=" + new Date().getTime() + "&optional=true"
+        url + "?nocache=" + new Date().getTime() + "&optional=true",
     );
 }
 
@@ -989,7 +987,7 @@ function currentAudioUrl(id: string): string {
 }
 
 function getPlayer(): HTMLMediaElement {
-    const audio = getAudio("bloom-audio-player", a => {
+    const audio = getAudio("bloom-audio-player", (a) => {
         a.addEventListener("ended", playEnded);
         a.addEventListener("error", handlePlayError);
     });
@@ -1045,7 +1043,7 @@ function reportPlayDuration() {
 
 function getAudio(id: string, init: (audio: HTMLAudioElement) => void) {
     let player: HTMLAudioElement | null = document.querySelector(
-        "#" + id
+        "#" + id,
     ) as HTMLAudioElement;
     // If (somehow?) it exists but is not a valid HTMLAudioElement, remove it.
     if (player && !player.play) {
@@ -1091,11 +1089,11 @@ function handlePlayError() {
 function findAll(
     expr: string,
     container: HTMLElement,
-    includeSelf: boolean = false
+    includeSelf: boolean = false,
 ): HTMLElement[] {
     // querySelectorAll checks all the descendants
     const allMatches: HTMLElement[] = [].slice.call(
-        (container || document).querySelectorAll(expr)
+        (container || document).querySelectorAll(expr),
     );
 
     // Now check itself
@@ -1105,14 +1103,14 @@ function findAll(
 
     return includeImageDescriptions
         ? allMatches
-        : allMatches.filter(match => !isImageDescriptionSegment(match));
+        : allMatches.filter((match) => !isImageDescriptionSegment(match));
 }
 
 function getPlayableDivs(container: HTMLElement) {
     // We want to play any audio we have from divs the user can see.
     // This is a crude test, but currently we always use display:none to hide unwanted languages.
     return findAll(".bloom-editable", container).filter(
-        e => window.getComputedStyle(e).display !== "none"
+        (e) => window.getComputedStyle(e).display !== "none",
     );
 }
 
@@ -1127,7 +1125,9 @@ function getPagePlayableDivs(page?: HTMLElement): HTMLElement[] {
 function getPageAudioElements(page?: HTMLElement): HTMLElement[] {
     return [].concat.apply(
         [],
-        getPagePlayableDivs(page).map(x => findAll(".audio-sentence", x, true))
+        getPagePlayableDivs(page).map((x) =>
+            findAll(".audio-sentence", x, true),
+        ),
     );
 }
 
@@ -1211,7 +1211,7 @@ function pausePlaying() {
 // So I decided to simplify.
 export function computeDuration(page: HTMLElement): number {
     let pageDuration = 0.0;
-    getPageAudioElements(page).forEach(segment => {
+    getPageAudioElements(page).forEach((segment) => {
         const attrDuration = segment.getAttribute("data-duration");
         if (attrDuration) {
             pageDuration += parseFloat(attrDuration);
@@ -1276,10 +1276,10 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
                     () => {
                         playAllVideo(elements.slice(1), then);
                     },
-                    { once: true }
+                    { once: true },
                 );
             })
-            .catch(reason => {
+            .catch((reason) => {
                 console.error("Video play failed", reason);
                 showVideoError(video);
                 this.playAllVideo(elements.slice(1), then);

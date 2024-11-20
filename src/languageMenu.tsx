@@ -7,7 +7,7 @@ import {
     FormControl,
     FormControlLabel,
     Radio,
-    RadioGroup
+    RadioGroup,
 } from "@material-ui/core";
 // tslint:disable-next-line: no-submodule-imports
 import VolumeUp from "@material-ui/icons/VolumeUp";
@@ -18,14 +18,16 @@ interface ILanguageMenuProps {
     onClose: (value: string) => void; // Handler that runs when the menu closes. ${value} is the ISO code of the language the user selected, or "" if no change was made.
 }
 
-export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = props => {
+export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = (
+    props,
+) => {
     // the || case makes it robust against the possibility that no language is selected,
     // though this ought not to be.
     const [selectedLanguage, setSelectedLanguage] = useState(
         (
-            props.languages.filter(lang => lang.IsSelected)[0] ||
+            props.languages.filter((lang) => lang.IsSelected)[0] ||
             props.languages[0]
-        ).Code
+        ).Code,
     );
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

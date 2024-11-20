@@ -15,7 +15,7 @@ import {
     kAudioSentence,
     playAllAudio,
     playAllVideo,
-    urlPrefix
+    urlPrefix,
 } from "./narration";
 
 let targetPositions: {
@@ -39,14 +39,14 @@ const savePositions = (page: HTMLElement) => {
         positionsToRestore.push({
             x: elt.style.left,
             y: elt.style.top,
-            elt
+            elt,
         });
     });
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
 // after being in that tab).
 const restorePositions = () => {
-    positionsToRestore.forEach(p => {
+    positionsToRestore.forEach((p) => {
         p.elt.style.left = p.x;
         p.elt.style.top = p.y;
     });
@@ -61,30 +61,30 @@ export function prepareActivity(
     page: HTMLElement,
     // Possibly obsolete: an action to take when the user clicks a change page button.
     // Current plan is to just let BP add its own change page buttons.
-    changePageAction: (next: boolean) => void
+    changePageAction: (next: boolean) => void,
 ) {
     currentPage = page;
     currentChangePageAction = changePageAction;
     doShowAnswersInTargets(
         page.getAttribute("data-show-answers-in-targets") === "true",
-        page
+        page,
     );
     // not sure we need this in BP, but definitely for when Bloom desktop goes to another tab.
     savePositions(page);
 
     // Set up event listeners for any change page buttons.
     const changePageButtons = Array.from(
-        page.getElementsByClassName("bloom-change-page-button")
+        page.getElementsByClassName("bloom-change-page-button"),
     );
-    changePageButtons.forEach(b =>
-        b.addEventListener("click", changePageButtonClicked)
+    changePageButtons.forEach((b) =>
+        b.addEventListener("click", changePageButtonClicked),
     );
 
     // Hide image titles, which might give too much away, or distract.
     Array.from(document.getElementsByClassName("bloom-imageContainer")).forEach(
-        container => {
+        (container) => {
             (container as HTMLElement).title = "";
-        }
+        },
     );
 
     // By default, a shadow of any image can be dragged (e.g., to a paint program).
@@ -102,7 +102,7 @@ export function prepareActivity(
     draggables.forEach((elt: HTMLElement) => {
         const targetId = elt.getAttribute("data-bubble-id");
         const target = page.querySelector(
-            `[data-target-of="${targetId}"]`
+            `[data-target-of="${targetId}"]`,
         ) as HTMLElement;
         if (target) {
             const x = target.offsetLeft;
@@ -111,7 +111,7 @@ export function prepareActivity(
                 x,
                 y,
                 width: target.offsetWidth,
-                height: target.offsetHeight
+                height: target.offsetHeight,
             });
             targets.push(target);
         }
@@ -122,7 +122,7 @@ export function prepareActivity(
     });
 
     const videos = Array.from(page.getElementsByTagName("video"));
-    videos.forEach(video => {
+    videos.forEach((video) => {
         video.addEventListener("pointerdown", playVideo);
         if (
             video
@@ -138,8 +138,8 @@ export function prepareActivity(
     // Add event listeners to (other) text items that should play audio when clicked.
     const dontPlayWhenClicked = draggables.concat(targets);
     const otherTextItems = Array.from(
-        page.getElementsByClassName("bloom-visibility-code-on")
-    ).filter(e => {
+        page.getElementsByClassName("bloom-visibility-code-on"),
+    ).filter((e) => {
         var top = e.closest(".bloom-textOverPicture") as HTMLElement;
         if (!top) {
             // don't think this can happen with current game templates,
@@ -151,19 +151,19 @@ export function prepareActivity(
         // targets don't need to play.
         return dontPlayWhenClicked.indexOf(top) < 0;
     });
-    otherTextItems.forEach(e => {
+    otherTextItems.forEach((e) => {
         e.addEventListener("pointerdown", playAudioOfTarget);
     });
 
     // Add event listeners to check, try again, and show correct buttons.
     const checkButtons = Array.from(
-        page.getElementsByClassName("check-button")
+        page.getElementsByClassName("check-button"),
     );
     const tryAgainButtons = Array.from(
-        page.getElementsByClassName("try-again-button")
+        page.getElementsByClassName("try-again-button"),
     );
     const showCorrectButtons = Array.from(
-        page.getElementsByClassName("show-correct-button")
+        page.getElementsByClassName("show-correct-button"),
     );
 
     checkButtons.forEach((elt: HTMLElement) => {
@@ -202,7 +202,7 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
     Array.from(page.getElementsByClassName("drag-item-order-sentence")).forEach(
         (elt: HTMLElement) => {
             const contentElt = elt.getElementsByClassName(
-                "bloom-content1"
+                "bloom-content1",
             )[0] as HTMLElement;
             const content = contentElt?.textContent?.trim();
             if (!content) return;
@@ -220,7 +220,7 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
             // Maybe now we tweaked word padding to make the original sentence take up more
             // space, we could use its own width?
             elt.parentElement?.insertBefore(container, elt);
-        }
+        },
     );
 };
 
@@ -235,16 +235,16 @@ const playVideo = (e: MouseEvent) => {
 export function undoPrepareActivity(page: HTMLElement) {
     restorePositions();
     const changePageButtons = Array.from(
-        page.getElementsByClassName("bloom-change-page-button")
+        page.getElementsByClassName("bloom-change-page-button"),
     );
-    changePageButtons.forEach(b =>
-        b.removeEventListener("click", changePageButtonClicked)
+    changePageButtons.forEach((b) =>
+        b.removeEventListener("click", changePageButtonClicked),
     );
 
     Array.from(page.getElementsByClassName("bloom-visibility-code-on")).forEach(
-        e => {
+        (e) => {
             e.removeEventListener("pointerdown", playAudioOfTarget);
-        }
+        },
     );
 
     page.querySelectorAll("[data-bubble-id]").forEach((elt: HTMLElement) => {
@@ -256,18 +256,18 @@ export function undoPrepareActivity(page: HTMLElement) {
     });
 
     const videos = Array.from(page.getElementsByTagName("video"));
-    videos.forEach(video => {
+    videos.forEach((video) => {
         video.removeEventListener("pointerdown", playVideo);
         video.classList.remove("bloom-ui-no-controls");
     });
     const checkButtons = Array.from(
-        page.getElementsByClassName("check-button")
+        page.getElementsByClassName("check-button"),
     );
     const tryAgainButtons = Array.from(
-        page.getElementsByClassName("try-again-button")
+        page.getElementsByClassName("try-again-button"),
     );
     const showCorrectButtons = Array.from(
-        page.getElementsByClassName("show-correct-button")
+        page.getElementsByClassName("show-correct-button"),
     );
 
     checkButtons.forEach((elt: HTMLElement) => {
@@ -289,7 +289,7 @@ export function undoPrepareActivity(page: HTMLElement) {
     });
 
     Array.from(
-        page.getElementsByClassName("drag-item-random-sentence")
+        page.getElementsByClassName("drag-item-random-sentence"),
     ).forEach((elt: HTMLElement) => {
         elt.parentElement?.removeChild(elt);
     });
@@ -333,12 +333,12 @@ function makeWordItems(
     contentElt: HTMLElement,
     // Should the reader be able to drag the words? Not when we're using this
     // to show the correct answer.
-    makeDraggable: boolean
+    makeDraggable: boolean,
 ) {
     const userStyle =
-        Array.from(contentElt?.classList)?.find(c => c.endsWith("-style")) ??
+        Array.from(contentElt?.classList)?.find((c) => c.endsWith("-style")) ??
         "Normal-style";
-    words.forEach(word => {
+    words.forEach((word) => {
         const wordItem = page.ownerDocument.createElement("div");
         wordItem.classList.add("drag-item-order-word");
         wordItem.textContent = word;
@@ -352,13 +352,13 @@ function makeWordItems(
 
 function changePageButtonClicked(e: MouseEvent) {
     const next = (e.currentTarget as HTMLElement).classList.contains(
-        "bloom-next-page"
+        "bloom-next-page",
     );
     currentChangePageAction?.(next);
 }
 
 export function playInitialElements(page: HTMLElement) {
-    const initialFilter = e => {
+    const initialFilter = (e) => {
         const top = e.closest(".bloom-textOverPicture") as HTMLElement;
         if (!top) {
             // not an overlay at all. (Note that all overlays have this class, including
@@ -387,7 +387,7 @@ export function playInitialElements(page: HTMLElement) {
         return true;
     };
     const videoElements = Array.from(page.getElementsByTagName("video")).filter(
-        initialFilter
+        initialFilter,
     );
     const audioElements = getVisibleEditables(page).filter(initialFilter);
 
@@ -407,14 +407,14 @@ export function playInitialElements(page: HTMLElement) {
 function getAudioSentences(editables: HTMLElement[]) {
     // Could be done more cleanly with flatMap or flat() but not ready to switch to es2019 yet.
     const result: HTMLElement[] = [];
-    editables.forEach(e => {
+    editables.forEach((e) => {
         if (e.classList.contains(kAudioSentence)) {
             result.push(e);
         }
         result.push(
             ...(Array.from(
-                e.getElementsByClassName(kAudioSentence)
-            ) as HTMLElement[])
+                e.getElementsByClassName(kAudioSentence),
+            ) as HTMLElement[]),
         );
     });
     return result;
@@ -424,9 +424,9 @@ function getVisibleEditables(container: HTMLElement) {
     // We want to play any audio we have from divs the user can see.
     // This is a crude test, but currently we always use display:none to hide unwanted languages.
     const result = Array.from(
-        container.getElementsByClassName("bloom-editable")
+        container.getElementsByClassName("bloom-editable"),
     ).filter(
-        e => window.getComputedStyle(e).display !== "none"
+        (e) => window.getComputedStyle(e).display !== "none",
     ) as HTMLElement[];
     if (
         container.classList.contains("bloom-editable") &&
@@ -447,7 +447,7 @@ function shuffle<T>(array: T[]): T[] {
         currentIndex--;
         [array[currentIndex], array[randomIndex]] = [
             array[randomIndex],
-            array[currentIndex]
+            array[currentIndex],
         ];
     }
     return array;
@@ -463,7 +463,7 @@ const showCorrect = (e: MouseEvent) => {
         .forEach((elt: HTMLElement) => {
             const targetId = elt.getAttribute("data-bubble-id");
             const target = currentPage?.querySelector(
-                `[data-target-of="${targetId}"]`
+                `[data-target-of="${targetId}"]`,
             ) as HTMLElement;
             if (!target) {
                 return; // this one is not required to be in a right place
@@ -476,7 +476,7 @@ const showCorrect = (e: MouseEvent) => {
             elt.style.top = y + "px";
         });
     Array.from(
-        currentPage.getElementsByClassName("drag-item-random-sentence")
+        currentPage.getElementsByClassName("drag-item-random-sentence"),
     ).forEach((container: HTMLElement) => {
         const correctAnswer =
             container.getAttribute("data-answer")?.split(" ") ?? [];
@@ -487,7 +487,7 @@ const showCorrect = (e: MouseEvent) => {
             correctAnswer,
             container,
             userStyleSource,
-            false
+            false,
         );
     });
     classSetter(currentPage!, "drag-activity-wrong", false);
@@ -631,7 +631,7 @@ export const performTryAgain = (e: MouseEvent) => {
 export const classSetter = (
     page: HTMLElement,
     className: string,
-    wanted: boolean
+    wanted: boolean,
 ) => {
     if (wanted) {
         page.parentElement?.classList.add(className);
@@ -648,17 +648,17 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
 
     // play sound
     const soundFile = page.getAttribute(
-        correct ? "data-correct-sound" : "data-wrong-sound"
+        correct ? "data-correct-sound" : "data-wrong-sound",
     );
     const playOtherStuff = () => {
         const elementsMadeVisible = Array.from(
             page.getElementsByClassName(
-                correct ? "drag-item-correct" : "drag-item-wrong"
-            )
+                correct ? "drag-item-correct" : "drag-item-wrong",
+            ),
         ) as HTMLElement[];
         const possibleNarrationElements: HTMLElement[] = [];
         const videoElements: HTMLVideoElement[] = [];
-        elementsMadeVisible.forEach(e => {
+        elementsMadeVisible.forEach((e) => {
             possibleNarrationElements.push(...getVisibleEditables(e));
             videoElements.push(...Array.from(e.getElementsByTagName("video")));
         });
@@ -688,7 +688,7 @@ function playSound(someElt: HTMLElement, soundFile: string) {
         () => {
             someElt.removeChild(audio);
         },
-        { once: true }
+        { once: true },
     );
 }
 
@@ -698,7 +698,7 @@ function checkDraggables(page: HTMLElement) {
     draggables.forEach((draggableToCheck: HTMLElement) => {
         const targetId = draggableToCheck.getAttribute("data-bubble-id");
         const target = page.querySelector(
-            `[data-target-of="${targetId}"]`
+            `[data-target-of="${targetId}"]`,
         ) as HTMLElement;
         if (!target) {
             // this one is not required to be in a right place.
@@ -714,8 +714,8 @@ function checkDraggables(page: HTMLElement) {
             // (don't use getElementsByClassName here...there could be a TG on an image description of
             // a picture. To be a text item it must have a direct child that is a TG.)
             if (
-                !Array.from(draggableToCheck.children).some(x =>
-                    x.classList.contains("bloom-translationGroup")
+                !Array.from(draggableToCheck.children).some((x) =>
+                    x.classList.contains("bloom-translationGroup"),
                 )
             ) {
                 // not a text item. Two images or videos with the same (empty) text are not equivalent.
@@ -758,11 +758,10 @@ function startDragWordInSentence(e: PointerEvent) {
     dragStartY = e.clientY / scale - wordBeingRepositioned.offsetTop;
 
     // Leave the original where it was and make a copy to drag around.
-    draggableReposition = wordBeingRepositioned.ownerDocument.createElement(
-        "div"
-    );
-    wordBeingRepositioned.classList.forEach(c =>
-        draggableReposition.classList.add(c)
+    draggableReposition =
+        wordBeingRepositioned.ownerDocument.createElement("div");
+    wordBeingRepositioned.classList.forEach((c) =>
+        draggableReposition.classList.add(c),
     );
     //draggableReposition.classList.add("drag-item-order-word");
     draggableReposition.textContent = wordBeingRepositioned.textContent;
@@ -778,7 +777,7 @@ function startDragWordInSentence(e: PointerEvent) {
     placeHolder.style.width = startWidth + draggableWordMargin + "px";
     wordBeingRepositioned.parentElement?.insertBefore(
         placeHolder,
-        wordBeingRepositioned
+        wordBeingRepositioned,
     );
     wordBeingRepositioned.style.display = "none";
 
@@ -817,7 +816,7 @@ const dragWordInSentence = (e: PointerEvent) => {
         return;
     }
     const container = wordBeingRepositioned.parentElement!;
-    const itemDraggedOver = Array.from(container.children).find(c => {
+    const itemDraggedOver = Array.from(container.children).find((c) => {
         const rect = c.getBoundingClientRect();
         return (
             c !== wordBeingRepositioned &&
@@ -843,7 +842,7 @@ const dragWordInSentence = (e: PointerEvent) => {
             animateMove(() => {
                 container.insertBefore(
                     placeHolder!,
-                    itemDraggedOver.nextSibling
+                    itemDraggedOver.nextSibling,
                 );
             });
         } else {
@@ -857,13 +856,13 @@ const dragWordInSentence = (e: PointerEvent) => {
         // move to the end. Enhance: should we move to the front if we're above or to the left?
         const relatedItems = Array.from(
             wordBeingRepositioned.parentElement!.getElementsByClassName(
-                "drag-item-order-word"
-            )
+                "drag-item-order-word",
+            ),
         ).filter(
-            x =>
+            (x) =>
                 x !== wordBeingRepositioned &&
                 x !== placeHolder &&
-                x !== draggableReposition
+                x !== draggableReposition,
         ) as HTMLElement[];
         const lastItem = relatedItems[relatedItems.length - 1];
         const bounds = lastItem.getBoundingClientRect();
@@ -884,16 +883,16 @@ const stopDragWordInSentence = (e: PointerEvent) => {
     wordBeingRepositioned.style.visibility = "visible";
     wordBeingRepositioned.removeEventListener(
         "pointerup",
-        stopDragWordInSentence
+        stopDragWordInSentence,
     );
     wordBeingRepositioned.removeEventListener(
         "pointermove",
-        dragWordInSentence
+        dragWordInSentence,
     );
     wordBeingRepositioned.releasePointerCapture(e.pointerId); // redundant I think
     wordBeingRepositioned.removeEventListener(
         "touchstart",
-        preventTouchDefault
+        preventTouchDefault,
     );
     // We're getting rid of this, so we don't need to remove the event handlers it has.
     draggableReposition.parentElement?.removeChild(draggableReposition);
@@ -901,7 +900,7 @@ const stopDragWordInSentence = (e: PointerEvent) => {
     wordBeingRepositioned.parentElement?.insertBefore(
         wordBeingRepositioned,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        placeHolder!
+        placeHolder!,
     );
     wordBeingRepositioned.parentElement?.removeChild(placeHolder!);
     placeHolder = undefined;
@@ -980,11 +979,11 @@ function checkRandomSentences(page: HTMLElement) {
 export const doShowAnswersInTargets = (showNow: boolean, page: HTMLElement) => {
     const draggables = Array.from(page.querySelectorAll("[data-bubble-id]"));
     if (showNow) {
-        draggables.forEach(draggable => {
+        draggables.forEach((draggable) => {
             copyContentToTarget(draggable as HTMLElement);
         });
     } else {
-        draggables.forEach(draggable => {
+        draggables.forEach((draggable) => {
             removeContentFromTarget(draggable as HTMLElement);
         });
     }
@@ -1004,36 +1003,36 @@ export function copyContentToTarget(draggable: HTMLElement) {
     throwAway.innerHTML = draggable.innerHTML;
 
     // Don't need the bubble controls
-    Array.from(throwAway.getElementsByClassName("bloom-ui")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("bloom-ui")).forEach((e) => {
         e.remove();
     });
     // Nor the image editing controls.
     Array.from(throwAway.getElementsByClassName("imageOverlayButton")).forEach(
-        e => {
+        (e) => {
             e.remove();
-        }
+        },
     );
-    Array.from(throwAway.getElementsByClassName("imageButton")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("imageButton")).forEach((e) => {
         e.remove();
     });
     // Bloom has integrity checks for duplicate ids, and we don't need them in the duplicate content.
-    Array.from(throwAway.querySelectorAll("[id]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[id]")).forEach((e) => {
         e.removeAttribute("id");
     });
-    Array.from(throwAway.getElementsByClassName("hoverUp")).forEach(e => {
+    Array.from(throwAway.getElementsByClassName("hoverUp")).forEach((e) => {
         // Produces at least a change in background color that we don't want.
         e.classList.remove("hoverUp");
     });
     // Content is not editable inside the target.
-    Array.from(throwAway.querySelectorAll("[contenteditable]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[contenteditable]")).forEach((e) => {
         e.removeAttribute("contenteditable");
     });
     // Nor should we able to tab to it, or focus it.
-    Array.from(throwAway.querySelectorAll("[tabindex]")).forEach(e => {
+    Array.from(throwAway.querySelectorAll("[tabindex]")).forEach((e) => {
         e.removeAttribute("tabindex");
     });
     const imageContainer = throwAway.getElementsByClassName(
-        "bloom-imageContainer"
+        "bloom-imageContainer",
     )[0] as HTMLElement;
     if (imageContainer) {
         // We need another layer to manage clipping and centering. The one we were going to
@@ -1058,7 +1057,7 @@ export const getTarget = (draggable: HTMLElement): HTMLElement | undefined => {
         return undefined;
     }
     return draggable.ownerDocument.querySelector(
-        `[data-target-of="${targetId}"]`
+        `[data-target-of="${targetId}"]`,
     ) as HTMLElement;
 };
 

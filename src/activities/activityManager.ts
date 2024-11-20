@@ -63,12 +63,10 @@ export class ActivityManager {
 
     constructor() {
         this.builtInActivities["iframe"] = iframeModule as IActivityModule;
-        this.builtInActivities[
-            "simple-dom-choice"
-        ] = simpleDomChoiceActivityModule as IActivityModule;
-        this.builtInActivities[
-            simpleCheckboxQuizModule.dataActivityID
-        ] = simpleCheckboxQuizModule as IActivityModule;
+        this.builtInActivities["simple-dom-choice"] =
+            simpleDomChoiceActivityModule as IActivityModule;
+        this.builtInActivities[simpleCheckboxQuizModule.dataActivityID] =
+            simpleCheckboxQuizModule as IActivityModule;
 
         // Review: currently these all use the same module. A lot of stuff is shared, all the way down to the
         // prepareActivity() function in dragActivityRuntime. But a good many specialized TOP types are
@@ -80,15 +78,12 @@ export class ActivityManager {
         this.builtInActivities[
             "drag-to-destination" // not currently used
         ] = dragToDestinationModule as IActivityModule;
-        this.builtInActivities[
-            "drag-letter-to-target"
-        ] = dragToDestinationModule as IActivityModule;
-        this.builtInActivities[
-            "drag-image-to-target"
-        ] = dragToDestinationModule as IActivityModule;
-        this.builtInActivities[
-            "drag-sort-sentence"
-        ] = dragToDestinationModule as IActivityModule;
+        this.builtInActivities["drag-letter-to-target"] =
+            dragToDestinationModule as IActivityModule;
+        this.builtInActivities["drag-image-to-target"] =
+            dragToDestinationModule as IActivityModule;
+        this.builtInActivities["drag-sort-sentence"] =
+            dragToDestinationModule as IActivityModule;
         this.builtInActivities[
             "word-chooser-slider" // not used yet
         ] = dragToDestinationModule as IActivityModule;
@@ -159,7 +154,7 @@ export class ActivityManager {
     public initializePageHtml(
         bookUrlPrefix: string,
         pageDiv: HTMLElement,
-        pageIndex: number
+        pageIndex: number,
     ): void {
         const activityID = this.getActivityIdOfPage(pageDiv);
         //const knownActivities = [{id:"iframe", module:iframeModule as IActivityModule}, {id:""}];
@@ -180,9 +175,8 @@ export class ActivityManager {
                 module: this.builtInActivities[activityID],
                 runningObject: undefined, // for now were just registering the module, not constructing the object
                 context: undefined,
-                requirements: this.builtInActivities[
-                    activityID
-                ].activityRequirements()
+                requirements:
+                    this.builtInActivities[activityID].activityRequirements(),
             };
         }
 
@@ -192,7 +186,7 @@ export class ActivityManager {
             // at the moment we start loading them in the background. This
             // probably isn't necessary, we could probably wait.
             loadDynamically(bookUrlPrefix + "/" + activityID + ".js").then(
-                module => {
+                (module) => {
                     // if the same activity is encountered multiple times, we
                     // could still get here multiple times because the load
                     // is async
@@ -202,10 +196,10 @@ export class ActivityManager {
                             module,
                             runningObject: undefined, // for now were just registering the module, not constructing the object
                             context: undefined,
-                            requirements: module.activityRequirements()
+                            requirements: module.activityRequirements(),
                         };
                     }
-                }
+                },
             );
         }
     }
@@ -213,7 +207,7 @@ export class ActivityManager {
     // Do one-time setup needed per activity instance
     private prepareActivityInstance(
         pageIndex: number,
-        pageDiv: HTMLElement
+        pageDiv: HTMLElement,
     ): void {
         const activity = this.getActivityOfPage(pageDiv);
         if (!activity) return;
@@ -222,9 +216,9 @@ export class ActivityManager {
             // for use in styling things differently during playback versus book editing
             pageDiv.classList.add("bloom-activityPlayback");
 
-            const activityPage = new ((activity.module!
-                .default as unknown) as IActivityObjectConstructable)(
-                pageDiv
+            const activityPage = new (activity.module!
+                .default as unknown as IActivityObjectConstructable)(
+                pageDiv,
             ) as IActivityObject;
             const activityContext = this.getActivityContext(pageIndex, pageDiv);
             activityPage.initializePageHtml(activityContext);
@@ -232,7 +226,7 @@ export class ActivityManager {
             // Add an attribute which lets us know we shouldn't prepare it again
             activityContext.pageElement.setAttribute(
                 "data-activity-state",
-                "prepared"
+                "prepared",
             );
         }
     }
@@ -240,7 +234,7 @@ export class ActivityManager {
     public doInitialSoundAndAnimation() {
         if (this.currentActivity && this.currentActivity.runningObject) {
             this.currentActivity.runningObject.doInitialSoundAndAnimation?.(
-                this.currentActivity.context!
+                this.currentActivity.context!,
             );
         }
     }
@@ -250,7 +244,7 @@ export class ActivityManager {
     // container needs to be careful not to get rid of it to save memory.
     public showingPage(
         pageIndex: number,
-        bloomPageElement: HTMLElement
+        bloomPageElement: HTMLElement,
     ): boolean | undefined {
         // At the moment bloom-player-core will always call us
         // twice if the book is landscape. Probably that could
@@ -278,14 +272,14 @@ export class ActivityManager {
             // constructing stuff like this has problems with typescript at the moment.
             // see https://stackoverflow.com/a/13408029/723299
             // Then the "as unknown" step is make eslint relax
-            activity.runningObject = new ((activity.module!
-                .default as unknown) as IActivityObjectConstructable)(
-                bloomPageElement
+            activity.runningObject = new (activity.module!
+                .default as unknown as IActivityObjectConstructable)(
+                bloomPageElement,
             ) as IActivityObject;
 
             activity.context = this.getActivityContext(
                 pageIndex,
-                bloomPageElement
+                bloomPageElement,
             );
             activity.runningObject!.showingPage(activity.context);
         }
@@ -293,7 +287,7 @@ export class ActivityManager {
     }
 
     private getActivityOfPage(
-        bloomPageElement: HTMLElement
+        bloomPageElement: HTMLElement,
     ): IActivityInformation | undefined {
         const activityID = this.getActivityIdOfPage(bloomPageElement);
 
@@ -304,7 +298,7 @@ export class ActivityManager {
             const activity = this.loadedActivityScripts[activityID];
             console.assert(
                 activity,
-                `Trying to start activity "${activityID}" but it wasn't previously loaded.`
+                `Trying to start activity "${activityID}" but it wasn't previously loaded.`,
             );
             return activity;
         }
@@ -313,16 +307,15 @@ export class ActivityManager {
 
     private getActivityContext(
         pageIndex: number,
-        bloomPageElement: HTMLElement
+        bloomPageElement: HTMLElement,
     ): ActivityContext {
-        const analyticsCategory = this.getAnalyticsCategoryOfPage(
-            bloomPageElement
-        );
+        const analyticsCategory =
+            this.getAnalyticsCategoryOfPage(bloomPageElement);
         return new ActivityContext(
             pageIndex,
             bloomPageElement,
             analyticsCategory,
-            this.bookActivityGroupings[analyticsCategory]
+            this.bookActivityGroupings[analyticsCategory],
         );
     }
 

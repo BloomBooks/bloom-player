@@ -43,7 +43,7 @@ export function reportScoreForCurrentPage(
     possiblePoints: number,
     actualPoints: number,
     analyticsCategory: string,
-    pagesToGroupForAnalytics: number[] | undefined
+    pagesToGroupForAnalytics: number[] | undefined,
 ): void {
     if (!BloomPlayerCore.getCurrentPage()) {
         alert("null currentPage in reportScoreForCurrentPage()");
@@ -62,7 +62,7 @@ export function reportScoreForCurrentPage(
     storePageData(
         pageIndex,
         analyticsCategory,
-        JSON.stringify({ possiblePoints, actualPoints, analyticsCategory })
+        JSON.stringify({ possiblePoints, actualPoints, analyticsCategory }),
     );
 
     // See if we now have a score from all pages of this analyticsCategory.
@@ -77,7 +77,7 @@ export function reportScoreForCurrentPage(
         for (let index = 0; index < pagesToGroupForAnalytics.length; index++) {
             const scoreObjectString = getPageData(
                 pagesToGroupForAnalytics[index],
-                analyticsCategory
+                analyticsCategory,
             );
             if (!scoreObjectString) {
                 return; // don't have all the results yet, wait for more
@@ -101,7 +101,7 @@ export function reportScoreForCurrentPage(
     const params = {
         possiblePoints: totalPossiblePoints,
         actualPoints: totalActualPoints,
-        percentRight: (totalActualPoints * 100) / totalPossiblePoints
+        percentRight: (totalActualPoints * 100) / totalPossiblePoints,
     };
     reportAnalytics(analyticsCategory, params);
 }
@@ -112,7 +112,7 @@ export function reportScoreForCurrentPage(
 export function storePageData(
     pageIndex: number,
     key: string,
-    value: string
+    value: string,
 ): void {
     const fullKey = getFullDataKey(pageIndex, key);
     // Store so that a getPageData() will return this value (even if no parent window implements saving)

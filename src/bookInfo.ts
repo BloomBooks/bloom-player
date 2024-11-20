@@ -5,7 +5,7 @@ enum BookFeatures {
     talkingBook = "talkingBook",
     blind = "blind",
     signLanguage = "signLanguage",
-    motion = "motion"
+    motion = "motion",
 }
 
 export class BookInfo {
@@ -53,7 +53,7 @@ export class BookInfo {
 
     private static getCopyrightInfo(
         body: HTMLBodyElement,
-        dataDivKey: string
+        dataDivKey: string,
     ): string {
         const copyrightNoticeRE = /^Copyright © \d\d\d\d, /;
         const copyright = this.getDataDivValue(body, dataDivKey);
@@ -62,14 +62,14 @@ export class BookInfo {
 
     private static getDataDivValue(
         body: HTMLBodyElement,
-        dataDivKey: string
+        dataDivKey: string,
     ): string {
         const node = body.ownerDocument!.evaluate(
             ".//div[@data-book='" + dataDivKey + "']",
             body,
             null,
             XPathResult.ANY_UNORDERED_NODE_TYPE,
-            null
+            null,
         ).singleNodeValue;
         if (!node) {
             return "";
@@ -105,7 +105,7 @@ export class BookInfo {
             copyrightHolder: this.copyrightHolder,
             publisher: this.publisher,
             originalPublisher: this.originalPublisher,
-            bookshelves: this.bookshelves
+            bookshelves: this.bookshelves,
         };
         // BloomLibrary2 and BloomReader both set this query parameter appropriately.
         const host = getQueryStringParamAndUnencode("host", null);
@@ -139,13 +139,13 @@ export class BookInfo {
         this.copyrightHolder = BookInfo.getCopyrightInfo(body, "copyright");
         this.originalCopyrightHolder = BookInfo.getCopyrightInfo(
             body,
-            "originalCopyright"
+            "originalCopyright",
         );
     }
 
     public setSomeBookInfoFromMetadata(
         metaDataObject: any,
-        body: HTMLBodyElement
+        body: HTMLBodyElement,
     ): void {
         this.bookInstanceId = metaDataObject.bookInstanceId;
         this.brandingProjectName = metaDataObject.brandingProjectName;
@@ -155,7 +155,7 @@ export class BookInfo {
         this.originalPublisher = metaDataObject.originalPublisher;
         this.bookshelves = this.getBookshelves(
             metaDataObject.tags,
-            metaDataObject.bookshelves
+            metaDataObject.bookshelves,
         );
 
         const bloomdVersion = metaDataObject.bloomdVersion
@@ -169,7 +169,7 @@ export class BookInfo {
 
     private getBookshelves(
         tagsField: Array<string>,
-        bookshelvesField: Array<string>
+        bookshelvesField: Array<string>,
     ): string {
         // The bookshelves field is untested.
         // As of Jul 2021, we only put bookshelves in meta.json in the tags field.
@@ -177,10 +177,10 @@ export class BookInfo {
         // and separate bookshelves field which already exists in parse.
         // Assumption: items in the bookshelves field will be unique.
         const bookshelvesSet: Array<string> = Array.from(
-            bookshelvesField ?? []
+            bookshelvesField ?? [],
         );
         if (tagsField) {
-            tagsField.forEach(tag => {
+            tagsField.forEach((tag) => {
                 if (tag.startsWith("bookshelf:")) {
                     const bookshelf = tag.substring("bookshelf:".length).trim();
                     if (!bookshelvesSet.includes(bookshelf)) {
@@ -193,10 +193,8 @@ export class BookInfo {
     }
 
     public setLanguage2And3(data: any): void {
-        [
-            this.bookLanguage2,
-            this.bookLanguage3
-        ] = LocalizationUtils.getNationalLanguagesFromCssStyles(data);
+        [this.bookLanguage2, this.bookLanguage3] =
+            LocalizationUtils.getNationalLanguagesFromCssStyles(data);
     }
 
     // In July 2019, Bloom Desktop added a bloomdVersion to meta.json and at the same
@@ -221,11 +219,11 @@ export class BookInfo {
                 body,
                 null,
                 XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
+                null,
             ).singleNodeValue != null;
         const motion =
             (body.getAttribute("data-bffullscreenpicture") || "").indexOf(
-                "landscape;bloomReader"
+                "landscape;bloomReader",
             ) >= 0;
         const blind =
             body.ownerDocument!.evaluate(
@@ -233,7 +231,7 @@ export class BookInfo {
                 body,
                 null,
                 XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
+                null,
             ).singleNodeValue != null;
         const isTalkingBook =
             body.ownerDocument!.evaluate(
@@ -241,7 +239,7 @@ export class BookInfo {
                 body,
                 null,
                 XPathResult.ANY_UNORDERED_NODE_TYPE,
-                null
+                null,
             ).singleNodeValue != null;
         // Note: the order of features here matches Bloom's BookMetaData.Features getter,
         // so the features will be in the same order as when output from there.
@@ -265,7 +263,7 @@ export class BookInfo {
         // Public Domain/MIT (stackoverflow)
         let d = new Date().getTime();
 
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
             // tslint:disable-next-line: no-bitwise
             const r = (d + Math.random() * 16) % 16 | 0;
             d = Math.floor(d / 16);

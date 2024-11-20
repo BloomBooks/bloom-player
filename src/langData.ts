@@ -39,41 +39,40 @@ export default class LangData {
 
     private static getLangDataByCode = (
         languageData: LangData[],
-        languageCode: string
+        languageCode: string,
     ): LangData => {
-        return languageData.filter(lang => lang.Code === languageCode)[0];
+        return languageData.filter((lang) => lang.Code === languageCode)[0];
     };
 
     private static getActiveCodeFromLangData = (
-        languageData: LangData[]
+        languageData: LangData[],
     ): string => {
         if (languageData.length < 1) {
             return "";
         }
-        return languageData.filter(lang => lang.IsSelected)[0]?.Code;
+        return languageData.filter((lang) => lang.IsSelected)[0]?.Code;
     };
 
     // Assumes caller has already verified that there is a change in code.
     public static selectNewLanguageCode = (
         languageData: LangData[],
-        newActiveLanguageCode: string
+        newActiveLanguageCode: string,
     ) => {
         const newActiveLangData = LangData.getLangDataByCode(
             languageData,
-            newActiveLanguageCode
+            newActiveLanguageCode,
         );
         if (newActiveLangData.IsSelected) {
             return; // nothing to do.
         }
         // Unselect the old one first (as a belt-and-braces guard
         // against it being the same one we are about to select)
-        const oldActiveLangCode = LangData.getActiveCodeFromLangData(
-            languageData
-        );
+        const oldActiveLangCode =
+            LangData.getActiveCodeFromLangData(languageData);
         if (oldActiveLangCode !== undefined) {
             const oldActiveLangData = LangData.getLangDataByCode(
                 languageData,
-                oldActiveLangCode
+                oldActiveLangCode,
             );
             oldActiveLangData.IsSelected = false;
         }
@@ -82,7 +81,7 @@ export default class LangData {
 
     public static createLangDataArrayFromDomAndMetadata(
         body: HTMLBodyElement,
-        metadataObject: object
+        metadataObject: object,
     ): LangData[] {
         let languageArray: LangData[] = [];
         const languageDisplayNames: object | undefined =
@@ -100,13 +99,13 @@ export default class LangData {
             body,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
         for (let idx = 0; idx < langDivs.snapshotLength; idx++) {
             const langDiv = langDivs.snapshotItem(idx) as HTMLElement;
             if (
                 langDiv.parentElement!.classList.contains(
-                    "bloom-ignoreChildrenForBookLanguageList"
+                    "bloom-ignoreChildrenForBookLanguageList",
                 )
             ) {
                 continue;
@@ -132,9 +131,9 @@ export default class LangData {
                 const langData = new LangData(
                     LangData.getBestLanguageNameFromMetaData(
                         langCode,
-                        languageDisplayNames
+                        languageDisplayNames,
                     ),
-                    langCode
+                    langCode,
                 );
                 if (LangData.hasAudioInLanguage(body, langCode)) {
                     langData.HasAudio = true;
@@ -145,7 +144,7 @@ export default class LangData {
         // Reorder based on vernacular first, then alphabetically.
         languageArray = LangData.reorderMenuItems(
             LangData.getLanguage1CodeOrEnglish(body),
-            languageArray
+            languageArray,
         );
 
         // Apply fallback information if we need it, but it's now very unlikely we'll need this
@@ -163,7 +162,7 @@ export default class LangData {
     // the rest alphabetically according to display name in current locale.
     private static reorderMenuItems(
         language1Code: string,
-        languageArray: LangData[]
+        languageArray: LangData[],
     ) {
         languageArray = languageArray.sort(LangData.compare);
 
@@ -189,7 +188,7 @@ export default class LangData {
     private static moveToBeginning(languageArray: LangData[], code: string) {
         const langDataToReorder = LangData.getLangDataByCode(
             languageArray,
-            code
+            code,
         );
         const index = languageArray.indexOf(langDataToReorder);
         // move from old index to beginning of array
@@ -210,7 +209,7 @@ export default class LangData {
             dataDivElement,
             null,
             XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
+            null,
         ).singleNodeValue;
         const language1Code: string = LangData.getLanguage1CodeOrEnglish(body);
         let name =
@@ -239,7 +238,7 @@ export default class LangData {
             dataDivElement,
             null,
             XPathResult.FIRST_ORDERED_NODE_TYPE,
-            null
+            null,
         ).singleNodeValue;
         const code =
             contentLanguage1Div === null
@@ -250,7 +249,7 @@ export default class LangData {
 
     private static getBestLanguageNameFromMetaData(
         code: string,
-        languageDisplayNames: object | undefined
+        languageDisplayNames: object | undefined,
     ): string {
         let proposedDisplayName = "";
         if (languageDisplayNames && languageDisplayNames.hasOwnProperty(code)) {
@@ -261,7 +260,7 @@ export default class LangData {
 
     private static getBestLanguageName(
         code: string,
-        proposedName: string
+        proposedName: string,
     ): string {
         const autonymHandler = AutonymHandler.getAutonymHandler();
         const langDbEntry = autonymHandler.getAutonymDataFor(code);
@@ -300,7 +299,7 @@ export default class LangData {
     // this for versions before it.
     private static hasAudioInLanguage(
         body: HTMLBodyElement,
-        isoCode: string
+        isoCode: string,
     ): boolean {
         const audioClass = "audio-sentence";
         const divsInLang = body.ownerDocument!.evaluate(
@@ -308,7 +307,7 @@ export default class LangData {
             body,
             null,
             XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null
+            null,
         );
         for (let idx = 0; idx < divsInLang.snapshotLength; idx++) {
             const mainDiv = divsInLang.snapshotItem(idx) as HTMLElement;
@@ -323,7 +322,7 @@ export default class LangData {
                 mainDiv,
                 null,
                 XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-                null
+                null,
             );
             // An audio sentence only counts as in this language if the CLOSEST
             // lang attribute matches. Sometimes mainDiv is something further out,

@@ -34,7 +34,9 @@ export class Animation {
     public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
         return [].slice
             .call(page.getElementsByClassName("bloom-imageContainer"))
-            .find(v => !!(v.dataset as IAnimation).initialrect) as HTMLElement;
+            .find(
+                (v) => !!(v.dataset as IAnimation).initialrect,
+            ) as HTMLElement;
     }
 
     public PlayAnimations: boolean; // true if animation should occur
@@ -53,7 +55,7 @@ export class Animation {
         // Note that if we are not currently animating, this.currentPage may be null or
         // obsolete. It is only used if we need to turn OFF the animation.
         window.addEventListener("orientationchange", () =>
-            window.setTimeout(() => this.adjustWrapDiv(this.currentPage), 200)
+            window.setTimeout(() => this.adjustWrapDiv(this.currentPage), 200),
         );
     }
 
@@ -135,7 +137,7 @@ export class Animation {
         }
         (stylesheet as CSSStyleSheet).insertRule(
             ".bloom-pausable {animation-play-state: paused; -webkit-animation-play-state: paused}",
-            (stylesheet as CSSStyleSheet).cssRules.length
+            (stylesheet as CSSStyleSheet).cssRules.length,
         );
         this.permanentRuleCount++; // not really permanent, but not to be messed with.
     }
@@ -148,9 +150,8 @@ export class Animation {
         if (!beforeVisible) {
             this.pageJustMadeVisible = page;
         }
-        const animatableImageContainer = Animation.getAnimatableImageContainer(
-            page
-        );
+        const animatableImageContainer =
+            Animation.getAnimatableImageContainer(page);
         if (!animatableImageContainer) {
             return; // no image to animate
         }
@@ -182,7 +183,7 @@ export class Animation {
             // Note that this copies all the classes, so we need to be careful that css based
             // on the classes works as expected with/without hidePage.
             hidePageDiv = animatableImageContainer.cloneNode(
-                true
+                true,
             ) as HTMLDivElement;
             hidePageDiv.classList.add("hidePage");
             this.animationView = hidePageDiv;
@@ -209,7 +210,7 @@ export class Animation {
                     movingDiv.style.backgroundColor = "white";
                     styleAttr.backgroundImage = "";
                     imageSrc = DomHelper.getActualUrlFromCSSPropertyValue(
-                        movingDiv.style.backgroundImage
+                        movingDiv.style.backgroundImage,
                     );
                 }
                 const image = new Image();
@@ -218,13 +219,13 @@ export class Animation {
                         // some browsers may not produce this?
                         wrapDiv!.setAttribute(
                             "data-aspectRatio",
-                            (image.width / image.height).toString()
+                            (image.width / image.height).toString(),
                         );
                     } else {
                         // can't get accurate size for some reason, use fall-back.
                         wrapDiv!.setAttribute(
                             "data-aspectRatio",
-                            (16 / 9).toString()
+                            (16 / 9).toString(),
                         );
                     }
                     this.updateWrapDivSize(wrapDiv!);
@@ -235,13 +236,13 @@ export class Animation {
                     this.insertAnimationRules(
                         page,
                         wrapDiv!,
-                        beforeVisible && page !== this.pageJustMadeVisible
+                        beforeVisible && page !== this.pageJustMadeVisible,
                     );
                     const oldStyle = wrapDiv!.getAttribute("style")!;
                     // now we can show it.
                     wrapDiv!.setAttribute(
                         "style",
-                        oldStyle.substring("visibility: hidden; ".length)
+                        oldStyle.substring("visibility: hidden; ".length),
                     );
                 });
                 // trigger loading the image (which is not used except for the code above that listens for
@@ -258,7 +259,7 @@ export class Animation {
                 const oldStyle = wrapDiv.getAttribute("style")!;
                 wrapDiv.setAttribute(
                     "style",
-                    oldStyle.substring("visibility: hidden; ".length)
+                    oldStyle.substring("visibility: hidden; ".length),
                 );
             }
 
@@ -315,7 +316,7 @@ export class Animation {
     private insertAnimationRules(
         page: HTMLElement,
         wrapDiv: HTMLElement,
-        beforeVisible: boolean
+        beforeVisible: boolean,
     ) {
         // Assign each animation div a unique number so their rules are distinct.
         // We also need a new number at least any time we're actually starting the animation, otherwise,
@@ -335,15 +336,16 @@ export class Animation {
         // sometimes has to wait until we get the aspect ratio of the image.
         const stylesheet = this.getAnimationStylesheet().sheet;
         // tslint is so surprised by this cast that it complains without the preliminary "as any"
-        const initialRectStr = ((this.animationView
-            .dataset as any) as IAnimation).initialrect;
+        const initialRectStr = (this.animationView.dataset as any as IAnimation)
+            .initialrect;
 
         //Fetch the data from the dataset and reformat into scale width and height along with offset x and y
         const initialRect = initialRectStr.split(" ");
         const initialScaleWidth = 1 / parseFloat(initialRect[2]);
         const initialScaleHeight = 1 / parseFloat(initialRect[3]);
-        const finalRect = ((this.animationView
-            .dataset as any) as IAnimation).finalrect.split(" ");
+        const finalRect = (
+            this.animationView.dataset as any as IAnimation
+        ).finalrect.split(" ");
         const finalScaleWidth = 1 / parseFloat(finalRect[2]);
         const finalScaleHeight = 1 / parseFloat(finalRect[3]);
 
@@ -357,7 +359,7 @@ export class Animation {
             (stylesheet as CSSStyleSheet).deleteRule(
                 (stylesheet as CSSStyleSheet).cssRules.length -
                     this.permanentRuleCount -
-                    1
+                    1,
             );
         }
         const wrapDivWidth = wrapDiv.clientWidth;
@@ -409,7 +411,7 @@ export class Animation {
                     " { transform-origin: 0px 0px; transform: " +
                     initialTransform +
                     ";}",
-                0
+                0,
             );
         } else {
             //Insert the keyframe animation rule with the dynamic begin and end set
@@ -421,7 +423,7 @@ export class Animation {
                     "; } to{ transform-origin: 0px 0px; transform: " +
                     finalTransform +
                     "; } }",
-                0
+                0,
             );
 
             //Insert the css for the imageView div that utilizes the newly created animation
@@ -442,7 +444,7 @@ export class Animation {
                     (this.animationDuration + 1) +
                     "s; animation-fill-mode: forwards; " +
                     "animation-timing-function: linear;}",
-                1
+                1,
             );
         }
         // Give this rule the class bloom-animate to trigger the rule created in getAnimationStylesheet,
@@ -452,7 +454,7 @@ export class Animation {
         const movingDiv = wrapDiv.childNodes[0] as HTMLElement;
         movingDiv.setAttribute(
             "class",
-            "bloom-animate bloom-pausable " + animateStyleName
+            "bloom-animate bloom-pausable " + animateStyleName,
         );
     }
 
@@ -462,7 +464,7 @@ export class Animation {
     // So we can ignore that factor.
     private updateWrapDivSize(wrapDiv: HTMLElement) {
         const imageAspectRatio = parseFloat(
-            wrapDiv.getAttribute("data-aspectRatio")!
+            wrapDiv.getAttribute("data-aspectRatio")!,
         );
         const viewWidth = this.animationView.clientWidth; // getBoundingClientRect().width;
         const viewHeight = this.animationView.clientHeight; // getBoundingClientRect().height;
@@ -484,7 +486,7 @@ export class Animation {
                     imageWidth +
                     "px; left: " +
                     (viewWidth - imageWidth) / 2 +
-                    "px"
+                    "px",
             );
         } else {
             // black bars top and bottom
@@ -496,7 +498,7 @@ export class Animation {
                     imageHeight +
                     "px; top: " +
                     (viewHeight - imageHeight) / 2 +
-                    "px"
+                    "px",
             );
         }
     }

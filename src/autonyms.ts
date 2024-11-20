@@ -51,9 +51,10 @@ export class AutonymHandler {
     }
 
     // Returns an object containing two strings: autonym and English name
-    public getAutonymDataFor(
-        code: string
-    ): { autonym: string; english: string } {
+    public getAutonymDataFor(code: string): {
+        autonym: string;
+        english: string;
+    } {
         const failure = { autonym: "", english: "" };
         //console.log("Processing code to get autonym data...");
         const threeLetterIsoCode = this.getThreeLetterIsoCode(code);

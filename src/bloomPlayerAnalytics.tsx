@@ -9,7 +9,7 @@ import { Environment } from "./Environment";
 // Note that this file is adapted from the one used by BloomLibrary2.
 /* eslint-disable */
 /* tslint:disable */
-(function() {
+(function () {
     // tslint:disable-next-line: prefer-const
     var analytics = ((window as any).analytics =
         (window as any).analytics || []);
@@ -40,10 +40,10 @@ import { Environment } from "./Environment";
                 "addSourceMiddleware",
                 "addIntegrationMiddleware",
                 "setAnonymousId",
-                "addDestinationMiddleware"
+                "addDestinationMiddleware",
             ];
-            analytics.factory = function(e: any) {
-                return function() {
+            analytics.factory = function (e: any) {
+                return function () {
                     var t = Array.prototype.slice.call(arguments);
                     t.unshift(e);
                     analytics.push(t);
@@ -54,7 +54,7 @@ import { Environment } from "./Environment";
                 var t = analytics.methods[e];
                 analytics[t] = analytics.factory(t);
             }
-            analytics.load = function(e: any, t: any) {
+            analytics.load = function (e: any, t: any) {
                 var n = document.createElement("script");
                 n.type = "text/javascript";
                 n.async = !0;

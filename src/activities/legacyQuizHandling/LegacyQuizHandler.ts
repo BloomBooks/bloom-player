@@ -27,25 +27,24 @@ export class LegacyQuestionHandler {
         urlPrefix,
         body,
         pageClass,
-        finished: () => void
+        finished: () => void,
     ) {
         const urlOfQuestionsFile = urlPrefix + "/questions.json";
         axios
             .get(urlOfQuestionsFile)
-            .then(qfResult => {
+            .then((qfResult) => {
                 const newPages = OldQuestionsConverter.convert(
                     qfResult.data,
-                    pageClass
+                    pageClass,
                 );
-                const firstBackMatterPage = body.getElementsByClassName(
-                    "bloom-backMatter"
-                )[0];
+                const firstBackMatterPage =
+                    body.getElementsByClassName("bloom-backMatter")[0];
                 for (let i = 0; i < newPages.length; i++) {
                     this.needQuizCss = true;
                     // insertAdjacentElement is tempting, but not in FF45.
                     firstBackMatterPage.parentElement!.insertBefore(
                         newPages[i],
-                        firstBackMatterPage
+                        firstBackMatterPage,
                     );
                 }
                 finished();

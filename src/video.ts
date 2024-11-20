@@ -6,7 +6,7 @@ import {
     setCurrentPlaybackMode,
     PlaybackMode,
     hideVideoError,
-    showVideoError
+    showVideoError,
 } from "./narration";
 import { getPlayIcon } from "./playIcon";
 import { getPauseIcon } from "./pauseIcon";
@@ -36,7 +36,7 @@ export class Video {
     private wrapVideoIcon(
         videoElement: HTMLVideoElement,
         icon: HTMLElement,
-        iconClass: string
+        iconClass: string,
     ): HTMLElement {
         const wrapper = document.createElement("div");
         wrapper.classList.add("videoControlContainer");
@@ -55,7 +55,7 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
-        this.getVideoElements().forEach(videoElement => {
+        this.getVideoElements().forEach((videoElement) => {
             videoElement.removeAttribute("controls");
             videoElement.addEventListener("click", this.handleVideoClick);
             const playButton = this.wrapVideoIcon(
@@ -66,19 +66,19 @@ export class Video {
                 // React for anything except to make use of an image which unfortunately is only
                 // available by default as a component.
                 getPlayIcon("#ffffff"),
-                "videoPlayIcon"
+                "videoPlayIcon",
             );
             playButton.addEventListener("click", this.handlePlayClick);
             const pauseButton = this.wrapVideoIcon(
                 videoElement,
                 getPauseIcon("#ffffff"),
-                "videoPauseIcon"
+                "videoPauseIcon",
             );
             pauseButton.addEventListener("click", this.handlePauseClick);
             const replayButton = this.wrapVideoIcon(
                 videoElement,
                 getReplayIcon("#ffffff"),
-                "videoReplayIcon"
+                "videoReplayIcon",
             );
             replayButton.addEventListener("click", this.handleReplayClick);
 
@@ -131,8 +131,8 @@ export class Video {
 
     private static getVideoElements(page: HTMLElement): HTMLVideoElement[] {
         return Array.from(page.getElementsByClassName("bloom-videoContainer"))
-            .map(container => container.getElementsByTagName("video")[0])
-            .filter(video => video !== undefined);
+            .map((container) => container.getElementsByTagName("video")[0])
+            .filter((video) => video !== undefined);
     }
     private getVideoElements(): HTMLVideoElement[] {
         return Video.getVideoElements(this.currentPage);
@@ -193,7 +193,7 @@ export class Video {
         if (this.currentVideoElement) {
             // get subset of allVideoElements starting with currentVideoElement
             const startIndex = allVideoElements.indexOf(
-                this.currentVideoElement
+                this.currentVideoElement,
             );
             videoElements = allVideoElements.slice(startIndex);
         }
@@ -220,8 +220,8 @@ export class Video {
         // This also cleans up after the last one finishes.
         if (this.currentPage) {
             Array.from(
-                this.currentPage.getElementsByClassName("playing")
-            ).forEach(element => element.classList.remove("playing"));
+                this.currentPage.getElementsByClassName("playing"),
+            ).forEach((element) => element.classList.remove("playing"));
         }
         const videoElement = this.currentVideoElement;
         if (!videoElement) {
@@ -234,7 +234,7 @@ export class Video {
         ) {
             // It's playing, and we're about to stop it...report how long it's been going.
             this.reportVideoPlayed(
-                videoElement.currentTime - this.currentVideoStartTime
+                videoElement.currentTime - this.currentVideoStartTime,
             );
         }
         videoElement?.closest(".bloom-videoContainer")?.classList.add("paused");
@@ -260,25 +260,25 @@ export class Video {
     // Note, there is a very similar function in narration.ts. It would be nice to combine them, but
     // this one must be here and must be part of the Video class so it can handle play/pause, analytics, etc.
     public playAllVideo(elements: HTMLVideoElement[]) {
-        Array.from(
-            this.currentPage.getElementsByClassName("playing")
-        ).forEach(element => element.classList.remove("playing"));
+        Array.from(this.currentPage.getElementsByClassName("playing")).forEach(
+            (element) => element.classList.remove("playing"),
+        );
         if (elements.length === 0) {
             this.currentVideoElement = undefined;
             this.isPlayingSingleVideo = false;
             if (this.PageVideoComplete) {
                 this.PageVideoComplete.raise({
                     page: this.currentPage,
-                    videos: this.getVideoElements()
+                    videos: this.getVideoElements(),
                 });
             }
             return;
         }
 
         // Remove the paused class from all videos on the page. We're playing.
-        Array.from(
-            this.currentPage.getElementsByClassName("paused")
-        ).forEach(element => element.classList.remove("paused"));
+        Array.from(this.currentPage.getElementsByClassName("paused")).forEach(
+            (element) => element.classList.remove("paused"),
+        );
 
         const video = elements[0];
 
@@ -310,7 +310,7 @@ export class Video {
                         "ended",
                         () => {
                             this.reportVideoPlayed(
-                                video.currentTime - this.currentVideoStartTime
+                                video.currentTime - this.currentVideoStartTime,
                             );
                             // reset it, to make it obvious it can be replayed.
                             // Note: if we decide to show a play (or any) button here, we should do it only if
@@ -319,10 +319,10 @@ export class Video {
                             video.currentTime = 0;
                             this.playAllVideo(elements.slice(1));
                         },
-                        { once: true }
+                        { once: true },
                     );
                 })
-                .catch(reason => {
+                .catch((reason) => {
                     console.error("Video play failed", reason);
                     showVideoError(video);
                     this.playAllVideo(elements.slice(1));
