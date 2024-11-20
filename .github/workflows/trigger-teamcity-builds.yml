@@ -8,10 +8,8 @@ on:
     workflow_dispatch: # Allows manual triggering
 
 jobs:
-    trigger-teamcity:
+    inputs:
         runs-on: ubuntu-latest
-        # Run if manually triggered or if a new release was published
-        if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
         steps:
             - name: Workflow Inputs
               run: |
@@ -19,6 +17,11 @@ jobs:
                   echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
                   echo "New release published: ${{ github.event.workflow_run.outputs.new_release_published }}"
 
+    trigger-teamcity:
+        runs-on: ubuntu-latest
+        # Run if manually triggered or if a new release was published
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.outputs.new_release_published == 'true') }}
+        steps:
             - name: Trigger TeamCity Build for alpha.bloomlibrary.org
               uses: fjogeleit/http-request-action@v1
               with:
