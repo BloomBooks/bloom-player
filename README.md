@@ -123,7 +123,7 @@ For more information, see README-advanced.md
 
 ### Running unit tests
 
-Unit tests have been written for some code which processes inputs to produce output.  These tests are run by `yarn test`.  Test files are indicated by the suffix `.test.ts`.  They generally exist in the same folder as the files containing the code being tested.
+To run unit tests use `yarn test`. This will run all "*.test.ts", which should be collocated with the thing being tested.
 
 ## License
 
