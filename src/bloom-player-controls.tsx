@@ -32,7 +32,7 @@ import { withStyles, createTheme } from "@material-ui/core/styles";
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./narration";
-import { roundToNearestK } from "./utilities/mathUtils";
+import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -1055,6 +1055,7 @@ function getExtraButtons(): IExtraButton[] {
         return [];
     }
 }
+
 // a bit goofy...we need some way to get react called when this code is loaded into an HTML
 // document (as part of bloomPlayerControlBundle.js). When that module is loaded, any
 // not-in-a-class code gets called. So we arrange in bloom-player-root.ts to call this
@@ -1068,7 +1069,10 @@ export function InitBloomPlayerControls() {
         "motion",
     )! as autoPlayType;
     const startPageString = getQueryStringParamAndUnencode("start-page");
-    const startPage = startPageString ? parseInt(startPageString) : undefined;
+    const decimalStartPageString = normalizeDigits(startPageString);
+    const startPage = decimalStartPageString
+        ? parseInt(decimalStartPageString)
+        : undefined;
     const autoplayCountString =
         getQueryStringParamAndUnencode("autoplay-count");
     const autoplayCount = startPageString
