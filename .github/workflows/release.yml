@@ -9,8 +9,6 @@ on:
 jobs:
     build-test-release:
         runs-on: ubuntu-latest
-        outputs:
-            new_release_published: ${{ steps.semantic_release.outputs.new_release_published }}
 
         steps:
             - name: Checkout code
@@ -53,6 +51,11 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-            - name: Output
-              run: |
-                  echo "New Release Published: ${{ steps.semantic_release.outputs.new_release_published }}"
+            - name: Trigger TeamCity builds if release published
+              if: steps.semantic_release.outputs.new_release_published == 'true'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      github.rest.actions.createWorkflowDispatch({
+                        workflow_id: 'trigger-teamcity-builds.yml'
+                      })
