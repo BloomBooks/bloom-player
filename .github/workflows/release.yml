@@ -57,5 +57,8 @@ jobs:
               with:
                   script: |
                       github.rest.actions.createWorkflowDispatch({
-                        workflow_id: 'trigger-teamcity-builds.yml'
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        workflow_id: 'trigger-teamcity-builds.yml',
+                        ref: context.ref
                       })
