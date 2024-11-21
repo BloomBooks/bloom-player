@@ -101,7 +101,7 @@ Run `yarn` to get the dependencies.
 
 Either, run `yarn storybook` (which has multiple books),
 
-or run `yarn start` (which will use `index-for-developing.html`).
+or run `yarn dev` (which will use `index-for-developing.html`).
 
 Note: you need to have `chrome` on your path.
 
@@ -111,7 +111,7 @@ See package.json for other scripts.
 
 Depending on what book you are loading, if the book is on bloomlibrary.org or dev.bloomlibrary.org, CORS headers there will normally prevent your local bloom-player from loading the book, because it is not in the right domain. To get around this, you need to run your browser in a special low-security mode.
 
-Both `yarn storybook` and `yarn start` do this for you.
+Both `yarn storybook` and `yarn dev` do this for you.
 
 ### Testing with a book hosted by Bloom
 
@@ -120,6 +120,10 @@ Note that while testing, one option is to run Bloom, select your book, go to the
     <iframe src="bloomplayer.htm?url=http://localhost:8089/bloom/C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle"/>
 
 For more information, see README-advanced.md
+
+### Running unit tests
+
+Unit tests have been written for some code which processes inputs to produce output.  These tests are run by `yarn test`.  Test files are indicated by the suffix `.test.ts`.  They generally exist in the same folder as the files containing the code being tested.
 
 ## License
 
