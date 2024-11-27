@@ -33,6 +33,7 @@ import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./narration";
 import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
+import { fixNiceScrollOffsets } from "./scrolling";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -603,7 +604,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
             actualPageHeight / scaleFactor
         }px; overflow: hidden;}`;
         //alert("scale page to window completed");
-        BloomPlayerCore.fixNiceScrollOffsets(page, scaleFactor);
+        fixNiceScrollOffsets(page, scaleFactor);
         if (!pageScaled) {
             setPageScaled(true);
         }
