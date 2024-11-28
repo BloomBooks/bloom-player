@@ -193,7 +193,7 @@ export function addScrollbarsToPage(bloomPage: Element): void {
                                     cursoropacitymax: 0.1,
                                     cursorborderradius: "12px", // Make the corner more rounded than the 5px default.
                                 });
-                                this.setupSpecialMouseTrackingForNiceScroll(
+                                setupSpecialMouseTrackingForNiceScroll(
                                     bloomPage,
                                 );
                                 scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
@@ -229,8 +229,8 @@ export function ComputeNiceScrollOffsets(scale: number, elt: HTMLElement) {
 }
 
 export function setupSpecialMouseTrackingForNiceScroll(bloomPage: Element) {
-    bloomPage.removeEventListener("pointerdown", this.listenForPointerDown); // only want one!
-    bloomPage.addEventListener("pointerdown", this.listenForPointerDown);
+    bloomPage.removeEventListener("pointerdown", listenForPointerDown); // only want one!
+    bloomPage.addEventListener("pointerdown", listenForPointerDown);
     // The purpose of this is to prevent Swiper causing the page to be moved or
     // flicked when the user is trying to scroll on the page.  See BL-14079.
     for (const eventName of ["pointermove", "pointerup"]) {

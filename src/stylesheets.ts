@@ -10,7 +10,7 @@ export async function assembleStyleSheets(
     doc: HTMLHtmlElement,
     urlPrefix: string,
     bookInfo: BookInfo,
-    getLegacyQuizCssPromise: () => AxiosPromise<any> | undefined,
+    getLegacyQuizCssPromise: () => AxiosPromise<any> | null,
 ): Promise<string> {
     makeAndikaStylesheet();
     const linkElts = doc.ownerDocument!.evaluate(
