@@ -21,11 +21,7 @@ export default defineConfig(({ command }) => {
                     assetFileNames: "[name]-[hash].[ext]",
                 },
             },
-            target: "esnext", // review: did this for the dynamic import
-            dynamicImportVarsOptions: {
-                warnOnError: true,
-                exclude: [],
-            },
+            sourcemap: true, // Generates separate source map files
         },
 
         server: {
