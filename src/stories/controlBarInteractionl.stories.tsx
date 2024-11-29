@@ -15,8 +15,6 @@ const Template: StoryFn<typeof ControlBar> = (args) => (
     <ControlBar
         {...args}
         visible={true}
-        paused
-        showPlayPause
         playLabel="Grind On"
         bookLanguages={[
             new LangData("Sokoro", "sok"),
@@ -24,7 +22,6 @@ const Template: StoryFn<typeof ControlBar> = (args) => (
             new LangData("frenchy", "fr"),
         ]}
         activeLanguageCode="fr"
-        canGoBack={true}
         preferredLanguages={["en", "fr"]}
     />
 );
