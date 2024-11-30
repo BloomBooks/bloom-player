@@ -19,15 +19,9 @@ const config: StorybookConfig = {
         options: {},
     },
     viteFinal: (config, options) => {
-        // setup the same proxy that we have in "vite dev" to avoid CORS issues
-        const server = {
-            ...config.server,
-            proxy: {
-                ...proxy,
-            },
-        };
-
-        return { ...config, server };
+        // setup the same proxy that we have in "vite dev" to avoid CORS issues. (THIS IS NOT WORKING)
+        // Note that it requires replacing the "https://s3.amazonaws.com/" with "s3/"
+        return { ...config, server: { ...config.server, proxy } };
     },
 };
 export default config;
