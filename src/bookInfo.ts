@@ -21,7 +21,7 @@ export class BookInfo {
     public hasAppearanceSystem: boolean;
 
     private brandingProjectName = "";
-    private bookInstanceId = "";
+    public bookInstanceId = "";
     private bookTitle = "";
     private originalTitle = "";
     private copyrightHolder = "";

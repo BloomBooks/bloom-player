@@ -271,6 +271,8 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // It might be a good thing to combine them somehow.
     private startingUpSwiper = true;
 
+    private pageJumpHistory: { bookId: string; pageId: string }[] = [];
+
     constructor(props: IProps, state: IState) {
         super(props, state);
         // Make this player (currently always the only one) the recipient for
@@ -379,45 +381,69 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    handleDocumentLevelClick(e: any) {
-        const hrefValue = (e.target as HTMLElement)?.attributes["href"]
-            ?.value as string;
-        if (hrefValue) {
-            if (hrefValue.startsWith("bloomnav://")) {
-                // This is a link to a page in another book. We need to send a message to the host.
-                this.handleBloomNavLink(hrefValue, e);
-            }
+    private parseBloomUrl(url: URL) {
+        // the format is "bloomnav://book/BOOKID#PAGEID" where the page id is optional
+        const path = url.pathname.split("/");
+        const bookId = path[2];
+        const pageId = path[3];
+        return { bookId, pageId };
+    }
+
+    private handleDocumentLevelClick(e: any) {
+        const linkElement = (e.target as HTMLElement).closest(
+            "[href], [data-href]",
+        );
+        if (!linkElement) return;
+        e.preventDefault(); // don't let a link click become a drag
+        e.stopPropagation();
+
+        const href: string =
+            linkElement.attributes["href"].nodeValue ||
+            linkElement.attributes["data-href"];
+
+        if (href.startsWith("http://") || href.startsWith("https://")) {
+            // This is a generic external link. We open it in a new window or tab.
+            // (The host possibly could intercept this and open a browser to handle it.)
+            window.open(href, "_blank", "noreferrer");
             return;
         }
-        const targetElement = (e.target as HTMLElement).closest(
-            "[data-href]",
-        ) as HTMLElement;
-        if (targetElement && targetElement.attributes["data-href"]) {
-            const href = targetElement.attributes["data-href"].value as string;
-            if (href) {
-                if (href.startsWith("#")) {
-                    // This is a link to a page in the book.  We can handle going there.
-                    const pageId = href.substring(1);
-                    const pageIndex = this.state.pageIdToIndexMap[pageId];
-                    if (pageIndex !== undefined) {
-                        this.swiperInstance?.slideTo(pageIndex);
-                    }
-                    e.preventDefault();
-                    e.stopPropagation();
-                } else if (href.startsWith("bloomnav://")) {
-                    // This is a link to a page in another book. We need to send a message to the host.
-                    this.handleBloomNavLink(href, e);
-                } else if (
-                    href.startsWith("http://") ||
-                    href.startsWith("https://")
-                ) {
-                    // This is a generic external link. We open it in a new window or tab.
-                    // (The host possibly could intercept this and open a browser to handle it.)
-                    window.open(href, "_blank", "noreferrer");
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
+        let targetBookId: string | undefined = undefined;
+        let targetPageId: string | undefined = undefined;
+        let targetPageIndex: number | undefined = undefined;
+
+        if (href.startsWith("/book/")) {
+            const target = this.parseBloomUrl(new URL(href));
+            targetBookId = target.bookId;
+            targetPageId = target.pageId;
+
+            if (target.bookId === this.bookInfo.bookInstanceId) {
+                // link within this book, we can forget the book and just use the page
+                targetBookId = undefined;
             }
+        } else if (href.startsWith("#")) {
+            targetPageId = href.substring(1);
+        }
+        if (targetPageId && targetPageId === "cover") {
+            targetPageIndex = 0;
+        } else {
+            targetPageIndex = targetPageId
+                ? this.state.pageIdToIndexMap[targetPageId]
+                : undefined;
+        }
+
+        if (targetBookId) {
+            // link to an external book, the container app (RAB, Bloom Reader, Blorg, etc.) will have to handle it
+            // by loading a new instance of the player with the new book. The container app is
+            // responsible for keeping its own history of book jumps.
+
+            return;
+        }
+        if (targetPageIndex !== undefined) {
+            this.pageJumpHistory.push({
+                bookId: this.bookInfo.bookInstanceId,
+                pageId: "cover", // todo current pageId
+            });
+            this.swiperInstance?.slideTo(targetPageIndex);
         }
     }
 
@@ -2244,9 +2270,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             dangerouslySetInnerHTML={{
                                                 __html: slide,
                                             }}
-                                            ref={(div) =>
-                                                this.fixInternalHyperlinks(div)
-                                            }
+                                            // ref={(div) =>
+                                            //     this.fixInternalHyperlinks(div)
+                                            // }
                                         />
                                     </>
                                 ) : (
@@ -2356,37 +2382,37 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Other internal links won't work and are disabled; external ones are forced to
     // open a new tab as the results of trying to display a web page in the bloom-player
     // iframe or webview can be confusing.
-    private fixInternalHyperlinks(div: HTMLDivElement | null): void {
-        if (!div) {
-            return;
-        }
-        const anchors = Array.from(div.getElementsByTagName("a") ?? []);
-        anchors.forEach((a) => {
-            const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
-            if (href?.startsWith("#")) {
-                const pageId = href.substring(1);
-                const pageNum = this.state.pageIdToIndexMap[pageId];
-                if (pageNum !== undefined) {
-                    a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
-                    a.onclick = (ev) => {
-                        ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
-                        ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
-                        this.swiperInstance.slideTo(pageNum);
-                    };
-                } else {
-                    // no other kind of internal link makes sense, so let them be ignored.
-                    a.onclick = (ev) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    };
-                }
-            } else {
-                // an external link. It will likely confuse things to follow it inside whatever iframe or webview
-                // bloom player may be running in, so encourage opening a new tab or similar action.
-                a.setAttribute("target", "blank");
-            }
-        });
-    }
+    // private fixInternalHyperlinks(div: HTMLDivElement | null): void {
+    //     if (!div) {
+    //         return;
+    //     }
+    //     const anchors = Array.from(div.getElementsByTagName("a") ?? []);
+    //     anchors.forEach((a) => {
+    //         const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
+    //         if (href?.startsWith("#")) {
+    //             const pageId = href.substring(1);
+    //             const pageNum = this.state.pageIdToIndexMap[pageId];
+    //             if (pageNum !== undefined) {
+    //                 a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
+    //                 a.onclick = (ev) => {
+    //                     ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
+    //                     ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
+    //                     this.swiperInstance.slideTo(pageNum);
+    //                 };
+    //             } else {
+    //                 // no other kind of internal link makes sense, so let them be ignored.
+    //                 a.onclick = (ev) => {
+    //                     ev.preventDefault();
+    //                     ev.stopPropagation();
+    //                 };
+    //             }
+    //         } else {
+    //             // an external link. It will likely confuse things to follow it inside whatever iframe or webview
+    //             // bloom player may be running in, so encourage opening a new tab or similar action.
+    //             a.setAttribute("target", "blank");
+    //         }
+    //     });
+    // }
 
     // What we need to do when the page narration is completed (if autoadvance, go to next page).
     public handlePageNarrationComplete = (page: HTMLElement | undefined) => {
