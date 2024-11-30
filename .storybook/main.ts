@@ -8,6 +8,7 @@ const proxy = viteConfigFn({
 }).server!.proxy;
 const config: StorybookConfig = {
     stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+    staticDirs: ["../dist"], // need to get at bloomplayer.htm. Tests that need this will need to be doing a build first.
     addons: [
         "@storybook/addon-links",
         "@storybook/addon-essentials",
