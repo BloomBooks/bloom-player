@@ -21,7 +21,22 @@ const config: StorybookConfig = {
     viteFinal: (config, options) => {
         // setup the same proxy that we have in "vite dev" to avoid CORS issues. (THIS IS NOT WORKING)
         // Note that it requires replacing the "https://s3.amazonaws.com/" with "s3/"
-        return { ...config, server: { ...config.server, proxy } };
+        const updatedProxy = {
+            ...proxy,
+            "/book/2c1b71ac-f399-446d-8398-e61a8efd4e83": {
+                target: "http://localhost:6006",
+                rewrite: (path) => {
+                    console.log("[Proxy Debug] Incoming path:", path);
+                    const rewrittenPath = path.replace(
+                        "/book/2c1b71ac-f399-446d-8398-e61a8efd4e83",
+                        "/testBooks/multibook-target1",
+                    );
+                    console.log("[Proxy Debug] Rewritten path:", rewrittenPath);
+                    return rewrittenPath;
+                },
+            },
+        };
+        return { ...config, server: { ...config.server, proxy: updatedProxy } };
     },
 };
 export default config;

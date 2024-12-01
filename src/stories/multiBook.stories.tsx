@@ -7,7 +7,11 @@ const IframeMessageListener = ({ bookUrl, bookPageIndex }) => {
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
-            // Validate origin if needed
+            // if (event.data.messageType === "navigate" && event.data.url === "/book/1234") {
+            //     if (iframeRef.current) {
+            //         iframeRef.current.src = `/bloomplayer.htm?url=${encodeURIComponent("testBooks/multibook-target1/multibook-target1.htm")}`;
+            //     }
+            // }
             console.log("Received message:", event.data);
         };
 
@@ -28,7 +32,7 @@ export default {
     title: "MultiBook",
     component: IframeMessageListener,
     args: {
-        bookUrl: "testBooks/multibook-index/multibook-index.htm",
+        bookUrl: "testBooks/multibook-index/index.htm",
         bookPageIndex: "4",
     },
     argTypes: {

@@ -215,6 +215,8 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
+
+    bookUrl: string;
 }
 
 interface IPlayerPageOptions {
@@ -275,6 +277,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     constructor(props: IProps, state: IState) {
         super(props, state);
+        this.state.bookUrl = props.url;
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
@@ -295,6 +298,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
         inPauseForced: false,
+        bookUrl: "",
     };
 
     // The book url we were passed as a URL param.
@@ -381,9 +385,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private parseBloomUrl(url: URL) {
+    private parseBloomUrl(url: string) {
         // the format is "bloomnav://book/BOOKID#PAGEID" where the page id is optional
-        const path = url.pathname.split("/");
+        const path = url.split("/");
         const bookId = path[2];
         const pageId = path[3];
         return { bookId, pageId };
@@ -412,7 +416,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         let targetPageIndex: number | undefined = undefined;
 
         if (href.startsWith("/book/")) {
-            const target = this.parseBloomUrl(new URL(href));
+            const target = this.parseBloomUrl(href);
             targetBookId = target.bookId;
             targetPageId = target.pageId;
 
@@ -435,7 +439,10 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // link to an external book, the container app (RAB, Bloom Reader, Blorg, etc.) will have to handle it
             // by loading a new instance of the player with the new book. The container app is
             // responsible for keeping its own history of book jumps.
-
+            this.setState({
+                // todo: what about the page part?
+                bookUrl: `/book/${targetBookId}/index.htm`,
+            });
             return;
         }
         if (targetPageIndex !== undefined) {
@@ -445,19 +452,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             });
             this.swiperInstance?.slideTo(targetPageIndex);
         }
-    }
-
-    private handleBloomNavLink(href: string, e: any) {
-        const page = (e.target as HTMLElement).closest(".bloom-page");
-        sendMessageToHost({
-            messageType: "bloomnav",
-            href: href,
-            // used for backreference to the page that initiated the navigation
-            sourceUrl: this.sourceUrl,
-            sourcePageNumber: page?.getAttribute("data-page-number"),
-        });
-        e.preventDefault();
-        e.stopPropagation();
     }
 
     private handleWindowFocus() {
@@ -1230,7 +1224,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // a collection of things for cleaning up the url
     private preprocessUrl(): string {
-        let url = this.props.url;
+        let url = this.state.bookUrl;
         if (url === undefined || "" === url.trim()) {
             throw new Error(
                 "The url parameter was empty. It should point to the url of a book.",
