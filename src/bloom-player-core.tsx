@@ -385,11 +385,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    private parseBloomUrl(url: string) {
-        // the format is "bloomnav://book/BOOKID#PAGEID" where the page id is optional
-        const path = url.split("/");
-        const bookId = path[2];
-        const pageId = path[3];
+    private parseTargetBookUrl(url: string) {
+        // the format is "/book/BOOKID#PAGEID" where the page id is optional
+        const bloomUrl = new URL(url, window.location.origin);
+        const bookId = bloomUrl.pathname.replace("/book/", "");
+        const pageId = bloomUrl.hash.replace("#", "");
         return { bookId, pageId };
     }
 
@@ -416,7 +416,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         let targetPageIndex: number | undefined = undefined;
 
         if (href.startsWith("/book/")) {
-            const target = this.parseBloomUrl(href);
+            const target = this.parseTargetBookUrl(href);
             targetBookId = target.bookId;
             targetPageId = target.pageId;
 
@@ -572,7 +572,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Note: In the future, we are thinking of limiting to
                 // a few domains (localhost, dev.blorg, blorg).
                 // Note: we don't currently look for .html files, only .htm. That's what
-                // Bloom has consistently created, both in .bloomd files and in
+                // Bloom has consistently created, both in the old .bloomd files, in .bloompub files, and in
                 // book folders, so it doesn't seem worth complicating the code
                 // to look for the other as well.
                 const slashIndex = this.sourceUrl.lastIndexOf("/");

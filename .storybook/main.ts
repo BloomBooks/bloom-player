@@ -36,9 +36,9 @@ const config: StorybookConfig = {
                         "/book/2c1b71ac-f399-446d-8398-e61a8efd4e83",
                         "/testBooks/multibook-target1",
                     );
-                    // console.log(
-                    //     `[Storybook Proxy] ${path} --> ${rewrittenPath}`,
-                    // );
+                    console.log(
+                        `[Storybook Proxy] ${path} --> ${rewrittenPath}`,
+                    );
                     return rewrittenPath;
                 },
             },
