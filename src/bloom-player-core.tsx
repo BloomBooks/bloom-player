@@ -1907,9 +1907,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // then add the stylesheet contents we just retrieved
             results.forEach((result) => {
                 if (result && result.data) {
-                    console.log(
-                        "Loaded stylesheet: " + JSON.stringify(result.config),
-                    );
+                    // console.log(
+                    //     "Loaded stylesheet: " + JSON.stringify(result.config),
+                    // );
                     combinedStyle += result.data;
 
                     // It is somewhat awkward to do this in a method called assembleStyleSheets,
@@ -2041,7 +2041,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // },
             getSwiper: (s) => {
                 this.swiperInstance = s;
-                if (this.metaDataObject.isRtl && this.swiperInstance) {
+                if (this.metaDataObject?.isRtl && this.swiperInstance) {
                     // These kluges cause swiper to display the pages in reverse order.
                     // We are digging deep into the current implementation of Swiper; this might
                     // not work with any other version.

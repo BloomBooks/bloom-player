@@ -33,7 +33,7 @@ export default {
     component: IframeMessageListener,
     args: {
         bookUrl: "testBooks/multibook-index/index.htm",
-        bookPageIndex: "4",
+        bookPageIndex: "1",
     },
     argTypes: {
         bookUrl: {
