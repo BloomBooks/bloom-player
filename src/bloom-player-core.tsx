@@ -625,6 +625,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         },
                     );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
+                console.log("urlOfBookHtmlFile", urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise, distributionPromise])
                     .then((result) => {

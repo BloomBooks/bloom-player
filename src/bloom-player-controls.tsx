@@ -67,7 +67,7 @@ export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     // in production, this is just "". But during testing, we need
     // the server to be able to serve sample books from a directory that isn't in dist/,
     // e.g. src/activity-starter/
-    locationOfDistFolder: string;
+    locationOfDistFolder: string; // TODO can we get rid of this and us a proxy? See .storybook/main.ts
     extraButtons?: IExtraButton[];
     // Hide the next/previous page buttons (mainly useful in autoplay='yes' scenarios like
     // audio/video preview and recording)
