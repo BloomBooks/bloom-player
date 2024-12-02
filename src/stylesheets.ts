@@ -1,0 +1,279 @@
+import axios, { AxiosPromise } from "axios";
+import { BookInfo } from "./bookInfo";
+
+// Assemble all the style rules from all the stylesheets the book contains or references.
+// When the async completes, the result will be set as our state.styles with setState().
+// Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
+// of the main document, since it contains @font-face declarations that don't work
+// in the <scoped> element.
+export async function assembleStyleSheets(
+    doc: HTMLHtmlElement,
+    urlPrefix: string,
+    bookInfo: BookInfo,
+    getLegacyQuizCssPromise: () => AxiosPromise<any> | null,
+): Promise<string> {
+    makeAndikaStylesheet();
+    const linkElts = doc.ownerDocument!.evaluate(
+        ".//link[@href and @type='text/css']",
+        doc,
+        null,
+        XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+        null,
+    );
+    const promises: Array<AxiosPromise<any>> = [];
+    for (let i = 0; i < linkElts.snapshotLength; i++) {
+        const link = linkElts.snapshotItem(i) as HTMLElement;
+        const href = link.getAttribute("href");
+        const fullHref = urlPrefix + "/" + href;
+        if (fullHref.endsWith("/fonts.css")) {
+            makeFontStylesheet(fullHref);
+        } else {
+            promises.push(axios.get(fullHref));
+            if (fullHref.endsWith("/appearance.css")) {
+                bookInfo.hasAppearanceSystem = true;
+            }
+        }
+    }
+    const p = getLegacyQuizCssPromise();
+    if (p) {
+        promises.push(p);
+    }
+
+    try {
+        const results = await axios.all(
+            promises.map((promise) =>
+                promise.catch(
+                    // if one stylesheet doesn't exist or whatever, keep going
+                    () => undefined,
+                ),
+            ),
+        );
+
+        let combinedStyle = "";
+
+        // start with embedded styles (typically before links in a bloom doc...)
+        const styleElts = doc.ownerDocument!.evaluate(
+            ".//style[@type='text/css']",
+            doc,
+            null,
+            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+            null,
+        );
+        for (let k = 0; k < styleElts.snapshotLength; k++) {
+            const styleElt = styleElts.snapshotItem(k) as HTMLElement;
+            combinedStyle += styleElt.innerText;
+        }
+
+        // then add the stylesheet contents we just retrieved
+        results.forEach((result) => {
+            if (result && result.data) {
+                console.log(
+                    "Loaded stylesheet: " + JSON.stringify(result.config),
+                );
+                combinedStyle += result.data;
+
+                // It is somewhat awkward to do this in a method called assembleStyleSheets,
+                // but this is the best way to access the information currently.
+                // See further comments in getNationalLanguagesFromCssStyles.
+                //
+                // settingsCollectionStyles.css was replaced with defaultLangStyles.css.
+                // We have to check for both for older books.
+                if (
+                    result.config!.url!.endsWith("/defaultLangStyles.css") ||
+                    result.config!.url!.endsWith(
+                        "/settingsCollectionStyles.css",
+                    )
+                ) {
+                    bookInfo.setLanguage2And3(result.data);
+                }
+            }
+        });
+
+        // A ":root" selector doesn't work in this scoped css context.
+        // Change all ":root" references to ".bloomPlayer-page", which is the level just above .bloom-page.
+        // We're using this instead of .bloom-page directly so that a selector like `:root .bloom-page` would still work.
+        combinedStyle = combinedStyle.replace(/:root/g, ".bloomPlayer-page");
+        return combinedStyle;
+    } catch (err) {
+        throw err;
+    }
+}
+
+// Make a <style> element in the head of the document containing an adjusted version
+// of the "fonts.css" file shipped with the book, if any.
+// This file typically contains @font-face declarations, which don't work when embedded
+// in the <scoped> element we make for each page contents. So we need the rules to
+// be placed in the <head> of the main document. (We don't want to do this with most
+// rules because rules from a book, especially from a customStyles file, could mess up
+// bloom-player itself.)
+// Since the root file, typically bloomPlayer.htm, is typically not at the same location
+// as the book files, the simple URLs it contains don't work, since they assume fonts.css
+// is loaded as part of a file in the same location as the font files. So we modify
+// the URLs in the file to be relative to the book folder.
+// There are possible dangers here...if someone got something malicious into fonts.css
+// it could at least mess up our player...but only for that one book, and in any case,
+// fonts.css is generated by the harvester so it shouldn't be possible for anyone without
+// harvester credentials to post a bad version of it.
+// Enhance: currently we're just looking for the (typically ttf) font uploaded as part
+// of the book if embedding is permitted. Eventually, we might want to try first for
+// a corresponding woff font in a standard location. We may even be able to pay to
+// provide some fonts there for book previewing that are NOT embeddable.
+function makeFontStylesheet(href: string): void {
+    axios.get(href).then((result) => {
+        let stylesheet = document.getElementById(
+            "fontCssStyleSheet",
+        ) as HTMLStyleElement;
+        if (!stylesheet) {
+            stylesheet = document.createElement("style");
+            document.head.appendChild(stylesheet);
+            stylesheet.setAttribute("id", "fontCssStyleSheet");
+        }
+        const prefix = href.substring(0, href.length - "/fonts.css".length);
+        stylesheet.innerText = result.data.replace(
+            // This is so complex because at one time we weren't adding the
+            // quotes around the original url. So, now we handle no quotes,
+            // single quotes, and double quotes. Note that we also have to
+            // handle possible parentheses in the file name.
+            /src:url\(['"]?(.*\.[^\)'"]*)['"]?\)/g,
+            "src:url('" + prefix + "/$1')",
+        );
+    });
+    // no catch clause...if there's no fonts.css, we should never get a 'then' and
+    // don't need to do anything.
+}
+
+// Make a stylesheet that tells the player where to find Andika New Basic.
+// This can't be part of the <style scoped> where most style rules for the book
+// content go, because @font-face rules don't work there.
+function makeAndikaStylesheet(): void {
+    let stylesheet = document.getElementById(
+        "andikaCssStyleSheet",
+    ) as HTMLStyleElement;
+    if (!stylesheet) {
+        stylesheet = document.createElement("style");
+        document.head.appendChild(stylesheet);
+        stylesheet.setAttribute("id", "andikaCssStyleSheet");
+    }
+
+    // Starting in Jul 2022, we provide Andika as a fallback to Andika New Basic.
+    // (And we ship our hosts with Andika instead of ANB.)
+    //
+    // 1. The font might be found already installed (local).
+    // 2. Failing that, if we're inside BloomReader, BloomPUB Viewer, or another host we control,
+    //    we add the fake relative path `./host/fonts/*` so the host can intercept
+    //    this request and serve the appropriate font file.
+    //    (RAB doesn't use this stylesheet at all; rather, it modifies fonts.css.)
+    // 3. If instead we're embedded in a web page like BloomLibrary.org, we need to download from the web.
+    //
+    // (Jun 2022) I'm not sure this is (still) true:
+    // Note that currently that last option will only work when the page origin
+    // is *bloomlibrary.org. This helps limit our exposure to large charges from
+    // people using our font arbitrarily. This does include, however, books
+    // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+    //
+    // Previously, this conditionally included some file:// urls for Android which were
+    // conditionally included because they caused problems for Safari on iOS. That is why
+    // they are here instead of bloom-player-content.less. In their current state,
+    // I believe they could be moved there. But we may need conditional logic again...
+    stylesheet.innerText = `
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: normal;
+                src:
+                    local("Andika New Basic"),
+                    local("Andika"),
+                    url("./host/fonts/Andika New Basic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: normal;
+                src:
+                    local("Andika New Basic Bold"),
+                    local("Andika Bold"),
+                    url("./host/fonts/Andika New Basic Bold"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: italic;
+                src:
+                    local("Andika New Basic Italic"),
+                    local("Andika Italic"),
+                    url("./host/fonts/Andika New Basic Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: italic;
+                src:
+                    local("Andika New Basic Bold Italic"),
+                    local("Andika Bold Italic"),
+                    url("./host/fonts/Andika New Basic Bold Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: normal;
+                src:
+                    local("Andika"),
+                    url("./host/fonts/Andika"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Regular.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: normal;
+                src:
+                    local("Andika Bold"),
+                    url("./host/fonts/Andika Bold"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Bold.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: italic;
+                src:
+                    local("Andika Italic"),
+                    url("./host/fonts/Andika Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Italic.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: italic;
+                src:
+                    local("Andika Bold Italic"),
+                    url("./host/fonts/Andika Bold Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-BoldItalic.woff")
+                ;
+            }
+
+            .do-not-display {
+                display:none !important;
+            }
+            `
+
+        // (Jun 2022) these are not actually preventing <br> tags:
+        .replace("\n", "")
+        .replace("\r", ""); // newlines turn to <br> which is wrong in style element
+}

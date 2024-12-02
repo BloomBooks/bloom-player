@@ -2,7 +2,6 @@
 bloom-player-core is responsible for all the behavior of working through a book, but without any UI controls
 (other than page turning).
 */
-/// <reference path="../node_modules/@types/jquery.nicescroll/index.d.ts" />
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import axios, { AxiosPromise } from "axios";
@@ -45,7 +44,6 @@ import { CircularProgress } from "@material-ui/core";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
-import "jquery.nicescroll";
 import { getQueryStringParamAndUnencode } from "./utilities/urlUtils";
 import {
     kLocalStorageDurationKey,
@@ -76,6 +74,13 @@ import {
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
+import {
+    addScrollbarsToPage,
+    ComputeNiceScrollOffsets,
+    kSelectorForPotentialNiceScrollElements,
+} from "./scrolling";
+import { assembleStyleSheets } from "./stylesheets";
+import { c } from "vite/dist/node/types.d-aGj9QkWt";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -238,10 +243,6 @@ function handleInputMouseEvent(event: Event) {
         // from eventually resulting in a click.
     }
 }
-
-const kSelectorForPotentialNiceScrollElements =
-    ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on, " +
-    ".scrollable"; // we added .scrollable for branding cases where the boilerplate text also needs to scroll
 
 export class BloomPlayerCore extends React.Component<IProps, IState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
@@ -785,30 +786,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
-    // nicescroll doesn't properly scale the padding at the top and left of the
-    // scrollable area of the languageGroup divs when the page is scaled.  This
-    // method sets offset values to correct for this.  It is called whenever the
-    // entire window resizes, which also scales the page before this is called.
-    // See BL-13796.
-    public static fixNiceScrollOffsets(page: HTMLElement, scale: number) {
-        page.querySelectorAll(kSelectorForPotentialNiceScrollElements).forEach(
-            (group) => {
-                // The type definition is not correct for getNiceScroll; we expect it to return an array.
-                const groupNiceScroll = $(group).getNiceScroll() as any;
-                if (groupNiceScroll && groupNiceScroll.length > 0) {
-                    let { topAdjust, leftAdjust } =
-                        BloomPlayerCore.ComputeNiceScrollOffsets(
-                            scale,
-                            group as HTMLElement,
-                        );
-                    groupNiceScroll[0].opt.railoffset.top = -topAdjust;
-                    groupNiceScroll[0].opt.railoffset.left = -leftAdjust;
-                    groupNiceScroll[0].resize();
-                }
-            },
-        );
-    }
-
     private collectBodyAttributes(originalBodyElement: HTMLBodyElement) {
         // When working on the ABC-BARMM branding/XMatter pack, we discovered that the classes on the
         // Desktop body element were not getting passed into bloom-player.
@@ -1011,9 +988,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Make sure you only set state.styleRules once per book.
         // Otherwise, it wreaks havoc on scoped styles. See BL-9504.
         if (isNewBook) {
-            const combinedStyle = await this.assembleStyleSheets(
-                this.htmlElement,
-            );
+            var combinedStyle;
+            try {
+                combinedStyle = await assembleStyleSheets(
+                    this.htmlElement!,
+                    this.urlPrefix,
+                    this.bookInfo,
+                    () => this.legacyQuestionHandler.getPromiseForAnyQuizCss(),
+                );
+            } catch (e) {
+                this.HandleLoadingError(e);
+                combinedStyle = "";
+            }
             // We're about to start rendering with isLoading false. That means the spinning circle is
             // replaced with a swiper control showing the actual book contents. We need to do certain
             // things differently while swiper is getting stabilized on the first page; this gets set
@@ -1644,285 +1630,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             item.setAttribute("style", newStyle);
             item.setAttribute("data-background", newUrl);
             item.classList.add("swiper-lazy");
-        }
-    }
-
-    // Make a <style> element in the head of the document containing an adjusted version
-    // of the "fonts.css" file shipped with the book, if any.
-    // This file typically contains @font-face declarations, which don't work when embedded
-    // in the <scoped> element we make for each page contents. So we need the rules to
-    // be placed in the <head> of the main document. (We don't want to do this with most
-    // rules because rules from a book, especially from a customStyles file, could mess up
-    // bloom-player itself.)
-    // Since the root file, typically bloomPlayer.htm, is typically not at the same location
-    // as the book files, the simple URLs it contains don't work, since they assume fonts.css
-    // is loaded as part of a file in the same location as the font files. So we modify
-    // the URLs in the file to be relative to the book folder.
-    // There are possible dangers here...if someone got something malicious into fonts.css
-    // it could at least mess up our player...but only for that one book, and in any case,
-    // fonts.css is generated by the harvester so it shouldn't be possible for anyone without
-    // harvester credentials to post a bad version of it.
-    // Enhance: currently we're just looking for the (typically ttf) font uploaded as part
-    // of the book if embedding is permitted. Eventually, we might want to try first for
-    // a corresponding woff font in a standard location. We may even be able to pay to
-    // provide some fonts there for book previewing that are NOT embeddable.
-    private makeFontStylesheet(href: string): void {
-        axios.get(href).then((result) => {
-            let stylesheet = document.getElementById(
-                "fontCssStyleSheet",
-            ) as HTMLStyleElement;
-            if (!stylesheet) {
-                stylesheet = document.createElement("style");
-                document.head.appendChild(stylesheet);
-                stylesheet.setAttribute("id", "fontCssStyleSheet");
-            }
-            const prefix = href.substring(0, href.length - "/fonts.css".length);
-            stylesheet.innerText = result.data.replace(
-                // This is so complex because at one time we weren't adding the
-                // quotes around the original url. So, now we handle no quotes,
-                // single quotes, and double quotes. Note that we also have to
-                // handle possible parentheses in the file name.
-                /src:url\(['"]?(.*\.[^\)'"]*)['"]?\)/g,
-                "src:url('" + prefix + "/$1')",
-            );
-        });
-        // no catch clause...if there's no fonts.css, we should never get a 'then' and
-        // don't need to do anything.
-    }
-
-    // Make a stylesheet that tells the player where to find Andika New Basic.
-    // This can't be part of the <style scoped> where most style rules for the book
-    // content go, because @font-face rules don't work there.
-    private makeAndikaStylesheet(): void {
-        let stylesheet = document.getElementById(
-            "andikaCssStyleSheet",
-        ) as HTMLStyleElement;
-        if (!stylesheet) {
-            stylesheet = document.createElement("style");
-            document.head.appendChild(stylesheet);
-            stylesheet.setAttribute("id", "andikaCssStyleSheet");
-        }
-
-        // Starting in Jul 2022, we provide Andika as a fallback to Andika New Basic.
-        // (And we ship our hosts with Andika instead of ANB.)
-        //
-        // 1. The font might be found already installed (local).
-        // 2. Failing that, if we're inside BloomReader, BloomPUB Viewer, or another host we control,
-        //    we add the fake relative path `./host/fonts/*` so the host can intercept
-        //    this request and serve the appropriate font file.
-        //    (RAB doesn't use this stylesheet at all; rather, it modifies fonts.css.)
-        // 3. If instead we're embedded in a web page like BloomLibrary.org, we need to download from the web.
-        //
-        // (Jun 2022) I'm not sure this is (still) true:
-        // Note that currently that last option will only work when the page origin
-        // is *bloomlibrary.org. This helps limit our exposure to large charges from
-        // people using our font arbitrarily. This does include, however, books
-        // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
-        //
-        // Previously, this conditionally included some file:// urls for Android which were
-        // conditionally included because they caused problems for Safari on iOS. That is why
-        // they are here instead of bloom-player-content.less. In their current state,
-        // I believe they could be moved there. But we may need conditional logic again...
-        stylesheet.innerText = `
-            @font-face {
-                font-family: "Andika New Basic";
-                font-weight: normal;
-                font-style: normal;
-                src:
-                    local("Andika New Basic"),
-                    local("Andika"),
-                    url("./host/fonts/Andika New Basic"),
-                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika New Basic";
-                font-weight: bold;
-                font-style: normal;
-                src:
-                    local("Andika New Basic Bold"),
-                    local("Andika Bold"),
-                    url("./host/fonts/Andika New Basic Bold"),
-                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika New Basic";
-                font-weight: normal;
-                font-style: italic;
-                src:
-                    local("Andika New Basic Italic"),
-                    local("Andika Italic"),
-                    url("./host/fonts/Andika New Basic Italic"),
-                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika New Basic";
-                font-weight: bold;
-                font-style: italic;
-                src:
-                    local("Andika New Basic Bold Italic"),
-                    local("Andika Bold Italic"),
-                    url("./host/fonts/Andika New Basic Bold Italic"),
-                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika";
-                font-weight: normal;
-                font-style: normal;
-                src:
-                    local("Andika"),
-                    url("./host/fonts/Andika"),
-                    url("https://bloomlibrary.org/fonts/Andika/Andika-Regular.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika";
-                font-weight: bold;
-                font-style: normal;
-                src:
-                    local("Andika Bold"),
-                    url("./host/fonts/Andika Bold"),
-                    url("https://bloomlibrary.org/fonts/Andika/Andika-Bold.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika";
-                font-weight: normal;
-                font-style: italic;
-                src:
-                    local("Andika Italic"),
-                    url("./host/fonts/Andika Italic"),
-                    url("https://bloomlibrary.org/fonts/Andika/Andika-Italic.woff")
-                ;
-            }
-
-            @font-face {
-                font-family: "Andika";
-                font-weight: bold;
-                font-style: italic;
-                src:
-                    local("Andika Bold Italic"),
-                    url("./host/fonts/Andika Bold Italic"),
-                    url("https://bloomlibrary.org/fonts/Andika/Andika-BoldItalic.woff")
-                ;
-            }
-
-            .do-not-display {
-                display:none !important;
-            }
-            `
-
-            // (Jun 2022) these are not actually preventing <br> tags:
-            .replace("\n", "")
-            .replace("\r", ""); // newlines turn to <br> which is wrong in style element
-    }
-
-    // Assemble all the style rules from all the stylesheets the book contains or references.
-    // When the async completes, the result will be set as our state.styles with setState().
-    // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
-    // of the main document, since it contains @font-face declarations that don't work
-    // in the <scoped> element.
-    private async assembleStyleSheets(doc: HTMLHtmlElement): Promise<string> {
-        this.makeAndikaStylesheet();
-        const linkElts = doc.ownerDocument!.evaluate(
-            ".//link[@href and @type='text/css']",
-            doc,
-            null,
-            XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-            null,
-        );
-        const promises: Array<AxiosPromise<any>> = [];
-        for (let i = 0; i < linkElts.snapshotLength; i++) {
-            const link = linkElts.snapshotItem(i) as HTMLElement;
-            const href = link.getAttribute("href");
-            const fullHref = this.fullUrl(href);
-            if (fullHref.endsWith("/fonts.css")) {
-                this.makeFontStylesheet(fullHref);
-            } else {
-                promises.push(axios.get(fullHref));
-                if (fullHref.endsWith("/appearance.css")) {
-                    this.bookInfo.hasAppearanceSystem = true;
-                }
-            }
-        }
-        const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
-        if (p) {
-            promises.push(p);
-        }
-
-        try {
-            const results = await axios.all(
-                promises.map((promise) =>
-                    promise.catch(
-                        // if one stylesheet doesn't exist or whatever, keep going
-                        () => undefined,
-                    ),
-                ),
-            );
-
-            let combinedStyle = "";
-
-            // start with embedded styles (typically before links in a bloom doc...)
-            const styleElts = doc.ownerDocument!.evaluate(
-                ".//style[@type='text/css']",
-                doc,
-                null,
-                XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-                null,
-            );
-            for (let k = 0; k < styleElts.snapshotLength; k++) {
-                const styleElt = styleElts.snapshotItem(k) as HTMLElement;
-                combinedStyle += styleElt.innerText;
-            }
-
-            // then add the stylesheet contents we just retrieved
-            results.forEach((result) => {
-                if (result && result.data) {
-                    console.log(
-                        "Loaded stylesheet: " + JSON.stringify(result.config),
-                    );
-                    combinedStyle += result.data;
-
-                    // It is somewhat awkward to do this in a method called assembleStyleSheets,
-                    // but this is the best way to access the information currently.
-                    // See further comments in getNationalLanguagesFromCssStyles.
-                    //
-                    // settingsCollectionStyles.css was replaced with defaultLangStyles.css.
-                    // We have to check for both for older books.
-                    if (
-                        result.config!.url!.endsWith(
-                            "/defaultLangStyles.css",
-                        ) ||
-                        result.config!.url!.endsWith(
-                            "/settingsCollectionStyles.css",
-                        )
-                    ) {
-                        this.bookInfo.setLanguage2And3(result.data);
-                    }
-                }
-            });
-
-            // A ":root" selector doesn't work in this scoped css context.
-            // Change all ":root" references to ".bloomPlayer-page", which is the level just above .bloom-page.
-            // We're using this instead of .bloom-page directly so that a selector like `:root .bloom-page` would still work.
-            combinedStyle = combinedStyle.replace(
-                /:root/g,
-                ".bloomPlayer-page",
-            );
-            //console.log("***combinedStyle", combinedStyle);
-            return combinedStyle;
-        } catch (err) {
-            this.HandleLoadingError(err);
-            return "";
         }
     }
 
@@ -2590,7 +2297,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.swiperInstance.keyboard.enable();
             }
 
-            BloomPlayerCore.addScrollbarsToPage(bloomPage);
+            addScrollbarsToPage(bloomPage);
             const soundItems = Array.from(
                 bloomPage.querySelectorAll("[data-sound]"),
             );
@@ -2598,249 +2305,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 elt.addEventListener("click", playSoundOf);
             });
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
-    }
-
-    private static addScrollbarsToPage(bloomPage: Element): void {
-        // Expected behavior for cover: "on the cover, which is has a very dynamic layout, we just don't do scrollbars"
-        if (bloomPage.classList.contains("cover")) {
-            return;
-        }
-        // ENHANCE: If you drag the scrollbar mostly horizontal instead of mostly vertical,
-        // both the page swiping and the scrollbar will be operating, which is somewhat confusing
-        // and not perfectly ideal, although it doesn't really break anything.
-        // It'd be nice so that if you're dragging the scrollbar in any way, swiping is disabled.
-
-        // on a browser so obsolete that it doesn't have IntersectionObserver (e.g., IE or Safari before 12.2),
-        // we just won't get scrolling.
-        if ("IntersectionObserver" in window) {
-            // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
-            // Expected behavior for comic bubbles:  "we want overflow to show, but not generate scroll bars"
-            let scrollBlocks: HTMLElement[] = [];
-            let countOfObserversExpectedToReport = 0;
-            let countOfObserversThatHaveReported = 0;
-            $(bloomPage)
-                .find(kSelectorForPotentialNiceScrollElements)
-                .each((index, elt) => {
-                    // Process the blocks that are possibly overflowing.
-                    // Blocks that are overflowing will be configured to use niceScroll
-                    // so the user can scroll and see everything. That is costly, because
-                    // niceScroll leaks event listeners every time it is called. So we don't
-                    // want to use it any more than we need to. Also, niceScroll
-                    // somehow fails to work when our vertical alignment classes are applied;
-                    // probably something to do with the bloom-editables being display:flex
-                    // to achieve vertical positioning. We can safely remove those classes
-                    // if the block is overflowing, because there's no excess white space
-                    // to distribute.
-                    // Note: there are complications Bloom desktop handles in determining
-                    // accurately whether a block is overflowing. We don't need those here.
-                    // If it is close enough to overflow to get a scroll bar, it's close
-                    // enough not to care whether extra white space is at the top, bottom,
-                    // or split (hence we can safely remove classes used for that).
-                    // And we'll risk sometimes adding niceScroll when we could (just)
-                    // have done without it.
-                    const firstChild = elt.firstElementChild;
-                    const lastChild = elt.lastElementChild;
-                    if (!lastChild) {
-                        // no children, can't be overflowing
-                        return;
-                    }
-                    // nicescroll doesn't properly scale the padding at the top and left of the
-                    // scrollable area of the languageGroup divs when the page is scaled.  This
-                    // code sets offset values to correct for this.  The scale is determined by
-                    // looking for a style element with an id of "scale-style-sheet" and extracting
-                    // the scale from the transform property.  See BL-13796.
-                    let scale = 1;
-                    const scaleStyle = document.querySelector(
-                        "style#scale-style-sheet",
-                    );
-                    if (scaleStyle) {
-                        const match = scaleStyle.innerHTML.match(
-                            /transform:[a-z0-9, ()]* scale\((\d+(\.\d+)?)\)/,
-                        );
-                        if (match) {
-                            scale = parseFloat(match[1]);
-                        }
-                    }
-                    let { topAdjust, leftAdjust } =
-                        BloomPlayerCore.ComputeNiceScrollOffsets(scale, elt);
-                    // We don't really want continuous observation, but this is an elegant
-                    // way to find out whether each child is entirely contained within its
-                    // parent. Unlike computations involving coordinates, we don't have to
-                    // worry about whether borders, margins, and padding are included in
-                    // various measurements. We do need to check the first as well as the
-                    // last child, because if text is aligned bottom, any overflow will be
-                    // at the top.
-                    const observer = new IntersectionObserver(
-                        (entries, ob) => {
-                            // called more-or-less immediately for each child, but after the
-                            // loop creates them all.
-                            entries.forEach((entry) => {
-                                countOfObserversThatHaveReported++;
-                                ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
-                                // console.log("bounding: ");
-                                // console.log(entry.boundingClientRect);
-                                // console.log(entry.intersectionRect);
-                                // console.log(entry.rootBounds);
-                                // console.log(
-                                //     "ratio: " + entry.intersectionRatio
-                                // );
-                                var isBubble = !!entry.target.closest(
-                                    ".bloom-textOverPicture",
-                                );
-                                // In bloom desktop preview, we set width to 200% and then scale down by 50%.
-                                // This can lead to intersection ratios very slightly less than 1, probably due
-                                // to pixel rounding of some sort, when in fact the content fits comfortably.
-                                // For example, in one case we got a boundingClientRect 72.433 high
-                                // and an intersectionRect 72.416, for a ratio of 0.9998.
-                                // If a block is 1000 pixels high and really overflowing by 1 pixel, the ratio
-                                // will be 0.999. I think it's safe to take anything closer to 1 than that as
-                                // 'not overflowing'.
-                                let overflowing =
-                                    entry.intersectionRatio < 0.999;
-
-                                if (overflowing && isBubble) {
-                                    // We want to be less aggressive about putting scroll bars on bubbles.
-                                    // Most of the time, a bubble is very carefully sized to just fit the
-                                    // text. But the intersection observer wants it to fit a certain amount
-                                    // of white space as well. We want a scroll bar if it's overflowing
-                                    // really badly for some reason, but that's much more the exception
-                                    // than the rule, so better a little clipping when the bubble is badly
-                                    // sized than a scroll bar that isn't needed in one that is just right.
-                                    // Example: a bubble which appears to fit perfectly, 3 lines high:
-                                    // its clientHeight is 72; containing bloom-editable's is 59;
-                                    // lineHeight is 24px. IntersectionRatio computes to 59/72,
-                                    // which makes the 'overflow' 13. A ratio of 0.5 as we originally
-                                    // proposed would give us a scroll bar we don't want.
-                                    let maxBubbleOverflowLineFraction = 0.6;
-                                    if (
-                                        entry.target !=
-                                            entry.target.parentElement
-                                                ?.firstElementChild ||
-                                        entry.target !=
-                                            entry.target.parentElement!
-                                                .lastElementChild
-                                    ) {
-                                        // Bubbles are center-aligned vertically. If this is not the only
-                                        // child,the first and last will overflow above and below by about the
-                                        // same amount. So we're only really looking at half the overflow on this para,
-                                        // and should reduce the threshold.
-                                        maxBubbleOverflowLineFraction /= 2;
-                                    }
-                                    const overflow =
-                                        (1 - entry.intersectionRatio) *
-                                        entry.target.clientHeight;
-                                    const lineHeightPx =
-                                        window.getComputedStyle(
-                                            entry.target,
-                                        ).lineHeight;
-                                    const lineHeight = parseFloat(
-                                        // remove the trailing "px"
-                                        lineHeightPx.substring(
-                                            0,
-                                            lineHeightPx.length - 2,
-                                        ),
-                                    );
-                                    overflowing =
-                                        overflow >
-                                        lineHeight *
-                                            maxBubbleOverflowLineFraction;
-                                }
-                                if (
-                                    overflowing &&
-                                    scrollBlocks.indexOf(
-                                        entry.target.parentElement!,
-                                    ) < 0
-                                ) {
-                                    scrollBlocks.push(
-                                        entry.target.parentElement!,
-                                    );
-                                    // remove classes incompatible with niceScroll
-                                    const group =
-                                        entry.target.parentElement!
-                                            .parentElement!;
-                                    group.classList.remove(
-                                        "bloom-vertical-align-center",
-                                    );
-                                    group.classList.remove(
-                                        "bloom-vertical-align-bottom",
-                                    );
-                                    if (isBubble) {
-                                        // This is a way of forcing it not to be display-flex, which doesn't
-                                        // work with the nice-scroll-bar library we're using.
-                                        // That library messes with the element style, so it seemed safer
-                                        // not to do that myself.
-                                        entry.target.parentElement!.classList.add(
-                                            "scrolling-bubble",
-                                        );
-                                    }
-                                }
-                                if (
-                                    countOfObserversThatHaveReported ==
-                                    countOfObserversExpectedToReport
-                                ) {
-                                    // configure nicescroll...ideally only once for all of them
-                                    $(scrollBlocks).niceScroll({
-                                        autohidemode: false,
-                                        railoffset: {
-                                            top: -topAdjust,
-                                            left: -leftAdjust,
-                                        },
-                                        cursorwidth: "12px",
-                                        cursorcolor: "#000000",
-                                        cursoropacitymax: 0.1,
-                                        cursorborderradius: "12px", // Make the corner more rounded than the 5px default.
-                                    });
-                                    this.setupSpecialMouseTrackingForNiceScroll(
-                                        bloomPage,
-                                    );
-                                    scrollBlocks = []; // Just in case it's possible to get callbacks before we created them all.
-                                }
-                            });
-                        },
-                        { root: elt },
-                    );
-                    countOfObserversExpectedToReport++;
-                    observer.observe(firstChild!);
-                    if (firstChild != lastChild) {
-                        countOfObserversExpectedToReport++;
-                        observer.observe(lastChild);
-                    }
-                });
-        }
-    }
-
-    // nicescroll doesn't properly scale the padding at the top and left of the
-    // scrollable area of the languageGroup divs when the page is scaled.  This
-    // method computes offset values to correct for this.  See BL-13796.
-    private static ComputeNiceScrollOffsets(scale: number, elt: HTMLElement) {
-        let topAdjust = 0;
-        let leftAdjust = 0;
-        if (scale !== 1) {
-            const compStyles = window.getComputedStyle(elt.parentElement!);
-            const topPadding =
-                compStyles.getPropertyValue("padding-top") ?? "0";
-            const leftPadding =
-                compStyles.getPropertyValue("padding-left") ?? "0";
-            topAdjust = parseFloat(topPadding) * (scale - 1);
-            leftAdjust = parseFloat(leftPadding) * (scale - 1);
-        }
-        return { topAdjust, leftAdjust };
-    }
-
-    static setupSpecialMouseTrackingForNiceScroll(bloomPage: Element) {
-        bloomPage.removeEventListener("pointerdown", this.listenForPointerDown); // only want one!
-        bloomPage.addEventListener("pointerdown", this.listenForPointerDown);
-        // The purpose of this is to prevent Swiper causing the page to be moved or
-        // flicked when the user is trying to scroll on the page.  See BL-14079.
-        for (const eventName of ["pointermove", "pointerup"]) {
-            bloomPage.ownerDocument.body.addEventListener(
-                eventName,
-                BloomPlayerCore.handlePointerMoveEvent,
-                {
-                    capture: true,
-                },
-            );
-        }
     }
 
     // This method is attached to the pointermove and pointerup events.  If the event was
@@ -2862,28 +2326,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             (e.target as HTMLDivElement)?.closest(".nicescroll-cursors")
         ) {
             e.stopPropagation();
-        }
-    }
-
-    // If the mouse down is in the thumb of a NiceScroll, we don't want to get a click
-    // event later even if the mouse up is outside that element.  Also, we want the
-    // scrolling to follow the mouse movement even if the mouse cursor leaves the thumb
-    // before the mouse button is released.
-    static listenForPointerDown(ev: PointerEvent) {
-        if (
-            ev.target instanceof HTMLDivElement &&
-            (ev.target as HTMLDivElement).classList.contains(
-                "nicescroll-cursors",
-            )
-        ) {
-            (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
-            if (ev.pointerType === "mouse") {
-                // Investigation shows that Swiper uses pointer event handlers and NiceScroll
-                // uses mouse event handlers, so stopping the propagation of pointer events
-                // doesn't effect the scrolling, but does stop the swiping.  See BL-14079.
-                // Pointer capture affects mouse events as well as pointer events.
-                ev.stopPropagation();
-            }
         }
     }
 
