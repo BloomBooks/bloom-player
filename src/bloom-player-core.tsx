@@ -173,7 +173,7 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
-    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    startPageIndex?: number; // the FIRST book opens at this page (0-based index into the list of pages, ignores visible page numbers)
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
 }
@@ -217,6 +217,8 @@ interface IState {
     inPauseForced: boolean;
 
     bookUrl: string;
+    startPageId?: string;
+    startPageIndex?: number; // when given a startPageId, we convert it to an index once the new book is loaded.
 }
 
 interface IPlayerPageOptions {
@@ -277,7 +279,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     constructor(props: IProps, state: IState) {
         super(props, state);
-        this.state.bookUrl = props.url;
+        const parsedUrl = new URL(props.url, window.location.origin);
+        this.state.bookUrl = parsedUrl.pathname;
+        if (parsedUrl.hash) {
+            this.state.startPageId = parsedUrl.hash.substring(1);
+        } else {
+            // Copy into state because in a multi-book scenario, the prop.startPageIndex will
+            // always be the initial value, but we don't want to just got to that page of
+            // every book we open. After the first book, we can clear the state.startPageIndex.
+            this.state.startPageIndex = props.startPageIndex;
+        }
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
@@ -440,8 +451,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // by loading a new instance of the player with the new book. The container app is
             // responsible for keeping its own history of book jumps.
             this.setState({
-                // todo: what about the page part?
                 bookUrl: `/book/${targetBookId}/index.htm`,
+                startPageIndex: undefined, // clear that out
+                startPageId: targetPageId,
             });
             return;
         }
@@ -561,7 +573,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.metaDataObject = undefined;
                 this.htmlElement = undefined;
 
-                this.sourceUrl = newSourceUrl;
+                // parse the url
+                const u = new URL(newSourceUrl, window.location.origin);
+                // TODO: the URL parse always introduces a leading slash if it's missing, but currently that breaks... something.
+                // I feel like I'm hacking around something I should understand better.
+                this.sourceUrl = newSourceUrl.startsWith("/")
+                    ? u.pathname
+                    : u.pathname.substring(1);
+                // TODO where can we put the page id which is now at u.hash?
+                console.log(
+                    `**** newSourceUrl ${newSourceUrl} ---> ${this.sourceUrl}`,
+                );
+
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
                 // is the book itself. The last slash indicates the folder in which all the
@@ -1040,6 +1063,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // things differently while swiper is getting stabilized on the first page; this gets set
             // false again after the timeout just below here.
             this.startingUpSwiper = true;
+
+            if (this.state.startPageId) {
+                this.setState({
+                    startPageIndex: pageMap[this.state.startPageId],
+                });
+            }
+
             // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
             // we get them, so we wait for the results and then make all the state changes in one go
             // to minimize renderings. (Because all this is happening asynchronously, not within the
@@ -1049,7 +1079,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 pageIdToIndexMap: pageMap,
                 styleRules: combinedStyle,
                 isLoading: false,
-                currentSwiperIndex: this.props.startPage ?? 0,
+                currentSwiperIndex: this.state.startPageIndex ?? 0,
             });
         } else {
             this.setState({
@@ -1070,7 +1100,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 this.startingUpSwiper = false; // transition phase is over
 
-                var startPage = this.props.startPage ?? 0;
+                var startPage = this.state.startPageIndex ?? 0;
                 // console.log(
                 //     "setting index and page to " +
                 //         startPage +
@@ -2141,7 +2171,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // of the slide to show.) (There's possibly some drastic redesign that would let the
             // current page be a fully controlled paramter. But maybe not...react-id-slider is a
             // thin layer over something that isn't fully React.)
-            swiperParams.activeSlideKey = this.props.startPage?.toString();
+            swiperParams.activeSlideKey = this.state.startPageIndex?.toString();
         }
 
         let bloomPlayerClass = "bloomPlayer";
@@ -2421,7 +2451,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (this.shouldAutoPlay()) {
             const autoplayCount = this.props.autoplayCount ?? 0;
-            const startPage = this.props.startPage ?? 0;
+            const startPage = this.state.startPageIndex ?? 0;
             const lastPage = this.swiperInstance.slides.length - 1;
             let lastPageToAutoplay = this.props.autoplayCount
                 ? Math.min(startPage + autoplayCount - 1, lastPage)

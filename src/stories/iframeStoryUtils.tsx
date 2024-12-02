@@ -24,7 +24,11 @@ export function useBuildIsReady() {
 
 export function BloomPlayerIframe({ bookUrl, bookPageIndex }) {
     if (!useBuildIsReady()) {
-        return <div>Waiting for Bloom Player to build...</div>;
+        return (
+            <div>
+                Waiting for Bloom Player to build. See "yarn buildForStorybook"
+            </div>
+        );
     }
 
     return (

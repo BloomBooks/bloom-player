@@ -1013,7 +1013,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     }
                 }}
                 shouldReportSoundLog={props.shouldReportSoundLog}
-                startPage={props.startPage}
+                startPageIndex={props.startPage}
                 autoplayCount={props.autoplayCount}
             />
             {showAppBar && !props.videoPreviewMode && (

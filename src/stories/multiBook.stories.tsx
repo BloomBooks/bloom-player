@@ -1,5 +1,5 @@
 import React from "react";
-import { StoryFn, Meta } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { BloomPlayerIframe } from "./iframeStoryUtils";
 
 /* This uses an iframe, so normal dev server compilation is not effective.
@@ -9,15 +9,29 @@ The point of this story is really just to host a book that has links to a second
 that possible is the proxy defined in .storybook/main.ts, not here.
 */
 
-export default {
+const meta: Meta<typeof BloomPlayerIframe> = {
     title: "MultiBook",
     component: BloomPlayerIframe,
-} as Meta<typeof BloomPlayerIframe>;
+};
+export default meta;
 
-export const Default: StoryFn<typeof BloomPlayerIframe> = (args) => (
-    <BloomPlayerIframe
-        {...args}
-        bookUrl="testBooks/multibook-index/index.htm"
-        bookPageIndex="4"
-    />
-);
+type Story = StoryObj<typeof BloomPlayerIframe>;
+
+export const UsePageIndex: Story = {
+    args: {
+        bookUrl: "testBooks/multibook-index/index.htm",
+        bookPageIndex: "4",
+    },
+    // doesn't work storyName: "Use `bookPageIndex` to specify the starting page",
+};
+UsePageIndex.storyName =
+    "Use `bookPageIndex` to specify the starting page of the first book";
+
+export const Default: Story = {
+    args: {
+        bookUrl:
+            "testBooks/multibook-index/index.htm#653f29c1-665b-4d63-a061-086401abc106",
+    },
+};
+Default.storyName =
+    "Use #pageId to specify the starting page of the first book";
