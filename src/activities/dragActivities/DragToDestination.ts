@@ -29,7 +29,11 @@ class DragToDestinationActivity implements IActivityObject {
     }
 
     public doInitialSoundAndAnimation(activityContext: ActivityContext) {
-        playInitialElements(activityContext.pageElement);
+        // As noted by the name of this method, we want to do the sound here not the video.
+        // Any video on the page has already been played by the time this is called by the
+        // Video.HandlePageVisible method.  In fact, this is triggered by the final video
+        // ending event handler.
+        playInitialElements(activityContext.pageElement, false);
     }
 
     // Do just those things that we only want to do once per read of the book.
