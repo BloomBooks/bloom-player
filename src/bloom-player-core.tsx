@@ -180,7 +180,7 @@ interface IProps {
 }
 export interface IPlayerState {
     pages: string[]; // of the book. First and last are empty in context mode.
-    pageIdToIndexMap: {}; // map from page id to page index
+    pageIdToIndexMap: { [key: string]: number }; // map from page id to page index
 
     // concatenated stylesheets the book references or embeds.
     // Make sure these are only set once per book or else
@@ -357,7 +357,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             const nav = checkClickForBookOrPageJump(
                 e,
                 this.bookInfo.bookInstanceId,
-                this.state.pages[this.state.currentSwiperIndex],
+                // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
+                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
             );
 
             if (nav.newBookUrl) {
@@ -875,7 +876,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             bookLanguages[0] === this.props.activeLanguageCode ||
             !this.props.activeLanguageCode;
 
-        const pageMap = {};
+        const pageIdToIndex: { [key: string]: number } = {};
 
         // implementation of hasActivities and hasAnimation, if we decide we need them.
         // const pagesArray = Array.from(pages);
@@ -898,11 +899,15 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             );
         };
 
+        // TODO: most of this should be moved into bookInfo, including the pageIdToIndex map.
+        // clear the pageIdToIndex map
+        pageIdToIndex.length = 0;
+        pageIdToIndex["cover"] = 0;
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const pageId = page.getAttribute("id");
             if (pageId) {
-                pageMap[pageId] = i;
+                pageIdToIndex[pageId] = i;
             }
             const landscape = this.setPageSizeClass(page);
 
@@ -1009,8 +1014,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.startingUpSwiper = true;
 
             if (this.state.startPageId) {
+                if (pageIdToIndex[this.state.startPageId] === undefined) {
+                    throw new Error(
+                        `Page ID ${this.state.startPageId} not found in the current pageIdToIndexMap`,
+                    );
+                }
                 this.setState({
-                    startPageIndex: pageMap[this.state.startPageId],
+                    startPageIndex: pageIdToIndex[this.state.startPageId],
                 });
             }
 
@@ -1020,7 +1030,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // original componentDidUpdate method call, each setState results in an immediate render.)
             this.setState({
                 pages: swiperContent,
-                pageIdToIndexMap: pageMap,
+                pageIdToIndexMap: pageIdToIndex,
                 styleRules: combinedStyle,
                 isLoading: false,
                 currentSwiperIndex: this.state.startPageIndex ?? 0,
@@ -2474,6 +2484,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             "bloom-page",
         )[0] as HTMLElement;
         return bloomPage;
+    }
+
+    private getPageIdFromIndex(index: number): string {
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            throw new Error("No bloomPage at index " + index);
+        }
+        return bloomPage.getAttribute("id")!;
     }
 
     public static getCurrentPage(): HTMLElement {

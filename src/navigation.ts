@@ -3,7 +3,7 @@ const jumpHistory: { bookId: string; pageId: string }[] = [];
 export function checkClickForBookOrPageJump(
     event: any,
     currentBookInstanceId: string,
-    currentPageId: string,
+    getCurentPageId: () => string,
 ): {
     newBookUrl?: string;
     newPageId?: string;
@@ -47,7 +47,7 @@ export function checkClickForBookOrPageJump(
     } else if (href.startsWith("#")) {
         targetPageId = href.substring(1);
     }
-
+    const currentPageId = getCurentPageId();
     if (targetBookId) {
         jumpHistory.push({
             bookId: currentBookInstanceId,
