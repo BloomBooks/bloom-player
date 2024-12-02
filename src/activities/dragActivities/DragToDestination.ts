@@ -29,7 +29,7 @@ class DragToDestinationActivity implements IActivityObject {
     }
 
     public doInitialSoundAndAnimation(activityContext: ActivityContext) {
-        playInitialElements(activityContext.pageElement);
+        playInitialElements(activityContext.pageElement, false);
     }
 
     // Do just those things that we only want to do once per read of the book.
