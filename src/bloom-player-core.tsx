@@ -76,6 +76,7 @@ import {
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
+import { checkClickForBookOrPageJump } from "./navigation";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -177,7 +178,7 @@ interface IProps {
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
 }
-interface IState {
+export interface IPlayerState {
     pages: string[]; // of the book. First and last are empty in context mode.
     pageIdToIndexMap: {}; // map from page id to page index
 
@@ -247,7 +248,7 @@ const kSelectorForPotentialNiceScrollElements =
     ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on, " +
     ".scrollable"; // we added .scrollable for branding cases where the boilerplate text also needs to scroll
 
-export class BloomPlayerCore extends React.Component<IProps, IState> {
+export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
 
@@ -275,9 +276,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // It might be a good thing to combine them somehow.
     private startingUpSwiper = true;
 
-    private pageJumpHistory: { bookId: string; pageId: string }[] = [];
-
-    constructor(props: IProps, state: IState) {
+    constructor(props: IProps, state: IPlayerState) {
         super(props, state);
         const parsedUrl = new URL(props.url, window.location.origin);
         this.state.bookUrl = parsedUrl.pathname;
@@ -297,7 +296,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
-    public readonly state: IState = {
+    public readonly state: IPlayerState = {
         pages: this.initialPages,
         pageIdToIndexMap: {},
         styleRules: this.initialStyleRules,
@@ -354,9 +353,24 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Clicking on any element that has a data-href attribute will be treated as a link.
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", (e) =>
-            this.handleDocumentLevelClick(e),
-        );
+        document.addEventListener("click", (e) => {
+            const nav = checkClickForBookOrPageJump(
+                e,
+                this.bookInfo.bookInstanceId,
+                this.state.pages[this.state.currentSwiperIndex],
+            );
+
+            if (nav.newBookUrl) {
+                this.setState({
+                    bookUrl: nav.newBookUrl,
+                    startPageId: nav.newPageId,
+                    startPageIndex: undefined, // clear this out
+                });
+            } else if (nav.newPageId !== undefined) {
+                const pageIndex = this.state.pageIdToIndexMap[nav.newPageId];
+                this.swiperInstance.slideTo(pageIndex);
+            }
+        });
 
         // We only need to add these body-level listeners once.
         // I can't find any clear documentation on whether we need all of these or just the pointer ones.
@@ -393,76 +407,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
             // or, of course, you can try it actually in Bloom desktop.
             setTimeout(() => this.repairFF60Offset(), 2000);
-        }
-    }
-
-    private parseTargetBookUrl(url: string) {
-        // the format is "/book/BOOKID#PAGEID" where the page id is optional
-        const bloomUrl = new URL(url, window.location.origin);
-        const bookId = bloomUrl.pathname.replace("/book/", "");
-        const pageId = bloomUrl.hash.replace("#", "");
-        return { bookId, pageId };
-    }
-
-    private handleDocumentLevelClick(e: any) {
-        const linkElement = (e.target as HTMLElement).closest(
-            "[href], [data-href]",
-        );
-        if (!linkElement) return;
-        e.preventDefault(); // don't let a link click become a drag
-        e.stopPropagation();
-
-        const href: string =
-            linkElement.attributes["href"].nodeValue ||
-            linkElement.attributes["data-href"];
-
-        if (href.startsWith("http://") || href.startsWith("https://")) {
-            // This is a generic external link. We open it in a new window or tab.
-            // (The host possibly could intercept this and open a browser to handle it.)
-            window.open(href, "_blank", "noreferrer");
-            return;
-        }
-        let targetBookId: string | undefined = undefined;
-        let targetPageId: string | undefined = undefined;
-        let targetPageIndex: number | undefined = undefined;
-
-        if (href.startsWith("/book/")) {
-            const target = this.parseTargetBookUrl(href);
-            targetBookId = target.bookId;
-            targetPageId = target.pageId;
-
-            if (target.bookId === this.bookInfo.bookInstanceId) {
-                // link within this book, we can forget the book and just use the page
-                targetBookId = undefined;
-            }
-        } else if (href.startsWith("#")) {
-            targetPageId = href.substring(1);
-        }
-        if (targetPageId && targetPageId === "cover") {
-            targetPageIndex = 0;
-        } else {
-            targetPageIndex = targetPageId
-                ? this.state.pageIdToIndexMap[targetPageId]
-                : undefined;
-        }
-
-        if (targetBookId) {
-            // link to an external book, the container app (RAB, Bloom Reader, Blorg, etc.) will have to handle it
-            // by loading a new instance of the player with the new book. The container app is
-            // responsible for keeping its own history of book jumps.
-            this.setState({
-                bookUrl: `/book/${targetBookId}/index.htm`,
-                startPageIndex: undefined, // clear that out
-                startPageId: targetPageId,
-            });
-            return;
-        }
-        if (targetPageIndex !== undefined) {
-            this.pageJumpHistory.push({
-                bookId: this.bookInfo.bookInstanceId,
-                pageId: "cover", // todo current pageId
-            });
-            this.swiperInstance?.slideTo(targetPageIndex);
         }
     }
 
@@ -552,7 +496,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
-    public componentDidUpdate(prevProps: IProps, prevState: IState) {
+    public componentDidUpdate(prevProps: IProps, prevState: IPlayerState) {
         try {
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
