@@ -1234,7 +1234,7 @@ export function hidingPage() {
 // Play the specified elements, one after the other. When the last completes (or at once if the array is empty),
 // perform the 'then' action (typically used to play narration, which we put after videos).
 //
-// Note, there is a very similar function in narration.ts. It would be nice to combine them, but
+// Note, there is a very similar function in video.ts. It would be nice to combine them, but
 // there are various reasons that is difficult at the moment. e.g.:
 // 1. See comment below about sharing code with Bloom Desktop.
 // 2. The other version handles play/pause which doesn't apply in BloomDesktop.
@@ -1254,7 +1254,7 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
         video.readyState === HTMLMediaElement.HAVE_NOTHING
     ) {
         showVideoError(video);
-        this.playAllVideo(elements.slice(1));
+        playAllVideo(elements.slice(1), then);
     } else {
         hideVideoError(video);
         // Review: do we need to do something to let the rest of the world know about this?
@@ -1282,7 +1282,7 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
             .catch((reason) => {
                 console.error("Video play failed", reason);
                 showVideoError(video);
-                this.playAllVideo(elements.slice(1), then);
+                playAllVideo(elements.slice(1), then);
             });
     }
 }
