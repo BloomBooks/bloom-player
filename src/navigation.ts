@@ -1,13 +1,34 @@
 const jumpHistory: { bookId: string; pageId: string }[] = [];
 
+type ILocation = { bookUrl?: string; pageId?: string };
+
+export function checkForBackLocation(
+    currentBookId: string,
+): ILocation | undefined {
+    const previousLocation = jumpHistory.pop();
+    if (previousLocation) {
+        console.log(
+            "Going Back. Current History is: ",
+            JSON.stringify(jumpHistory, null, 2),
+        );
+        return {
+            bookUrl:
+                currentBookId === previousLocation.bookId
+                    ? undefined // we don't want to switch books, just pages
+                    : urlFromBookId(previousLocation.bookId),
+            pageId: previousLocation.pageId,
+        };
+    }
+    return undefined;
+}
+function urlFromBookId(bookId: string) {
+    return `/book/${bookId}/index.htm`;
+}
 export function checkClickForBookOrPageJump(
     event: any,
     currentBookInstanceId: string,
     getCurentPageId: () => string,
-): {
-    newBookUrl?: string;
-    newPageId?: string;
-} {
+): ILocation {
     const linkElement = (event.target as HTMLElement).closest(
         "[href], [data-href]",
     );
@@ -49,27 +70,28 @@ export function checkClickForBookOrPageJump(
     }
     const currentPageId = getCurentPageId();
     if (targetBookId) {
-        jumpHistory.push({
-            bookId: currentBookInstanceId,
-            pageId: currentPageId,
-        });
+        pushLocation(currentBookInstanceId, currentPageId, "Changing books");
         return {
-            newBookUrl: `/book/${targetBookId}/index.htm`,
-            newPageId: targetPageId,
+            bookUrl: urlFromBookId(targetBookId),
+            pageId: targetPageId,
         };
-    }
-    // not changing books, just pages
-    if (targetPageId) {
-        jumpHistory.push({
-            bookId: currentBookInstanceId,
-            pageId: currentPageId,
-        });
-        return { newPageId: targetPageId };
+    } else if (targetPageId) {
+        // not changing books, just pages
+        pushLocation(currentBookInstanceId, currentPageId, "Changing pages");
+
+        return { pageId: targetPageId };
     }
 
     return {}; // nothing to do as far as navigation goes
 }
 
+function pushLocation(bookId: string, pageId: string, comment: string) {
+    jumpHistory.push({ bookId, pageId });
+    console.log(
+        comment + " Current History is: ",
+        JSON.stringify(jumpHistory, null, 2),
+    );
+}
 function parseTargetBookUrl(url: string) {
     // the format is "/book/BOOKID#PAGEID" where the page id is optional
     const bloomUrl = new URL(url, window.location.origin);

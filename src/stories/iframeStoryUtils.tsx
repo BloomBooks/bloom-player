@@ -33,7 +33,7 @@ export function BloomPlayerIframe({ bookUrl, bookPageIndex }) {
 
     return (
         <iframe
-            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}`}
+            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}&showBackButton=true`}
             style={{ width: "100%", height: "500px" }}
         />
     );

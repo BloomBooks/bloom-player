@@ -76,7 +76,10 @@ import {
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
-import { checkClickForBookOrPageJump } from "./navigation";
+import {
+    checkClickForBookOrPageJump,
+    checkForBackLocation,
+} from "./navigation";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -337,6 +340,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private indexOflastNumberedPage: number;
 
+    public HandleBackButtonClicked(): boolean {
+        const backLocation = checkForBackLocation(this.bookInfo.bookInstanceId);
+        if (backLocation) {
+            this.navigate(backLocation.bookUrl, backLocation.pageId);
+            return true;
+        } else return false;
+    }
+
     public componentDidMount() {
         LocalizationManager.setUp();
 
@@ -354,23 +365,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
         document.addEventListener("click", (e) => {
-            const nav = checkClickForBookOrPageJump(
+            const newLocation = checkClickForBookOrPageJump(
                 e,
                 this.bookInfo.bookInstanceId,
                 // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
                 () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
             );
-
-            if (nav.newBookUrl) {
-                this.setState({
-                    bookUrl: nav.newBookUrl,
-                    startPageId: nav.newPageId,
-                    startPageIndex: undefined, // clear this out
-                });
-            } else if (nav.newPageId !== undefined) {
-                const pageIndex = this.state.pageIdToIndexMap[nav.newPageId];
-                this.swiperInstance.slideTo(pageIndex);
-            }
+            if (newLocation)
+                this.navigate(newLocation.bookUrl, newLocation.pageId);
         });
 
         // We only need to add these body-level listeners once.
@@ -408,6 +410,19 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
             // or, of course, you can try it actually in Bloom desktop.
             setTimeout(() => this.repairFF60Offset(), 2000);
+        }
+    }
+
+    private navigate(bookUrl: string | undefined, pageId: string | undefined) {
+        if (bookUrl) {
+            this.setState({
+                bookUrl: bookUrl,
+                startPageId: pageId,
+                startPageIndex: undefined, // clear this out
+            });
+        } else if (pageId !== undefined) {
+            const pageIndex = this.state.pageIdToIndexMap[pageId];
+            this.swiperInstance.slideTo(pageIndex);
         }
     }
 
@@ -525,10 +540,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 this.sourceUrl = newSourceUrl.startsWith("/")
                     ? u.pathname
                     : u.pathname.substring(1);
-                // TODO where can we put the page id which is now at u.hash?
-                console.log(
-                    `**** newSourceUrl ${newSourceUrl} ---> ${this.sourceUrl}`,
-                );
 
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
