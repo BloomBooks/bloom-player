@@ -5,7 +5,7 @@ type ILocation = { bookUrl?: string; pageId?: string };
 export function canGoBack() {
     return jumpHistory.length > 0;
 }
-export function checkForBackLocation(
+export function goBackInHistoryIfPossible(
     currentBookId: string,
 ): ILocation | undefined {
     const previousLocation = jumpHistory.pop();
@@ -27,6 +27,7 @@ export function checkForBackLocation(
 function urlFromBookId(bookId: string) {
     return `/book/${bookId}/index.htm`;
 }
+
 export function checkClickForBookOrPageJump(
     event: any,
     currentBookInstanceId: string,
@@ -56,8 +57,13 @@ export function checkClickForBookOrPageJump(
     if (href === "back") {
         const previousLocation = jumpHistory.pop();
         if (previousLocation) {
-            targetBookId = previousLocation.bookId;
-            targetPageId = previousLocation.pageId;
+            return {
+                bookUrl:
+                    currentBookInstanceId === previousLocation.bookId
+                        ? undefined // we don't want to switch books, just pages
+                        : urlFromBookId(previousLocation.bookId!),
+                pageId: previousLocation.pageId,
+            };
         }
     } else if (href.startsWith("/book/")) {
         const target = parseTargetBookUrl(href);

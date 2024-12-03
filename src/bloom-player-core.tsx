@@ -77,8 +77,9 @@ import {
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
 import {
+    canGoBack,
     checkClickForBookOrPageJump,
-    checkForBackLocation,
+    goBackInHistoryIfPossible,
 } from "./navigation";
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -340,14 +341,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private indexOflastNumberedPage: number;
 
-    public HandleBackButtonClicked(): boolean {
-        const backLocation = checkForBackLocation(this.bookInfo.bookInstanceId);
-        if (backLocation) {
-            this.navigate(backLocation.bookUrl, backLocation.pageId);
-            return true;
-        } else return false;
-    }
-
     public componentDidMount() {
         LocalizationManager.setUp();
 
@@ -411,6 +404,20 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // or, of course, you can try it actually in Bloom desktop.
             setTimeout(() => this.repairFF60Offset(), 2000);
         }
+    }
+    // called by bloom-player-controls
+    public CanGoBack(): boolean {
+        return canGoBack();
+    }
+    // called by bloom-player-controls
+    public HandleBackButtonClicked(): boolean {
+        const backLocation = goBackInHistoryIfPossible(
+            this.bookInfo.bookInstanceId,
+        );
+        if (backLocation) {
+            this.navigate(backLocation.bookUrl, backLocation.pageId);
+            return true;
+        } else return false;
     }
 
     private navigate(bookUrl: string | undefined, pageId: string | undefined) {
