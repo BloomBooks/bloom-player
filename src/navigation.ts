@@ -2,6 +2,9 @@ const jumpHistory: { bookId: string; pageId: string }[] = [];
 
 type ILocation = { bookUrl?: string; pageId?: string };
 
+export function canGoBack() {
+    return jumpHistory.length > 0;
+}
 export function checkForBackLocation(
     currentBookId: string,
 ): ILocation | undefined {

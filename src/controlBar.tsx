@@ -254,6 +254,9 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                             }}
                         >
                             {window === window.top ? (
+                                // Show a back arrow. You see this in Bloom Reader to return to the home screen.
+                                // You also see this if you've used a link within a book to go to a page or another book;
+                                // in this case it means "go back to where I jumped from".
                                 <ArrowBack
                                     aria-label="Go Back"
                                     titleAccess={LocalizationManager.getTranslation(
@@ -263,6 +266,8 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                                     )}
                                 />
                             ) : (
+                                // Show an ellipsis instead of an arrow. Used to go to the detail view of the book on Blorg
+                                // when you arrived here by jumping directly to the player view, e.g. https://bloomlibrary.org/player/CIXHK7gjok
                                 <MoreHoriz
                                     aria-label="More Menu"
                                     titleAccess={LocalizationManager.getTranslation(
