@@ -5,14 +5,19 @@ book inside of the Bloom:Publish:Android screen.
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
 import {
-    onBackClicked,
+    sendBackToHost,
     showNavBar,
     hideNavBar,
     reportBookProperties,
     setExternalControlCallback,
     logError,
 } from "./externalContext";
-import { ControlBar, IExtraButton, IVideoSettings } from "./controlBar";
+import {
+    BackButtonState,
+    ControlBar,
+    IExtraButton,
+    IVideoSettings,
+} from "./controlBar";
 import { ThemeProvider } from "@material-ui/styles";
 import theme from "./bloomPlayerTheme";
 import React, { useState, useEffect, useRef, LegacyRef } from "react";
@@ -68,7 +73,7 @@ export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     // in production, this is just "". But during testing, we need
     // the server to be able to serve sample books from a directory that isn't in dist/,
     // e.g. src/activity-starter/
-    locationOfDistFolder: string;
+    locationOfDistFolder: string; // TODO can we get rid of this and us a proxy? See .storybook/main.ts
     extraButtons?: IExtraButton[];
     // Hide the next/previous page buttons (mainly useful in autoplay='yes' scenarios like
     // audio/video preview and recording)
@@ -905,13 +910,32 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                 )
             }
             <ControlBar
-                canGoBack={props.showBackButton}
+                getBackButtonState={() => {
+                    if (coreRef.current?.CanGoBack())
+                        // we have a page or book jump on our bloom player history stack
+                        return BackButtonState.showArrow;
+                    else if (showBackButton) {
+                        // so our internal history is empty, but the container is
+                        // wants us to offer a "back" to it. Bloom Reader uses this.
+                        if (window === window.top)
+                            return BackButtonState.showArrow;
+                        // Used by bloomlibrary.org if you went straight to a book via some URL
+                        else return BackButtonState.showEllipsis;
+                    }
+                    // the container is not interest in getting "back" messages, and our bloom
+                    // player history stack is empty
+                    else return BackButtonState.showNothing;
+                }}
                 visible={showAppBar}
                 paused={paused}
                 pausedChanged={(p: boolean) => setPaused(p)}
                 playLabel={playLabel}
                 preferredLanguages={preferredUiLanguages}
-                backClicked={() => onBackClicked()}
+                backClicked={() => {
+                    if (!coreRef.current?.HandleBackButtonClicked()) {
+                        sendBackToHost();
+                    }
+                }}
                 showPlayPause={hasAudio || hasMusic || hasVideo}
                 bookLanguages={languageData}
                 activeLanguageCode={activeLanguageCode}
@@ -1014,7 +1038,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     }
                 }}
                 shouldReportSoundLog={props.shouldReportSoundLog}
-                startPage={props.startPage}
+                startPageIndex={props.startPage}
                 autoplayCount={props.autoplayCount}
             />
             {showAppBar && !props.videoPreviewMode && (

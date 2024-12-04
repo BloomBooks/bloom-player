@@ -36,6 +36,7 @@ import LangData from "./langData";
 import { sendMessageToHost } from "./externalContext";
 import { sendStringToBloomApi } from "./videoRecordingSupport";
 import { LocalizationManager } from "./l10n/localizationManager";
+import { Button } from "@material-ui/core";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
@@ -44,6 +45,12 @@ export interface IExtraButton {
     iconUrl: string; // URL for displaying the button icon
     description?: string; // title to show with the icon; also aria attribute
     // enhance as needed: location:"farRight|nearRight|farLeft"; // default: farRight
+}
+
+export enum BackButtonState {
+    showArrow,
+    showEllipsis,
+    showNothing,
 }
 
 interface IControlBarProps {
@@ -55,7 +62,7 @@ interface IControlBarProps {
     preferredLanguages: string[];
     canShowFullScreen: boolean;
     backClicked?: () => void;
-    canGoBack: boolean;
+    getBackButtonState: () => BackButtonState;
     bookLanguages: LangData[];
     activeLanguageCode: string;
     onLanguageChanged: (language: string) => void;
@@ -244,7 +251,8 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                     // it will go to detail view ("more") which in this case is not 'back'.
                     // We may eventually want separate canShowMore and moreClicked props
                     // but for now it feels like more complication than we need.
-                    props.canGoBack && !props.videoPreviewMode && (
+
+                    !props.videoPreviewMode && (
                         <IconButton
                             color="secondary"
                             onClick={() => {
@@ -252,8 +260,18 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                                     props.backClicked();
                                 }
                             }}
+                            data-testid="history-back-button"
+                            // this is just to help automated tests know when the back button is gone
+                            disabled={
+                                props.getBackButtonState() ===
+                                BackButtonState.showNothing
+                            }
                         >
-                            {window === window.top ? (
+                            {props.getBackButtonState() ===
+                            BackButtonState.showArrow ? (
+                                // Show a back arrow. You see this in Bloom Reader to return to the home screen.
+                                // You also see this if you've used a link within a book to go to a page or another book;
+                                // in this case it means "go back to where I jumped from".
                                 <ArrowBack
                                     aria-label="Go Back"
                                     titleAccess={LocalizationManager.getTranslation(
@@ -263,14 +281,19 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                                     )}
                                 />
                             ) : (
-                                <MoreHoriz
-                                    aria-label="More Menu"
-                                    titleAccess={LocalizationManager.getTranslation(
-                                        "Button.More",
-                                        props.preferredLanguages,
-                                        "More",
-                                    )}
-                                />
+                                props.getBackButtonState() ===
+                                    BackButtonState.showEllipsis && (
+                                    // Show an ellipsis instead of an arrow. Used to go to the detail view of the book on Blorg
+                                    // when you arrived here by jumping directly to the player view, e.g. https://bloomlibrary.org/player/CIXHK7gjok
+                                    <MoreHoriz
+                                        aria-label="More Menu"
+                                        titleAccess={LocalizationManager.getTranslation(
+                                            "Button.More",
+                                            props.preferredLanguages,
+                                            "More",
+                                        )}
+                                    />
+                                )
                             )}
                         </IconButton>
                     )

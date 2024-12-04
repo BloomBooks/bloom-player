@@ -80,7 +80,12 @@ import {
     kSelectorForPotentialNiceScrollElements,
 } from "./scrolling";
 import { assembleStyleSheets } from "./stylesheets";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
+import {
+    canGoBack,
+    checkClickForBookOrPageJump,
+    goBackInHistoryIfPossible,
+} from "./navigation";
+
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -178,13 +183,13 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
-    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    startPageIndex?: number; // the FIRST book opens at this page (0-based index into the list of pages, ignores visible page numbers)
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
 }
-interface IState {
+export interface IPlayerState {
     pages: string[]; // of the book. First and last are empty in context mode.
-    pageIdToIndexMap: {}; // map from page id to page index
+    pageIdToIndexMap: { [key: string]: number }; // map from page id to page index
 
     // concatenated stylesheets the book references or embeds.
     // Make sure these are only set once per book or else
@@ -220,6 +225,10 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
+
+    bookUrl: string;
+    startPageId?: string;
+    startPageIndex?: number; // when given a startPageId, we convert it to an index once the new book is loaded.
 }
 
 interface IPlayerPageOptions {
@@ -244,7 +253,7 @@ function handleInputMouseEvent(event: Event) {
     }
 }
 
-export class BloomPlayerCore extends React.Component<IProps, IState> {
+export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
 
@@ -272,8 +281,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // It might be a good thing to combine them somehow.
     private startingUpSwiper = true;
 
-    constructor(props: IProps, state: IState) {
+    constructor(props: IProps, state: IPlayerState) {
         super(props, state);
+        const parsedUrl = new URL(props.url, window.location.origin);
+        this.state.bookUrl = parsedUrl.pathname;
+        if (parsedUrl.hash) {
+            this.state.startPageId = parsedUrl.hash.substring(1);
+        } else {
+            // Copy into state because in a multi-book scenario, the prop.startPageIndex will
+            // always be the initial value, but we don't want to just got to that page of
+            // every book we open. After the first book, we can clear the state.startPageIndex.
+            this.state.startPageIndex = props.startPageIndex;
+        }
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
@@ -282,7 +301,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
-    public readonly state: IState = {
+    public readonly state: IPlayerState = {
         pages: this.initialPages,
         pageIdToIndexMap: {},
         styleRules: this.initialStyleRules,
@@ -294,6 +313,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
         inPauseForced: false,
+        bookUrl: "",
     };
 
     // The book url we were passed as a URL param.
@@ -338,9 +358,16 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         // Clicking on any element that has a data-href attribute will be treated as a link.
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", (e) =>
-            this.handleDocumentLevelClick(e),
-        );
+        document.addEventListener("click", (e) => {
+            const newLocation = checkClickForBookOrPageJump(
+                e,
+                this.bookInfo.bookInstanceId,
+                // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
+                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
+            );
+            if (newLocation)
+                this.navigate(newLocation.bookUrl, newLocation.pageId);
+        });
 
         // We only need to add these body-level listeners once.
         // I can't find any clear documentation on whether we need all of these or just the pointer ones.
@@ -379,60 +406,32 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             setTimeout(() => this.repairFF60Offset(), 2000);
         }
     }
-
-    handleDocumentLevelClick(e: any) {
-        const hrefValue = (e.target as HTMLElement)?.attributes["href"]
-            ?.value as string;
-        if (hrefValue) {
-            if (hrefValue.startsWith("bloomnav://")) {
-                // This is a link to a page in another book. We need to send a message to the host.
-                this.handleBloomNavLink(hrefValue, e);
-            }
-            return;
-        }
-        const targetElement = (e.target as HTMLElement).closest(
-            "[data-href]",
-        ) as HTMLElement;
-        if (targetElement && targetElement.attributes["data-href"]) {
-            const href = targetElement.attributes["data-href"].value as string;
-            if (href) {
-                if (href.startsWith("#")) {
-                    // This is a link to a page in the book.  We can handle going there.
-                    const pageId = href.substring(1);
-                    const pageIndex = this.state.pageIdToIndexMap[pageId];
-                    if (pageIndex !== undefined) {
-                        this.swiperInstance?.slideTo(pageIndex);
-                    }
-                    e.preventDefault();
-                    e.stopPropagation();
-                } else if (href.startsWith("bloomnav://")) {
-                    // This is a link to a page in another book. We need to send a message to the host.
-                    this.handleBloomNavLink(href, e);
-                } else if (
-                    href.startsWith("http://") ||
-                    href.startsWith("https://")
-                ) {
-                    // This is a generic external link. We open it in a new window or tab.
-                    // (The host possibly could intercept this and open a browser to handle it.)
-                    window.open(href, "_blank", "noreferrer");
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }
-        }
+    // called by bloom-player-controls
+    public CanGoBack(): boolean {
+        return canGoBack();
+    }
+    // called by bloom-player-controls
+    public HandleBackButtonClicked(): boolean {
+        const backLocation = goBackInHistoryIfPossible(
+            this.bookInfo.bookInstanceId,
+        );
+        if (backLocation) {
+            this.navigate(backLocation.bookUrl, backLocation.pageId);
+            return true;
+        } else return false;
     }
 
-    private handleBloomNavLink(href: string, e: any) {
-        const page = (e.target as HTMLElement).closest(".bloom-page");
-        sendMessageToHost({
-            messageType: "bloomnav",
-            href: href,
-            // used for backreference to the page that initiated the navigation
-            sourceUrl: this.sourceUrl,
-            sourcePageNumber: page?.getAttribute("data-page-number"),
-        });
-        e.preventDefault();
-        e.stopPropagation();
+    private navigate(bookUrl: string | undefined, pageId: string | undefined) {
+        if (bookUrl) {
+            this.setState({
+                bookUrl: bookUrl,
+                startPageId: pageId,
+                startPageIndex: undefined, // clear this out
+            });
+        } else if (pageId !== undefined) {
+            const pageIndex = this.state.pageIdToIndexMap[pageId];
+            this.swiperInstance.slideTo(pageIndex);
+        }
     }
 
     private handleWindowFocus() {
@@ -521,7 +520,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
-    public componentDidUpdate(prevProps: IProps, prevState: IState) {
+    public componentDidUpdate(prevProps: IProps, prevState: IPlayerState) {
         try {
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
@@ -542,7 +541,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.metaDataObject = undefined;
                 this.htmlElement = undefined;
 
-                this.sourceUrl = newSourceUrl;
+                // parse the url
+                const u = new URL(newSourceUrl, window.location.origin);
+                // TODO: the URL parse always introduces a leading slash if it's missing, but currently that breaks... something.
+                // I feel like I'm hacking around something I should understand better.
+                this.sourceUrl = newSourceUrl.startsWith("/")
+                    ? u.pathname
+                    : u.pathname.substring(1);
+
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
                 // is the book itself. The last slash indicates the folder in which all the
@@ -553,7 +559,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Note: In the future, we are thinking of limiting to
                 // a few domains (localhost, dev.blorg, blorg).
                 // Note: we don't currently look for .html files, only .htm. That's what
-                // Bloom has consistently created, both in .bloomd files and in
+                // Bloom has consistently created, both in the old .bloomd files, in .bloompub files, and in
                 // book folders, so it doesn't seem worth complicating the code
                 // to look for the other as well.
                 const slashIndex = this.sourceUrl.lastIndexOf("/");
@@ -606,6 +612,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         },
                     );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
+                console.log("urlOfBookHtmlFile", urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise, distributionPromise])
                     .then((result) => {
@@ -864,7 +871,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             bookLanguages[0] === this.props.activeLanguageCode ||
             !this.props.activeLanguageCode;
 
-        const pageMap = {};
+        const pageIdToIndex: { [key: string]: number } = {};
 
         // implementation of hasActivities and hasAnimation, if we decide we need them.
         // const pagesArray = Array.from(pages);
@@ -887,11 +894,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             );
         };
 
+        // TODO: most of this should be moved into bookInfo, including the pageIdToIndex map.
+        // clear the pageIdToIndex map
+        pageIdToIndex.length = 0;
+        pageIdToIndex["cover"] = 0;
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const pageId = page.getAttribute("id");
             if (pageId) {
-                pageMap[pageId] = i;
+                pageIdToIndex[pageId] = i;
             }
             const landscape = this.setPageSizeClass(page);
 
@@ -1005,16 +1016,28 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // things differently while swiper is getting stabilized on the first page; this gets set
             // false again after the timeout just below here.
             this.startingUpSwiper = true;
+
+            if (this.state.startPageId) {
+                if (pageIdToIndex[this.state.startPageId] === undefined) {
+                    throw new Error(
+                        `Page ID ${this.state.startPageId} not found in the current pageIdToIndexMap`,
+                    );
+                }
+                this.setState({
+                    startPageIndex: pageIdToIndex[this.state.startPageId],
+                });
+            }
+
             // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
             // we get them, so we wait for the results and then make all the state changes in one go
             // to minimize renderings. (Because all this is happening asynchronously, not within the
             // original componentDidUpdate method call, each setState results in an immediate render.)
             this.setState({
                 pages: swiperContent,
-                pageIdToIndexMap: pageMap,
+                pageIdToIndexMap: pageIdToIndex,
                 styleRules: combinedStyle,
                 isLoading: false,
-                currentSwiperIndex: this.props.startPage ?? 0,
+                currentSwiperIndex: this.state.startPageIndex ?? 0,
             });
         } else {
             this.setState({
@@ -1035,7 +1058,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 this.startingUpSwiper = false; // transition phase is over
 
-                var startPage = this.props.startPage ?? 0;
+                var startPage = this.state.startPageIndex ?? 0;
                 // console.log(
                 //     "setting index and page to " +
                 //         startPage +
@@ -1190,15 +1213,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // a collection of things for cleaning up the url
     private preprocessUrl(): string {
-        let url = this.props.url;
+        let url = this.state.bookUrl;
         if (url === undefined || "" === url.trim()) {
             throw new Error(
                 "The url parameter was empty. It should point to the url of a book.",
             );
-        }
-        // Bloom Publish Preview uses this so that we get spinning wheel while working on making the bloomd
-        if (url === "working") {
-            return "";
         }
 
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
@@ -1633,6 +1652,285 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         }
     }
 
+    // Make a <style> element in the head of the document containing an adjusted version
+    // of the "fonts.css" file shipped with the book, if any.
+    // This file typically contains @font-face declarations, which don't work when embedded
+    // in the <scoped> element we make for each page contents. So we need the rules to
+    // be placed in the <head> of the main document. (We don't want to do this with most
+    // rules because rules from a book, especially from a customStyles file, could mess up
+    // bloom-player itself.)
+    // Since the root file, typically bloomPlayer.htm, is typically not at the same location
+    // as the book files, the simple URLs it contains don't work, since they assume fonts.css
+    // is loaded as part of a file in the same location as the font files. So we modify
+    // the URLs in the file to be relative to the book folder.
+    // There are possible dangers here...if someone got something malicious into fonts.css
+    // it could at least mess up our player...but only for that one book, and in any case,
+    // fonts.css is generated by the harvester so it shouldn't be possible for anyone without
+    // harvester credentials to post a bad version of it.
+    // Enhance: currently we're just looking for the (typically ttf) font uploaded as part
+    // of the book if embedding is permitted. Eventually, we might want to try first for
+    // a corresponding woff font in a standard location. We may even be able to pay to
+    // provide some fonts there for book previewing that are NOT embeddable.
+    private makeFontStylesheet(href: string): void {
+        axios.get(href).then((result) => {
+            let stylesheet = document.getElementById(
+                "fontCssStyleSheet",
+            ) as HTMLStyleElement;
+            if (!stylesheet) {
+                stylesheet = document.createElement("style");
+                document.head.appendChild(stylesheet);
+                stylesheet.setAttribute("id", "fontCssStyleSheet");
+            }
+            const prefix = href.substring(0, href.length - "/fonts.css".length);
+            stylesheet.innerText = result.data.replace(
+                // This is so complex because at one time we weren't adding the
+                // quotes around the original url. So, now we handle no quotes,
+                // single quotes, and double quotes. Note that we also have to
+                // handle possible parentheses in the file name.
+                /src:url\(['"]?(.*\.[^\)'"]*)['"]?\)/g,
+                "src:url('" + prefix + "/$1')",
+            );
+        });
+        // no catch clause...if there's no fonts.css, we should never get a 'then' and
+        // don't need to do anything.
+    }
+
+    // Make a stylesheet that tells the player where to find Andika New Basic.
+    // This can't be part of the <style scoped> where most style rules for the book
+    // content go, because @font-face rules don't work there.
+    private makeAndikaStylesheet(): void {
+        let stylesheet = document.getElementById(
+            "andikaCssStyleSheet",
+        ) as HTMLStyleElement;
+        if (!stylesheet) {
+            stylesheet = document.createElement("style");
+            document.head.appendChild(stylesheet);
+            stylesheet.setAttribute("id", "andikaCssStyleSheet");
+        }
+
+        // Starting in Jul 2022, we provide Andika as a fallback to Andika New Basic.
+        // (And we ship our hosts with Andika instead of ANB.)
+        //
+        // 1. The font might be found already installed (local).
+        // 2. Failing that, if we're inside BloomReader, BloomPUB Viewer, or another host we control,
+        //    we add the fake relative path `./host/fonts/*` so the host can intercept
+        //    this request and serve the appropriate font file.
+        //    (RAB doesn't use this stylesheet at all; rather, it modifies fonts.css.)
+        // 3. If instead we're embedded in a web page like BloomLibrary.org, we need to download from the web.
+        //
+        // (Jun 2022) I'm not sure this is (still) true:
+        // Note that currently that last option will only work when the page origin
+        // is *bloomlibrary.org. This helps limit our exposure to large charges from
+        // people using our font arbitrarily. This does include, however, books
+        // displayed in an iframe using https://bloomlibrary.org/bloom-player/bloomplayer.htm
+        //
+        // Previously, this conditionally included some file:// urls for Android which were
+        // conditionally included because they caused problems for Safari on iOS. That is why
+        // they are here instead of bloom-player-content.less. In their current state,
+        // I believe they could be moved there. But we may need conditional logic again...
+        stylesheet.innerText = `
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: normal;
+                src:
+                    local("Andika New Basic"),
+                    local("Andika"),
+                    url("./host/fonts/Andika New Basic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-R.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: normal;
+                src:
+                    local("Andika New Basic Bold"),
+                    local("Andika Bold"),
+                    url("./host/fonts/Andika New Basic Bold"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-B.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: normal;
+                font-style: italic;
+                src:
+                    local("Andika New Basic Italic"),
+                    local("Andika Italic"),
+                    url("./host/fonts/Andika New Basic Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-I.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika New Basic";
+                font-weight: bold;
+                font-style: italic;
+                src:
+                    local("Andika New Basic Bold Italic"),
+                    local("Andika Bold Italic"),
+                    url("./host/fonts/Andika New Basic Bold Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika%20New%20Basic/AndikaNewBasic-BI.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: normal;
+                src:
+                    local("Andika"),
+                    url("./host/fonts/Andika"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Regular.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: normal;
+                src:
+                    local("Andika Bold"),
+                    url("./host/fonts/Andika Bold"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Bold.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: normal;
+                font-style: italic;
+                src:
+                    local("Andika Italic"),
+                    url("./host/fonts/Andika Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-Italic.woff")
+                ;
+            }
+
+            @font-face {
+                font-family: "Andika";
+                font-weight: bold;
+                font-style: italic;
+                src:
+                    local("Andika Bold Italic"),
+                    url("./host/fonts/Andika Bold Italic"),
+                    url("https://bloomlibrary.org/fonts/Andika/Andika-BoldItalic.woff")
+                ;
+            }
+
+            .do-not-display {
+                display:none !important;
+            }
+            `
+
+            // (Jun 2022) these are not actually preventing <br> tags:
+            .replace("\n", "")
+            .replace("\r", ""); // newlines turn to <br> which is wrong in style element
+    }
+
+    // Assemble all the style rules from all the stylesheets the book contains or references.
+    // When the async completes, the result will be set as our state.styles with setState().
+    // Exception: a stylesheet called "fonts.css" will instead be loaded into the <head>
+    // of the main document, since it contains @font-face declarations that don't work
+    // in the <scoped> element.
+    private async assembleStyleSheets(doc: HTMLHtmlElement): Promise<string> {
+        this.makeAndikaStylesheet();
+        const linkElts = doc.ownerDocument!.evaluate(
+            ".//link[@href and @type='text/css']",
+            doc,
+            null,
+            XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+            null,
+        );
+        const promises: Array<AxiosPromise<any>> = [];
+        for (let i = 0; i < linkElts.snapshotLength; i++) {
+            const link = linkElts.snapshotItem(i) as HTMLElement;
+            const href = link.getAttribute("href");
+            const fullHref = this.fullUrl(href);
+            if (fullHref.endsWith("/fonts.css")) {
+                this.makeFontStylesheet(fullHref);
+            } else {
+                promises.push(axios.get(fullHref));
+                if (fullHref.endsWith("/appearance.css")) {
+                    this.bookInfo.hasAppearanceSystem = true;
+                }
+            }
+        }
+        const p = this.legacyQuestionHandler.getPromiseForAnyQuizCss();
+        if (p) {
+            promises.push(p);
+        }
+
+        try {
+            const results = await axios.all(
+                promises.map((promise) =>
+                    promise.catch(
+                        // if one stylesheet doesn't exist or whatever, keep going
+                        () => undefined,
+                    ),
+                ),
+            );
+
+            let combinedStyle = "";
+
+            // start with embedded styles (typically before links in a bloom doc...)
+            const styleElts = doc.ownerDocument!.evaluate(
+                ".//style[@type='text/css']",
+                doc,
+                null,
+                XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                null,
+            );
+            for (let k = 0; k < styleElts.snapshotLength; k++) {
+                const styleElt = styleElts.snapshotItem(k) as HTMLElement;
+                combinedStyle += styleElt.innerText;
+            }
+
+            // then add the stylesheet contents we just retrieved
+            results.forEach((result) => {
+                if (result && result.data) {
+                    // console.log(
+                    //     "Loaded stylesheet: " + JSON.stringify(result.config),
+                    // );
+                    combinedStyle += result.data;
+
+                    // It is somewhat awkward to do this in a method called assembleStyleSheets,
+                    // but this is the best way to access the information currently.
+                    // See further comments in getNationalLanguagesFromCssStyles.
+                    //
+                    // settingsCollectionStyles.css was replaced with defaultLangStyles.css.
+                    // We have to check for both for older books.
+                    if (
+                        result.config!.url!.endsWith(
+                            "/defaultLangStyles.css",
+                        ) ||
+                        result.config!.url!.endsWith(
+                            "/settingsCollectionStyles.css",
+                        )
+                    ) {
+                        this.bookInfo.setLanguage2And3(result.data);
+                    }
+                }
+            });
+
+            // A ":root" selector doesn't work in this scoped css context.
+            // Change all ":root" references to ".bloomPlayer-page", which is the level just above .bloom-page.
+            // We're using this instead of .bloom-page directly so that a selector like `:root .bloom-page` would still work.
+            combinedStyle = combinedStyle.replace(
+                /:root/g,
+                ".bloomPlayer-page",
+            );
+            //console.log("***combinedStyle", combinedStyle);
+            return combinedStyle;
+        } catch (err) {
+            this.HandleLoadingError(err);
+            return "";
+        }
+    }
+
     private fullUrl(url: string | null): string {
         // Enhance: possibly we should only do this if we somehow determine it is a relative URL?
         // But the things we apply it to always are, in bloom books.
@@ -1728,7 +2026,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // },
             getSwiper: (s) => {
                 this.swiperInstance = s;
-                if (this.metaDataObject.isRtl && this.swiperInstance) {
+                if (this.metaDataObject?.isRtl && this.swiperInstance) {
                     // These kluges cause swiper to display the pages in reverse order.
                     // We are digging deep into the current implementation of Swiper; this might
                     // not work with any other version.
@@ -1827,7 +2125,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // of the slide to show.) (There's possibly some drastic redesign that would let the
             // current page be a fully controlled paramter. But maybe not...react-id-slider is a
             // thin layer over something that isn't fully React.)
-            swiperParams.activeSlideKey = this.props.startPage?.toString();
+            swiperParams.activeSlideKey = this.state.startPageIndex?.toString();
         }
 
         let bloomPlayerClass = "bloomPlayer";
@@ -1951,9 +2249,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             dangerouslySetInnerHTML={{
                                                 __html: slide,
                                             }}
-                                            ref={(div) =>
-                                                this.fixInternalHyperlinks(div)
-                                            }
+                                            // ref={(div) =>
+                                            //     this.fixInternalHyperlinks(div)
+                                            // }
                                         />
                                     </>
                                 ) : (
@@ -2063,37 +2361,37 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Other internal links won't work and are disabled; external ones are forced to
     // open a new tab as the results of trying to display a web page in the bloom-player
     // iframe or webview can be confusing.
-    private fixInternalHyperlinks(div: HTMLDivElement | null): void {
-        if (!div) {
-            return;
-        }
-        const anchors = Array.from(div.getElementsByTagName("a") ?? []);
-        anchors.forEach((a) => {
-            const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
-            if (href?.startsWith("#")) {
-                const pageId = href.substring(1);
-                const pageNum = this.state.pageIdToIndexMap[pageId];
-                if (pageNum !== undefined) {
-                    a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
-                    a.onclick = (ev) => {
-                        ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
-                        ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
-                        this.swiperInstance.slideTo(pageNum);
-                    };
-                } else {
-                    // no other kind of internal link makes sense, so let them be ignored.
-                    a.onclick = (ev) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    };
-                }
-            } else {
-                // an external link. It will likely confuse things to follow it inside whatever iframe or webview
-                // bloom player may be running in, so encourage opening a new tab or similar action.
-                a.setAttribute("target", "blank");
-            }
-        });
-    }
+    // private fixInternalHyperlinks(div: HTMLDivElement | null): void {
+    //     if (!div) {
+    //         return;
+    //     }
+    //     const anchors = Array.from(div.getElementsByTagName("a") ?? []);
+    //     anchors.forEach((a) => {
+    //         const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
+    //         if (href?.startsWith("#")) {
+    //             const pageId = href.substring(1);
+    //             const pageNum = this.state.pageIdToIndexMap[pageId];
+    //             if (pageNum !== undefined) {
+    //                 a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
+    //                 a.onclick = (ev) => {
+    //                     ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
+    //                     ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
+    //                     this.swiperInstance.slideTo(pageNum);
+    //                 };
+    //             } else {
+    //                 // no other kind of internal link makes sense, so let them be ignored.
+    //                 a.onclick = (ev) => {
+    //                     ev.preventDefault();
+    //                     ev.stopPropagation();
+    //                 };
+    //             }
+    //         } else {
+    //             // an external link. It will likely confuse things to follow it inside whatever iframe or webview
+    //             // bloom player may be running in, so encourage opening a new tab or similar action.
+    //             a.setAttribute("target", "blank");
+    //         }
+    //     });
+    // }
 
     // What we need to do when the page narration is completed (if autoadvance, go to next page).
     public handlePageNarrationComplete = (page: HTMLElement | undefined) => {
@@ -2107,7 +2405,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (this.shouldAutoPlay()) {
             const autoplayCount = this.props.autoplayCount ?? 0;
-            const startPage = this.props.startPage ?? 0;
+            const startPage = this.state.startPageIndex ?? 0;
             const lastPage = this.swiperInstance.slides.length - 1;
             let lastPageToAutoplay = this.props.autoplayCount
                 ? Math.min(startPage + autoplayCount - 1, lastPage)
@@ -2186,6 +2484,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             "bloom-page",
         )[0] as HTMLElement;
         return bloomPage;
+    }
+
+    private getPageIdFromIndex(index: number): string {
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            throw new Error("No bloomPage at index " + index);
+        }
+        return bloomPage.getAttribute("id")!;
     }
 
     public static getCurrentPage(): HTMLElement {
