@@ -12,6 +12,14 @@ that possible is the proxy defined in .storybook/main.ts, not here.
 const meta: Meta<typeof BloomPlayerIframe> = {
     title: "MultiBook",
     component: BloomPlayerIframe,
+    argTypes: {
+        showBackButton: {
+            control: "boolean",
+            description:
+                "Show back button in the player that will send a message to the host when the local history is empty and the user clicks it.",
+            defaultValue: false,
+        },
+    },
 };
 export default meta;
 
@@ -21,6 +29,7 @@ export const UsePageIndex: Story = {
     args: {
         bookUrl: "testBooks/multibook-index/index.htm",
         bookPageIndex: "4",
+        showBackButton: false,
     },
     // doesn't work storyName: "Use `bookPageIndex` to specify the starting page",
 };
@@ -31,6 +40,7 @@ export const Default: Story = {
     args: {
         bookUrl:
             "testBooks/multibook-index/index.htm#653f29c1-665b-4d63-a061-086401abc106",
+        showBackButton: false,
     },
 };
 Default.storyName =

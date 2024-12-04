@@ -22,7 +22,7 @@ export function useBuildIsReady() {
     return isReady;
 }
 
-export function BloomPlayerIframe({ bookUrl, bookPageIndex }) {
+export function BloomPlayerIframe({ bookUrl, bookPageIndex, showBackButton }) {
     if (!useBuildIsReady()) {
         return (
             <div>
@@ -31,9 +31,10 @@ export function BloomPlayerIframe({ bookUrl, bookPageIndex }) {
         );
     }
 
+    const backButtonParam = showBackButton ? "&showBackButton=true" : "";
     return (
         <iframe
-            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}&showBackButton=true`}
+            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}${backButtonParam}`}
             style={{ width: "100%", height: "500px" }}
         />
     );
