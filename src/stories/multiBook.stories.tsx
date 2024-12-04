@@ -1,6 +1,6 @@
 import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { BloomPlayerIframe } from "./iframeStoryUtils";
+import { BloomPlayerIframe } from "./BloomPlayerIframe";
 
 /* This uses an iframe, so normal dev server compilation is not effective.
 Therefore, when developing with this, use `yarn buildForStorybook` to update non-storybook code.

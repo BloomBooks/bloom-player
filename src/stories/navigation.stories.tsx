@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { BloomPlayerIframe } from "./iframeStoryUtils";
+import { BloomPlayerIframe } from "./BloomPlayerIframe";
 import { BloomPlayerTester } from "./BloomPlayerTester";
 
 /* This uses an iframe, so normal dev server compilation is not effective.
