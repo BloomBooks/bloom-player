@@ -8,10 +8,10 @@ const preview: Preview = {
                 date: /Date$/i,
             },
         },
-        initialRoute: "/story/multibook--default", // Set initial story
+
         options: {
             storySort: {
-                order: ["MultiBook"], // Ensure MultiBook appears first
+                order: ["Automated"],
             },
         },
     },

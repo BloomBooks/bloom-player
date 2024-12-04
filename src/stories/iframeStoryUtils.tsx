@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 
+// Keep the React-specific code separate
 export function useBuildIsReady() {
     const [isReady, setIsReady] = useState(false);
 

@@ -49,8 +49,20 @@ const config: StorybookConfig = {
                     return rewrittenPath;
                 },
             },
+
+            "/bloom/": {
+                target: "file:///",
+                rewrite: (path) => {
+                    console.log(`proxy got request ${path}`);
+                    return path.replace("/bloom/", "");
+                },
+            },
         };
-        return { ...config, server: { ...config.server, proxy: updatedProxy } };
+        return {
+            ...config,
+            server: { ...config.server, proxy: updatedProxy },
+            addons: ["@storybook/addon-interactions"],
+        };
     },
 };
 export default config;

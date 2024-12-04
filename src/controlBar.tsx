@@ -36,6 +36,7 @@ import LangData from "./langData";
 import { sendMessageToHost } from "./externalContext";
 import { sendStringToBloomApi } from "./videoRecordingSupport";
 import { LocalizationManager } from "./l10n/localizationManager";
+import { Button } from "@material-ui/core";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 
@@ -259,6 +260,12 @@ export const ControlBar: React.FunctionComponent<IControlBarProps> = (
                                     props.backClicked();
                                 }
                             }}
+                            data-testid="history-back-button"
+                            // this is just to help automated tests know when the back button is gone
+                            disabled={
+                                props.getBackButtonState() ===
+                                BackButtonState.showNothing
+                            }
                         >
                             {props.getBackButtonState() ===
                             BackButtonState.showArrow ? (

@@ -36,12 +36,12 @@ export const UsePageIndex: Story = {
 UsePageIndex.storyName =
     "Use `bookPageIndex` to specify the starting page of the first book";
 
-export const Default: Story = {
+export const UsePageId: Story = {
     args: {
         bookUrl:
             "testBooks/multibook-index/index.htm#653f29c1-665b-4d63-a061-086401abc106",
         showBackButton: false,
     },
 };
-Default.storyName =
-    "Use #pageId to specify the starting page of the first book";
+UsePageId.storyName =
+    "Use '#The-Page-ID to specify the starting page of the first book";
