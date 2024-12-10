@@ -5,7 +5,7 @@ book inside of the Bloom:Publish:Android screen.
 import { BloomPlayerCore } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
 import {
-    sendBackToHost,
+    informHostOfBackAction,
     showNavBar,
     hideNavBar,
     reportBookProperties,
@@ -933,7 +933,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     if (
                         !coreRef.current?.HandleBackButtonClickedIfHavePlayerHistory()
                     ) {
-                        sendBackToHost();
+                        informHostOfBackAction();
                     }
                 }}
                 showPlayPause={hasAudio || hasMusic || hasVideo}
