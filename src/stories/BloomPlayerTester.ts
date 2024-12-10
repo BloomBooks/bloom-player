@@ -1,4 +1,4 @@
-import { userEvent, waitFor, within, expect } from "@storybook/test";
+import { userEvent, waitFor, within, expect, fireEvent } from "@storybook/test";
 export class BloomPlayerTester {
     private iframeDoc: Document;
 
@@ -43,7 +43,11 @@ export class BloomPlayerTester {
             },
             { timeout: 5000 },
         );
-        await userEvent.click(link as HTMLElement);
+        //await userEvent.click(link as HTMLElement);
+        // the "pointerdown" event fails to trigger with the normal click here,
+        // which probably does a number of things, at least mousedown and up.
+        // As a workaround, we're sending the raw "click" event.
+        await fireEvent.click(link as HTMLElement);
     }
 
     async goToNextPage() {

@@ -26,13 +26,13 @@ export function tryPopPlayerHistory(
 }
 
 export function checkClickForBookOrPageJump(
-    event: any,
+    event: MouseEvent,
     currentBookInstanceId: string,
     getCurrentPageId: () => string,
 ): ILocation | undefined {
     const linkElement = (event.target as HTMLElement).closest(
         "[href], [data-href]",
-    );
+    ) as HTMLElement;
     if (!linkElement) return {};
     event.preventDefault(); // don't let a link click become a drag
     event.stopPropagation();
@@ -75,7 +75,7 @@ export function checkClickForBookOrPageJump(
     } else if (href.startsWith("#")) {
         targetPageId = href.substring(1);
     }
-    const currentPageId = getCurentPageId();
+    const currentPageId = getCurrentPageId();
     if (targetBookId) {
         pushLocation(currentBookInstanceId, currentPageId, "Changing books");
         return {
@@ -106,8 +106,16 @@ function urlFromBookId(bookId: string) {
 
 function parseTargetBookUrl(url: string) {
     // the format is "/book/BOOKID#PAGEID" where the page id is optional
-    const bloomUrl = new URL(url, window.location.origin);
-    const bookId = bloomUrl.pathname.replace("/book/", "");
-    const pageId = bloomUrl.hash.replace("#", "");
-    return { bookId, pageId };
+    try {
+        const bloomUrl = new URL(url, window.location.origin);
+        if (!bloomUrl.pathname.startsWith("/book/")) {
+            throw new Error("Invalid book URL format");
+        }
+        const bookId = bloomUrl.pathname.replace("/book/", "");
+        const pageId = bloomUrl.hash.replace("#", "");
+        return { bookId, pageId };
+    } catch (error) {
+        console.error("Error parsing book URL:", error);
+        return { bookId: undefined, pageId: undefined };
+    }
 }

@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import {
     canGoBack,
-    goBackInHistoryIfPossible,
+    tryPopPlayerHistory,
     checkClickForBookOrPageJump,
 } from "./navigation";
 
@@ -9,7 +9,7 @@ describe("Navigation functions", () => {
     beforeEach(() => {
         // Clear navigation history before each test
         while (canGoBack()) {
-            goBackInHistoryIfPossible("dummy");
+            tryPopPlayerHistory("dummy");
         }
     });
 
@@ -25,16 +25,16 @@ describe("Navigation functions", () => {
         });
     });
 
-    describe("goBackInHistoryIfPossible", () => {
+    describe("tryPopPlayerHistory", () => {
         test("returns undefined when no history", () => {
-            expect(goBackInHistoryIfPossible("book1")).toBeUndefined();
+            expect(tryPopPlayerHistory("book1")).toBeUndefined();
         });
 
         test("returns previous location after navigation", () => {
             const event = createClickEvent("#page2");
             checkClickForBookOrPageJump(event, "book1", () => "page1");
 
-            const result = goBackInHistoryIfPossible("book1");
+            const result = tryPopPlayerHistory("book1");
             expect(result).toEqual({
                 bookUrl: undefined,
                 pageId: "page1",
@@ -114,14 +114,14 @@ describe("Navigation functions", () => {
             checkClickForBookOrPageJump(externalEvent, "book1", () => "page2");
 
             // First back navigation should return to page2 in book1
-            const firstBack = goBackInHistoryIfPossible("book2");
+            const firstBack = tryPopPlayerHistory("book2");
             expect(firstBack).toEqual({
                 bookUrl: "/book/book1/index.htm",
                 pageId: "page2",
             });
 
             // Second back navigation should return to page2 in book1
-            const secondBack = goBackInHistoryIfPossible("book1");
+            const secondBack = tryPopPlayerHistory("book1");
             expect(secondBack).toEqual({
                 // because the target is in the current book, we don't emit a url
                 bookUrl: undefined,
@@ -129,7 +129,7 @@ describe("Navigation functions", () => {
             });
 
             // Third back navigation should return undefined (no more history)
-            const thirdBack = goBackInHistoryIfPossible("book1");
+            const thirdBack = tryPopPlayerHistory("book1");
             expect(thirdBack).toBeUndefined();
         });
 
@@ -152,6 +152,7 @@ function createClickEvent(href: string) {
             href: { nodeValue: href },
         },
         closest: () => mockElement,
+        getAttribute: (attr: string) => mockElement.attributes[attr]?.nodeValue,
     };
 
     return {
