@@ -2,27 +2,14 @@
 
 ## Getting the pieces
 
-    yarn add bloom-player
+    `yarn add bloom-player`
 
 This puts the files you need at
 
-    node_modules/bloom-player/dist
+    `node_modules/bloom-player/dist`
 
-Note, however, that you won't typically import or require the bloom-player javascript. That javascript is there to be used by the bloomplayer.htm, which is intended to be the source of an iframe or WebView. So typically you will need to do some step to get the files from node_modules/bloom-player/dist to your output directory.
+Copy those wherever you need them for your project.
 
-For example, if gulp is part of your build process, you might use
-
-    gulp.src(paths.nodeFilesNeededInOutput)
-        .pipe(gulpCopy(outputDir, { prefix: 1 }));
-
-along with declaring one of your paths to be
-
-    nodeFilesNeededInOutput: [
-        "./**/bloom-player/dist/bloomPlayer.min.js",
-        "./**/bloom-player/dist/simpleComprehensionQuiz.js",
-        "./**/bloom-player/dist/bloomplayer.htm",
-        "./**/bloom-player/dist/*.mp3"
-    ]
 
 ### Other options
 
@@ -38,7 +25,7 @@ The url parameter points to the HTML file that is the core of the bloom book. It
 
 The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider then it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
 
-`Bloom-player` is designed to be published using `npm` so as to be readily available to a variety of clients. The published version includes both `dest/bloomPlayer.js` and `dest/bloomPlayer.min.js`, as well as an un-minified version of the code and some mp3 files used for responding to comprehension questions. There is also a file simpleComprehensionQuiz.js, but this is needed only for books containing an obsolete kind of comprehension questions.
+`Bloom-player` is designed to be published using `npm` so as to be readily available to a variety of clients. The published version includes both `dist/bloomPlayer-HASH.js`, as well as some mp3 files used by activities.
 
 We deliberately require this component to be used in an `iframe` so that the containing web page is safe from any scripts that might get embedded in Bloom books. For this reason `bloom-player` deliberately manipulates (with `React`) the body of its HTML document.
 

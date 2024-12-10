@@ -131,7 +131,7 @@ export function track(event: string, params: object) {
     // to save that object and reuse it here.
     const analytics = (window as any).analytics;
     analytics.track(event, params);
-    console.log("DEBUG track('" + event + "', " + JSON.stringify(params) + ")");
+    //console.log("DEBUG track('" + event + "', " + JSON.stringify(params) + ")");
 }
 
 const pendingBookAnalytics = new Map<string, object>();
