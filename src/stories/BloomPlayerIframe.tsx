@@ -6,7 +6,7 @@ export function BloomPlayerIframe({ bookUrl, bookPageIndex, showBackButton }) {
     if (!useBuildIsReady()) {
         return (
             <div>
-                Waiting for Bloom Player to build. See "yarn buildForStorybook"
+                Waiting for Bloom Player to build. See "yarn watchForStorybook"
             </div>
         );
     }

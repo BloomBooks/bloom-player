@@ -5,15 +5,15 @@ type ILocation = { bookUrl?: string; pageId?: string };
 export function canGoBack() {
     return jumpHistory.length > 0;
 }
-export function goBackInHistoryIfPossible(
+export function tryPopPlayerHistory(
     currentBookId: string,
 ): ILocation | undefined {
     const previousLocation = jumpHistory.pop();
     if (previousLocation) {
-        console.log(
-            "Going Back. Current History is: ",
-            JSON.stringify(jumpHistory, null, 2),
-        );
+        // console.log(
+        //     "Going Back. Current History is: ",
+        //     JSON.stringify(jumpHistory, null, 2),
+        // );
         return {
             bookUrl:
                 currentBookId === previousLocation.bookId
@@ -24,15 +24,12 @@ export function goBackInHistoryIfPossible(
     }
     return undefined;
 }
-function urlFromBookId(bookId: string) {
-    return `/book/${bookId}/index.htm`;
-}
 
 export function checkClickForBookOrPageJump(
     event: any,
     currentBookInstanceId: string,
-    getCurentPageId: () => string,
-): ILocation {
+    getCurrentPageId: () => string,
+): ILocation | undefined {
     const linkElement = (event.target as HTMLElement).closest(
         "[href], [data-href]",
     );
@@ -41,10 +38,9 @@ export function checkClickForBookOrPageJump(
     event.stopPropagation();
 
     const href: string =
-        (linkElement.attributes["href"] &&
-            linkElement.attributes["href"].nodeValue) ||
-        (linkElement.attributes["data-href"] &&
-            linkElement.attributes["data-href"].nodeValue);
+        (linkElement.getAttribute("href") ||
+            linkElement.getAttribute("data-href")) ??
+        "";
 
     if (href.startsWith("http://") || href.startsWith("https://")) {
         // This is a generic external link. We open it in a new window or tab.
@@ -66,7 +62,7 @@ export function checkClickForBookOrPageJump(
                         : urlFromBookId(previousLocation.bookId!),
                 pageId: previousLocation.pageId,
             };
-        }
+        } else return undefined;
     } else if (href.startsWith("/book/")) {
         const target = parseTargetBookUrl(href);
         targetBookId = target.bookId;
@@ -93,16 +89,21 @@ export function checkClickForBookOrPageJump(
         return { pageId: targetPageId };
     }
 
-    return {}; // nothing to do as far as navigation goes
+    return undefined; // nothing to do as far as navigation goes
 }
 
 function pushLocation(bookId: string, pageId: string, comment: string) {
     jumpHistory.push({ bookId, pageId });
-    console.log(
-        comment + " Current History is: ",
-        JSON.stringify(jumpHistory, null, 2),
-    );
+    //   console.log(
+    //     comment + " Current History is: ",
+    //     JSON.stringify(jumpHistory, null, 2)
+    //   );
 }
+
+function urlFromBookId(bookId: string) {
+    return `/book/${bookId}/index.htm`;
+}
+
 function parseTargetBookUrl(url: string) {
     // the format is "/book/BOOKID#PAGEID" where the page id is optional
     const bloomUrl = new URL(url, window.location.origin);

@@ -3,7 +3,7 @@ import { BloomPlayerIframe } from "./BloomPlayerIframe";
 import { BloomPlayerTester } from "./BloomPlayerTester";
 
 /* This uses an iframe, so normal dev server compilation is not effective.
-Therefore, when developing with this, use `yarn buildForStorybook` to update non-storybook code.
+Therefore, when developing with this, use `yarn watchForStorybook` to update non-storybook code.
 
 The point of this story is really just to host a book that has links to a second book. What makes
 that possible is the proxy defined in .storybook/main.ts, not here.

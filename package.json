@@ -24,7 +24,7 @@
         "prepare": "husky install && git config blame.ignoreRevsFile .git-blame-ignore-revs",
         "storybook": "storybook dev -p 6006",
         "// run this when working with stories that use an iframe and bloomplayer.htm instead of the raw react components": " ",
-        "buildForStorybook": "yarn vite build --watch --mode development",
+        "watchForStorybook": "yarn vite build --watch --mode development",
         "strings:download": "crowdin download --config src/l10n/crowdin.yml  && yarn strings:compile",
         "strings:upload": "crowdin upload  --config src/l10n/crowdin.yml",
         "strings:compile": "yarn tsx ./src/l10n/compileL10Strings.ts",

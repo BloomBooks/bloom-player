@@ -132,6 +132,16 @@ describe("Navigation functions", () => {
             const thirdBack = goBackInHistoryIfPossible("book1");
             expect(thirdBack).toBeUndefined();
         });
+
+        test("doesn't die if an href is empty", () => {
+            const event = createClickEvent("");
+            const result = checkClickForBookOrPageJump(
+                event,
+                "doesn't matter",
+                () => "doesn't matter",
+            );
+            expect(result).toEqual(undefined);
+        });
     });
 });
 

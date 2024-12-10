@@ -286,7 +286,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         const parsedUrl = new URL(props.url, window.location.origin);
         this.state.bookUrl = parsedUrl.pathname;
         if (parsedUrl.hash) {
-            this.state.startPageId = parsedUrl.hash.substring(1);
+            this.state.startPageId = parsedUrl.hash.substring(1); // strip the "#"
         } else {
             // Copy into state because in a multi-book scenario, the prop.startPageIndex will
             // always be the initial value, but we don't want to just got to that page of
@@ -355,6 +355,22 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.handleDocumentLevelKeyDown(e),
         );
 
+        // Prevent unwanted behavior on link clicks that accidentally move a bit.
+        document.addEventListener(
+            "pointerdown",
+            (event) => {
+                if (
+                    (event.target as HTMLElement).closest("[href], [data-href]")
+                ) {
+                    // Stop the swiper from starting a drag
+                    event.stopPropagation();
+                    // Stop the browser from showing a thing like you're trying to drag the link to some other window
+                    event.preventDefault();
+                }
+            },
+            { capture: true }, // Let us see this before children see it.
+        );
+
         // Clicking on any element that has a data-href attribute will be treated as a link.
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
@@ -411,7 +427,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         return canGoBack();
     }
     // called by bloom-player-controls
-    public HandleBackButtonClicked(): boolean {
+    public HandleBackButtonClickedIfHavePlayerHistory(): boolean {
         const backLocation = goBackInHistoryIfPossible(
             this.bookInfo.bookInstanceId,
         );
@@ -543,11 +559,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
                 // parse the url
                 const u = new URL(newSourceUrl, window.location.origin);
-                // TODO: the URL parse always introduces a leading slash if it's missing, but currently that breaks... something.
-                // I feel like I'm hacking around something I should understand better.
+                // The URL parsing can introduce a slash we don't want when the input URL is not relative.
                 this.sourceUrl = newSourceUrl.startsWith("/")
-                    ? u.pathname
-                    : u.pathname.substring(1);
+                    ? u.pathname // if the original was relative, fine
+                    : u.pathname.substring(1); // if the original was not relative, don't make it look relative
 
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
@@ -612,7 +627,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         },
                     );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
-                console.log("urlOfBookHtmlFile", urlOfBookHtmlFile);
+                // console.log("urlOfBookHtmlFile", urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise, distributionPromise])
                     .then((result) => {
@@ -894,7 +909,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             );
         };
 
-        // TODO: most of this should be moved into bookInfo, including the pageIdToIndex map.
+        // ENHANCE: most of this should be moved into bookInfo, including the pageIdToIndex map.
         // clear the pageIdToIndex map
         pageIdToIndex.length = 0;
         pageIdToIndex["cover"] = 0;
@@ -2235,12 +2250,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                                                     .hasAppearanceSystem
                                                     ? "appearance-system"
                                                     : ""
-                                            } ${
-                                                this.state
-                                                    .importedBodyAttributes[
-                                                    "class"
-                                                ] ?? ""
-                                            }`}
+                                            } ${this.state.importedBodyAttributes["class"] ?? ""}`}
                                             // Note: the contents of `slide` are what was in the .htm originally.
                                             // So you would expect that this would replace any changes made to the dom by the activity or other code.
                                             // You would expect that we would lose the answers a user made in an activity.
@@ -2361,37 +2371,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     // Other internal links won't work and are disabled; external ones are forced to
     // open a new tab as the results of trying to display a web page in the bloom-player
     // iframe or webview can be confusing.
-    // private fixInternalHyperlinks(div: HTMLDivElement | null): void {
-    //     if (!div) {
-    //         return;
-    //     }
-    //     const anchors = Array.from(div.getElementsByTagName("a") ?? []);
-    //     anchors.forEach((a) => {
-    //         const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
-    //         if (href?.startsWith("#")) {
-    //             const pageId = href.substring(1);
-    //             const pageNum = this.state.pageIdToIndexMap[pageId];
-    //             if (pageNum !== undefined) {
-    //                 a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
-    //                 a.onclick = (ev) => {
-    //                     ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
-    //                     ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
-    //                     this.swiperInstance.slideTo(pageNum);
-    //                 };
-    //             } else {
-    //                 // no other kind of internal link makes sense, so let them be ignored.
-    //                 a.onclick = (ev) => {
-    //                     ev.preventDefault();
-    //                     ev.stopPropagation();
-    //                 };
-    //             }
-    //         } else {
-    //             // an external link. It will likely confuse things to follow it inside whatever iframe or webview
-    //             // bloom player may be running in, so encourage opening a new tab or similar action.
-    //             a.setAttribute("target", "blank");
-    //         }
-    //     });
-    // }
 
     // What we need to do when the page narration is completed (if autoadvance, go to next page).
     public handlePageNarrationComplete = (page: HTMLElement | undefined) => {

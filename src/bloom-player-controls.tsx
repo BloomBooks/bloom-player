@@ -581,9 +581,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
             const amountToMoveDown =
                 (winHeight - actualPageHeight - controlsHeight) / 2; // don't count controlsHeight in what we move down
             if (amountToMoveDown > 0) {
-                translateString = `translate(0, ${amountToMoveDown.toFixed(
-                    0,
-                )}px) `;
+                translateString = `translate(0, ${amountToMoveDown.toFixed(0)}px) `;
                 // console.log(`** translating down ${amountToMoveDown}px`);
                 // console.log(`   winHeight ${winHeight}px`);
                 // console.log(`   desiredPageHeight ${desiredPageHeight}px`);
@@ -915,8 +913,8 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                         // we have a page or book jump on our bloom player history stack
                         return BackButtonState.showArrow;
                     else if (showBackButton) {
-                        // so our internal history is empty, but the container is
-                        // wants us to offer a "back" to it. Bloom Reader uses this.
+                        // so our internal history is empty, but the container
+                        // wants us to offer a way "back" to it. Bloom Reader uses this.
                         if (window === window.top)
                             return BackButtonState.showArrow;
                         // Used by bloomlibrary.org if you went straight to a book via some URL
@@ -932,7 +930,9 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                 playLabel={playLabel}
                 preferredLanguages={preferredUiLanguages}
                 backClicked={() => {
-                    if (!coreRef.current?.HandleBackButtonClicked()) {
+                    if (
+                        !coreRef.current?.HandleBackButtonClickedIfHavePlayerHistory()
+                    ) {
                         sendBackToHost();
                     }
                 }}
