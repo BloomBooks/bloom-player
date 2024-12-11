@@ -113,7 +113,7 @@ export function updateBookProgressReport(event: string, properties: any) {
 
 let gotCapabilities = false;
 
-export function onBackClicked() {
+export function informHostOfBackAction() {
     sendMessageToHost({ messageType: "backButtonClicked" });
 }
 

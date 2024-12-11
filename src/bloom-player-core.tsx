@@ -3,8 +3,7 @@ bloom-player-core is responsible for all the behavior of working through a book,
 (other than page turning).
 */
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-import axios, { AxiosPromise } from "axios";
+import axios from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
 import "style-scoped/scoped.min.js";
@@ -20,7 +19,6 @@ import { LocalizationManager } from "./l10n/localizationManager";
 import {
     reportAnalytics,
     reportPlaybackComplete,
-    sendMessageToHost,
     setAmbientAnalyticsProperties,
     updateBookProgressReport,
 } from "./externalContext";
@@ -30,7 +28,6 @@ import {
     sendStringToBloomApi,
 } from "./videoRecordingSupport";
 import LangData from "./langData";
-import Replay from "@material-ui/icons/Replay";
 
 // See related comments in controlBar.tsx
 import IconButton from "@material-ui/core/IconButton";
@@ -80,7 +77,12 @@ import {
     kSelectorForPotentialNiceScrollElements,
 } from "./scrolling";
 import { assembleStyleSheets } from "./stylesheets";
-import { c } from "vite/dist/node/types.d-aGj9QkWt";
+import {
+    canGoBack,
+    checkClickForBookOrPageJump,
+    tryPopPlayerHistory,
+} from "./navigation";
+
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
 // It displays pages from the book and allows them to be turned by dragging.
@@ -178,13 +180,13 @@ interface IProps {
     // Send a report to Bloom API about sounds that have been played (when we reach the end
     // of the book in autoplay).
     shouldReportSoundLog?: boolean;
-    startPage?: number; // book opens at this page (0-based index into the list of pages, ignores visible page numbers)
+    startPageIndex?: number; // the FIRST book opens at this page (0-based index into the list of pages, ignores visible page numbers)
     // count of pages to autoplay (only applies to autoplay=yes or motion) before stopping and reporting done.
     autoplayCount?: number;
 }
-interface IState {
+export interface IPlayerState {
     pages: string[]; // of the book. First and last are empty in context mode.
-    pageIdToIndexMap: {}; // map from page id to page index
+    pageIdToIndexMap: { [key: string]: number }; // map from page id to page index
 
     // concatenated stylesheets the book references or embeds.
     // Make sure these are only set once per book or else
@@ -220,6 +222,10 @@ interface IState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
+
+    bookUrl: string;
+    startPageId?: string;
+    startPageIndex?: number; // when given a startPageId, we convert it to an index once the new book is loaded.
 }
 
 interface IPlayerPageOptions {
@@ -244,7 +250,7 @@ function handleInputMouseEvent(event: Event) {
     }
 }
 
-export class BloomPlayerCore extends React.Component<IProps, IState> {
+export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
 
@@ -272,8 +278,18 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // It might be a good thing to combine them somehow.
     private startingUpSwiper = true;
 
-    constructor(props: IProps, state: IState) {
+    constructor(props: IProps, state: IPlayerState) {
         super(props, state);
+        const parsedUrl = new URL(props.url, window.location.origin);
+        this.state.bookUrl = parsedUrl.pathname;
+        if (parsedUrl.hash) {
+            this.state.startPageId = parsedUrl.hash.substring(1); // strip the "#"
+        } else {
+            // Copy into state because in a multi-book scenario, the prop.startPageIndex will
+            // always be the initial value, but we don't want to just got to that page of
+            // every book we open. After the first book, we can clear the state.startPageIndex.
+            this.state.startPageIndex = props.startPageIndex;
+        }
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
@@ -282,7 +298,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         );
     }
 
-    public readonly state: IState = {
+    public readonly state: IPlayerState = {
         pages: this.initialPages,
         pageIdToIndexMap: {},
         styleRules: this.initialStyleRules,
@@ -294,6 +310,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
         ignorePhonyClick: false,
         isFinishUpForNewBookComplete: false,
         inPauseForced: false,
+        bookUrl: "",
     };
 
     // The book url we were passed as a URL param.
@@ -335,12 +352,35 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             this.handleDocumentLevelKeyDown(e),
         );
 
+        // Prevent unwanted behavior on link clicks that accidentally move a bit.
+        document.addEventListener(
+            "pointerdown",
+            (event) => {
+                if (
+                    (event.target as HTMLElement).closest("[href], [data-href]")
+                ) {
+                    // Stop the swiper from starting a drag
+                    event.stopPropagation();
+                    // Stop the browser from showing a thing like you're trying to drag the link to some other window
+                    event.preventDefault();
+                }
+            },
+            { capture: true }, // Let us see this before children see it.
+        );
+
         // Clicking on any element that has a data-href attribute will be treated as a link.
         // This is the simplest way to handle such links that may be scattered on different
         // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", (e) =>
-            this.handleDocumentLevelClick(e),
-        );
+        document.addEventListener("click", (e) => {
+            const newLocation = checkClickForBookOrPageJump(
+                e,
+                this.bookInfo.bookInstanceId,
+                // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
+                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
+            );
+            if (newLocation)
+                this.navigate(newLocation.bookUrl, newLocation.pageId);
+        });
 
         // We only need to add these body-level listeners once.
         // I can't find any clear documentation on whether we need all of these or just the pointer ones.
@@ -379,60 +419,30 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             setTimeout(() => this.repairFF60Offset(), 2000);
         }
     }
-
-    handleDocumentLevelClick(e: any) {
-        const hrefValue = (e.target as HTMLElement)?.attributes["href"]
-            ?.value as string;
-        if (hrefValue) {
-            if (hrefValue.startsWith("bloomnav://")) {
-                // This is a link to a page in another book. We need to send a message to the host.
-                this.handleBloomNavLink(hrefValue, e);
-            }
-            return;
-        }
-        const targetElement = (e.target as HTMLElement).closest(
-            "[data-href]",
-        ) as HTMLElement;
-        if (targetElement && targetElement.attributes["data-href"]) {
-            const href = targetElement.attributes["data-href"].value as string;
-            if (href) {
-                if (href.startsWith("#")) {
-                    // This is a link to a page in the book.  We can handle going there.
-                    const pageId = href.substring(1);
-                    const pageIndex = this.state.pageIdToIndexMap[pageId];
-                    if (pageIndex !== undefined) {
-                        this.swiperInstance?.slideTo(pageIndex);
-                    }
-                    e.preventDefault();
-                    e.stopPropagation();
-                } else if (href.startsWith("bloomnav://")) {
-                    // This is a link to a page in another book. We need to send a message to the host.
-                    this.handleBloomNavLink(href, e);
-                } else if (
-                    href.startsWith("http://") ||
-                    href.startsWith("https://")
-                ) {
-                    // This is a generic external link. We open it in a new window or tab.
-                    // (The host possibly could intercept this and open a browser to handle it.)
-                    window.open(href, "_blank", "noreferrer");
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            }
-        }
+    // called by bloom-player-controls
+    public CanGoBack(): boolean {
+        return canGoBack();
+    }
+    // called by bloom-player-controls
+    public HandleBackButtonClickedIfHavePlayerHistory(): boolean {
+        const backLocation = tryPopPlayerHistory(this.bookInfo.bookInstanceId);
+        if (backLocation) {
+            this.navigate(backLocation.bookUrl, backLocation.pageId);
+            return true;
+        } else return false;
     }
 
-    private handleBloomNavLink(href: string, e: any) {
-        const page = (e.target as HTMLElement).closest(".bloom-page");
-        sendMessageToHost({
-            messageType: "bloomnav",
-            href: href,
-            // used for backreference to the page that initiated the navigation
-            sourceUrl: this.sourceUrl,
-            sourcePageNumber: page?.getAttribute("data-page-number"),
-        });
-        e.preventDefault();
-        e.stopPropagation();
+    private navigate(bookUrl: string | undefined, pageId: string | undefined) {
+        if (bookUrl) {
+            this.setState({
+                bookUrl: bookUrl,
+                startPageId: pageId,
+                startPageIndex: undefined, // clear this out
+            });
+        } else if (pageId !== undefined) {
+            const pageIndex = this.state.pageIdToIndexMap[pageId];
+            this.swiperInstance.slideTo(pageIndex);
+        }
     }
 
     private handleWindowFocus() {
@@ -521,7 +531,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
-    public componentDidUpdate(prevProps: IProps, prevState: IState) {
+    public componentDidUpdate(prevProps: IProps, prevState: IPlayerState) {
         try {
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
@@ -542,7 +552,13 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.metaDataObject = undefined;
                 this.htmlElement = undefined;
 
-                this.sourceUrl = newSourceUrl;
+                // parse the url
+                const u = new URL(newSourceUrl, window.location.origin);
+                // The URL parsing can introduce a slash we don't want when the input URL is not relative.
+                this.sourceUrl = newSourceUrl.startsWith("/")
+                    ? u.pathname // if the original was relative, fine
+                    : u.pathname.substring(1); // if the original was not relative, don't make it look relative
+
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
                 // is the book itself. The last slash indicates the folder in which all the
@@ -553,7 +569,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 // Note: In the future, we are thinking of limiting to
                 // a few domains (localhost, dev.blorg, blorg).
                 // Note: we don't currently look for .html files, only .htm. That's what
-                // Bloom has consistently created, both in .bloomd files and in
+                // Bloom has consistently created, both in the old .bloomd files, in .bloompub files, and in
                 // book folders, so it doesn't seem worth complicating the code
                 // to look for the other as well.
                 const slashIndex = this.sourceUrl.lastIndexOf("/");
@@ -606,6 +622,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                         },
                     );
                 const htmlPromise = axios.get(urlOfBookHtmlFile);
+                // console.log("urlOfBookHtmlFile", urlOfBookHtmlFile);
                 const metadataPromise = axios.get(this.fullUrl("meta.json"));
                 Promise.all([htmlPromise, metadataPromise, distributionPromise])
                     .then((result) => {
@@ -864,7 +881,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             bookLanguages[0] === this.props.activeLanguageCode ||
             !this.props.activeLanguageCode;
 
-        const pageMap = {};
+        const pageIdToIndex: { [key: string]: number } = {};
 
         // implementation of hasActivities and hasAnimation, if we decide we need them.
         // const pagesArray = Array.from(pages);
@@ -887,11 +904,15 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             );
         };
 
+        // ENHANCE: most of this should be moved into bookInfo, including the pageIdToIndex map.
+        // clear the pageIdToIndex map
+        pageIdToIndex.length = 0;
+        pageIdToIndex["cover"] = 0;
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i] as HTMLElement;
             const pageId = page.getAttribute("id");
             if (pageId) {
-                pageMap[pageId] = i;
+                pageIdToIndex[pageId] = i;
             }
             const landscape = this.setPageSizeClass(page);
 
@@ -1005,16 +1026,28 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // things differently while swiper is getting stabilized on the first page; this gets set
             // false again after the timeout just below here.
             this.startingUpSwiper = true;
+
+            if (this.state.startPageId) {
+                if (pageIdToIndex[this.state.startPageId] === undefined) {
+                    throw new Error(
+                        `Page ID ${this.state.startPageId} not found in the current pageIdToIndexMap`,
+                    );
+                }
+                this.setState({
+                    startPageIndex: pageIdToIndex[this.state.startPageId],
+                });
+            }
+
             // assembleStyleSheets takes a while, fetching stylesheets. We can't render properly until
             // we get them, so we wait for the results and then make all the state changes in one go
             // to minimize renderings. (Because all this is happening asynchronously, not within the
             // original componentDidUpdate method call, each setState results in an immediate render.)
             this.setState({
                 pages: swiperContent,
-                pageIdToIndexMap: pageMap,
+                pageIdToIndexMap: pageIdToIndex,
                 styleRules: combinedStyle,
                 isLoading: false,
-                currentSwiperIndex: this.props.startPage ?? 0,
+                currentSwiperIndex: this.state.startPageIndex ?? 0,
             });
         } else {
             this.setState({
@@ -1035,7 +1068,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 this.startingUpSwiper = false; // transition phase is over
 
-                var startPage = this.props.startPage ?? 0;
+                var startPage = this.state.startPageIndex ?? 0;
                 // console.log(
                 //     "setting index and page to " +
                 //         startPage +
@@ -1190,15 +1223,11 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
     // a collection of things for cleaning up the url
     private preprocessUrl(): string {
-        let url = this.props.url;
+        let url = this.state.bookUrl;
         if (url === undefined || "" === url.trim()) {
             throw new Error(
                 "The url parameter was empty. It should point to the url of a book.",
             );
-        }
-        // Bloom Publish Preview uses this so that we get spinning wheel while working on making the bloomd
-        if (url === "working") {
-            return "";
         }
 
         // Folder urls often (but not always) end in /. If so, remove it, so we don't get
@@ -1728,7 +1757,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // },
             getSwiper: (s) => {
                 this.swiperInstance = s;
-                if (this.metaDataObject.isRtl && this.swiperInstance) {
+                if (this.metaDataObject?.isRtl && this.swiperInstance) {
                     // These kluges cause swiper to display the pages in reverse order.
                     // We are digging deep into the current implementation of Swiper; this might
                     // not work with any other version.
@@ -1827,7 +1856,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             // of the slide to show.) (There's possibly some drastic redesign that would let the
             // current page be a fully controlled paramter. But maybe not...react-id-slider is a
             // thin layer over something that isn't fully React.)
-            swiperParams.activeSlideKey = this.props.startPage?.toString();
+            swiperParams.activeSlideKey = this.state.startPageIndex?.toString();
         }
 
         let bloomPlayerClass = "bloomPlayer";
@@ -1937,12 +1966,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                                     .hasAppearanceSystem
                                                     ? "appearance-system"
                                                     : ""
-                                            } ${
-                                                this.state
-                                                    .importedBodyAttributes[
-                                                    "class"
-                                                ] ?? ""
-                                            }`}
+                                            } ${this.state.importedBodyAttributes["class"] ?? ""}`}
                                             // Note: the contents of `slide` are what was in the .htm originally.
                                             // So you would expect that this would replace any changes made to the dom by the activity or other code.
                                             // You would expect that we would lose the answers a user made in an activity.
@@ -1951,9 +1975,9 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
                                             dangerouslySetInnerHTML={{
                                                 __html: slide,
                                             }}
-                                            ref={(div) =>
-                                                this.fixInternalHyperlinks(div)
-                                            }
+                                            // ref={(div) =>
+                                            //     this.fixInternalHyperlinks(div)
+                                            // }
                                         />
                                     </>
                                 ) : (
@@ -2063,37 +2087,6 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
     // Other internal links won't work and are disabled; external ones are forced to
     // open a new tab as the results of trying to display a web page in the bloom-player
     // iframe or webview can be confusing.
-    private fixInternalHyperlinks(div: HTMLDivElement | null): void {
-        if (!div) {
-            return;
-        }
-        const anchors = Array.from(div.getElementsByTagName("a") ?? []);
-        anchors.forEach((a) => {
-            const href = a.getAttribute("href"); // not a.href, which has the full page address prepended.
-            if (href?.startsWith("#")) {
-                const pageId = href.substring(1);
-                const pageNum = this.state.pageIdToIndexMap[pageId];
-                if (pageNum !== undefined) {
-                    a.href = ""; // may not be needed, on its own was unsuccessful in stopping attempted default navigation
-                    a.onclick = (ev) => {
-                        ev.preventDefault(); // don't try to follow the link, other than by the slideTo below
-                        ev.stopPropagation(); // don't allow parent listeners, particularly the one that toggles the nav bar
-                        this.swiperInstance.slideTo(pageNum);
-                    };
-                } else {
-                    // no other kind of internal link makes sense, so let them be ignored.
-                    a.onclick = (ev) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                    };
-                }
-            } else {
-                // an external link. It will likely confuse things to follow it inside whatever iframe or webview
-                // bloom player may be running in, so encourage opening a new tab or similar action.
-                a.setAttribute("target", "blank");
-            }
-        });
-    }
 
     // What we need to do when the page narration is completed (if autoadvance, go to next page).
     public handlePageNarrationComplete = (page: HTMLElement | undefined) => {
@@ -2107,7 +2100,7 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
 
         if (this.shouldAutoPlay()) {
             const autoplayCount = this.props.autoplayCount ?? 0;
-            const startPage = this.props.startPage ?? 0;
+            const startPage = this.state.startPageIndex ?? 0;
             const lastPage = this.swiperInstance.slides.length - 1;
             let lastPageToAutoplay = this.props.autoplayCount
                 ? Math.min(startPage + autoplayCount - 1, lastPage)
@@ -2186,6 +2179,14 @@ export class BloomPlayerCore extends React.Component<IProps, IState> {
             "bloom-page",
         )[0] as HTMLElement;
         return bloomPage;
+    }
+
+    private getPageIdFromIndex(index: number): string {
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            throw new Error("No bloomPage at index " + index);
+        }
+        return bloomPage.getAttribute("id")!;
     }
 
     public static getCurrentPage(): HTMLElement {

@@ -2,14 +2,13 @@
 
 This project, _bloom-player_, lets users view and interact with [Bloom](https://bloomlibrary.org) books in any browser.
 
-Specifically, the books must be in _BloomPub_ format (.bloompub or .bloomd, which are zipped Bloom Digital books).
+The Bloom project uses _bloom-player_ in the following places:
 
-The Bloom project uses _bloom-player_ is used in the following places:
-
--   In [Bloom Editor](https://github.com/bloombooks/bloomdesktop) / Publish / Bloom Reader tab, for previewing what the book will look like on a device.
--   In [Bloom Reader](https://github.com/bloombooks/bloomreader) itself (starting with BR version 2.0)
--   On [BloomLibrary.org](https://bloomlibrary.org)
--   In [BloomPUB Viewer](https://github.com/bloombooks/bloompub-viewer)
+- In [Bloom Editor](https://github.com/bloombooks/bloomdesktop) / Publish / Bloom Reader tab, for previewing what the book will look like on a device.
+- In the [Bloom Reader](https://github.com/bloombooks/bloomreader) Android app
+- On [BloomLibrary.org](https://bloomlibrary.org)
+- In [BloomPUB Viewer](https://github.com/bloombooks/bloompub-viewer)
+- In Android and IOS apps created with Reading App Builder
 
 # Using bloom-player in a website
 
@@ -21,7 +20,7 @@ So to embed a book in your website, you just need an iframe element that points 
 
 ```html
 <iframe
-    src="https://bloomlibrary.org/bloom-player/bloomplayer.htm?url=path-to-your-book"
+  src="https://bloomlibrary.org/bloom-player/bloomplayer.htm?url=path-to-your-book"
 ></iframe>
 ```
 
@@ -33,7 +32,7 @@ You can customize some aspects of the bloom-player to fit your context. For exam
 
 ```html
 <iframe
-    src="https://bloomlibrary.org/bloom-player/bloomplayer.htm?url=path-to-your-book&initiallyShowAppBar=false&allowToggleAppBar=false"
+  src="https://bloomlibrary.org/bloom-player/bloomplayer.htm?url=path-to-your-book&initiallyShowAppBar=false&allowToggleAppBar=false"
 ></iframe>
 ```
 
@@ -55,11 +54,16 @@ Default: `false`
 
 #### showBackButton
 
-If true, displays an arrow in the upper left corner of the app bar. When clicked, bloom-player will post a message "backButtonClicked" that the surrounding context can catch and respond to.
+If true, displays a button in the upper left corner of the app bar. When clicked, bloom-player will post a message "backButtonClicked" that the your host can catch and respond to.
 
 Example: `showBackButton=true`
 
 Default: `false`
+
+> [!NOTE]
+> Normally this button will be a left arrow. However if bloom-player is the top level window (i.e. it is not embedded in another page), it will show as an ellipsis.
+>
+> This is used in BloomLibrary.org when the user has used a link from somewhere else to jump directly into to reading a book. In that case, this button isn't really taking them "back", it's instead taking them to the "Detail" page for that same book on BloomLibrary.org.
 
 #### lang
 
@@ -71,7 +75,7 @@ Default: none (The initial language will be the vernacular language when the boo
 
 #### hideFullScreenButton
 
-If true, the Full Screen icon button will not appear in the upper right hand corner of the window.  Otherwise, a Full Screen icon button is displayed and allows the user to toggle between full screen and window mode.
+If true, the Full Screen icon button will not appear in the upper right hand corner of the window. Otherwise, a Full Screen icon button is displayed and allows the user to toggle between full screen and window mode.
 
 Example: `hideFullScreenButton=true`
 
@@ -79,7 +83,7 @@ Default: `false`
 
 #### independent
 
-If true, bloom-player reports its own analytics directly to segment.  If false, bloom-player sends messages to its host, and the host is responsible for reporting analytics.
+If true, bloom-player reports its own analytics directly to segment. If false, bloom-player sends messages to its host, and the host is responsible for reporting analytics.
 
 Example: `independent=false`
 
@@ -87,7 +91,7 @@ Default: `true`
 
 #### host
 
-If set, provides a host value for analytics.  If not set, bloom-player attempts to derive a value from the available information if independent is `true` (information can be limited in an iframe) and does nothing otherwise.
+If set, provides a host value for analytics. If not set, bloom-player attempts to derive a value from the available information if independent is `true` (information can be limited in an iframe) and does nothing otherwise.
 
 Examples: `host=bloomlibrary` or `host=bloomreader` or `host=bloompubviewer` or `host=readerapp`
 
@@ -95,15 +99,46 @@ Examples: `host=bloomlibrary` or `host=bloomreader` or `host=bloompubviewer` or 
 
 Default: `nothing/undefined`
 
+# How to support books that link to other books
+
+Some books are designed to be published together as a collection. These books may link to each other using underlined phrases or buttons. Users can click on these links and also backtrack. You can see examples of this in the StoryBook stories under "MultiBook".
+
+Instead of asking your host to handle the navigation, history, etc., this navigation happens within the one instance of Bloom Player. However, Bloom Player needs your help, because it does not have a way to know what the URL to each book is in the context of your host, which could be a website, an app, a desktop program, etc. So if you want to support these collections of linked books, your host has to do some extra work.
+
+Bloom books link to each other using each book's "Instance ID". This is a guid that is given as a property in the `meta.json` file:
+
+```json
+{
+  "bookInstanceId":"0b82aab3-61fb-429e-864f-ce7671a3d372",
+  "title":"หมู่บ้านแห่งความดี\r\nVillage of good",
+  "credits":"มิได้จัดจำหน่าย  แต่จัดทำเพื่อส่งเสริมการเรียนรู้",
+  "tags":["topic:Fiction"],
+  "pageCount":16,
+```
+
+When the user clicks on a link to another book, Bloom Player will first request a resource from `/book/THE-INSTANCE-ID/index.htm`. If you do a redirect to `C:/mybook/index.htm`, then this will be followed by requests for things like `C:/mybook/basePage.css` and `C:/mybook/image1.png`.
+
+To support this, your host needs to:
+
+1. intercept that request
+2. extract the Instance ID
+3. figure out the path to that book in your system
+4. if the target is still zipped in a BloomPUB, you may need to unzip it or read the resource directly out of the archive
+5. redirect to a new url
+
+If these steps are slow, you might need to cache or even pre-prepare an index for use at runtime.
+
+As an example, the file `.storybook/main.ts` sets up Storybook's vite dev server to proxy a couple instance ids to correct folders in this repository's `/public/testBooks` directory.
+
 # Development
+
+If you haven't already, install `volta` globally. Volta takes care of getting all the correct versions of things like node and yarn to match what this repository expects.
 
 Run `yarn` to get the dependencies.
 
-Either, run `yarn storybook` (which has multiple books),
+Either run `yarn storybook` (which has multiple books),
 
 or run `yarn dev` (which will use `index-for-developing.html`).
-
-Note: you need to have `chrome` on your path.
 
 See package.json for other scripts.
 
@@ -115,15 +150,19 @@ Both `yarn storybook` and `yarn dev` do this for you.
 
 ### Testing with a book hosted by Bloom
 
-Note that while testing, one option is to run Bloom, select your book, go to the publish tab, and choose Bloom Reader. Bloom will make the book available through its local fileserver. Modify index.html to use a path like this
+To test Bloom Player on a book in the Bloom Editor, follow these steps:
 
-    <iframe src="bloomplayer.htm?url=http://localhost:8089/bloom/C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle"/>
-
-For more information, see README-advanced.md
+1. Go to the Publish tab in Bloom, choose "BloomPUB", and click "Preview".
+2. Back in this repository, run storybook (`yarn storybook`).
+3. Choose the "Live From Bloom Editor" story.
 
 ### Running unit tests
 
-To run unit tests use `yarn test`. This will run all "*.test.ts", which should be collocated with the thing being tested.
+To run unit tests use `yarn test`. This will run all `*.test.ts`, which should be collocated with the thing being tested.
+
+### More info
+
+For more information, see README-advanced.md
 
 ## License
 
