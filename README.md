@@ -116,19 +116,21 @@ Bloom books link to each other using each book's "Instance ID". This is a guid t
   "pageCount":16,
 ```
 
-When the user clicks on a link to another book, Bloom Player will first request a resource from `/book/THE-INSTANCE-ID/index.htm`. If you do a redirect to `C:/mybook/index.htm`, then this will be followed by requests for things like `C:/mybook/basePage.css` and `C:/mybook/image1.png`.
-
 To support this, your host needs to:
 
 1. intercept that request
 2. extract the Instance ID
 3. figure out the path to that book in your system
 4. if the target is still zipped in a BloomPUB, you may need to unzip it or read the resource directly out of the archive
-5. redirect to a new url
+5. handle the incoming urls for all subsequent.
 
-If these steps are slow, you might need to cache or even pre-prepare an index for use at runtime.
+Note that when Bloom Player wants to switch to a different book, it will start requesting resources, e.g. `/book/THE-INSTANCE-ID/.distribution`, `/book/THE-INSTANCE-ID/meta.json` and `/book/THE-INSTANCE-ID/index.htm`. Be prepared to receive several of these before you've handled the first one.
 
-As an example, the file `.storybook/main.ts` sets up Storybook's vite dev server to proxy a couple instance ids to correct folders in this repository's `/public/testBooks` directory.
+Depending on your situation, you may find handling this as simple as doing a 302 redirect (as Bloom Editor does), or you may want to take each incoming URL and return the contents of that file (as BloomPUB Viewer does).
+
+If step (3) is slow, you might need to cache or even pre-prepare an index for use at runtime.
+
+As an example, in this repository, the file `.storybook/main.ts` sets up Storybook's vite dev server to proxy a couple instance ids to correct folders in this repository's `/public/testBooks` directory.
 
 # Development
 
