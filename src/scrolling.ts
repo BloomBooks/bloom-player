@@ -68,10 +68,8 @@ export function addScrollbarsToPage(bloomPage: Element): void {
                         scale = parseFloat(match[1]);
                     }
                 }
-                let { topAdjust, leftAdjust } = ComputeNiceScrollOffsets(
-                    scale,
-                    elt,
-                );
+                let { topAdjust, leftAdjust, cursorWidth } =
+                    ComputeNiceScrollOffsets(scale, elt);
                 // We don't really want continuous observation, but this is an elegant
                 // way to find out whether each child is entirely contained within its
                 // parent. Unlike computations involving coordinates, we don't have to
@@ -188,10 +186,10 @@ export function addScrollbarsToPage(bloomPage: Element): void {
                                         top: -topAdjust,
                                         left: -leftAdjust,
                                     },
-                                    cursorwidth: "12px",
+                                    cursorwidth: cursorWidth,
                                     cursorcolor: "#000000",
                                     cursoropacitymax: 0.1,
-                                    cursorborderradius: "12px", // Make the corner more rounded than the 5px default.
+                                    cursorborderradius: cursorWidth, // Make the corner more rounded than the 5px default.
                                 });
                                 setupSpecialMouseTrackingForNiceScroll(
                                     bloomPage,
@@ -218,14 +216,33 @@ export function addScrollbarsToPage(bloomPage: Element): void {
 export function ComputeNiceScrollOffsets(scale: number, elt: HTMLElement) {
     let topAdjust = 0;
     let leftAdjust = 0;
+    let cursorWidth = "12px";
     if (scale !== 1) {
-        const compStyles = window.getComputedStyle(elt.parentElement!);
-        const topPadding = compStyles.getPropertyValue("padding-top") ?? "0";
-        const leftPadding = compStyles.getPropertyValue("padding-left") ?? "0";
-        topAdjust = parseFloat(topPadding) * (scale - 1);
-        leftAdjust = parseFloat(leftPadding) * (scale - 1);
+        const parent2 = elt.parentElement?.parentElement;
+        const parent3 = parent2?.parentElement;
+        if (
+            parent2?.classList.contains("split-pane-component-inner") &&
+            parent3?.classList.contains("marginBox")
+        ) {
+            // The nicescroll elements are added outside the marginBox, and also
+            // outside the #page-scaling-container. So we need to adjust for the
+            // scaling of the scrollbar position and size ourselves. See BL-14112.
+            cursorWidth = `${12 * scale}px`;
+            const top = parent2.offsetTop;
+            const right = parent2.offsetLeft + parent2.offsetWidth;
+            topAdjust = -(top * (scale - 1));
+            leftAdjust = -(right * (scale - 1));
+        } else {
+            const compStyles = window.getComputedStyle(elt.parentElement!);
+            const topPadding =
+                compStyles.getPropertyValue("padding-top") ?? "0";
+            const leftPadding =
+                compStyles.getPropertyValue("padding-left") ?? "0";
+            topAdjust = parseFloat(topPadding) * (scale - 1);
+            leftAdjust = parseFloat(leftPadding) * (scale - 1);
+        }
     }
-    return { topAdjust, leftAdjust };
+    return { topAdjust, leftAdjust, cursorWidth };
 }
 
 export function setupSpecialMouseTrackingForNiceScroll(bloomPage: Element) {
@@ -255,12 +272,11 @@ export function fixNiceScrollOffsets(page: HTMLElement, scale: number) {
             // The type definition is not correct for getNiceScroll; we expect it to return an array.
             const groupNiceScroll = $(group).getNiceScroll() as any;
             if (groupNiceScroll && groupNiceScroll.length > 0) {
-                let { topAdjust, leftAdjust } = ComputeNiceScrollOffsets(
-                    scale,
-                    group as HTMLElement,
-                );
+                let { topAdjust, leftAdjust, cursorWidth } =
+                    ComputeNiceScrollOffsets(scale, group as HTMLElement);
                 groupNiceScroll[0].opt.railoffset.top = -topAdjust;
                 groupNiceScroll[0].opt.railoffset.left = -leftAdjust;
+                groupNiceScroll[0].opt.cursorwidth = cursorWidth;
                 groupNiceScroll[0].resize();
             }
         },

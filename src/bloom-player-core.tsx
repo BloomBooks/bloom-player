@@ -73,7 +73,6 @@ import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
 import {
     addScrollbarsToPage,
-    ComputeNiceScrollOffsets,
     kSelectorForPotentialNiceScrollElements,
 } from "./scrolling";
 import { assembleStyleSheets } from "./stylesheets";
@@ -1826,8 +1825,12 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // with a good internet. 30s allows for it to be a LOT slower on a phone with a poor
                 // connection.. We want SOME limit so
                 // we don't keep using power for hours if the device is left on this page.
-                slideChangeTransitionEnd: () =>
-                    (this.msToContinueFF60RepairChecks = 30000),
+                slideChangeTransitionEnd: () => {
+                    this.addingScrollbarsToPage(
+                        this.swiperInstance.activeIndex,
+                    );
+                    this.msToContinueFF60RepairChecks = 30000;
+                },
             },
             keyboard: {
                 enabled: true,
@@ -2298,7 +2301,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 this.swiperInstance.keyboard.enable();
             }
 
-            addScrollbarsToPage(bloomPage);
             const soundItems = Array.from(
                 bloomPage.querySelectorAll("[data-sound]"),
             );
@@ -2306,6 +2308,24 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 elt.addEventListener("click", playSoundOf);
             });
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
+    }
+
+    private addingScrollbarsToPage(index: number): void {
+        if (this.state.isLoading || this.startingUpSwiper) {
+            //console.log("aborting showingPage because still loading");
+            return;
+        }
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            // It MIGHT be a blank initial or final page placeholder, but more likely, we did a long
+            // scroll using the slider, so we're switching to a page that is, for the moment,
+            // empty due to laziness. A later render will fill it in. We want to try again then. Not sure how
+            // else to make sure that happens.
+            window.setTimeout(() => this.addingScrollbarsToPage(index), 50);
+            return; // nothing more we can do until the page we want really exists.
+        }
+        let scale = 1;
+        addScrollbarsToPage(bloomPage);
     }
 
     // This method is attached to the pointermove and pointerup events.  If the event was
