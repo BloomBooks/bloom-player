@@ -19,6 +19,11 @@ const meta: Meta<typeof BloomPlayerIframe> = {
                 "Show back button in the player that will send a message to the host when the local history is empty and the user clicks it.",
             defaultValue: false,
         },
+        allowToggleAppBar: {
+            control: "boolean",
+            description: "Allow the user to toggle the app bar in the player.",
+            defaultValue: true,
+        },
     },
 };
 export default meta;
@@ -30,6 +35,7 @@ export const UsePageIndex: Story = {
         bookUrl: "testBooks/multibook-index/index.htm",
         bookPageIndex: "4",
         showBackButton: false,
+        allowToggleAppBar: true,
     },
     // doesn't work storyName: "Use `bookPageIndex` to specify the starting page",
 };
@@ -41,6 +47,7 @@ export const UsePageId: Story = {
         bookUrl:
             "testBooks/multibook-index/index.htm#653f29c1-665b-4d63-a061-086401abc106",
         showBackButton: false,
+        allowToggleAppBar: true,
     },
 };
 UsePageId.storyName =

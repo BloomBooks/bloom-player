@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 
 // Use this in stories where you need to more closely simulate what a host will see as they use bloomplayer.htm.
 
-export function BloomPlayerIframe({ bookUrl, bookPageIndex, showBackButton }) {
+export function BloomPlayerIframe({
+    bookUrl,
+    bookPageIndex,
+    showBackButton,
+    allowToggleAppBar,
+}) {
     if (!useBuildIsReady()) {
         return (
             <div>
@@ -12,9 +17,12 @@ export function BloomPlayerIframe({ bookUrl, bookPageIndex, showBackButton }) {
     }
 
     const backButtonParam = showBackButton ? "&showBackButton=true" : "";
+    const allowToggleAppBarParam = allowToggleAppBar
+        ? "&allowToggleAppBar=true"
+        : "";
     return (
         <iframe
-            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}${backButtonParam}`}
+            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}${backButtonParam};${allowToggleAppBarParam}`}
             style={{ width: "100%", height: "500px" }}
         />
     );
