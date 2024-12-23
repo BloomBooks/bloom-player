@@ -250,6 +250,12 @@ export const canvasGame = AddBloomPlayerStory(
 );
 canvasGame.storyName = "Activity/Canvas Game - Snake  (local)";
 
+export const dragNDropGames = AddBloomPlayerStory(
+    "drag and drop games",
+    "testBooks/drag and drop games/index.htm",
+);
+dragNDropGames.storyName = "Activity/drag and drop games (local)";
+
 export const widgetControlledNavigation = AddBloomPlayerStory(
     "Activity/Test widget-controlled navigation",
     "testBooks/test-widget-message-activity/index.htm",

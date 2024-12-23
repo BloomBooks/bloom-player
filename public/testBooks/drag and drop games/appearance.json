@@ -1,0 +1,10 @@
+{
+  "cssThemeName": "zero-margin-ebook",
+  "cover-title-L1-show": true,
+  "cover-title-L2-show": true,
+  "cover-title-L3-show": false,
+  "cover-topic-show": true,
+  "cover-languageName-show": true,
+  "pageNumber-show": true,
+  "cover-background-color": "#B0DEE4"
+}

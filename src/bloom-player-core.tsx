@@ -357,6 +357,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             { capture: true }, // Let us see this before children see it.
         );
 
+        // Prevent the browser's occasional desire to drag an image instead of swipe the page
+        document.addEventListener("dragstart", (event) => {
+            if ((event.target as HTMLElement).tagName.toLowerCase() === "img") {
+                event.preventDefault();
+            }
+        });
+
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
         // everything still works (but there could well be some state that we didn't test). So we're leaving
@@ -1570,6 +1577,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             const srcName = item.getAttribute("src");
             const srcPath = this.fullUrl(srcName);
             item.setAttribute("src", srcPath);
+
+            // Add ondragstart="return false" to img elements
+            if (item.tagName.toLowerCase() === "img") {
+                item.setAttribute("ondragstart", "return false");
+            }
         }
 
         // now we need to fix elements with attributes like this:
