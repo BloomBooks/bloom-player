@@ -232,24 +232,6 @@ interface IPlayerPageOptions {
     hideNavigation?: boolean;
 }
 
-// capturing mouse event handler added to body to prevent clicks on certain
-// elements from being seen by Swiper. This is an independent function so that
-// it doesn't end up being added more than once, even if the code that adds it
-// runs more often.
-function handleInputMouseEvent(event: Event) {
-    if ((event.target as HTMLElement).closest(".videoControlContainer")) {
-        // Stop Swier from seeing events on these elements.
-        // Note: Swiper version 11 has a class "swiper-no-swiping" that I think can be used to
-        // achieve this, or configured with noSwipingClass or noSwipingSelector.
-        // But we're at too low a version to use that, and bringing in the latest
-        // version is non-trivial.
-        event.stopPropagation();
-        // We don't need to preventDefault to keep Swiper from moving the page,
-        // and we don't want to because I think it would stop the mousedown
-        // from eventually resulting in a click.
-    }
-}
-
 export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
@@ -352,12 +334,19 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.handleDocumentLevelKeyDown(e),
         );
 
-        // Prevent unwanted behavior on link clicks that accidentally move a bit.
+        // Prevent unwanted behavior on things from getting to swiper where they might be interpreted as a drag.
         document.addEventListener(
             "pointerdown",
             (event) => {
                 if (
-                    (event.target as HTMLElement).closest("[href], [data-href]")
+                    // anything with a link
+                    (event.target as HTMLElement).closest(
+                        "[href], [data-href]",
+                    ) ||
+                    // video too
+                    (event.target as HTMLElement).closest(
+                        ".bloom-videoContainer",
+                    )
                 ) {
                     // Stop the swiper from starting a drag
                     event.stopPropagation();
@@ -368,42 +357,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             { capture: true }, // Let us see this before children see it.
         );
 
-        // We only need to add these body-level listeners once.
-        // I can't find any clear documentation on whether we need all of these or just the pointer ones.
-        for (const eventName of [
-            "mousedown",
-            "mousemove",
-            "pointerdown",
-            "pointermove",
-            "touchstart",
-            "touchmove",
-        ]) {
-            // The purpose of this is to prevent Swiper allowing the page to be moved or
-            // flicked when the user is trying to click on a video control.
-            // Unfortunately it does not work to put a handler on these events for the control itself.
-            // Apparently the Swiper is capturing them before they get to the choice.
-            // So we capture them at a higher level still, but only stop propagation if
-            // in one of the choices.
-            document.body.addEventListener(eventName, handleInputMouseEvent, {
-                capture: true,
-            });
-        }
-
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
         // everything still works (but there could well be some state that we didn't test). So we're leaving
         // it in.
         this.componentDidUpdate(this.props, this.state);
-        const host = getQueryStringParamAndUnencode("host");
-        if (host === "bloomdesktop") {
-            // needed only for GeckoFx60. (We hope no one else is still running FF 60!)
-            // To test this in storybook:
-            // - use the "Activity that leads to FF60 split page";
-            // - use Firefox 60, initially you should see the problem when advancing to second page
-            // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
-            // or, of course, you can try it actually in Bloom desktop.
-            setTimeout(() => this.repairFF60Offset(), 2000);
-        }
     }
     // called by bloom-player-controls
     public CanGoBack(): boolean {
