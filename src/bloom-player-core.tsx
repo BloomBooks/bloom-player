@@ -368,20 +368,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             { capture: true }, // Let us see this before children see it.
         );
 
-        // Clicking on any element that has a data-href attribute will be treated as a link.
-        // This is the simplest way to handle such links that may be scattered on different
-        // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", (e) => {
-            const newLocation = checkClickForBookOrPageJump(
-                e,
-                this.bookInfo.bookInstanceId,
-                // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
-                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
-            );
-            if (newLocation)
-                this.navigate(newLocation.bookUrl, newLocation.pageId);
-        });
-
         // We only need to add these body-level listeners once.
         // I can't find any clear documentation on whether we need all of these or just the pointer ones.
         for (const eventName of [
@@ -1916,24 +1902,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                             <div
                                 key={index}
                                 className={"page-preview-slide"}
-                                onClick={(e) => {
-                                    if (
-                                        !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
-                                        this.props.onContentClick &&
-                                        !this.activityManager.getActivityAbsorbsClicking() &&
-                                        // clicks in video containers are probably aimed at the video controls.
-                                        // I tried adding another click handler to the video container with stopPropagation,
-                                        // but for some reason it didn't work.
-                                        !(e.target as HTMLElement).closest(
-                                            ".bloom-videoContainer",
-                                        )
-                                    ) {
-                                        this.props.onContentClick(e);
-                                    }
-                                    this.setState({
-                                        ignorePhonyClick: false,
-                                    });
-                                }}
+                                onClick={(e) => this.handlePageClick(e)} // Changed this line
                             >
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
                     Only load up the one that is about to be current page and the ones on either side of it with
@@ -2471,8 +2440,34 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
         return result;
     }
-}
 
+    private handlePageClick(e: React.MouseEvent): void {
+        if (
+            !this.state.ignorePhonyClick || // if we're dragging, that isn't a click we want to propagate
+            !this.activityManager.getActivityAbsorbsClicking() ||
+            // clicks in video containers are probably aimed at the video controls.
+            // I tried adding another click handler to the video container with stopPropagation,
+            // but for some reason it didn't work.
+            !(e.target as HTMLElement).closest(".bloom-videoContainer")
+        ) {
+            const newLocation = checkClickForBookOrPageJump(
+                e.nativeEvent as MouseEvent,
+                this.bookInfo.bookInstanceId,
+                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
+            );
+            if (newLocation) {
+                this.navigate(newLocation.bookUrl, newLocation.pageId);
+                e.stopPropagation(); // Stop click from propagating up
+                e.preventDefault(); // Prevent default link behavior
+            } else if (this.props.onContentClick) {
+                this.props.onContentClick(e);
+            }
+        }
+        this.setState({
+            ignorePhonyClick: false,
+        });
+    }
+}
 function htmlEncode(str: string): string {
     return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, (i) => {
         return "&#" + i.charCodeAt(0) + ";";
