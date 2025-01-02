@@ -1577,11 +1577,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             const srcName = item.getAttribute("src");
             const srcPath = this.fullUrl(srcName);
             item.setAttribute("src", srcPath);
-
-            // Add ondragstart="return false" to img elements
-            if (item.tagName.toLowerCase() === "img") {
-                item.setAttribute("ondragstart", "return false");
-            }
         }
 
         // now we need to fix elements with attributes like this:
@@ -2413,11 +2408,15 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private handlePageClick(e: React.MouseEvent): void {
         if (
-            !this.state.ignorePhonyClick || // if we're dragging, that isn't a click we want to propagate
-            !this.activityManager.getActivityAbsorbsClicking() ||
-            // clicks in video containers are probably aimed at the video controls.
+            // Check for special circumstance that should prevent normal click handling. That is,
+            // we're not processing a phony click from touching a nav button
+            !this.state.ignorePhonyClick &&
+            // this page isn't an activity that needs to handle all clicks itself
+            !this.activityManager.getActivityAbsorbsClicking() &&
+            // the click isn't in a video container
+            // (clicks in video containers are probably aimed at the video controls.
             // I tried adding another click handler to the video container with stopPropagation,
-            // but for some reason it didn't work.
+            // but for some reason it didn't work. (JT: probably a capturing handler on an outer element))
             !(e.target as HTMLElement).closest(".bloom-videoContainer")
         ) {
             const newLocation = checkClickForBookOrPageJump(

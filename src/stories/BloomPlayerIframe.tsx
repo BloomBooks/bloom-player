@@ -22,7 +22,7 @@ export function BloomPlayerIframe({
         : "";
     return (
         <iframe
-            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}${backButtonParam};${allowToggleAppBarParam}`}
+            src={`/bloomplayer.htm?url=${encodeURIComponent(bookUrl)}&start-page=${bookPageIndex}${backButtonParam}${allowToggleAppBarParam}`}
             style={{ width: "100%", height: "500px" }}
         />
     );
