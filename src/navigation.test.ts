@@ -95,7 +95,7 @@ describe("Navigation functions", () => {
                 () => "doesn't matter",
             );
 
-            expect(result).toEqual({});
+            expect(result).toEqual(undefined);
             expect(windowSpy).toHaveBeenCalledWith(
                 "https://example.com",
                 "_blank",
