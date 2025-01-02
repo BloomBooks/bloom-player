@@ -232,24 +232,6 @@ interface IPlayerPageOptions {
     hideNavigation?: boolean;
 }
 
-// capturing mouse event handler added to body to prevent clicks on certain
-// elements from being seen by Swiper. This is an independent function so that
-// it doesn't end up being added more than once, even if the code that adds it
-// runs more often.
-function handleInputMouseEvent(event: Event) {
-    if ((event.target as HTMLElement).closest(".videoControlContainer")) {
-        // Stop Swier from seeing events on these elements.
-        // Note: Swiper version 11 has a class "swiper-no-swiping" that I think can be used to
-        // achieve this, or configured with noSwipingClass or noSwipingSelector.
-        // But we're at too low a version to use that, and bringing in the latest
-        // version is non-trivial.
-        event.stopPropagation();
-        // We don't need to preventDefault to keep Swiper from moving the page,
-        // and we don't want to because I think it would stop the mousedown
-        // from eventually resulting in a click.
-    }
-}
-
 export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private readonly activityManager: ActivityManager = new ActivityManager();
     private readonly legacyQuestionHandler: LegacyQuestionHandler;
@@ -352,12 +334,19 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.handleDocumentLevelKeyDown(e),
         );
 
-        // Prevent unwanted behavior on link clicks that accidentally move a bit.
+        // Prevent unwanted behavior on things from getting to swiper where they might be interpreted as a drag.
         document.addEventListener(
             "pointerdown",
             (event) => {
                 if (
-                    (event.target as HTMLElement).closest("[href], [data-href]")
+                    // anything with a link
+                    (event.target as HTMLElement).closest(
+                        "[href], [data-href]",
+                    ) ||
+                    // video too
+                    (event.target as HTMLElement).closest(
+                        ".bloom-videoContainer",
+                    )
                 ) {
                     // Stop the swiper from starting a drag
                     event.stopPropagation();
@@ -368,56 +357,18 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             { capture: true }, // Let us see this before children see it.
         );
 
-        // Clicking on any element that has a data-href attribute will be treated as a link.
-        // This is the simplest way to handle such links that may be scattered on different
-        // types of elements throughout the book.  See BL-13879.
-        document.addEventListener("click", (e) => {
-            const newLocation = checkClickForBookOrPageJump(
-                e,
-                this.bookInfo.bookInstanceId,
-                // this is kinda expensive so we let this function call it only if needed (instead of on any click, anywhere)
-                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
-            );
-            if (newLocation)
-                this.navigate(newLocation.bookUrl, newLocation.pageId);
+        // Prevent the browser's occasional desire to drag an image instead of swipe the page
+        document.addEventListener("dragstart", (event) => {
+            if ((event.target as HTMLElement).tagName.toLowerCase() === "img") {
+                event.preventDefault();
+            }
         });
-
-        // We only need to add these body-level listeners once.
-        // I can't find any clear documentation on whether we need all of these or just the pointer ones.
-        for (const eventName of [
-            "mousedown",
-            "mousemove",
-            "pointerdown",
-            "pointermove",
-            "touchstart",
-            "touchmove",
-        ]) {
-            // The purpose of this is to prevent Swiper allowing the page to be moved or
-            // flicked when the user is trying to click on a video control.
-            // Unfortunately it does not work to put a handler on these events for the control itself.
-            // Apparently the Swiper is capturing them before they get to the choice.
-            // So we capture them at a higher level still, but only stop propagation if
-            // in one of the choices.
-            document.body.addEventListener(eventName, handleInputMouseEvent, {
-                capture: true,
-            });
-        }
 
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
         // everything still works (but there could well be some state that we didn't test). So we're leaving
         // it in.
         this.componentDidUpdate(this.props, this.state);
-        const host = getQueryStringParamAndUnencode("host");
-        if (host === "bloomdesktop") {
-            // needed only for GeckoFx60. (We hope no one else is still running FF 60!)
-            // To test this in storybook:
-            // - use the "Activity that leads to FF60 split page";
-            // - use Firefox 60, initially you should see the problem when advancing to second page
-            // - inspect and add "&host=bloomdesktop" to the source of the storybook iframe to see the fix.
-            // or, of course, you can try it actually in Bloom desktop.
-            setTimeout(() => this.repairFF60Offset(), 2000);
-        }
     }
     // called by bloom-player-controls
     public CanGoBack(): boolean {
@@ -1916,24 +1867,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                             <div
                                 key={index}
                                 className={"page-preview-slide"}
-                                onClick={(e) => {
-                                    if (
-                                        !this.state.ignorePhonyClick && // if we're dragging, that isn't a click we want to propagate
-                                        this.props.onContentClick &&
-                                        !this.activityManager.getActivityAbsorbsClicking() &&
-                                        // clicks in video containers are probably aimed at the video controls.
-                                        // I tried adding another click handler to the video container with stopPropagation,
-                                        // but for some reason it didn't work.
-                                        !(e.target as HTMLElement).closest(
-                                            ".bloom-videoContainer",
-                                        )
-                                    ) {
-                                        this.props.onContentClick(e);
-                                    }
-                                    this.setState({
-                                        ignorePhonyClick: false,
-                                    });
-                                }}
+                                onClick={(e) => this.handlePageClick(e)} // Changed this line
                             >
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
                     Only load up the one that is about to be current page and the ones on either side of it with
@@ -2471,8 +2405,38 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
         return result;
     }
-}
 
+    private handlePageClick(e: React.MouseEvent): void {
+        if (
+            // Check for special circumstance that should prevent normal click handling. That is,
+            // we're not processing a phony click from touching a nav button
+            !this.state.ignorePhonyClick &&
+            // this page isn't an activity that needs to handle all clicks itself
+            !this.activityManager.getActivityAbsorbsClicking() &&
+            // the click isn't in a video container
+            // (clicks in video containers are probably aimed at the video controls.
+            // I tried adding another click handler to the video container with stopPropagation,
+            // but for some reason it didn't work. (JT: probably a capturing handler on an outer element))
+            !(e.target as HTMLElement).closest(".bloom-videoContainer")
+        ) {
+            const newLocation = checkClickForBookOrPageJump(
+                e.nativeEvent as MouseEvent,
+                this.bookInfo.bookInstanceId,
+                () => this.getPageIdFromIndex(this.state.currentSwiperIndex),
+            );
+            if (newLocation) {
+                this.navigate(newLocation.bookUrl, newLocation.pageId);
+                e.stopPropagation(); // Stop click from propagating up
+                e.preventDefault(); // Prevent default link behavior
+            } else if (this.props.onContentClick) {
+                this.props.onContentClick(e);
+            }
+        }
+        this.setState({
+            ignorePhonyClick: false,
+        });
+    }
+}
 function htmlEncode(str: string): string {
     return str.replace("%23", "#").replace(/[\u00A0-\u9999<>\&]/gim, (i) => {
         return "&#" + i.charCodeAt(0) + ";";

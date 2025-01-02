@@ -33,20 +33,20 @@ export function checkClickForBookOrPageJump(
     const linkElement = (event.target as HTMLElement).closest(
         "[href], [data-href]",
     ) as HTMLElement;
-    if (!linkElement) return {};
+    if (!linkElement) return undefined;
     event.preventDefault(); // don't let a link click become a drag
     event.stopPropagation();
 
-    const href: string =
+    const href: string | undefined =
         (linkElement.getAttribute("href") ||
             linkElement.getAttribute("data-href")) ??
-        "";
-
+        undefined;
+    if (!href) return undefined;
     if (href.startsWith("http://") || href.startsWith("https://")) {
         // This is a generic external link. We open it in a new window or tab.
         // (The host possibly could intercept this and open a browser to handle it.)
         window.open(href, "_blank", "noreferrer");
-        return {};
+        return undefined;
     }
 
     let targetBookId: string | undefined = undefined;
