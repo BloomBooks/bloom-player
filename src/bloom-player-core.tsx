@@ -73,7 +73,6 @@ import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
 import {
     addScrollbarsToPage,
-    ComputeNiceScrollOffsets,
     kSelectorForPotentialNiceScrollElements,
 } from "./scrolling";
 import { assembleStyleSheets } from "./stylesheets";
@@ -412,61 +411,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         localStorage.setItem(kLocalStorageDurationKey, readDuration.toString());
         localStorage.setItem(kLocalStorageBookUrlKey, this.sourceUrl);
     }
-
-    // This horrible hack attempts to fix the worst effects of BL-8900. Basically, something inside
-    // a widget iframe sometimes causes the wrapper that holds the whole collection of pages to scroll
-    // over to be out of position. It appears to be related to an unknown bug in FF60...a very nasty one
-    // since anything happening inside an iframe should not be able to affect its size, position, or
-    // anything outside it (except with the deliberate cooperation of the host page). We have not found
-    // any good way to stop it happening, but this basically compensates for it and puts the current page
-    // back where it belongs. Our theory is that the problem occurs when the activity finishes loading,
-    // typically sometime after the page before it becomes the 'current' page and the activity itself is
-    // therefore the 'next' page and no longer blocked by laziness.
-    // Observed cases take about 2s for the problem to appear on a fast computer
-    // with a good internet. To be fairly sure of catching it if it happens, but not keep using power
-    // doing this forever, we monitor for it for 30s.
-    // Note that the initial call that starts this checking process only happens if we are invoked
-    // from bloomdesktop. Otherwise, this function will never be called at all.
-    private repairFF60Offset() {
-        try {
-            let wrapper = document.getElementsByClassName(
-                "swiper-wrapper",
-            )[0] as HTMLElement;
-            let current = document.getElementsByClassName(
-                "swiper-slide-active",
-            )[0] as HTMLElement;
-            if (wrapper && current && this.msToContinueFF60RepairChecks > 0) {
-                let error =
-                    wrapper.parentElement!.getBoundingClientRect().left -
-                    current.getBoundingClientRect().left;
-                if (Math.abs(error) > 1) {
-                    const scale =
-                        wrapper.getBoundingClientRect().width /
-                        wrapper.offsetWidth;
-                    const paddingPx = wrapper.style.paddingLeft;
-                    const padding =
-                        paddingPx.length === 0
-                            ? 0
-                            : parseFloat(
-                                  paddingPx.substring(0, paddingPx.length - 2),
-                              );
-                    wrapper.style.paddingLeft = padding + error / scale + "px";
-                }
-            }
-        } catch (_) {
-            // If something goes wrong with this...oh well, we tried, and on most
-            // browsers we didn't need it anyway.
-        }
-        this.msToContinueFF60RepairChecks -= 100;
-        setTimeout(() => this.repairFF60Offset(), 100);
-    }
-
-    // This stores a number of milliseconds during which we should continue to check repeatedly
-    // for the FF60 problem described above. It is set to zero when checking should be disabled
-    // (e.g., during drag or animation) and to a substantial number after we change pages.
-    // Then it gets decremented in repairFF60Offset, and eventually decrements to zero so we
-    // don't consume extra power forever doing this check.
-    private msToContinueFF60RepairChecks = 0;
 
     private handleDocumentLevelKeyDown = (e) => {
         if (e.key === "Home") {
@@ -1017,6 +961,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (isNewBook) {
             window.setTimeout(() => {
                 this.setState({ isFinishUpForNewBookComplete: true });
+                const originalStartingUpSwiper = this.startingUpSwiper; // excess caution perhaps
                 this.startingUpSwiper = false; // transition phase is over
 
                 var startPage = this.state.startPageIndex ?? 0;
@@ -1031,6 +976,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // Now we want all that to happen.
                 this.setIndex(startPage);
                 this.showingPage(startPage);
+                if (originalStartingUpSwiper) {
+                    // We need to instantiate any needed scrollbars on the first page displayed.
+                    // scrollbars on later pages are instantiated by a transition event which
+                    // doesn't fire on the very first page.
+                    this.addScrollbarsToPageWhenReady(
+                        this.swiperInstance.activeIndex,
+                    );
+                }
                 //This allows a user to tab to the prev/next buttons, and also makes the focus() call work
                 const nextButton = document.getElementsByClassName(
                     "swiper-button-next",
@@ -1747,11 +1700,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         // );
                         this.showingPage(this.swiperInstance.activeIndex);
                     }
-                    this.msToContinueFF60RepairChecks = 30000;
                 },
                 slideChangeTransitionStart: () => {
-                    this.msToContinueFF60RepairChecks = 0; // disable
-
                     if (!this.startingUpSwiper) {
                         // console.log(
                         //     "setting index to " +
@@ -1762,23 +1712,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         this.setIndex(this.swiperInstance.activeIndex);
                     }
                 },
-                // Not sure we need all of these. The idea is that if slider is
-                // messing with offsets itself, we don't want to try to adjust things.
-                // During e.g. animation, it's normal that the current page isn't aligned
-                // with the frame.
-                // It appears that the last setTranslate call happens before at least one
-                // of the events we're using to turn checking on.
-                setTranslate: () => (this.msToContinueFF60RepairChecks = 0), // disable
-                sliderMove: () => (this.msToContinueFF60RepairChecks = 0), // disable
-                // This (30s) is a pretty generous allowance. Our theory is that the problem occurs
-                // when the activity finishes loading, typically sometime after the page before
-                // it becomes the 'current' page and the activity itself is therefore the 'next'
-                // page. Observed cases take about 2s for the problem to appear on a fast computer
-                // with a good internet. 30s allows for it to be a LOT slower on a phone with a poor
-                // connection.. We want SOME limit so
-                // we don't keep using power for hours if the device is left on this page.
-                slideChangeTransitionEnd: () =>
-                    (this.msToContinueFF60RepairChecks = 30000),
+                slideChangeTransitionEnd: () => {
+                    this.addScrollbarsToPageWhenReady(
+                        this.swiperInstance.activeIndex,
+                    );
+                },
             },
             keyboard: {
                 enabled: true,
@@ -2232,7 +2170,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 this.swiperInstance.keyboard.enable();
             }
 
-            addScrollbarsToPage(bloomPage);
             const soundItems = Array.from(
                 bloomPage.querySelectorAll("[data-sound]"),
             );
@@ -2240,6 +2177,26 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 elt.addEventListener("click", playSoundOf);
             });
         }, 0); // do this on the next cycle, so we don't block scrolling and display of the next page
+    }
+
+    private addScrollbarsToPageWhenReady(index: number): void {
+        if (this.state.isLoading || this.startingUpSwiper) {
+            //console.log("aborting showingPage because still loading");
+            return;
+        }
+        const bloomPage = this.getPageAtSwiperIndex(index);
+        if (!bloomPage) {
+            // It MIGHT be a blank initial or final page placeholder, but more likely, we did a long
+            // scroll using the slider, so we're switching to a page that is, for the moment,
+            // empty due to laziness. A later render will fill it in. We want to try again then. Not sure how
+            // else to make sure that happens.
+            window.setTimeout(
+                () => this.addScrollbarsToPageWhenReady(index),
+                50,
+            );
+            return; // nothing more we can do until the page we want really exists.
+        }
+        addScrollbarsToPage(bloomPage);
     }
 
     // This method is attached to the pointermove and pointerup events.  If the event was
