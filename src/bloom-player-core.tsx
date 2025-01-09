@@ -2264,7 +2264,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             );
             return; // nothing more we can do until the page we want really exists.
         }
-        addScrollbarsToPage(bloomPage);
+        addScrollbarsToPage(bloomPage, BloomPlayerCore.handlePointerMoveEvent);
     }
 
     // This method is attached to the pointermove and pointerup events.  If the event was
