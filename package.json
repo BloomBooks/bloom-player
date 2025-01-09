@@ -77,6 +77,10 @@
         "dist/bloomplayer.htm",
         "dist/*.mp3",
         "lib/*.js",
+	"src/event.ts",
+	"src/narration.ts",
+	"src/dragActivityRuntime.ts",
+	"src/scrolling.ts",
         "dist/*.css",
         "dist/*.tsv"
     ],
