@@ -436,10 +436,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
             const newSourceUrl = this.preprocessUrl();
             // Inside of Bloom Publish Preview,
-            // this will be "" if we should just keep spinning, waiting for a render with different
+            // this will be "/working" if we should just keep spinning, waiting for a render with different
             // props once the bloomd is created.
 
-            if (newSourceUrl && newSourceUrl !== this.sourceUrl) {
+            if (
+                newSourceUrl &&
+                newSourceUrl !== "/working" &&
+                newSourceUrl !== this.sourceUrl
+            ) {
                 this.finishUpCalled = false;
                 // We're changing books; reset several variables including isLoading,
                 // until we inform the controls which languages are available.
