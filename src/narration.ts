@@ -1,7 +1,6 @@
 // This file contains code for playing audio in a bloom page, including a draggable page.
-// The file is designed to be shared between Bloom Desktop and Bloom Player. Maybe eventually
-// as an npm module, but for now, just copied into both projects. See comments in dragActivityRuntime.ts.
-// Until that day, changes must be copied manually, and care taken to avoid conflicts.
+// The file is designed to be shared between Bloom Desktop and Bloom Player, with the original
+// being in the Bloom Player and provided in its package.  See comments in dragActivityRuntime.ts.
 
 // It is quite difficult to know how to handle audio in a drag activity page.
 // We need to be able to play it both during "Play" and when showing the page in BP.
@@ -91,7 +90,7 @@ export function setPlayerUrlPrefixFromWindowLocationHref(bookSrc: string) {
     setPlayerUrlPrefix(getUrlPrefixFromWindowHref(bookSrc));
 }
 
-function getUrlPrefixFromWindowHref(bookSrc: string) {
+export function getUrlPrefixFromWindowHref(bookSrc: string) {
     const index = bookSrc.lastIndexOf("/");
     return bookSrc.substring(0, index);
 }
@@ -146,7 +145,7 @@ function getTgTabIndex(input: HTMLElement): string | null {
 }
 ///---- end of the bit that ended up in narrationUtils.ts before the merge.
 
-const kSegmentClass = "bloom-highlightSegment";
+export const kHighlightSegmentClass = "bloom-highlightSegment";
 
 // Indicates that the element should be highlighted.
 const kEnableHighlightClass = "ui-enableHighlight";
@@ -518,7 +517,7 @@ function playCurrentInternal() {
             );
             if (timingsStr) {
                 const childSpanElements = element.querySelectorAll(
-                    `span.${kSegmentClass}`,
+                    `span.${kHighlightSegmentClass}`,
                 );
                 const fields = timingsStr.split(" ");
                 const subElementCount = Math.min(
@@ -1261,7 +1260,6 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
         playAllVideo(elements.slice(1), then);
     } else {
         hideVideoError(video);
-        // Review: do we need to do something to let the rest of the world know about this?
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
         const promise = video.play();
         promise
