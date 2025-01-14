@@ -1,5 +1,7 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 import viteConfigFn from "../vite.config";
+import fs from "fs";
+import path from "path";
 
 const proxy = viteConfigFn({
     command: "serve",
@@ -43,18 +45,43 @@ const config: StorybookConfig = {
                         `testBooks/${bookName}`,
                     );
 
-                    // console.log(
-                    //     `[Storybook Proxy] ${path} --> ${rewrittenPath}`,
-                    // );
+                    console.log(
+                        `[Storybook Proxy] ${path} --> ${rewrittenPath}`,
+                    );
                     return rewrittenPath;
                 },
             },
 
+            // Given a path like /bloom/c:/testBooks/multibook-index/index.htm, serve the file from the local file system
+            // Needed because the browser won't let us use file:///
+            // One place this is used is the story "Live from Bloom Editor".
             "/bloom/": {
-                target: "file:///",
-                rewrite: (path) => {
-                    console.log(`proxy got request ${path}`);
-                    return path.replace("/bloom/", "");
+                target: "http://localhost:6006",
+                configure: (proxy, options) => {
+                    proxy.on("proxyReq", function (proxyReq, req, res) {
+                        // Stop the proxy request since we're handling it directly
+                        proxyReq.destroy();
+
+                        const requestPath =
+                            req.url?.replace("/bloom/", "") || "";
+                        const filePath = decodeURIComponent(requestPath);
+
+                        try {
+                            // console.log(
+                            //     `[Storybook Proxy] reading ${filePath}`,
+                            // );
+                            const content = fs.readFileSync(filePath);
+                            res.statusCode = 200;
+                            res.end(content);
+                        } catch (error) {
+                            console.error(
+                                `[Storybook Proxy] Failed to read file: ${filePath}`,
+                                error,
+                            );
+                            res.statusCode = 404;
+                            res.end();
+                        }
+                    });
                 },
             },
         };
