@@ -976,6 +976,22 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     );
                     setPageNumbers(bookProps.pageNumbers);
                     setIsRtl(bookProps.isRtl);
+                    // This callback seems to run two or three times when a book is opened.
+                    // (Enhance: would be better if it did not!)
+                    // We only need to scale the page once, and not at all (here) when we open the
+                    // initial book...code elsewhere takes care of that.
+                    // However, this is the only notification we get when bloom-player-core
+                    // follows a link to a different book, at which point we DO need to re-scale,
+                    // since that book may use a different page size or orientation.
+                    // So, do the rescale if there's been a previous notification and
+                    // it's been more than a second since the last one.
+                    if (
+                        reportBookPropertiesTime != 0 &&
+                        reportBookPropertiesTime < new Date().getTime() - 1000
+                    ) {
+                        rerunScalePageToWindow();
+                    }
+                    reportBookPropertiesTime = new Date().getTime();
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={(p) => {
@@ -1152,3 +1168,4 @@ export function InitBloomPlayerControls() {
         document.getElementById("root"),
     );
 }
+let reportBookPropertiesTime = 0;
