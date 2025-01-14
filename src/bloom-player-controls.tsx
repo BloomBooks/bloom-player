@@ -976,6 +976,13 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     );
                     setPageNumbers(bookProps.pageNumbers);
                     setIsRtl(bookProps.isRtl);
+                    if (bookProps.internalUrl != currentCoreUrl) {
+                        if (currentCoreUrl) {
+                            // We're changing books, so we need to re-scale.
+                            rerunScalePageToWindow();
+                        }
+                        currentCoreUrl = bookProps.internalUrl;
+                    }
                 }}
                 controlsCallback={updateControlsWhenOpeningNewBook}
                 setForcedPausedCallback={(p) => {
@@ -1152,3 +1159,4 @@ export function InitBloomPlayerControls() {
         document.getElementById("root"),
     );
 }
+let currentCoreUrl = "";

@@ -116,6 +116,7 @@ interface IProps {
         canRotate: boolean;
         preferredLanguages: string[];
         pageNumbers: string[]; // one per page, from data-page-number; some empty
+        internalUrl: string; // the URL the player is actually using (may change after following internal link)
     }) => void;
 
     // 'controlsCallback' feeds information about the book's contents and other things
@@ -261,6 +262,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     constructor(props: IProps, state: IPlayerState) {
         super(props, state);
+        // This.state.bookUrl is the URL we actually use to load the book and its parts.
+        // It can get changed from the value set here when we follow an internal link.
+        // This code sets it to a relative URL (pathname always starts with /), removing any
+        // host info. Since it becomes a relative URL, it will usually only work if its
+        // original host info matches the current window location. However, if this is not
+        // the case, typically there would be a cross-origin error anyway.
+        // There are exceptions in storybook. See its main.ts for various special ways we handle
+        // urls starting with /book/ and /bloom/ and /s3/ and possibly others.
         const parsedUrl = new URL(props.url, window.location.origin);
         this.state.bookUrl = parsedUrl.pathname;
         if (parsedUrl.hash) {
@@ -834,6 +843,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         (p) => p.getAttribute("data-page-number") ?? "",
                     ),
                     isRtl: this.metaDataObject.isRtl,
+                    internalUrl: this.state.bookUrl,
                 });
             }
             if (isNewBook) {
