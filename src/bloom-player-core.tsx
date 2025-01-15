@@ -365,12 +365,22 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             { capture: true }, // Let us see this before children see it.
         );
 
-        // Prevent the browser's occasional desire to drag an image instead of swipe the page
-        document.addEventListener("dragstart", (event) => {
-            if ((event.target as HTMLElement).tagName.toLowerCase() === "img") {
-                event.preventDefault();
-            }
-        });
+        // Prevent the browser's occasional desire to drag things instead of swipe the page.
+        // Text and images can get dragged in this way, and somehow it seems to be able to put
+        // us in a state where we miss a mouse up and the page gets stuck in a state where every
+        // mouse move is interpreted as page turning. See BL-14199.
+        document.addEventListener(
+            "dragstart",
+            (event) => {
+                // This might be too strong...there could be activities that use dragging
+                // and still don't want the browser's default behavior. But I also can't be
+                // sure that we wouldn't break some of them.
+                if (!this.activityManager.getActivityAbsorbsDragging()) {
+                    event.preventDefault();
+                }
+            },
+            { capture: true },
+        );
 
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
