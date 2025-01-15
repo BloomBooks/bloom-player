@@ -460,12 +460,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 this.metaDataObject = undefined;
                 this.htmlElement = undefined;
 
-                // parse the url
-                const u = new URL(newSourceUrl, window.location.origin);
-                // The URL parsing can introduce a slash we don't want when the input URL is not relative.
-                this.sourceUrl = newSourceUrl.startsWith("/")
-                    ? u.pathname // if the original was relative, fine
-                    : u.pathname.substring(1); // if the original was not relative, don't make it look relative
+                // Must be set to exactly this, or the logic above will not prevent the
+                // load-new-book logic from running on every update. If we need to do any
+                // adjustment of state.bookUrl to get the necessary this.sourceUrl,
+                // it should be in preprocessUrl() so that it also changes newSourceUrl.
+                this.sourceUrl = newSourceUrl;
 
                 // We support a two ways of interpreting URLs.
                 // If the url ends in .htm, it is assumed to be the URL of the htm file that
