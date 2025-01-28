@@ -222,7 +222,11 @@ export interface IPlayerState {
     // If the user interacts, which we detect as anything that makes us change page,
     // we're no longer in a FORCED pause, though we may still be paused.
     inPauseForced: boolean;
-
+    // the URL where we can actually find the htm file of the book we are currently showing.
+    // in some cases it may (I think temporarily, because a redirection happens?) be
+    // of the form <original host and port>/bookid when we follow a link within
+    // a book. This is the URL we use to load the book and any of its parts that use
+    // relative hrefs (as most do). It should not contain any hash (even if props.url does).
     bookUrl: string;
     startPageId?: string;
     startPageIndex?: number; // when given a startPageId, we convert it to an index once the new book is loaded.
@@ -264,22 +268,34 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         super(props, state);
         // This.state.bookUrl is the URL we actually use to load the book and its parts.
         // It can get changed from the value set here when we follow an internal link.
-        // This code sets it to a relative URL (pathname always starts with /), removing any
-        // host info. Since it becomes a relative URL, it will usually only work if its
-        // original host info matches the current window location. However, if this is not
-        // the case, typically there would be a cross-origin error anyway.
-        // There are exceptions in storybook. See its main.ts for various special ways we handle
-        // urls starting with /book/ and /bloom/ and /s3/ and possibly others.
-        const parsedUrl = new URL(props.url, window.location.origin);
-        this.state.bookUrl = parsedUrl.pathname;
+        // In all normal operation, props.url starts with http, and this.state.bookUrl
+        // is initially the same as props.url. But in some storybook cases, we pass what looks like
+        // a relative url, and we need to convert it to a full one using the storybook origin.
+        // See special cases in main.js for what our vite storybook server does with urls
+        // starting with /book/ and /bloom/ and /s3/ and possibly others.
+        // It is not good to just shorten it to a relative URL, because that basically means it
+        // is relative to the site from which we get the bloom-player. Usually that's the same, but
+        // for example when reading a book in bloomlibrary.org, the bookUrl is typically an S3 url,
+        // while the player comes from bloomlibrary.org. (I think we must have a CORS exception
+        // somehow to enable this.)
+        const parsedUrl = props.url.startsWith("http")
+            ? // normal production case: we look for everything relative to props.url itself
+              new URL(props.url)
+            : // special case, mainly (only AFAIK) for storybook: everything is based on the window url, which
+              // will really be the iframe where bloom-player (or storybook) is running.
+              // We take the origin of that iframe, then tack on everything after the origin
+              // from props.url.
+              new URL(props.url, window.location.origin);
         if (parsedUrl.hash) {
             this.state.startPageId = parsedUrl.hash.substring(1); // strip the "#"
+            parsedUrl.hash = "";
         } else {
             // Copy into state because in a multi-book scenario, the prop.startPageIndex will
-            // always be the initial value, but we don't want to just got to that page of
+            // always be the initial value, but we don't want to just go to that page of
             // every book we open. After the first book, we can clear the state.startPageIndex.
             this.state.startPageIndex = props.startPageIndex;
         }
+        this.state.bookUrl = parsedUrl.href;
         // Make this player (currently always the only one) the recipient for
         // notifications from narration.ts etc about duration etc.
         BloomPlayerCore.currentPagePlayer = this;
@@ -403,8 +419,26 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private navigate(bookUrl: string | undefined, pageId: string | undefined) {
         if (bookUrl) {
+            // The URL we get as argument is a partly-relative url, typically /book/bookId, possibly followed
+            // by #pageId. If we leave it that way, the browser will automatically prepend the root of
+            // the current window. Sometimes this is not what we want. For example, in storybook,
+            // the iframe's root is http://localhost:6006. But the book may be the one from
+            // "Live from Bloom Editor", which typically starts with http://localhost:8089.
+            // More critically, in reading a book in bloomlibrary.org, the bookUrl is typically
+            // an S3 url, while the iframe inherits the main page's root, bloomlibrary.org.
+            // So if we just let the root be inherited, we won't find the book data.
+            // (Actually as of Jan 2025 S3 is not yet configured to handle /book/ urls, so this is
+            // still a bit theoretical.)
+            // So it's better to stick with the same root as the current url. (This will typically
+            // produce CORS errors for most sources, but the Bloom server inserts appropriate CORS
+            // headers to prevent this.) Usually this is ultimately derived from props.url; see the
+            // constructor logic.
+            // Note that, because bookUrl starts with a slash, we only keep the root of the old
+            // bookUrl, that is, up to the first slash. So we're not (e.g.) looking for the linked
+            // book inside the current book's folder.
+            const newUrl = new URL(bookUrl, this.state.bookUrl);
             this.setState({
-                bookUrl: bookUrl,
+                bookUrl: newUrl.href,
                 startPageId: pageId,
                 startPageIndex: undefined, // clear this out
             });
