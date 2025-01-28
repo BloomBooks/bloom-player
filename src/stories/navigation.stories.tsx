@@ -41,6 +41,9 @@ export const Default: Story = {
         const tester = new BloomPlayerTester(canvasElement);
 
         await step("Jump to a certain page in another book", async () => {
+            // This was flaky. Sometimes, especially after recompiling, clickLinkByText
+            // did not wait long enough and could not find the button to click.
+            await new Promise((resolve) => setTimeout(resolve, 200));
             await tester.clickLinkByText("Crab Page");
             await tester.shouldSeeText("This is the crab page the green book");
         });
@@ -94,6 +97,13 @@ export const Default: Story = {
         });
 
         await step("Jump to this book's cover", async () => {
+            // This was very flaky. Usually the test stuck here, apparently not
+            // finding the button, though usually it reported that it couldn't find
+            // multi-book index (without going there). Any kind of breakpoint made it
+            // work, so I just added a bit more delay. Slower computers might need more,
+            // but so far this is just a manually-run automated test, so it's not too
+            // bad if it fails occasionally.
+            await new Promise((resolve) => setTimeout(resolve, 200));
             await tester.clickLinkByText("This book Cover");
             await tester.shouldSeeText("multibook-index");
         });

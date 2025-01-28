@@ -29,6 +29,11 @@ const config: StorybookConfig = {
         const updatedProxy = {
             // setup the same proxy that we have in "vite dev" to avoid CORS issues. (THIS IS NOT WORKING)
             // Note that it requires that paths to book on BloomLibrary.org start with "s3/" in place of "https://s3.amazonaws.com/"
+            // [JohnT: Normally Bloom Player uses the full URL passed to the src param of the iframe unmodified,
+            // but if we do that for S3 URLs we get CORS errors. So we use these special "relative" URLs and this
+            // proxy converts them back to S3 ones. Unfortunately this requires a special case in the Bloom Player
+            // constructor to handle the relative URL input.  I don't know what JohnH means about it not working...
+            // it works in at least many of our S3 test cases.]
             ...proxy,
 
             // Simulate what a bloom-player host must do to provide books via their instanceId
