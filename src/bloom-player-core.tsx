@@ -481,6 +481,9 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps, prevState: IPlayerState) {
         try {
+            // This happens in Bloom Editor preview, where a render of some outer component does not
+            // yet have the URL. There's nothing useful we can do.
+            if (!this.props.url) return;
             if (this.state.loadFailed) {
                 return; // otherwise we'll just be stuck in here forever trying to load
             }
