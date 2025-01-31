@@ -197,12 +197,16 @@ export class Animation {
             const styleAttr = this.animationView.style;
             const img = this.animationView.getElementsByTagName("img")[0];
             let imageSrc: string | null = null;
-            if (img || styleAttr) {
+            if (
+                img ||
+                styleAttr.backgroundImage ||
+                this.animationView.getAttribute("data-background")
+            ) {
                 if (img) {
                     // I don't think this branch has been tested, since export to bloom reader
                     // converts all images to the background-image approach.
                     imageSrc = img.getAttribute("src");
-                } else if (styleAttr) {
+                } else if (styleAttr.backgroundImage) {
                     movingDiv.style.backgroundImage = styleAttr.backgroundImage;
                     // Usually we make sure pictures don't have any transparency, but in case
                     // one sneaks through, this will make the transparent pixels white like they
@@ -212,6 +216,17 @@ export class Animation {
                     imageSrc = DomHelper.getActualUrlFromCSSPropertyValue(
                         movingDiv.style.backgroundImage,
                     );
+                } else {
+                    // This can happen when the scroll widget is used to move a long way.
+                    // At the point where this is called, Swiper has not yet done its lazy-load
+                    // magic, so we have this attribute instead of a background image in the actual
+                    // style attribute. We don't need to wait for Swiper to load the page, we can
+                    // get the image src directly from the data-background attr and use it to set
+                    // up our animation.
+                    imageSrc =
+                        this.animationView.getAttribute("data-background");
+                    movingDiv.style.backgroundImage = `url('${imageSrc}')`;
+                    movingDiv.style.backgroundColor = "white";
                 }
                 const image = new Image();
                 image.addEventListener("load", () => {

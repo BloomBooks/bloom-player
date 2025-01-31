@@ -68,6 +68,7 @@ import {
     pageHasAudio,
     setIncludeImageDescriptions,
     playAllSentences,
+    abortNarrationPlayback,
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
 import { playSoundOf } from "./dragActivityRuntime";
@@ -81,6 +82,7 @@ import {
     checkClickForBookOrPageJump,
     tryPopPlayerHistory,
 } from "./navigation";
+import { abort } from "process";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -2059,8 +2061,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         } else if (this.props.autoplay === "no") {
             autoPlay = false;
         }
-        return autoPlay;
+        return autoPlay && !this.skipAutoPlay;
     }
+
+    private skipAutoPlay = false;
 
     // Called from slideChangeTransitionStart
     // - makes an early change to state.currentSwiperIndex, which triggers some
@@ -2095,6 +2099,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 setCurrentPlaybackMode(PlaybackMode.NewPageMediaPaused);
             } else {
                 setCurrentPlaybackMode(PlaybackMode.NewPage);
+                // Stop any audio that is currently playing.
+                // In autoplay, this might trigger another page change, so prevent this.
+                this.skipAutoPlay = true;
+                abortNarrationPlayback();
+                this.skipAutoPlay = false;
             }
         }
     }

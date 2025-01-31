@@ -44,19 +44,6 @@ export enum PlaybackMode {
 
 export let currentPlaybackMode: PlaybackMode = PlaybackMode.NewPage;
 export function setCurrentPlaybackMode(mode: PlaybackMode) {
-    if (
-        currentPlaybackMode === PlaybackMode.AudioPlaying &&
-        mode === PlaybackMode.NewPage
-    ) {
-        const mediaPlayer = getPlayer();
-        if (mediaPlayer) {
-            // Make sure the audio stops (pauses) before we move on to the next page.  (See BL-13905.)
-            // Make the current playing element the only one in the stack for the playEnded() method
-            // to process.
-            elementsToPlayConsecutivelyStack = [mediaPlayer];
-            playEnded();
-        }
-    }
     currentPlaybackMode = mode;
 }
 
@@ -994,6 +981,23 @@ function getPlayer(): HTMLMediaElement {
     return audio;
 }
 
+// Stop any audio that is currently playing.
+// This will also raise the PlayCompleted and PageNarrationComplete events
+export function abortNarrationPlayback() {
+    if (currentPlaybackMode !== PlaybackMode.AudioPlaying) {
+        return; // no need to abort
+    }
+    // Remove anything we were planning to play after the current thing being played.
+    elementsToPlayConsecutivelyStack = [
+        elementsToPlayConsecutivelyStack[
+            elementsToPlayConsecutivelyStack.length - 1
+        ],
+    ];
+    playEnded();
+}
+
+// Handles ending the current playback. If there are more things stacked to play, it plays the next one.
+// otherwise, it reports that play ended. Note that the latter raises the PlayCompleted and PageNarrationComplete events.
 function playEnded(): void {
     // Not sure if this is necessary, since both 'playCurrentInternal()' and 'reportPlayEnded()'
     // will toggle image description already, but if we've just gotten to the end of our "stack",
