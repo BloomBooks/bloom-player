@@ -10,7 +10,7 @@ jobs:
             - name: Trigger GHA for BloomLibrary2 master (alpha and dev-alpha)
               uses: actions/github-script@v7
               with:
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  github-token: ${{ secrets.GH_TOKEN_BLOOMLIBRARY2_ACTIONS }}
                   script: |
                       await github.rest.actions.createWorkflowDispatch({
                         owner: 'BloomBooks',
