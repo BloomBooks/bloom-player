@@ -975,10 +975,14 @@ function currentAudioUrl(id: string): string {
 
 function getPlayer(): HTMLMediaElement {
     const audio = getAudio("bloom-audio-player", (a) => {
-        a.addEventListener("ended", playEnded);
+        a.addEventListener("ended", handlePlayEnded);
         a.addEventListener("error", handlePlayError);
     });
     return audio;
+}
+
+function handlePlayEnded() {
+    playEnded();
 }
 
 // Stop any audio that is currently playing.
@@ -987,18 +991,23 @@ export function abortNarrationPlayback() {
     if (currentPlaybackMode !== PlaybackMode.AudioPlaying) {
         return; // no need to abort
     }
-    // Remove anything we were planning to play after the current thing being played.
-    elementsToPlayConsecutivelyStack = [
-        elementsToPlayConsecutivelyStack[
-            elementsToPlayConsecutivelyStack.length - 1
-        ],
-    ];
-    playEnded();
+
+    // I hesitated to put this comment here because I'm afraid it won't make any sense.
+    // But I also don't feel right about not attempting to capture what happened.
+    // Previously, we didn't have this "keepPlayingTheStack" parameter, and we just
+    // modified the stack to have only the top element in it.
+    // But for no reason we can explain, in BloomPUB Viewer, and only there,
+    // even if we weren't calling this code, referencing elementsToPlayConsecutivelyStack
+    // caused an error to be thrown and a black screen to result.
+    // So if you're tempted to modify this code, especially if you need to
+    // reference elementsToPlayConsecutivelyStack, be sure to test in BloomPUB Viewer.
+
+    playEnded(false);
 }
 
 // Handles ending the current playback. If there are more things stacked to play, it plays the next one.
 // otherwise, it reports that play ended. Note that the latter raises the PlayCompleted and PageNarrationComplete events.
-function playEnded(): void {
+function playEnded(keepPlayingTheStack = true): void {
     // Not sure if this is necessary, since both 'playCurrentInternal()' and 'reportPlayEnded()'
     // will toggle image description already, but if we've just gotten to the end of our "stack",
     // it may be needed.
@@ -1012,7 +1021,7 @@ function playEnded(): void {
     ) {
         const elementJustPlayed = elementsToPlayConsecutivelyStack.pop(); // get rid of the last one we played
         const newStackCount = elementsToPlayConsecutivelyStack.length;
-        if (newStackCount > 0) {
+        if (newStackCount > 0 && keepPlayingTheStack) {
             // More items to play
             const nextElement =
                 elementsToPlayConsecutivelyStack[newStackCount - 1];
