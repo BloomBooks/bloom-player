@@ -162,6 +162,11 @@ To test Bloom Player on a book in the Bloom Editor, follow these steps:
 
 To run unit tests use `yarn test`. This will run all `*.test.ts`, which should be collocated with the thing being tested.
 
+
+### Version Info
+
+If you hold down the CTRL key, Bloom Player will display its version and build date.
+
 ### More info
 
 For more information, see README-advanced.md

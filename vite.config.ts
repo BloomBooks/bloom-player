@@ -5,6 +5,9 @@ import fs from "fs";
 
 export default defineConfig(({ command }) => {
     const config: UserConfig = {
+        define: {
+            __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+        },
         build: {
             outDir: "dist",
             copyPublicDir: false, // Disables the copying of public/ directory during build

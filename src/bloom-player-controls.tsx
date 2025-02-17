@@ -39,6 +39,7 @@ import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./narration";
 import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
 import { fixNiceScrollOffsets } from "./scrolling";
+import { BloomPlayerVersionControl } from "./bloom-player-version-control";
 
 // This component is designed to wrap a BloomPlayer with some controls
 // for things like pausing audio and motion, hiding and showing
@@ -949,7 +950,8 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                 }
                 nowReadingImageDescription={nowReadingImageDescription}
                 videoPreviewMode={props.videoPreviewMode}
-            />
+            ></ControlBar>
+            <BloomPlayerVersionControl />
             <BloomPlayerCore
                 // We believe/hope we can do this a better way (without LegacyRef) once BloomPlayerCore is a function component.
                 ref={coreRef as LegacyRef<BloomPlayerCore>}
