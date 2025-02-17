@@ -72,11 +72,16 @@
         "vite-plugin-static-copy": "^2.0.0",
         "vitest": "^2.1.3"
     },
+    "// The four src/ files are directly exported so BloomDesktop can consume them as shared code.": "",
     "files": [
         "dist/*.js",
         "dist/bloomplayer.htm",
         "dist/*.mp3",
         "lib/*.js",
+        "src/event.ts",
+        "src/narration.ts",
+        "src/dragActivityRuntime.ts",
+        "src/scrolling.ts",
         "dist/*.css",
         "dist/*.tsv"
     ],
