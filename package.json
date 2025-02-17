@@ -3,6 +3,7 @@
     "description": "A library for displaying Bloom books in iframes or WebViews",
     "author": "SIL Global",
     "license": "MIT",
+    "version": "0.0.0",
     "private": false,
     "// sideeffects might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working": "",
     "sideEffects": false,
