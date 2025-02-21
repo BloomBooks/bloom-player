@@ -2097,12 +2097,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             ) {
                 setCurrentPlaybackMode(PlaybackMode.NewPageMediaPaused);
             } else {
-                setCurrentPlaybackMode(PlaybackMode.NewPage);
                 // Stop any audio that is currently playing.
                 // In autoplay, this might trigger another page change, so prevent this.
+                // (Before we clear the playback mode, which would prevent the abort.)
                 this.skipAutoPlay = true;
                 abortNarrationPlayback();
                 this.skipAutoPlay = false;
+                setCurrentPlaybackMode(PlaybackMode.NewPage);
             }
         }
     }
