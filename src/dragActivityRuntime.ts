@@ -61,7 +61,7 @@ export function adjustDraggablesForLanguage(page: HTMLElement) {
     if (page.getAttribute("data-activity") !== "drag-letter-to-target") {
         return;
     }
-    const draggables = Array.from(page.querySelectorAll("[data-bubble-id"));
+    const draggables = Array.from(page.querySelectorAll("[data-bubble-id]"));
     draggables.shift(); // The first one is always visible.
     draggables.forEach((draggable: HTMLElement) => {
         const shouldBeVisible = !!(
