@@ -23,6 +23,19 @@ jobs:
             - name: Install dependencies
               run: yarn
 
+            - name: Determine next version
+              id: next_version
+              uses: cycjimmy/semantic-release-action@v4
+              with:
+                  dry_run: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: Update version in package.json
+              if: steps.next_version.outputs.new_release_version
+              run: npm version ${{ steps.next_version.outputs.new_release_version }} --no-git-tag-version
+
             - name: Sync with crowdin
               env:
                   BLOOM_CROWDIN_TOKEN: ${{ secrets.BLOOM_CROWDIN_TOKEN }}
