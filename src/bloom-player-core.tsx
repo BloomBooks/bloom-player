@@ -71,7 +71,10 @@ import {
     abortNarrationPlayback,
 } from "./narration";
 import { logSound } from "./videoRecordingSupport";
-import { playSoundOf } from "./dragActivityRuntime";
+import {
+    kLegacyCanvasElementSelector,
+    playSoundOf,
+} from "./dragActivityRuntime";
 import {
     addScrollbarsToPage,
     kSelectorForPotentialNiceScrollElements,
@@ -1254,7 +1257,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             const langVernacular = this.props.activeLanguageCode;
             this.getAllPrimaryImageContainersOnPage().forEach((container) => {
                 Array.from(
-                    container.getElementsByClassName("bloom-textOverPicture"),
+                    container.querySelectorAll(kLegacyCanvasElementSelector),
                 ).forEach((top) => {
                     const editable = Array.from(
                         top.getElementsByClassName("bloom-editable"),

@@ -1,6 +1,9 @@
 import $ from "jquery";
 import "jquery.nicescroll";
-import { IsRunningOnBloomDesktop } from "./dragActivityRuntime";
+import {
+    IsRunningOnBloomDesktop,
+    kLegacyCanvasElementSelector,
+} from "./dragActivityRuntime";
 
 export const kSelectorForPotentialNiceScrollElements =
     ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on, " +
@@ -20,7 +23,7 @@ export function addScrollbarsToPage(
     // on a browser so obsolete that it doesn't have IntersectionObserver (e.g., IE or Safari before 12.2),
     // we just won't get scrolling.
     if ("IntersectionObserver" in window) {
-        // Attach overlaid scrollbar to all editables except textOverPictures (e.g. comics)
+        // Attach overlaid scrollbar to all editables except canvas elements (e.g. comics)
         // Expected behavior for comic bubbles:  "we want overflow to show, but not generate scroll bars"
         let scrollBlocks: HTMLElement[] = [];
         let countOfObserversExpectedToReport = 0;
@@ -104,7 +107,7 @@ export function addScrollbarsToPage(
                             countOfObserversThatHaveReported++;
                             ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
                             const isBubble = !!entry.target.closest(
-                                ".bloom-textOverPicture",
+                                kLegacyCanvasElementSelector,
                             );
                             // In bloom desktop preview, we set width to 200% and then scale down by 50%.
                             // This can lead to intersection ratios very slightly less than 1, probably due

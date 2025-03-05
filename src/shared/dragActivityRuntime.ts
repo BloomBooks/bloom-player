@@ -19,6 +19,10 @@ import {
     urlPrefix,
 } from "./narration";
 
+// Probably not the most logical place to define this constant, but this file needs it,
+// and if we define it here we don't have to share another file with bloom editor.
+export const kLegacyCanvasElementSelector =
+    ".bloom-textOverPicture, .bloom-canvas-element";
 let targetPositions: {
     x: number;
     y: number;
@@ -155,7 +159,7 @@ export function prepareActivity(
         video.addEventListener("pointerdown", playVideo);
         if (
             video
-                .closest(".bloom-textOverPicture")
+                .closest(kLegacyCanvasElementSelector)
                 ?.hasAttribute("data-bubble-id")
         ) {
             // don't want to show controls on these, because they are typically too small,
@@ -169,7 +173,7 @@ export function prepareActivity(
     const otherTextItems = Array.from(
         page.getElementsByClassName("bloom-visibility-code-on"),
     ).filter((e) => {
-        var top = e.closest(".bloom-textOverPicture") as HTMLElement;
+        var top = e.closest(kLegacyCanvasElementSelector) as HTMLElement;
         if (!top) {
             // don't think this can happen with current game templates,
             // but if there's some other text on the page, may as well play when clicked
@@ -389,28 +393,27 @@ function changePageButtonClicked(e: MouseEvent) {
 
 export function playInitialElements(page: HTMLElement, playVideos: boolean) {
     const initialFilter = (e) => {
-        const top = e.closest(".bloom-textOverPicture") as HTMLElement;
-        if (!top) {
-            // not an overlay at all. (Note that all overlays have this class, including
-            // video and image overlays.) Maybe not possible in a drag-activity, but just in case
+        const ce = e.closest(kLegacyCanvasElementSelector) as HTMLElement;
+        if (!ce) {
+            // not a canvas element at all. Maybe not possible in a drag-activity, but just in case
             return false;
         }
-        if (top.classList.contains("draggable-text")) {
+        if (ce.classList.contains("draggable-text")) {
             return false; // draggable items are played only when clicked
         }
-        if (top.hasAttribute("data-bubble-id")) {
+        if (ce.hasAttribute("data-bubble-id")) {
             return false; // another indication of a draggable item; in fact, the one above might be obsolete
         }
-        if (top.classList.contains("drag-item-order-sentence")) {
+        if (ce.classList.contains("drag-item-order-sentence")) {
             return false; // This would give away the answer
         }
-        if (top.classList.contains("bloom-wordChoice")) {
+        if (ce.classList.contains("bloom-wordChoice")) {
             return false; // Only one of these should be played, after any instructions
         }
         // This might be redundant since they are not visible, but just in case
         if (
-            top.classList.contains("drag-item-correct") ||
-            top.classList.contains("drag-item-wrong")
+            ce.classList.contains("drag-item-correct") ||
+            ce.classList.contains("drag-item-wrong")
         ) {
             return false; // These are only played after they become visible
         }
