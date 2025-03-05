@@ -11,7 +11,7 @@ import "swiper/dist/css/swiper.min.css";
 import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
-import LiteEvent from "./event";
+import LiteEvent from "./shared/event";
 import { Animation } from "./animation";
 import { IPageVideoComplete, Video } from "./video";
 import { Music } from "./music";
@@ -69,16 +69,16 @@ import {
     setIncludeImageDescriptions,
     playAllSentences,
     abortNarrationPlayback,
-} from "./narration";
+} from "./shared/narration";
 import { logSound } from "./videoRecordingSupport";
 import {
     kLegacyCanvasElementSelector,
     playSoundOf,
-} from "./dragActivityRuntime";
+} from "./shared/dragActivityRuntime";
 import {
     addScrollbarsToPage,
     kSelectorForPotentialNiceScrollElements,
-} from "./scrolling";
+} from "./shared/scrolling";
 import { assembleStyleSheets } from "./stylesheets";
 import {
     canGoBack,

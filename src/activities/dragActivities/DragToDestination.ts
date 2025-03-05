@@ -4,7 +4,7 @@ import {
     playInitialElements,
     prepareActivity,
     undoPrepareActivity,
-} from "../../dragActivityRuntime";
+} from "../../shared/dragActivityRuntime";
 
 // This class is basically an adapter that implements IActivityObject so that activities that
 // are created by Bloom's DragActivityTool (the 2024 Bloom Games) can connect to the
