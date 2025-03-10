@@ -36,7 +36,9 @@
     // deal with the most common case of overlap (the book title on the cover) by just
     // treating the text as a rectangle. And it's fine that this will show this way in Chrome too:
     .Title-On-Cover-style
-        span.ui-audioCurrent:not(.ui-suppressHighlight):not(.ui-disableHighlight) {
+        span.ui-audioCurrent:not(.ui-suppressHighlight):not(
+            .ui-disableHighlight
+        ) {
         display: inline-block;
         white-space: pre-wrap;
     }
@@ -103,17 +105,20 @@
         }
     }
     // it would be more elegant to embed this rule in the one above, but I can't figure out
-    // how to write it so that the .bloom-textOverPicture has to be OUTSIDE the .bloomeditable
+    // how to write it so that the .bloom-canvas-element has to be OUTSIDE the .bloomeditable
     // but INSIDE the .bloom-player that wraps around all this.
-    .bloom-textOverPicture .bloom-editable.bloom-visibility-code-on {
-        // (BL-7911 -> BL-8076) The first fix made overflow hidden. Actually we want overflow to show,
-        // but not generate scroll bars (that's 'visible').
-        overflow-y: visible !important;
-        &.scrolling-bubble {
-            // In this case, though, we're doing the nice-scroll scroll bars even in a bubble,
-            // and that requires overflow hidden, so we don't get a regular scroll
-            // bar on our parent as well.
-            overflow-y: hidden !important;
+    .bloom-textOverPicture,
+    .bloom-canvas-element {
+        .bloom-editable.bloom-visibility-code-on {
+            // (BL-7911 -> BL-8076) The first fix made overflow hidden. Actually we want overflow to show,
+            // but not generate scroll bars (that's 'visible').
+            overflow-y: visible !important;
+            &.scrolling-bubble {
+                // In this case, though, we're doing the nice-scroll scroll bars even in a bubble,
+                // and that requires overflow hidden, so we don't get a regular scroll
+                // bar on our parent as well.
+                overflow-y: hidden !important;
+            }
         }
     }
 

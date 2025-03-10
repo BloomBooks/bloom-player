@@ -1,4 +1,4 @@
-import LiteEvent from "./event";
+import LiteEvent from "./shared/event";
 import { BloomPlayerCore } from "./bloom-player-core";
 import { isMacOrIOS } from "./utilities/osUtils";
 import {
@@ -7,7 +7,7 @@ import {
     PlaybackMode,
     hideVideoError,
     showVideoError,
-} from "./narration";
+} from "./shared/narration";
 import { getPlayIcon } from "./playIcon";
 import { getPauseIcon } from "./pauseIcon";
 import { getReplayIcon } from "./replayIcon";

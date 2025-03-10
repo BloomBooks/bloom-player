@@ -1,11 +1,11 @@
-import LiteEvent from "./event";
+import LiteEvent from "./shared/event";
 import { BloomPlayerCore } from "./bloom-player-core";
 import {
     logSound,
     logSoundPaused,
     logSoundRepeat,
 } from "./videoRecordingSupport";
-import { PlaybackMode, currentPlaybackMode } from "./narration";
+import { PlaybackMode, currentPlaybackMode } from "./shared/narration";
 
 interface ISelection {
     id: number;
