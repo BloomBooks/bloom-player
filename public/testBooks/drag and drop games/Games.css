@@ -1,276 +1,294 @@
 .activityBlueOnTan {
-  --page-color: #e9d9bd;
-  --target-color: #f9e9cc;
-  --draggable-background-color: #2980bb;
-  --draggable-color: white;
-  --fixed-color: #fc8602;
-  --button-color: #2980bb;
-  --slider-button-color: #2980bb;
-  --slider-keyword-color: #902a90;
-  --text-background: #75d0ee;
-  --hover-button-border: #1d94a4;
-  --active-button-border: black;
+    --page-color: #e9d9bd;
+    --target-color: #f9e9cc;
+    --draggable-background-color: #2980bb;
+    --draggable-color: white;
+    --fixed-color: #fc8602;
+    --button-color: #2980bb;
+    --slider-button-color: #2980bb;
+    --slider-keyword-color: #902a90;
+    --text-background: #75d0ee;
+    --hover-button-border: #1d94a4;
+    --active-button-border: black;
 }
 .drag-item-correct,
 .drag-item-wrong {
-  display: none;
+    display: none;
 }
 .drag-activity-correct .drag-item-correct,
 .drag-activity-wrong .drag-item-wrong {
-  display: block;
+    display: block;
 }
 .drag-activity-play .bloom-imageContainer .bloom-textOverPicture div:focus,
 .drag-activity-play .bloom-imageContainer .bloom-textOverPicture video:focus {
-  outline-color: transparent;
-  box-shadow: none;
+    outline-color: transparent;
+    box-shadow: none;
 }
-.drag-activity-correct .bloom-textOverPicture:not(.drag-item-correct) img[src="placeHolder.png"],
-.drag-activity-wrong .bloom-textOverPicture:not(.drag-item-wrong) img[src="placeHolder.png"],
+.drag-activity-correct
+    .bloom-textOverPicture:not(.drag-item-correct)
+    img[src="placeHolder.png"],
+.drag-activity-wrong
+    .bloom-textOverPicture:not(.drag-item-wrong)
+    img[src="placeHolder.png"],
 .drag-activity-play .bloom-textOverPicture img[src="placeHolder.png"],
 .drag-activity-solution .bloom-textOverPicture img[src="placeHolder.png"] {
-  display: none;
+    display: none;
 }
-[data-bubble-id] {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+[data-draggable-id] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
-[data-bubble-id] .bloom-translationGroup {
-  height: auto;
+[data-draggable-id] .bloom-translationGroup {
+    height: auto;
 }
 .activeButton {
-  opacity: 1;
-  pointer-events: unset;
+    opacity: 1;
+    pointer-events: unset;
 }
 .drag-activity-play :not(.drag-activity-wrong) .try-again-button,
 .drag-activity-play :not(.drag-activity-wrong) .show-correct-button {
-  display: none;
+    display: none;
 }
 .drag-activity-play .drag-item-wrong,
 .drag-activity-play .drag-item-correct {
-  z-index: 1003;
+    z-index: 1003;
 }
 .drag-activity-play .bloom-videoContainer.bloom-selected {
-  border: none;
+    border: none;
 }
 .drag-activity-play .bloom-ui-dragging {
-  outline: 1px solid rgba(255, 255, 255, 0.01);
+    outline: 1px solid rgba(255, 255, 255, 0.01);
 }
 .drag-activity-play .drag-item-order-sentence {
-  display: none;
+    display: none;
 }
 .drag-activity-play .uibloomSourceTextsBubble {
-  display: none !important;
+    display: none !important;
 }
 .drag-item-random-sentence {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 5px;
-  position: absolute;
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 5px;
+    position: absolute;
 }
 .drag-activity-play.drag-activity-correct .check-button,
 .drag-activity-play.drag-activity-wrong .check-button,
 .drag-activity-play.drag-activity-solution .check-button {
-  display: none;
+    display: none;
 }
 .drag-activity-play.drag-activity-wrong .try-again-button,
 .drag-activity-play.drag-activity-wrong .show-correct-button {
-  opacity: 1;
-  pointer-events: unset;
+    opacity: 1;
+    pointer-events: unset;
 }
 .drag-activity-play.drag-activity-wrong .try-again-button:hover,
 .drag-activity-play.drag-activity-wrong .show-correct-button:hover {
-  border-color: var(--hover-button-border);
+    border-color: var(--hover-button-border);
 }
 .drag-activity-play.drag-activity-wrong .try-again-button:hover:active,
 .drag-activity-play.drag-activity-wrong .show-correct-button:hover:active {
-  border-color: var(--active-button-border);
+    border-color: var(--active-button-border);
 }
 .drag-activity-play #target-arrow,
 .drag-activity-play .bloom-dragHandle,
 .drag-activity-play .ui-resizable-handle {
-  display: none;
+    display: none;
 }
 .drag-activity-play .check-button {
-  display: block;
+    display: block;
 }
 .drag-activity-play.drag-activity-wrong .check-button {
-  display: none;
+    display: none;
 }
 .drag-activity-play.drag-activity-wrong .try-again-button,
 .drag-activity-play.drag-activity-wrong .show-correct-button {
-  display: block;
+    display: block;
 }
 .drag-activity-play.drag-activity-correct .check-button {
-  display: none;
+    display: none;
 }
 [data-target-of] {
-  position: absolute;
-  z-index: 1002;
-  box-sizing: border-box;
+    position: absolute;
+    z-index: 1002;
+    box-sizing: border-box;
 }
 [data-target-of] > * {
-  opacity: 50%;
+    opacity: 50%;
 }
 [data-target-of] .bloom-imageContainer img {
-  height: unset;
+    height: unset;
 }
-.drag-activity-play .bloom-textOverPicture .bloom-translationGroup .bloom-editable.bloom-editable.bloom-editable {
-  border: none;
-  box-shadow: none;
-  outline: none !important;
+.drag-activity-play
+    .bloom-textOverPicture
+    .bloom-translationGroup
+    .bloom-editable.bloom-editable.bloom-editable {
+    border: none;
+    box-shadow: none;
+    outline: none !important;
 }
-.drag-activity-play .bloom-textOverPicture .bloom-translationGroup .bloom-editable.bloom-editable.bloom-editable p:after {
-  content: unset;
+.drag-activity-play
+    .bloom-textOverPicture
+    .bloom-translationGroup
+    .bloom-editable.bloom-editable.bloom-editable
+    p:after {
+    content: unset;
 }
-.drag-activity-play .bloom-textOverPicture[data-bubble-id] {
-  z-index: 1003;
+.drag-activity-play .bloom-textOverPicture[data-draggable-id] {
+    z-index: 1003;
 }
-.drag-activity-play .bloom-textOverPicture[data-bubble-id].bloom-ui-dragging {
-  z-index: 1004;
+.drag-activity-play
+    .bloom-textOverPicture[data-draggable-id].bloom-ui-dragging {
+    z-index: 1004;
 }
 .drag-activity-play .imageButton,
 .drag-activity-play #formatButton,
 .drag-activity-play .ui-tooltip-plain {
-  display: none !important;
+    display: none !important;
 }
 .drag-activity-play .cke_editable {
-  cursor: default;
+    cursor: default;
 }
 .drag-activity-play .marginBox {
-  border: none;
+    border: none;
 }
-.drag-activity-play .marginBox .bloom-imageContainer.bloom-imageContainer:after {
-  border: none;
+.drag-activity-play
+    .marginBox
+    .bloom-imageContainer.bloom-imageContainer:after {
+    border: none;
 }
 .drag-activity-play .check-button {
-  opacity: 1;
-  pointer-events: unset;
+    opacity: 1;
+    pointer-events: unset;
 }
 .drag-activity-play .check-button:hover {
-  border-color: var(--hover-button-border);
+    border-color: var(--hover-button-border);
 }
 .drag-activity-play .check-button:hover:active {
-  border-color: var(--active-button-border);
+    border-color: var(--active-button-border);
 }
 .bloom-page[data-show-targets-during-play="false"] [data-target-of] {
-  background-color: transparent;
+    background-color: transparent;
 }
-.drag-activity-play .bloom-page[data-show-targets-during-play="false"] [data-target-of] {
-  visibility: hidden;
+.drag-activity-play
+    .bloom-page[data-show-targets-during-play="false"]
+    [data-target-of] {
+    visibility: hidden;
 }
 .bloom-targetWrapper {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .drag-item-order-sentence .bloom-editable {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 .drag-item-order-sentence .bloom-editable p {
-  word-spacing: 16px;
+    word-spacing: 16px;
 }
 .drag-item-order-word {
-  cursor: default;
-  box-sizing: border-box;
+    cursor: default;
+    box-sizing: border-box;
 }
 .game-button,
 .page-turn-button {
-  position: absolute;
-  z-index: 1006;
-  border-color: transparent;
-  pointer-events: none;
+    position: absolute;
+    z-index: 1006;
+    border-color: transparent;
+    pointer-events: none;
 }
 .game-button {
-  height: 36px;
-  width: 50px;
-  opacity: 0.3;
-  pointer-events: none;
+    height: 36px;
+    width: 50px;
+    opacity: 0.3;
+    pointer-events: none;
 }
 .page-turn-button {
-  background-color: transparent;
-  opacity: 10%;
+    background-color: transparent;
+    opacity: 10%;
 }
 .turn-left img {
-  transform: rotate(180deg);
+    transform: rotate(180deg);
 }
 [data-activity="drag-word-chooser-slider"] [data-txt-img] {
-  border: 8px solid var(--slider-keyword-color) !important;
-  border-radius: 18px;
-  background-color: var(--text-background);
+    border: 8px solid var(--slider-keyword-color) !important;
+    border-radius: 18px;
+    background-color: var(--text-background);
 }
 .bloom-page {
-  background-color: var(--page-color);
+    background-color: var(--page-color);
 }
 .bloom-textOverPicture.draggable-text {
-  background-color: var(--draggable-background-color);
-  color: var(--draggable-color);
+    background-color: var(--draggable-background-color);
+    color: var(--draggable-color);
 }
 .bloom-textOverPicture.draggable-text.bloom-unused-in-lang {
-  display: none;
+    display: none;
 }
 .drag-item-correct .bloom-translationGroup,
 .drag-item-wrong .bloom-translationGroup {
-  background-color: transparent;
-  color: var(--fixed-color);
+    background-color: transparent;
+    color: var(--fixed-color);
 }
 .drag-item-order-word,
 .drag-item-order-sentence p {
-  background-color: var(--draggable-background-color);
-  color: var(--draggable-color);
-  border-radius: 10px;
-  padding: 0px 11px;
-  margin-right: 5px;
+    background-color: var(--draggable-background-color);
+    color: var(--draggable-color);
+    border-radius: 10px;
+    padding: 0px 11px;
+    margin-right: 5px;
 }
 [data-target-of] {
-  border: dashed 2px var(--draggable-background-color);
+    border: dashed 2px var(--draggable-background-color);
 }
 [data-target-of]:focus {
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 8px var(--draggable-background-color);
+    box-shadow:
+        inset 0 1px 3px rgba(0, 0, 0, 0.1),
+        0 0 8px var(--draggable-background-color);
 }
 [data-target-of].bloom-unused-in-lang {
-  display: none;
+    display: none;
 }
 .bloom-change-page-button {
-  background-color: var(--draggable-background-color);
-  color: var(--draggable-color);
-  border-radius: 10px;
-  padding: 3px 2px 2px 10px;
-  box-sizing: border-box;
-  z-index: 1002;
-  cursor: default;
+    background-color: var(--draggable-background-color);
+    color: var(--draggable-color);
+    border-radius: 10px;
+    padding: 3px 2px 2px 10px;
+    box-sizing: border-box;
+    z-index: 1002;
+    cursor: default;
 }
 .check-button,
 .try-again-button,
 .show-correct-button {
-  cursor: pointer;
-  font-weight: bold;
-  text-decoration: none;
-  min-height: 36px;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    min-height: 36px;
 }
 .game-button {
-  background-color: var(--draggable-background-color);
+    background-color: var(--draggable-background-color);
 }
 .activeButton:hover {
-  border-color: var(--hover-button-border);
+    border-color: var(--hover-button-border);
 }
 .activeButton:hover:active {
-  border-color: var(--active-button-border);
+    border-color: var(--active-button-border);
 }
 .bloom-game-prompt {
-  display: none;
+    display: none;
 }
 #promptInput #formatButton {
-  display: none;
+    display: none;
 }
 #promptButton {
-  visibility: hidden;
+    visibility: hidden;
 }
 .drag-activity-start #promptButton {
-  visibility: unset;
+    visibility: unset;
 }
 /*# sourceMappingURL=Games.css.map */

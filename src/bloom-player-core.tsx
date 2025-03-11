@@ -11,7 +11,7 @@ import "swiper/dist/css/swiper.min.css";
 import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
-import LiteEvent from "./event";
+import LiteEvent from "./shared/event";
 import { Animation } from "./animation";
 import { IPageVideoComplete, Video } from "./video";
 import { Music } from "./music";
@@ -69,13 +69,16 @@ import {
     setIncludeImageDescriptions,
     playAllSentences,
     abortNarrationPlayback,
-} from "./narration";
+} from "./shared/narration";
 import { logSound } from "./videoRecordingSupport";
-import { playSoundOf } from "./dragActivityRuntime";
+import {
+    kLegacyCanvasElementSelector,
+    playSoundOf,
+} from "./shared/dragActivityRuntime";
 import {
     addScrollbarsToPage,
     kSelectorForPotentialNiceScrollElements,
-} from "./scrolling";
+} from "./shared/scrolling";
 import { assembleStyleSheets } from "./stylesheets";
 import {
     canGoBack,
@@ -1254,7 +1257,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             const langVernacular = this.props.activeLanguageCode;
             this.getAllPrimaryImageContainersOnPage().forEach((container) => {
                 Array.from(
-                    container.getElementsByClassName("bloom-textOverPicture"),
+                    container.querySelectorAll(kLegacyCanvasElementSelector),
                 ).forEach((top) => {
                     const editable = Array.from(
                         top.getElementsByClassName("bloom-editable"),

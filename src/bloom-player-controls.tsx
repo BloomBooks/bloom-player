@@ -36,9 +36,9 @@ import { withStyles, createTheme } from "@material-ui/core/styles";
 // the pages is already known as a slider, so the two would get confused.
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
-import { setDurationOfPagesWithoutNarration } from "./narration";
+import { setDurationOfPagesWithoutNarration } from "./shared/narration";
 import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
-import { fixNiceScrollOffsets } from "./scrolling";
+import { fixNiceScrollOffsets } from "./shared/scrolling";
 import { BloomPlayerVersionControl } from "./bloom-player-version-control";
 
 // This component is designed to wrap a BloomPlayer with some controls
