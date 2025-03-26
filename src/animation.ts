@@ -32,6 +32,12 @@ export class Animation {
 
     // Search for an image container that has the properties we need for animation.
     public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
+        const animatedCanvas = [].slice
+            .call(page.getElementsByClassName("bloom-canvas"))
+            .find(
+                (v) => !!(v.dataset as IAnimation).initialrect,
+            ) as HTMLElement;
+        if (animatedCanvas) return animatedCanvas;
         return [].slice
             .call(page.getElementsByClassName("bloom-imageContainer"))
             .find(

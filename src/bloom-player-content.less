@@ -145,14 +145,17 @@
     // it will have any classes the imageContainer has.  Beware of rules that might override the ones
     // here, which are critical for making the motion-book animation fill the page and cover the other
     // content.
-    .bloom-page div.bloom-imageContainer.hidePage {
-        height: 100%;
-        width: 100%;
-        position: absolute !important; // !important should not be needed, but there's a bug in FF45.
-        left: 0;
-        top: 0;
-        z-index: 2000;
-        background-color: black; // hide anything not covered by image
+    .bloom-page {
+        div.bloom-imageContainer.hidePage,
+        div.bloom-canvas.hidePage {
+            height: 100%;
+            width: 100%;
+            position: absolute !important; // !important should not be needed, but there's a bug in FF45.
+            left: 0;
+            top: 0;
+            z-index: 2000;
+            background-color: black; // hide anything not covered by image
+        }
     }
 
     // If we're trying to hide the page, then the sibling elements must have a lower z-index
