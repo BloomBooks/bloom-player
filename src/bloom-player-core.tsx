@@ -1236,6 +1236,12 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     }
 
     private getAllPrimaryImageContainersOnPage() {
+        const canvasElements =
+            this.htmlElement?.ownerDocument.getElementsByClassName(
+                "bloom-canvas",
+            );
+        if (canvasElements && canvasElements.length > 0)
+            return Array.from(canvasElements);
         const unfilteredContainers =
             this.htmlElement?.ownerDocument.getElementsByClassName(
                 "bloom-imageContainer",

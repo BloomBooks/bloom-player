@@ -114,6 +114,11 @@ export function prepareActivity(
     );
 
     // Hide image titles, which might give too much away, or distract.
+    Array.from(document.getElementsByClassName("bloom-canvas")).forEach(
+        (container) => {
+            (container as HTMLElement).title = "";
+        },
+    );
     Array.from(document.getElementsByClassName("bloom-imageContainer")).forEach(
         (container) => {
             (container as HTMLElement).title = "";
@@ -1078,9 +1083,13 @@ export function copyContentToTarget(draggable: HTMLElement) {
     Array.from(throwAway.querySelectorAll("[tabindex]")).forEach((e) => {
         e.removeAttribute("tabindex");
     });
-    const imageContainer = throwAway.getElementsByClassName(
-        "bloom-imageContainer",
+    let imageContainer = throwAway.getElementsByClassName(
+        "bloom-canvas",
     )[0] as HTMLElement;
+    if (!imageContainer)
+        imageContainer = throwAway.getElementsByClassName(
+            "bloom-imageContainer",
+        )[0] as HTMLElement;
     if (imageContainer) {
         // We need another layer to manage clipping and centering. The one we were going to
         // throw away becomes the wrapper, and we add a new throwAway outside it
@@ -1182,6 +1191,7 @@ export function setupWordChooserSlider(page: HTMLElement) {
     //         // I'm not finding anything that works that way, and the code below finds a full URL
     //         sliderImgSrc = img.getAttribute("src")!;
     //     } else {
+    //          WOULD THIS NEED ADJUSTING FOR .bloom-canvas IF THIS CODE WERE RESURRECTED?
     //         // In bloom-player, for a forgotten and possibly obsolete reason, we use a background image
     //         // on the container. (I vaguely recall it may be important when animating the main image.)
     //         const imgContainer = imgTop.getElementsByClassName(
