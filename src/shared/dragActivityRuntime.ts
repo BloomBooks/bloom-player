@@ -49,15 +49,17 @@ const savePositions = (page: HTMLElement) => {
     });
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
-// after being in that tab).
-const restorePositions = () => {
+// after being in that tab or when clicking the retry button during play).
+const restorePositions = (preservePositions?: boolean) => {
     positionsToRestore.forEach((p) => {
         p.elt.style.left = p.x;
         p.elt.style.top = p.y;
     });
-    // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
-    // if we leave the page completely.
-    positionsToRestore = [];
+    if (!preservePositions) {
+        // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
+        // if we leave the page completely.
+        positionsToRestore = [];
+    }
 };
 
 // This method may be specific to BloomDesktop.
@@ -670,6 +672,8 @@ export const performTryAgain = (e: MouseEvent) => {
     classSetter(page, "drag-activity-wrong", false);
     //currently I don't think it could be set here, but make sure.
     classSetter(page, "drag-activity-solution", false);
+    // Restore everything to the starting positions.  BL-14482.
+    restorePositions(true);
 };
 
 export const classSetter = (
