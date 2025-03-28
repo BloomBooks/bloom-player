@@ -50,16 +50,11 @@ const savePositions = (page: HTMLElement) => {
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
 // after being in that tab or when clicking the retry button during play).
-const restorePositions = (preservePositions?: boolean) => {
+const restorePositions = () => {
     positionsToRestore.forEach((p) => {
         p.elt.style.left = p.x;
         p.elt.style.top = p.y;
     });
-    if (!preservePositions) {
-        // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
-        // if we leave the page completely.
-        positionsToRestore = [];
-    }
 };
 
 // This method may be specific to BloomDesktop.
@@ -269,6 +264,10 @@ const playVideo = (e: MouseEvent) => {
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 export function undoPrepareActivity(page: HTMLElement) {
     restorePositions();
+    // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
+    // if we leave the page completely.
+    positionsToRestore = [];
+
     const changePageButtons = Array.from(
         page.getElementsByClassName("bloom-change-page-button"),
     );
@@ -673,7 +672,7 @@ export const performTryAgain = (e: MouseEvent) => {
     //currently I don't think it could be set here, but make sure.
     classSetter(page, "drag-activity-solution", false);
     // Restore everything to the starting positions.  BL-14482.
-    restorePositions(true);
+    restorePositions();
 };
 
 export const classSetter = (
