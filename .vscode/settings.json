@@ -8,7 +8,11 @@
         "statussBar.prominentBackground": "#D65649"
     },
     "cSpell.words": [
+        "contenteditable",
+        "draggables",
         "editables",
+        "playables",
+        "slideables",
         "swiper",
         "tabindex",
         "Xmatter"
@@ -23,8 +27,6 @@
         "package.json"
     ],
     "[json][jsonc]": {
-        "editor.codeActionsOnSave": [
-            "source.fixAll"
-        ]
+        "editor.codeActionsOnSave": ["source.fixAll"]
     }
 }
