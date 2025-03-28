@@ -12,6 +12,16 @@
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
     "type": "module",
+    "main": "lib/shared.cjs.js",
+    "module": "lib/shared.es.js",
+    "types": "lib/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./lib/shared.es.js",
+            "require": "./lib/shared.cjs.js",
+            "types": "./lib/index.d.ts"
+        }
+    },
     "scripts": {
         "// COMMENTS: make the action a space rather than empty string so `yarn run` can list the scripts": " ",
         "//": " ",
@@ -19,7 +29,8 @@
         "// You can edit index-for-developing.html to point to different books": " ",
         "// Or just use 'yarn storybook' and skip this dev approach entirely": " ",
         "dev": "vite",
-        "build": "vite build",
+        "build:standalone": "vite build",
+        "build:sharedlib": "vite build --mode lib",
         "test": "vitest",
         "// blame.ignoreRevsFile - This allows blame to see through commits that are only there to format code.": " ",
         "prepare": "husky install && git config blame.ignoreRevsFile .git-blame-ignore-revs",
@@ -69,6 +80,7 @@
         "tsx": "^4.19.1",
         "typescript": "*",
         "vite": "^5.4.9",
+        "vite-plugin-dts": "^4.5.3",
         "vite-plugin-html": "^3.2.2",
         "vite-plugin-static-copy": "^2.0.0",
         "vitest": "^2.1.3"
@@ -79,10 +91,13 @@
         "dist/bloomplayer.htm",
         "dist/*.mp3",
         "lib/*.js",
+        "lib/*.d.ts",
+        "lib/*.js.map",
         "src/shared/event.ts",
         "src/shared/narration.ts",
         "src/shared/dragActivityRuntime.ts",
         "src/shared/scrolling.ts",
+        "src/shared/index.ts",
         "dist/*.css",
         "dist/*.tsv"
     ],

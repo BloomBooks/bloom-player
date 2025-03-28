@@ -9,7 +9,7 @@ import dragToDestinationModule from "./dragActivities/DragToDestination";
 export interface IActivityModule {
     // this is a weird typescript thing... the activity just needs to export a class as its default export, and that
     // class should implement IActivityObject;
-    default: IActivityObject;
+    default: IActivityObject | any; // Changed to accept any to handle class constructors
     activityRequirements: () => IActivityRequirements;
 }
 
@@ -62,11 +62,12 @@ export class ActivityManager {
     private bookActivityGroupings: { [id: string]: number[] } = {};
 
     constructor() {
-        this.builtInActivities["iframe"] = iframeModule as IActivityModule;
+        this.builtInActivities["iframe"] =
+            iframeModule as unknown as IActivityModule;
         this.builtInActivities["simple-dom-choice"] =
-            simpleDomChoiceActivityModule as IActivityModule;
+            simpleDomChoiceActivityModule as unknown as IActivityModule;
         this.builtInActivities[simpleCheckboxQuizModule.dataActivityID] =
-            simpleCheckboxQuizModule as IActivityModule;
+            simpleCheckboxQuizModule as unknown as IActivityModule;
 
         // Review: currently these all use the same module. A lot of stuff is shared, all the way down to the
         // prepareActivity() function in dragActivityRuntime. But a good many specialized TOP types are
@@ -77,16 +78,16 @@ export class ActivityManager {
         // draggables we find.
         this.builtInActivities[
             "drag-to-destination" // not currently used
-        ] = dragToDestinationModule as IActivityModule;
+        ] = dragToDestinationModule as unknown as IActivityModule;
         this.builtInActivities["drag-letter-to-target"] =
-            dragToDestinationModule as IActivityModule;
+            dragToDestinationModule as unknown as IActivityModule;
         this.builtInActivities["drag-image-to-target"] =
-            dragToDestinationModule as IActivityModule;
+            dragToDestinationModule as unknown as IActivityModule;
         this.builtInActivities["drag-sort-sentence"] =
-            dragToDestinationModule as IActivityModule;
+            dragToDestinationModule as unknown as IActivityModule;
         this.builtInActivities[
             "word-chooser-slider" // not used yet
-        ] = dragToDestinationModule as IActivityModule;
+        ] = dragToDestinationModule as unknown as IActivityModule;
     }
     public getActivityAbsorbsDragging(): boolean {
         return (

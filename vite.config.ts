@@ -2,8 +2,41 @@ import { defineConfig, UserConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 import fs from "fs";
+import dts from "vite-plugin-dts";
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+    // If we're building in library mode, configure for the shared library
+    if (mode === "lib") {
+        return {
+            build: {
+                outDir: "lib",
+                lib: {
+                    entry: path.resolve(__dirname, "src/shared/index.ts"),
+                    name: "BloomPlayerShared",
+                    formats: ["cjs", "es"],
+                    fileName: (format) => `shared.${format}.js`,
+                },
+                sourcemap: true,
+                emptyOutDir: true,
+                copyPublicDir: false, // Directly prevent copying of the public directory
+            },
+            plugins: [
+                // Generate TypeScript declaration files
+                dts({
+                    // insertTypesEntry: true,
+                    // rollupTypes: true,
+                    // outDir: "lib/types",
+                    compilerOptions: {
+                        skipLibCheck: true,
+                        strict: false,
+                    },
+                    entryRoot: path.resolve(__dirname, "src/shared"),
+                }),
+            ],
+        };
+    }
+
+    // Regular configuration for the main application
     const config: UserConfig = {
         define: {
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
