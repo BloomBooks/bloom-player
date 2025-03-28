@@ -259,7 +259,7 @@ const playVideo = (e: MouseEvent) => {
     video.play();
 };
 
-// Cleans up whatever prepareACtivity() did, especially when switching to another tab.
+// Cleans up whatever prepareActivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 export function undoPrepareActivity(page: HTMLElement) {
@@ -315,8 +315,8 @@ export function undoPrepareActivity(page: HTMLElement) {
     });
 
     // In Bloom Player, this will have been done by other play code, since data-sound is not
-    // specfic to games. But we're adding a listener for the same function, so it doesn't matter.
-    // In Bloom desktop, we need this to make cliking data-sound elements work in Play mode.
+    // specific to games. But we're adding a listener for the same function, so it doesn't matter.
+    // In Bloom desktop, we need this to make clicking data-sound elements work in Play mode.
     const soundItems = Array.from(page.querySelectorAll("[data-sound]"));
     soundItems.forEach((elt: HTMLElement) => {
         elt.removeEventListener("click", playSoundOf);
@@ -476,7 +476,7 @@ function getVisibleEditables(container: HTMLElement) {
 }
 
 export function shuffle<T>(array: T[]): T[] {
-    // review: something Copliot came up with. Is it guaranteed to be sufficiently different
+    // review: something Copilot came up with. Is it guaranteed to be sufficiently different
     // from the correct answer?
     let currentIndex = array.length,
         randomIndex;
