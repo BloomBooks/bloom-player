@@ -1235,7 +1235,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
     }
 
-    private getAllPrimaryImageContainersOnPage() {
+    private getAllBloomCanvasElementsOnPage() {
+        const bloomCanvasElements =
+            this.htmlElement?.ownerDocument.getElementsByClassName(
+                "bloom-canvas",
+            );
+        if (bloomCanvasElements && bloomCanvasElements.length > 0)
+            return Array.from(bloomCanvasElements);
         const unfilteredContainers =
             this.htmlElement?.ownerDocument.getElementsByClassName(
                 "bloom-imageContainer",
@@ -1255,9 +1261,9 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
         try {
             const langVernacular = this.props.activeLanguageCode;
-            this.getAllPrimaryImageContainersOnPage().forEach((container) => {
+            this.getAllBloomCanvasElementsOnPage().forEach((bloomCanvas) => {
                 Array.from(
-                    container.querySelectorAll(kLegacyCanvasElementSelector),
+                    bloomCanvas.querySelectorAll(kLegacyCanvasElementSelector),
                 ).forEach((top) => {
                     const editable = Array.from(
                         top.getElementsByClassName("bloom-editable"),
@@ -1276,7 +1282,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 });
                 // If we have an alternate SVG for this language, activate it.
                 const altSvg = Array.from(
-                    container.getElementsByClassName("comical-alternate"),
+                    bloomCanvas.getElementsByClassName("comical-alternate"),
                 ).find(
                     (svg) => svg.getAttribute("data-lang") === langVernacular,
                 );
@@ -1287,7 +1293,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // support.
                 if (altSvg) {
                     const currentSvg =
-                        container.getElementsByClassName(
+                        bloomCanvas.getElementsByClassName(
                             "comical-generated",
                         )[0];
                     if (currentSvg) {
