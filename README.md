@@ -142,6 +142,18 @@ Either run `yarn storybook` (which has multiple books),
 
 or run `yarn dev` (which will use `index-for-developing.html`).
 
+To build the standalone js file that can be used from an html file:
+
+```bash
+yarn build:standalone
+```
+
+To build the library used by the Bloom Editor
+
+```bash
+yarn build:sharedlib
+```
+
 See package.json for other scripts.
 
 ### Testing with a book hosted on the web
