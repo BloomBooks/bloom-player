@@ -49,15 +49,12 @@ const savePositions = (page: HTMLElement) => {
     });
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
-// after being in that tab).
+// after being in that tab or when clicking the retry button during play).
 const restorePositions = () => {
     positionsToRestore.forEach((p) => {
         p.elt.style.left = p.x;
         p.elt.style.top = p.y;
     });
-    // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
-    // if we leave the page completely.
-    positionsToRestore = [];
 };
 
 // This method may be specific to BloomDesktop.
@@ -267,11 +264,15 @@ const playVideo = (e: MouseEvent) => {
     video.play();
 };
 
-// Cleans up whatever prepareACtivity() did, especially when switching to another tab.
+// Cleans up whatever prepareActivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 export function undoPrepareActivity(page: HTMLElement) {
     restorePositions();
+    // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
+    // if we leave the page completely.
+    positionsToRestore = [];
+
     const changePageButtons = Array.from(
         page.getElementsByClassName("bloom-change-page-button"),
     );
@@ -319,8 +320,8 @@ export function undoPrepareActivity(page: HTMLElement) {
     });
 
     // In Bloom Player, this will have been done by other play code, since data-sound is not
-    // specfic to games. But we're adding a listener for the same function, so it doesn't matter.
-    // In Bloom desktop, we need this to make cliking data-sound elements work in Play mode.
+    // specific to games. But we're adding a listener for the same function, so it doesn't matter.
+    // In Bloom desktop, we need this to make clicking data-sound elements work in Play mode.
     const soundItems = Array.from(page.querySelectorAll("[data-sound]"));
     soundItems.forEach((elt: HTMLElement) => {
         elt.removeEventListener("click", playSoundOf);
@@ -480,7 +481,7 @@ function getVisibleEditables(container: HTMLElement) {
 }
 
 export function shuffle<T>(array: T[]): T[] {
-    // review: something Copliot came up with. Is it guaranteed to be sufficiently different
+    // review: something Copilot came up with. Is it guaranteed to be sufficiently different
     // from the correct answer?
     let currentIndex = array.length,
         randomIndex;
@@ -675,6 +676,8 @@ export const performTryAgain = (e: MouseEvent) => {
     classSetter(page, "drag-activity-wrong", false);
     //currently I don't think it could be set here, but make sure.
     classSetter(page, "drag-activity-solution", false);
+    // Restore everything to the starting positions.  BL-14482.
+    restorePositions();
 };
 
 export const classSetter = (
