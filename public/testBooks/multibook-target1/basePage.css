@@ -12,7 +12,7 @@ textarea,
 .bloom-editable {
   flex-direction: column;
 }
-.bloom-backgroundImage {
+.bloom-background-image-in-style {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
