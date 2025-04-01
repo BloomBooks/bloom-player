@@ -153,6 +153,8 @@ export function prepareActivity(
         // if it has data-draggable-id, it should be draggable, just not needed
         // for the right answer.
         originalPositions.set(elt, { x: elt.offsetLeft, y: elt.offsetTop });
+        // Allow pointermove events even on touch devices.  See BL-14502.
+        elt.style.touchAction = "none";
         elt.addEventListener("pointerdown", startDrag, { capture: true });
     });
 
