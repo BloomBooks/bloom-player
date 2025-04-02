@@ -482,20 +482,74 @@ function getVisibleEditables(container: HTMLElement) {
     return result;
 }
 
-export function shuffle<T>(array: T[]): T[] {
-    // review: something Copilot came up with. Is it guaranteed to be sufficiently different
-    // from the correct answer?
-    let currentIndex = array.length,
-        randomIndex;
-    while (0 !== currentIndex) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [
-            array[randomIndex],
-            array[currentIndex],
-        ];
+export function shuffle<T>(
+    array: T[],
+    areItemsTheSame?: (a: T, b: T) => boolean,
+): T[] {
+    // something Copilot came up with.  Otherwise known as the Fisher–Yates Shuffle as discussed
+    // at https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array.
+    // Getting the output to always be visibly different when input items can visually be the same (as for
+    // letters in a word that are repeated) adds complications before and after the guts of the computation.
+    // See BL-14446.
+
+    // simplify code below by providing a default function
+    if (!areItemsTheSame)
+        areItemsTheSame = (a: T, b: T) => {
+            return a === b;
+        };
+    let allItemsAreTheSame = true;
+    for (let i = 1; i < array.length; ++i) {
+        if (!areItemsTheSame(array[0], array[i])) {
+            allItemsAreTheSame = false;
+            break;
+        }
     }
+    if (allItemsAreTheSame) return array; // shuffling not needed, wouldn't work anyway
+
+    const originalArray = array.slice();
+    let bestChanges = 0;
+    let bestResult = originalArray;
+    let loopCount = 0;
+    // Note that each time through the loop uses the output of the previous iteration
+    // as its input.
+    while (loopCount++ < 10) {
+        // BEGIN Fisher-Yates shuffle
+        let currentIndex = array.length,
+            randomIndex;
+        while (0 !== currentIndex) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex],
+                array[currentIndex],
+            ];
+        }
+        // END Fisher-Yates shuffle
+
+        // Check whether the shuffling has had an actual visible effect.
+        // Save the array with the largest number of changes while the
+        // loop is processing.
+        let changes = 0;
+        for (let i = 0; i < array.length; ++i) {
+            if (!areItemsTheSame(array[i], originalArray[i])) ++changes;
+        }
+        if (changes === array.length) return array; // It can't get better on this simplistic measure.
+        if (changes > bestChanges) {
+            bestChanges = changes;
+            bestResult = array.slice();
+        }
+    }
+    // callers may depend on the array being modified in place.
+    for (let i = 0; i < array.length; ++i) array[i] = bestResult[i];
     return array;
+}
+
+// This method can be passed to shuffle to test letters embedded in draggable HTML elements.
+export function isTheTextInDraggablesTheSame(
+    a: HTMLElement,
+    b: HTMLElement,
+): boolean {
+    return a.innerText.trim() === b.innerText.trim();
 }
 
 // Put the page into the mode that shows the correct answers.
