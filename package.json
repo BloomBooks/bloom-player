@@ -12,14 +12,13 @@
         "url": "https://github.com/BloomBooks/bloom-player.git"
     },
     "type": "module",
-    "main": "lib/shared.cjs.js",
     "module": "lib/shared.es.js",
     "types": "lib/index.d.ts",
     "exports": {
         ".": {
+            "types": "./lib/index.d.ts",
             "import": "./lib/shared.es.js",
-            "require": "./lib/shared.cjs.js",
-            "types": "./lib/index.d.ts"
+            "default": "./lib/shared.es.js"
         }
     },
     "scripts": {

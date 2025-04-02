@@ -13,7 +13,7 @@ export default defineConfig(({ command, mode }) => {
                 lib: {
                     entry: path.resolve(__dirname, "src/shared/index.ts"),
                     name: "BloomPlayerShared",
-                    formats: ["cjs", "es"],
+                    formats: ["es"],
                     fileName: (format) => `shared.${format}.js`,
                 },
                 sourcemap: true,
