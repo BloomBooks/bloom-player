@@ -47,7 +47,9 @@ jobs:
                   fi
 
             - name: Build package
-              run: yarn build
+              run: |
+                  yarn build:standalone
+                  yarn build:sharedlib
 
             - name: Run tests
               run: yarn test
