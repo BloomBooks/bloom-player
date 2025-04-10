@@ -54,6 +54,7 @@ const restorePositions = () => {
     positionsToRestore.forEach((p) => {
         p.elt.style.left = p.x;
         p.elt.style.top = p.y;
+        p.elt.classList.remove("bloom-draggedToTarget");
     });
 };
 
@@ -621,6 +622,7 @@ const startDrag = (e: PointerEvent) => {
     target.addEventListener("pointermove", elementDrag);
     playAudioOf(target);
     target.classList.add("bloom-ui-dragging");
+    dragTarget.classList.remove("bloom-draggedToTarget");
 };
 
 const elementDrag = (e: PointerEvent) => {
@@ -662,6 +664,9 @@ const stopDrag = (e: PointerEvent) => {
         const oldPosition = originalPositions.get(dragTarget);
         dragTarget.style.top = oldPosition?.y + "px";
         dragTarget.style.left = oldPosition?.x + "px";
+        dragTarget.classList.remove("bloom-draggedToTarget");
+    } else {
+        dragTarget.classList.add("bloom-draggedToTarget");
     }
     dragTarget.classList.remove("bloom-ui-dragging");
     dragTarget.removeEventListener("pointerup", stopDrag);
@@ -681,6 +686,7 @@ const stopDrag = (e: PointerEvent) => {
             if (originalPosition) {
                 elt.style.left = originalPosition.x + "px";
                 elt.style.top = originalPosition.y + "px";
+                elt.classList.remove("bloom-draggedToTarget");
             }
         }
     });
