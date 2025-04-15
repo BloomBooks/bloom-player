@@ -371,10 +371,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                     (event.target as HTMLElement).closest(
                         "[href], [data-href]",
                     ) ||
-                    // video too
-                    (event.target as HTMLElement).closest(
+                    // video too, unless intended to be draggable (BL-14599)
+                    ((event.target as HTMLElement).closest(
                         ".bloom-videoContainer",
-                    )
+                    ) &&
+                        !(event.target as HTMLElement).closest(
+                            "[data-draggable-id]",
+                        ))
                 ) {
                     // Stop the swiper from starting a drag
                     event.stopPropagation();
