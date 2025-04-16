@@ -568,10 +568,22 @@ const showCorrect = (e: MouseEvent) => {
             if (!target) {
                 return; // this one is not required to be in a right place
             }
-            const x =
-                target.offsetLeft + (target.offsetWidth - elt.offsetWidth) / 2;
-            const y =
-                target.offsetTop + (target.offsetHeight - elt.offsetHeight) / 2;
+            // IF the element has not been moved to a target, elt is showing up here with
+            // an offsetWidth of 0 and an offsetHeight of 0 because the element has been
+            // made invisible by the check answer response.  So we'll fall back to getting
+            // the width and height from the style attribute.  See BL-14600
+            let eltWidth = elt.offsetWidth;
+            if (!eltWidth) {
+                const w = elt.style.width.replace("px", "");
+                eltWidth = Number.parseInt(w, 10);
+            }
+            let eltHeight = elt.offsetHeight;
+            if (!eltHeight) {
+                const h = elt.style.height.replace("px", "");
+                eltHeight = Number.parseInt(h, 10);
+            }
+            const x = target.offsetLeft + (target.offsetWidth - eltWidth) / 2;
+            const y = target.offsetTop + (target.offsetHeight - eltHeight) / 2;
             elt.style.left = x + "px";
             elt.style.top = y + "px";
         });
