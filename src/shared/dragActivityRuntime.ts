@@ -97,7 +97,8 @@ export function prepareActivity(
     adjustDraggablesForLanguage(page);
     currentChangePageAction = changePageAction;
     doShowAnswersInTargets(
-        page.getAttribute("data-show-answers-in-targets") === "true",
+        page.getAttribute("data-show-answers-in-targets") === "true" ||
+            page.getAttribute("data-show-target-as-shadow") === "true",
         page,
     );
     // not sure we need this in BP, but definitely for when Bloom desktop goes to another tab.
@@ -1106,7 +1107,10 @@ function checkRandomSentences(page: HTMLElement) {
 }
 
 export const doShowAnswersInTargets = (showNow: boolean, page: HTMLElement) => {
-    const draggables = Array.from(page.querySelectorAll("[data-draggable-id]"));
+    // Restrict the search to the current page, so that we don't accidentally find a target on another page.
+    // This is important because the targetId is not necessarily unique across pages if users use the default
+    // draggables that come with the page.
+    const draggables = page.querySelectorAll(":scope [data-draggable-id]");
     if (showNow) {
         draggables.forEach((draggable) => {
             copyContentToTarget(draggable as HTMLElement);
@@ -1178,6 +1182,14 @@ export function copyContentToTarget(draggable: HTMLElement) {
         // same cropping.
         imageContainer.style.width = draggable.style.width;
         imageContainer.style.height = draggable.style.height;
+        // The swiper lazy loading code converts the data-background attribute to the style
+        // attribute's backgroundImage property for the draggable element.  If this hasn't
+        // happened yet, we need to adjust the target to match what the draggable will become.
+        const background = imageContainer.getAttribute("data-background");
+        if (background && !imageContainer.style.backgroundImage) {
+            imageContainer.style.backgroundImage = background;
+            imageContainer.removeAttribute("data-background");
+        }
     }
     if (target.innerHTML !== throwAway.innerHTML) {
         target.innerHTML = throwAway.innerHTML;
@@ -1189,9 +1201,12 @@ export const getTarget = (draggable: HTMLElement): HTMLElement | undefined => {
     if (!targetId) {
         return undefined;
     }
-    return draggable.ownerDocument.querySelector(
-        `[data-target-of="${targetId}"]`,
-    ) as HTMLElement;
+    // Restrict the search to the current page, so that we don't accidentally find a target on another page.
+    // This is important because the targetId is not necessarily unique across pages if users use the default
+    // draggables that come with the page.
+    return draggable
+        .closest(".bloom-page")
+        .querySelector(`[data-target-of="${targetId}"]`) as HTMLElement;
 };
 
 function removeContentFromTarget(draggable: HTMLElement) {
