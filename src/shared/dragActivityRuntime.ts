@@ -362,10 +362,16 @@ const playAudioOfTarget = (e: PointerEvent) => {
 };
 
 const playAudioOf = (element: HTMLElement) => {
-    const possibleElements = getVisibleEditables(element);
-    const playables = getAudioSentences(possibleElements);
+    const playables = getAudioSentencesOfVisibleEditables(element);
     playAllAudio(playables, element.closest(".bloom-page") as HTMLElement);
 };
+
+export function getAudioSentencesOfVisibleEditables(
+    element: HTMLElement,
+): HTMLElement[] {
+    const possibleElements = getVisibleEditables(element);
+    return getAudioSentences(possibleElements);
+}
 
 function makeWordItems(
     page: HTMLElement,
