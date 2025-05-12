@@ -1166,6 +1166,12 @@ export function copyContentToTarget(draggable: HTMLElement) {
     Array.from(throwAway.querySelectorAll("[contenteditable]")).forEach((e) => {
         e.removeAttribute("contenteditable");
     });
+    // Content is not recordable inside the target.
+    Array.from(throwAway.getElementsByClassName("ui-audioCurrent")).forEach(
+        (e) => {
+            e.classList.remove("ui-audioCurrent");
+        },
+    );
     // Nor should we able to tab to it, or focus it.
     Array.from(throwAway.querySelectorAll("[tabindex]")).forEach((e) => {
         e.removeAttribute("tabindex");
