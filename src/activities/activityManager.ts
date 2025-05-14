@@ -230,6 +230,16 @@ export class ActivityManager {
                 "prepared",
             );
         }
+        // It would be nice if this next bit of work could be done in dragActivityRuntime.prepareActivity(),
+        // but that is called after the page is already in the DOM and the answer has been (briefly) visible
+        // to the user. So we do it here, before the page is shown at all. (BL-14776)
+        const visibleTargets = pageDiv.querySelectorAll(
+            "[data-target-of] .bloom-visibility-code-on",
+        );
+        for (let i = 0; i < visibleTargets.length; i++) {
+            const element = visibleTargets[i] as HTMLElement;
+            element.classList.remove("bloom-visibility-code-on");
+        }
     }
 
     public doInitialSoundAndAnimation() {
