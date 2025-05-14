@@ -230,6 +230,13 @@ export class ActivityManager {
                 "prepared",
             );
         }
+        const visibleTargets = pageDiv.querySelectorAll(
+            "[data-target-of] .bloom-visibility-code-on",
+        );
+        for (let i = 0; i < visibleTargets.length; i++) {
+            const element = visibleTargets[i] as HTMLElement;
+            element.classList.remove("bloom-visibility-code-on");
+        }
     }
 
     public doInitialSoundAndAnimation() {
