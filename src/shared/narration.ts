@@ -752,13 +752,13 @@ function setSoundAndHighlight(
     disableHighlightIfNoAudio: boolean,
     oldElement?: Element | null | undefined,
 ) {
+    setSoundFrom(newElement);
     setHighlightTo({
         newElement,
         shouldScrollToElement: true, // Always true in bloom-player version
         disableHighlightIfNoAudio,
         oldElement,
     });
-    setSoundFrom(newElement);
 }
 
 function setHighlightTo({
@@ -785,10 +785,13 @@ function setHighlightTo({
 
     removeAudioCurrent((oldElement || newElement) as HTMLElement);
 
-    if (disableHighlightIfNoAudio) {
-        const mediaPlayer = getPlayer();
+    const mediaPlayer = getPlayer();
+    // The "error" may just be that audio has not been recorded for this element.
+    // If the audio is missing, then strange things happen in the interaction between
+    // narration and drag activity text.  See BL-14797
+    const hasError = mediaPlayer.error !== null;
+    if (!hasError && disableHighlightIfNoAudio) {
         const isAlreadyPlaying = mediaPlayer.currentTime > 0;
-
         // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
         if (!isAlreadyPlaying) {
             // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
@@ -800,10 +803,14 @@ function setHighlightTo({
             mediaPlayer.addEventListener("playing", () => {
                 newElement.classList.remove(kSuppressHighlightClass);
             });
+            mediaPlayer.addEventListener("error", () => {
+                newElement.classList.remove("ui-audioCurrent");
+                newElement.classList.remove(kSuppressHighlightClass);
+            });
         }
     }
 
-    newElement.classList.add("ui-audioCurrent");
+    if (!hasError) newElement.classList.add("ui-audioCurrent");
     // If the current audio is part of a (currently typically hidden) image description,
     // highlight the image.
     // it's important to check for imageDescription on the translationGroup;
