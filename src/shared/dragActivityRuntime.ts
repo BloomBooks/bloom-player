@@ -253,11 +253,7 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
             makeWordItems(page, shuffledWords, container, contentElt, true);
             container.style.left = elt.style.left;
             container.style.top = elt.style.top;
-            container.style.width =
-                elt.parentElement!.offsetWidth - elt.offsetLeft - 10 + "px";
-            // Enhance: limit width somehow so it does not collide with other elements?
-            // Maybe now we tweaked word padding to make the original sentence take up more
-            // space, we could use its own width?
+            container.style.width = elt.style.width;
             elt.parentElement?.insertBefore(container, elt);
         },
     );
