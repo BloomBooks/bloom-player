@@ -561,6 +561,7 @@ const showCorrect = (e: MouseEvent) => {
     if (!currentPage) {
         return; // huh?? but makes TS happy
     }
+    restorePositions(); // any distractors return to start positions.
     currentPage
         .querySelectorAll("[data-draggable-id]")
         .forEach((elt: HTMLElement) => {
