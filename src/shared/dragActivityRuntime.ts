@@ -384,12 +384,17 @@ function makeWordItems(
     const userStyle =
         Array.from(contentElt?.classList)?.find((c) => c.endsWith("-style")) ??
         "Normal-style";
+    // We need to set the lang attribute on the words to get the right default font.  See BL-14885.
+    const lang = contentElt?.getAttribute("lang");
     words.forEach((word) => {
         const wordItem = page.ownerDocument.createElement("div");
         wordItem.classList.add("drag-item-order-word");
         wordItem.textContent = word;
         container.appendChild(wordItem);
         wordItem.classList.add(userStyle);
+        if (lang) {
+            wordItem.setAttribute("lang", lang);
+        }
         if (makeDraggable) {
             wordItem.addEventListener("pointerdown", startDragWordInSentence);
         }
