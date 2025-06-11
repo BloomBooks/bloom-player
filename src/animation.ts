@@ -163,7 +163,7 @@ export class Animation {
         }
 
         // We expect to see something like this:
-        // <div class="bloom-imageContainer bloom-background-image-in-style bloom-leadingElement"
+        // <div class="bloom-imageContainer bloom-background-image-in-style-attr bloom-leadingElement"
         // style="background-image:url('1.jpg')"
         // title="..."
         // data-initialrect="0.3615 0.0977 0.6120 0.6149" data-finalrect="0.0000 0.0800 0.7495 0.7526"
