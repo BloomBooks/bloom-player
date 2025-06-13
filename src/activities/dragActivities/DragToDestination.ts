@@ -3,6 +3,7 @@ import { IActivityObject, IActivityRequirements } from "../activityManager";
 import {
     playInitialElements,
     prepareActivity,
+    setReportScore,
     undoPrepareActivity,
 } from "../../shared/dragActivityRuntime";
 
@@ -53,6 +54,9 @@ class DragToDestinationActivity implements IActivityObject {
         // after checking an answer, or drag-activity-solution when showing the answer.
         activityContext.pageElement.parentElement?.classList.add(
             "drag-activity-play",
+        );
+        setReportScore(
+            this.activityContext.reportScore.bind(this.activityContext),
         );
         prepareActivity(activityContext.pageElement, (next) => {
             // Move to the next or previous page. None of our current bloom game activities use this, but it's available
