@@ -139,11 +139,14 @@ export class ActivityManager {
         // the moment the html data-analyticscategories attribute is plural,
         // but here in code we know that we currently only handle the whole
         // thing as a single string, so we just call it "category".
-        return (
+        const category =
             pageDiv.getAttribute("data-analyticscategories") ||
             pageDiv.getAttribute("data-analyticsCategories") ||
-            ""
-        );
+            "";
+        // Some of these escaped into the wild before we standardized on the category we want
+        // to use for games involving dragging.
+        if (category === "drag-activity") return "drag-game";
+        return category;
     }
 
     // Do any one-time initialization of the html which will later get dangerously set into the swiper card.
