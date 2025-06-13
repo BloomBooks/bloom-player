@@ -12,6 +12,7 @@
 // For now, though, it's much easier to just edit them and have them built automatically
 // than to have this code in another repo.
 
+import { ActivityManager } from "../activities/activityManager";
 import {
     kAudioSentence,
     playAllAudio,
@@ -458,6 +459,20 @@ export function playInitialElements(page: HTMLElement, playVideos: boolean) {
     }
 }
 
+// Allows a client (currently BloomPlayer) to insert a function that will be called
+// when the user checks the correctness of a page. It should be called every time
+// they check, though currently only the first time on each page counts.
+let reportScore: (possible: number, actual: number) => void = (
+    possible,
+    actual,
+) => {};
+
+export function setReportScore(
+    reportScoreFunction: (possible: number, actual: number) => void,
+) {
+    reportScore = reportScoreFunction;
+}
+
 function getAudioSentences(editables: HTMLElement[]) {
     // Could be done more cleanly with flatMap or flat() but not ready to switch to es2019 yet.
     const result: HTMLElement[] = [];
@@ -748,6 +763,10 @@ export const performCheck = (e: MouseEvent) => {
     const allCorrect = checkDraggables(page) && checkRandomSentences(page);
 
     showCorrectOrWrongItems(page, allCorrect);
+    // Enhance: plausibly we could count the targets and report the total
+    // number and the number that contain the right draggable, but it's more
+    // consistent with older games to just report success or failure.
+    reportScore(1, allCorrect ? 1 : 0);
 
     return allCorrect;
 };
