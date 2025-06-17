@@ -85,6 +85,8 @@ import {
     checkClickForBookOrPageJump,
     tryPopPlayerHistory,
 } from "./navigation";
+import { getBloomPlayerVersion } from "./bloom-player-version-control";
+import { compareVersions } from "compare-versions";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -234,6 +236,7 @@ export interface IPlayerState {
     bookUrl: string;
     startPageId?: string;
     startPageIndex?: number; // when given a startPageId, we convert it to an index once the new book is loaded.
+    requiredVersion?: string; // if defined, a later version of BP that is required to read the current book.
 }
 
 interface IPlayerPageOptions {
@@ -484,6 +487,95 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     };
     private distributionSource = "";
 
+    // Returns an empty string if this version of Bloom Player is OK to use for the current book,
+    // and a message to show the user if it is not.
+    private getRequiredVersionMessage(bookDoc: Document): string {
+        // Get the content of the <meta> tag with name "FeatureRequirement"
+        let requiredVersionMessage = "";
+        const featureRequirementContent = bookDoc
+            .querySelector('meta[name="FeatureRequirement"]')
+            ?.getAttribute("content");
+        if (!featureRequirementContent) {
+            return "";
+        }
+        // Extract the bits that look like 'BloomPlayerMinVersion":"1.2.3"...."FeatureId":"SomeFeature"'
+        // Find the one (or first of the ones) that have the highest min version number.
+        const regex = /BloomPlayerMinVersion":"(.*?)".*?"FeatureId":"(.*?)"/g;
+        let match;
+        let highestVersion = null;
+        let highestFeature = null;
+        while ((match = regex.exec(featureRequirementContent)) !== null) {
+            const minVersion = match[1];
+            if (
+                !highestVersion ||
+                compareVersions(minVersion, highestVersion) > 0
+            ) {
+                highestVersion = minVersion;
+                highestFeature = match[2];
+            }
+        }
+        if (!highestVersion || !highestFeature) {
+            return "";
+        }
+        const ourVersion = getBloomPlayerVersion();
+        if (compareVersions(ourVersion, highestVersion) >= 0) {
+            return ""; // all is well, we can handle this book
+        }
+        if (
+            window.location.hostname
+                .toLowerCase()
+                .indexOf("bloomlibrary.org") >= 0
+        ) {
+            // This message is appropriate for a website, where the user can't do anything to fix things.
+            // It should very seldom be seen, since hopefully we upgrade Bloom Player as needed.
+            const pattern = LocalizationManager.getTranslation(
+                "Version.Problem.Web",
+                this.props.preferredUiLanguages,
+                "This book uses the feature {feature}. Unfortunately, {hostname} is not ready to display this book yet. Please check back again later or write to issues@bloomlibrary.org if you think this is unexpected.",
+            );
+            return pattern
+                .replace("{feature}", highestFeature)
+                .replace("{hostname}", window.location.hostname);
+        } else {
+            // Apps and the like normally pass in a host query param to tell BP what is hosting it.
+            // If we have that we can make the message more helpful.
+            let host = getQueryStringParamAndUnencode("host", "");
+            // and a few likely hosts we can make prettier.
+            switch (host) {
+                case "bloomreader":
+                    host = "Bloom Reader";
+                    break;
+                case "bloompubviewer":
+                    host = "BloomPUB Viewer";
+                    break;
+                case "readerapp":
+                    // readerapp is not useful to show, nor is "Reader App Builder"
+                    // They need to update the particular app that RAB was used to create.
+                    // We don't have any current way to get the name of it.
+                    host = "";
+                    break;
+            }
+            if (host) {
+                const pattern = LocalizationManager.getTranslation(
+                    "Version.Problem.Host",
+                    this.props.preferredUiLanguages,
+                    "This book uses the feature {feature} and requires a newer version of {host} to read it. Please upgrade to the latest version.",
+                );
+                return pattern
+                    .replace("{feature}", highestFeature)
+                    .replace("{host}", host);
+            } else {
+                // If we don't have a host, we just say "the program you are using"
+                const pattern = LocalizationManager.getTranslation(
+                    "Version.Problem.NoHost",
+                    this.props.preferredUiLanguages,
+                    "This book uses the feature {feature} and requires a newer version of the program you are using to read it. Please upgrade to the latest version.",
+                );
+                return pattern.replace("{feature}", highestFeature);
+            }
+        }
+    }
+
     // We expect it to show some kind of loading indicator on initial render, then
     // we do this work. For now, won't get a loading indicator if you change the url prop.
     public componentDidUpdate(prevProps: IProps, prevState: IPlayerState) {
@@ -605,6 +697,12 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         );
                         const bookHtmlElement =
                             bookDoc.documentElement as HTMLHtmlElement;
+
+                        const requiredVersionMessage =
+                            this.getRequiredVersionMessage(bookDoc);
+                        this.setState({
+                            requiredVersion: requiredVersionMessage,
+                        });
 
                         const body =
                             bookHtmlElement.getElementsByTagName("body")[0];
@@ -1718,6 +1816,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         }}
                     />
                 </>
+            );
+        }
+        if (this.state.requiredVersion) {
+            return (
+                <div className="requiredVersionMessage">
+                    {this.state.requiredVersion}
+                </div>
             );
         }
         setIncludeImageDescriptions(
