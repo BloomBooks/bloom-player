@@ -4,9 +4,19 @@ import { bloomRed } from "./bloomPlayerTheme";
 
 declare const __BUILD_DATE__: string;
 
+export function getBloomPlayerVersion(): string {
+    var version = (packageJson as any).version;
+    if (!version || version === "0.0.0") {
+        // We're running a dev build or in some weird state. Assume we can do everything.
+        // (I don't think we'll get to version 99 in my lifetime, anyway...)
+        return "99.99.99-dev";
+    }
+    return version;
+}
+
 export const BloomPlayerVersionControl: React.FC = () => {
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-    const version = (packageJson as any).version || "unknown";
+    const version = getBloomPlayerVersion();
     const buildDate = new Date(__BUILD_DATE__).toLocaleDateString();
 
     useEffect(() => {
