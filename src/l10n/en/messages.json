@@ -50,5 +50,13 @@
     "Button.IgnoreImageDescriptions": {
         "message": "Ignore Image Descriptions",
         "description": "tooltip for the button to disable reading image descriptions"
+    },
+    "Version.Problem.Web": {
+        "message": "This book uses the feature {feature}. Unfortunately, {hostname} is not ready to display this book yet. Please check back again later or write to issues@bloomlibrary.org if you think this is unexpected.",
+        "description": "Please make sure that your translation contains {feature} and {hostname} as placeholders; they will be replaced with actual data. Do not translate those words."
+    },
+    "Version.Problem": {
+        "message": "This book uses the feature {feature} and requires a newer version of the program you are using {host} to read it. Please upgrade to the latest version.",
+        "description": "Please make sure that your translation contains {feature} and {host} as placeholders; they will be replaced with actual data. Do not translate those words. If host requires parentheses, Bloom will supply them. If no host is known, it will be omitted. It is typically the name of the app that should be upgraded."
     }
 }

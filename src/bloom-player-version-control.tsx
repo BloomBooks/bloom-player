@@ -4,9 +4,18 @@ import { bloomRed } from "./bloomPlayerTheme";
 
 declare const __BUILD_DATE__: string;
 
+export function getBloomPlayerVersion(): string {
+    if (window.location.hostname === "localhost") {
+        // can't get a real one, return something that will enable all current features.
+        // You can mess with this to test the error reporting.
+        return "2.2.0-dev";
+    }
+    return (packageJson as any).version || "unknown";
+}
+
 export const BloomPlayerVersionControl: React.FC = () => {
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-    const version = (packageJson as any).version || "unknown";
+    const version = getBloomPlayerVersion();
     const buildDate = new Date(__BUILD_DATE__).toLocaleDateString();
 
     useEffect(() => {
