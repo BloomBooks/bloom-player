@@ -2554,8 +2554,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // Check for special circumstance that should prevent normal click handling. That is,
             // we're not processing a phony click from touching a nav button
             !this.state.ignorePhonyClick &&
-            // this page isn't an activity that needs to handle all clicks itself
-            !this.activityManager.getActivityAbsorbsClicking() &&
+            // either this page isn't an activity that needs to handle all clicks itself
+            // or this is an href link in an overlay which we need to handle anyway
+            (!this.activityManager.getActivityAbsorbsClicking() ||
+                ((e.target as HTMLElement).closest("[data-href]") &&
+                    (e.target as HTMLElement).closest(".bloom-canvas"))) &&
             // the click isn't in a video container
             // (clicks in video containers are probably aimed at the video controls.
             // I tried adding another click handler to the video container with stopPropagation,
