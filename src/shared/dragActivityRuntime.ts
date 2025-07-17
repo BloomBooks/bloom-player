@@ -1218,8 +1218,11 @@ export function copyContentToTarget(draggable: HTMLElement) {
         // The swiper lazy loading code converts the data-background attribute to the style
         // attribute's backgroundImage property for the draggable element.  If this hasn't
         // happened yet, we need to adjust the target to match what the draggable will become.
-        const background = imageContainer.getAttribute("data-background");
+        let background = imageContainer.getAttribute("data-background");
         if (background && !imageContainer.style.backgroundImage) {
+            // See BL-15007 and https://www.w3schools.com/jsref/prop_style_backgroundimage.asp
+            if (!background.startsWith("url("))
+                background = "url(" + background + ")";
             imageContainer.style.backgroundImage = background;
             imageContainer.removeAttribute("data-background");
         }
