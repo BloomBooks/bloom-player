@@ -181,7 +181,8 @@ If you hold down the CTRL key, Bloom Player will display its version and build d
 
 ### More info
 
-For more information, see README-advanced.md
+See README-advanced.md for more information on embedding bloom-player into other projects and
+on using shared code functions in other projects.
 
 ## License
 
