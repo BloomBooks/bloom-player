@@ -38,3 +38,24 @@ If you are displaying a book published on Bloom Library, this is not a problem, 
 If you are making something entirely independent, you may be able to arrange things so bloomplayer.htm is in fact loaded from the same origin as the book content.
 
 Otherwise, you will have to arrange for the server that is serving the book data to do so with appropriate CORS permissions. Typically there is nothing sensitive in a Bloom book and it is safe to publish it with CORS permissions allowing it to be embedded anywhere.
+
+# Advanced: Notes on using shared code from bloom-player
+
+## Getting and using the shared code
+
+    `yarn add bloom-player`
+
+This shares the code from the files in `src/shared` in
+
+    `node_modules/bloom-player/lib`
+
+To enable using the functions exported from one of the source files in `src/shared`, they need
+to be re-exported in the index.ts file, adding a line something like this to
+`src/shared/index.ts`:
+
+    `export * from "./srcFileName";
+
+After this setup, and updating the library, the exported function can be imported as expected
+into your program's typescript code:
+
+    `import { function1, function2 } from "bloom-player";
