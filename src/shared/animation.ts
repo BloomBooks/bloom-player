@@ -6,10 +6,6 @@ import { request } from "http";
 // class Animation captures the logic needed to produce the Ken Burns effect
 // of panning and zooming as specified in Bloom's motion tool.
 
-// Enhance: Jeffrey has some code from one of the hackathon students that
-// makes the animation go at a more even pace
-// Enhance: I think it might be possible to do the animation more simply with CSS transitions.
-
 // Defines the extra fields we expect to find in the dataset of an HTMLElement
 // that has animation specified (to make TypeScript and TSLint happy).
 interface IAnimation {
@@ -20,21 +16,21 @@ interface IAnimation {
 //NOTE: this class is functionally a singleton. There is NOT a separate instance created to animate each page of a bloom book.
 export class Animation {
     public static pageHasAnimation(page: HTMLDivElement): boolean {
-        return !!Animation.getAnimatableImageContainer(page);
+        return !!Animation.getAnimatableCanvas(page);
     }
 
     // Get the animatable clone of the animatable image container, if we already made it.
-    public static getAnimationView(page: HTMLElement): HTMLElement | null {
+    public static getAnimationCanvas(page: HTMLElement): HTMLElement | null {
         if (
             page.firstElementChild &&
-            page.firstElementChild.classList.contains("hidePage")
+            page.firstElementChild.classList.contains("bloom-animationBackground")
         ) {
-            const hidePageDiv = page.firstElementChild;
+            const animationBackground = page.firstElementChild;
             if(
-                hidePageDiv.firstElementChild &&
-                hidePageDiv.firstElementChild.classList.contains(Animation.wrapperClassName)
+                animationBackground.firstElementChild &&
+                animationBackground.firstElementChild.classList.contains(Animation.wrapperClassName)
             ){
-                const wrapperDiv = hidePageDiv.firstElementChild;
+                const wrapperDiv = animationBackground.firstElementChild;
                 if(
                     wrapperDiv.firstElementChild &&
                     wrapperDiv.firstElementChild.hasAttribute("data-initialrect")
@@ -43,11 +39,11 @@ export class Animation {
                 }
             }
         }
-        return null; // not made yet, or no image to make it from
+        return null;// not made yet, or no image to make it from
     }
 
-    // Search for an image container that has the properties we need for animation.
-    public static getAnimatableImageContainer(page: HTMLElement): HTMLElement {
+    // Search for a bloom-canvas that has the properties we need for animation.
+    public static getAnimatableCanvas(page: HTMLElement): HTMLElement {
         const animatedCanvas = [].slice
             .call(page.getElementsByClassName("bloom-canvas"))
             .find(
@@ -61,20 +57,22 @@ export class Animation {
             ) as HTMLElement;
     }
 
-    private animationEngines : { [key:string]:TransformBasedAnimator } = {}; //we keep the animation engines in a map of "pageNumber":engine to avoid making a new one each time we load a page
-    public PlayAnimations: boolean; // true if animation should occur
-    private currentPage: HTMLElement; // one we're currently showing
-    private lastDurationPage: HTMLElement; // one we most recently obtained a duration for
-    // incremented for each animated div, to keep animation rules for each one distinct
+    //we keep the animation engines in a map of "pageNumber":engine to avoid making a new one each time we load a page
+    //if we didn't do this, switching back and forth between pages rapidly could result in multiple animation engines trying to modify the same transform at the same time.
+    private animationEngines : { [key:string]:TransformBasedAnimator } = {};
+
+    public PlayAnimations: boolean;// true if animation should occur (only set by bloom-player core based on bookInfo)
+    private currentPage: HTMLElement;// one we're currently showing
+    private lastDurationPage: HTMLElement;// one we most recently obtained a duration for
     private static wrapperClassName = "bloom-ui-animationWrapper";
-    private animationDuration: number = 3000; // ms (3000 ifs default)
+    private animationDuration: number = 3000;// ms (3000 ifs default)
 
     constructor() {
         // 200 is designed to make sure this happens AFTER we adjust the scale.
         // Note that if we are not currently animating, this.currentPage may be null or
         // obsolete. It is only used if we need to turn OFF the animation.
         window.addEventListener("orientationchange", () =>
-            window.setTimeout(() => this.adjustWrapDiv(this.currentPage), 200)
+            window.setTimeout(() => this.adjustAnimationWrapper(this.currentPage), 200)
         );
     }
 
@@ -88,7 +86,7 @@ export class Animation {
     // What we need to do when the page becomes visible (possibly start the animation,
     // if we already have the duration).
     public HandlePageVisible(page: HTMLElement) {
-        if (this.shouldAnimate(page)) {            
+        if (this.shouldAnimate(page)) {
             //if we've already gotten this page's duration, set up the animation
             this.currentPage = page;
             if (this.currentPage === this.lastDurationPage) {
@@ -102,7 +100,7 @@ export class Animation {
     // if the page is already visible).
     public HandlePageDurationAvailable(page: HTMLElement, duration: number) {
         if (this.shouldAnimate(page)) {
-            this.animationDuration = duration;            
+            this.animationDuration = duration;
             //if the page is already visible, set up the animation
             this.lastDurationPage = page;
             if (this.currentPage === this.lastDurationPage) {
@@ -113,19 +111,19 @@ export class Animation {
     }
 
     // Only applicable to resuming paused animation 
-    // May be called when we are not paused; should do nothing if so.
+    // May be called when we are not paused;should do nothing if so.
     public PlayAnimation(page:HTMLElement) {
-        const engine = this.animationEngines[page.getAttribute("data-page-number")];
+        const engine = this.animationEngines[page.id];
         if (!this.PlayAnimations || !engine) {
             return;
         }
         engine.play();
     }
 
-    // May be called when already paused; if so do nothing.
-    // Not yet tested in bloom preview context; have not yet decided affordance for pausing
+    // May be called when already paused;if so do nothing.
+    // Not yet tested in bloom preview context;have not yet decided affordance for pausing
     public PauseAnimation(page:HTMLElement) {
-        const engine = this.animationEngines[page.getAttribute("data-page-number")];
+        const engine = this.animationEngines[page.id];
         if (!this.PlayAnimations || !engine) {
             return;
         }
@@ -133,7 +131,7 @@ export class Animation {
     }
 
     public PauseOnFirstFrame(page:HTMLElement){
-        const engine = this.animationEngines[page.getAttribute("data-page-number")];
+        const engine = this.animationEngines[page.id];
         if (!this.PlayAnimations || !engine) {
             return;
         }
@@ -146,125 +144,132 @@ export class Animation {
             return;
         }
 
-        const animatableImageContainer =
-            Animation.getAnimatableImageContainer(page);
-        if (!animatableImageContainer) {
-            return; // no image to animate
+        const animatableCanvas =
+            Animation.getAnimatableCanvas(page);
+        if (!animatableCanvas) {
+            return;// no image to animate
         }
 
         // We expect to see something like this:
-        // <div class="bloom-imageContainer bloom-background-image-in-style-attr bloom-leadingElement"
+        // <div class="bloom-canvas bloom-leadingElement bloom-has-canvas-element bloom-background-image-in-style-attr swiper-lazy swiper-lazy-loaded"
+        // data-imgsizebasedon="320,180"
         // style="background-image:url('1.jpg')"
-        // title="..."
-        // data-initialrect="0.3615 0.0977 0.6120 0.6149" data-finalrect="0.0000 0.0800 0.7495 0.7526"
+        // data-title="..."
+        // data-initialrect="0.3615 0.0977 0.6120 0.6149" 
+        // data-finalrect="0.0000 0.0800 0.7495 0.7526"
         // data-duration="5" />
-        // ...
+        //      ... children with
         // </div>
         //
         // We want to make something like this:
-        //      <div class="hidePage bloom-leadingElement swiper-lazy swiper-lazy-loaded">
-        //          <div class="bloom-ui-animationWrapper" style = "width: 100%; height: 100%; overflow: hidden; background-color: white;">
-        //              <div ... the entire bloom-canvas or bloom-ImageContainer/>
+        //      <div class="bloom-canvas bloom-leadingElement bloom-has-canvas-element bloom-background-image-in-style-attr swiper-lazy swiper-lazy-loaded bloom-animationBackground">
+        //          <div class="bloom-ui-animationWrapper" style = "width: 100%;height: 100%;overflow: hidden;background-color: white;">
+        //              <div ... the entire bloom-canvas (as outlined above) or bloom-ImageContainer (if running an obsolete book)/>
         //          </div>
         //      </div>
         // and insert it into the bloom-page div as the first element.
 
-        let hidePageDiv = page.firstElementChild as HTMLDivElement;
-        let wrapDiv: HTMLElement | null = null;
+        let animationBackground = page.firstElementChild as HTMLDivElement;
+        let animationWrapper: HTMLElement | null = null;
 
-        // We don't already have a hidePageDiv and need to make it.
-        if (!hidePageDiv || !hidePageDiv.classList.contains("hidePage")) {
+        // We don't already have an animationBackground and need to make it.
+        if (!animationBackground || !animationBackground.classList.contains("bloom-animationBackground")) {
             // Note that this copies all the classes, so we need to be careful that css based
-            // on the classes works as expected with/without hidePage.
-            hidePageDiv = document.createElement("div");
-            for(let i = 0; i < animatableImageContainer.classList.length; i++){
-                hidePageDiv.classList.add(animatableImageContainer.classList[i]);
+            // on the classes works as expected
+            // It's of particular note that properly hiding the page's regular contents depends on
+            //      the bloom-animationBackground class in ./src/bloom-player-content.less
+            animationBackground = document.createElement("div");
+            for(let i = 0;i < animatableCanvas.classList.length;i++){
+                animationBackground.classList.add(animatableCanvas.classList[i]);
             }
-            hidePageDiv.classList.add("hidePage");
+            animationBackground.classList.add("bloom-animationBackground");
 
-            const animationView = animatableImageContainer.cloneNode(true) as HTMLDivElement;
+            const animationCanvas = animatableCanvas.cloneNode(true) as HTMLDivElement;
 
-            //in old books, if you change pages very quickly, the animationView will be cloned before the animatableImageContainer has loaded its background image.
-                //in that case, keep asking for the animatableImageContainer's background image until you get it.
+            //in old books, if you change pages very quickly, the animationCanvas will be cloned before the animatableCanvas has its background image style applied.
+                //in that case, keep asking for url of the animatableCanvas's background image until it's present.
+                //I'm unsure why this is happening at all, but my best guess is it's related to swiper's handling of lazy-load.
+                //Enhance: consider disabling swiper's lazy-load. It's likely unnecessary anyway, as our code never makes it possible to load more than three pages at a time anyway
             const checkForBackgroundImage = () => {
-                const backgroundImage = animatableImageContainer.style.backgroundImage;
+                const backgroundImage = animatableCanvas.style.backgroundImage;
                 if(backgroundImage){
-                    animationView.style.backgroundImage = backgroundImage;
+                    animationCanvas.style.backgroundImage = backgroundImage;
                 }
                 else{
                     requestAnimationFrame(checkForBackgroundImage);
                 }
             }
-            if(!animationView.hasAttribute("data-imgsizebasedon")){
+            if(!animationCanvas.hasAttribute("data-imgsizebasedon")){
                 requestAnimationFrame(checkForBackgroundImage);
             }
 
-            wrapDiv = document.createElement("div");
-            wrapDiv.classList.add(Animation.wrapperClassName);
-            wrapDiv.appendChild(animationView);
+            animationWrapper = document.createElement("div");
+            animationWrapper.classList.add(Animation.wrapperClassName);
+            animationWrapper.appendChild(animationCanvas);
             // hide it until we can set its size and the transform rule for its child properly.
-            wrapDiv.style.visibility = "hidden";
-            hidePageDiv.appendChild(wrapDiv);            
+            animationWrapper.style.visibility = "hidden";
+            animationBackground.appendChild(animationWrapper);
 
-            page.insertBefore(hidePageDiv, page.firstChild);
+            page.insertBefore(animationBackground, page.firstChild);
 
-            //calculates the aspect ratio of the canvas, sets the wrapDiv's aspect ratio field to that value, calls placeWrapDiv, then calls createAndPlayAnimation
-            this.applyCanvasAspectRatioToWrapDiv(page, wrapDiv, animationView);          
-        } else {
-            // We already made the animation div, just retrieve the wrapDiv from inside it.
-            wrapDiv = hidePageDiv.firstElementChild as HTMLElement;
+            //calculates the aspect ratio of the canvas, sets the animationWrapper's aspect ratio field to that value, calls placeAnimationWrapper, then calls createAndPlayAnimation
+            this.applyCanvasAspectRatioToAnimationWrapper(page, animationWrapper, animationCanvas);
+            } else {
+            // We already made the animation div, just retrieve the animationWrapper from inside it.
+            animationWrapper = animationBackground.firstElementChild as HTMLElement;
 
-            if (wrapDiv.hasAttribute("data-aspectRatio")) {
+            if (animationWrapper.hasAttribute("data-aspectRatio")) {
                 // if we have the wrap div and have already determined its aspect ratio,
                 // it might still be wrongly positioned if we changed orientation
                 // since it was computed.
-                this.placeWrapDiv(wrapDiv);
+                this.placeAnimationWrapper(animationWrapper);
                 this.createAndPlayAnimation(page);
             }
             else{
                 //we haven't yet determined its aspect ratio.
-                this.applyCanvasAspectRatioToWrapDiv(page, wrapDiv, wrapDiv.firstElementChild as HTMLElement);
+                this.applyCanvasAspectRatioToAnimationWrapper(page, animationWrapper, animationWrapper.firstElementChild as HTMLElement);
             }
         }
     }
 
     private createAndPlayAnimation(page:HTMLElement){
-        const animationView = Animation.getAnimationView(page);
+        const animationCanvas = Animation.getAnimationCanvas(page);
 
-        //stop the old engine's animation so it can's compete with the new animation
-        const oldEngine = this.animationEngines[page.getAttribute("data-page-number")];
+        //stop the old engine's animation so it doesn't compete with the new animation
+        const oldEngine = this.animationEngines[page.id];
         if(oldEngine) oldEngine.endAnimation();
 
-        if(animationView){            
-            const initialRect = animationView.getAttribute("data-initialrect");
-            const finalRect = animationView.getAttribute("data-finalrect");
-            this.animationEngines[page.getAttribute("data-page-number")] = new TransformBasedAnimator(initialRect, finalRect, this.animationDuration, animationView);
-            this.animationEngines[page.getAttribute("data-page-number")].startAnimation();
+        if(animationCanvas){            
+            const initialRect = animationCanvas.getAttribute("data-initialrect");
+            const finalRect = animationCanvas.getAttribute("data-finalrect");
+            this.animationEngines[page.id] = new TransformBasedAnimator(initialRect, finalRect, this.animationDuration, animationCanvas);
+            this.animationEngines[page.id].startAnimation();
         }
     }
 
-    private applyCanvasAspectRatioToWrapDiv(page:HTMLElement, wrapDiv:HTMLElement, canvas:HTMLElement) : void{       
+    private applyCanvasAspectRatioToAnimationWrapper(page:HTMLElement, animationWrapper:HTMLElement, canvas:HTMLElement) : void{       
         if(page.hasAttribute("data-aspectRatio")){
             //if the task we started before loading has already found the aspect ratio:
-            this.placeWrapDiv(wrapDiv);
+            this.placeAnimationWrapper(animationWrapper);
             this.createAndPlayAnimation(page);
         }        
         //if the canvas has this attribute, it's trivial to find the aspect ratio
         else if(canvas.hasAttribute("data-imgsizebasedon")){
-            const canvasDimensions = canvas.getAttribute("data-imgsizebasedon").split(",").map(parseFloat); 
-            wrapDiv.setAttribute("data-aspectRatio", (canvasDimensions[0]/canvasDimensions[1]).toString());
-            this.placeWrapDiv(wrapDiv);
+            const canvasDimensions = canvas.getAttribute("data-imgsizebasedon").split(",").map(parseFloat);
+            animationWrapper.setAttribute("data-aspectRatio", (canvasDimensions[0]/canvasDimensions[1]).toString());
+            this.placeAnimationWrapper(animationWrapper);
             this.createAndPlayAnimation(page);
         }
         //if there's no imgSizeBasedOn attribute, default to the old method of looking at the background image
             //however, the animation canvas's background image may not have been loaded yet. In that case, wait until it exists.
+                //This is a consequence of checkForBackgroundImage within setupAnimation, which appears to be a consequence of swiper's lazy loading
         else{
             const waitForImageAndSetAspectRatio = ()=>{
                 if(canvas.style.backgroundImage){
                     const virtualImage = new Image();
                     virtualImage.addEventListener("load", ()=>{
-                        wrapDiv.setAttribute("data-aspectRatio", (virtualImage.naturalWidth / virtualImage.naturalHeight).toString());
-                        this.placeWrapDiv(wrapDiv);
+                        animationWrapper.setAttribute("data-aspectRatio", (virtualImage.naturalWidth / virtualImage.naturalHeight).toString());
+                        this.placeAnimationWrapper(animationWrapper);
                         this.createAndPlayAnimation(page);
                     });
                     virtualImage.src = DomHelper.getActualUrlFromCSSPropertyValue(canvas.style.backgroundImage);
@@ -281,49 +286,49 @@ export class Animation {
     // animation while scaled. Currently we use a different system to make the
     // image container fill the viewport when animating, and suppress scaling.
     // So we can ignore that factor.
-    private placeWrapDiv(wrapDiv: HTMLElement) {
+    private placeAnimationWrapper(animationWrapper: HTMLElement) {
         const imageAspectRatio = parseFloat(
-            wrapDiv.getAttribute("data-aspectRatio")!
+            animationWrapper.getAttribute("data-aspectRatio")!
         );
-        const hidePageDiv = wrapDiv.parentElement;
-        const viewWidth = hidePageDiv.clientWidth; // getBoundingClientRect().width;
-        const viewHeight = hidePageDiv.clientHeight; // getBoundingClientRect().height;
+        const animationBackground = animationWrapper.parentElement;
+        const viewWidth = animationBackground.clientWidth;// getBoundingClientRect().width;
+        const viewHeight = animationBackground.clientHeight;// getBoundingClientRect().height;
         const viewAspectRatio = viewWidth / viewHeight;
         if (imageAspectRatio < viewAspectRatio) {
             // black bars on side
             const imageWidth = viewHeight * imageAspectRatio;
-            wrapDiv.style.height = "100%";
-            wrapDiv.style.width = `${imageWidth}px`;
-            wrapDiv.style.left = `${(viewWidth - imageWidth)/2}px`
+            animationWrapper.style.height = "100%";
+            animationWrapper.style.width = `${imageWidth}px`;
+            animationWrapper.style.left = `${(viewWidth - imageWidth)/2}px`
         } else {
             // black bars top and bottom
             const imageHeight = viewWidth / imageAspectRatio;
-            wrapDiv.style.width = "100%";
-            wrapDiv.style.height = `${imageHeight}px`;
-            wrapDiv.style.top = `${(viewHeight - imageHeight)/2}px`
+            animationWrapper.style.width = "100%";
+            animationWrapper.style.height = `${imageHeight}px`;
+            animationWrapper.style.top = `${(viewHeight - imageHeight)/2}px`
         }
-        wrapDiv.style.overflow = "hidden";
-        wrapDiv.style.visibility = "visible";
+        animationWrapper.style.overflow = "hidden";
+        animationWrapper.style.visibility = "visible";
 
-        this.placeCanvasByScale(wrapDiv, wrapDiv.firstElementChild as HTMLElement);
+        this.placeCanvasByScale(animationWrapper, animationWrapper.firstElementChild as HTMLElement);
     }
 
     //the SVGs and text boxes from an overlay are positioned by absolute pixel values.
     //By default, our canvas size is 100% of the wrap div. That doesn't rescale the overlays to fit the canvas.
     //Instead, we want to start the canvas at the size those overlays expect, and then rescale everything to the size of the wrap div
-    private placeCanvasByScale(wrapDiv:HTMLElement, canvas:HTMLElement):void{
+    private placeCanvasByScale(animationWrapper:HTMLElement, canvas:HTMLElement):void{
         if(canvas.hasAttribute("data-imgsizebasedon")){
             const originalDimensions = canvas.getAttribute("data-imgsizebasedon").split(",").map(parseFloat);
-            const wrapDivDimensions = [wrapDiv.clientWidth, wrapDiv.clientHeight];
+            const animationWrapperDimensions = [animationWrapper.clientWidth, animationWrapper.clientHeight];
 
             canvas.style.width = `${originalDimensions[0]}px`;
             canvas.style.height = `${originalDimensions[1]}px`;
-            canvas.style.scale = `${wrapDivDimensions[0]/originalDimensions[0]}`;
+            canvas.style.scale = `${animationWrapperDimensions[0]/originalDimensions[0]}`;
 
             //after applying the scale, the canvas will be centered in the same place. Move its top left corner to coincide with the canvas's top left corner.
             //our top left corner moved half the difference between the original canvas's dimensions and the wrap div's dimensions
-            canvas.style.top = `${(wrapDivDimensions[1] - originalDimensions[1])/2}px`;
-            canvas.style.left = `${(wrapDivDimensions[0] - originalDimensions[0])/2}px`;
+            canvas.style.top = `${(animationWrapperDimensions[1] - originalDimensions[1])/2}px`;
+            canvas.style.left = `${(animationWrapperDimensions[0] - originalDimensions[0])/2}px`;
         }
     }
 
@@ -337,48 +342,51 @@ export class Animation {
     // orientation to another. Note, however, that the 'page' argument passed is not
     // currently valid if turning ON animation. Thus, we will need to do more to get
     // the right page if we want to turn animation ON while switching to horizontal.
-    private adjustWrapDiv(page: HTMLElement): void {
+    private adjustAnimationWrapper(page: HTMLElement): void {
         if (!page) {
             return;
         }
         if (!this.shouldAnimate(page)) {
-            // we may have a left-over wrapDiv from animating in the other orientation,
+            // we may have a left-over animationWrapper from animating in the other orientation,
             // which could confuse things.
             this.removeAnimationWrappers(page);
             return;
         }
         // Nothing to do if we don't have a wrap div currently.
-        const wrapDiv = this.getWrapDiv(page);
-        if (!wrapDiv) {
+        const animationWrapper = this.getAnimationWrapper(page);
+        if (!animationWrapper) {
             return;
         }
-        this.placeWrapDiv(wrapDiv);
+        this.placeAnimationWrapper(animationWrapper);
     }
 
-    private getWrapDiv(page: HTMLElement): HTMLElement | null {
+    private getAnimationWrapper(page: HTMLElement): HTMLElement | null {
         if (!page) {
             return null;
         }
-        const animationDiv = Animation.getAnimationView(page);
+        const animationDiv = Animation.getAnimationCanvas(page);
         if (!animationDiv || animationDiv.children.length !== 1) {
             return null;
         }
-        const wrapDiv = animationDiv.firstElementChild as HTMLElement;
-        if (!wrapDiv.classList.contains(Animation.wrapperClassName)) {
+        const animationWrapper = animationDiv.firstElementChild as HTMLElement;
+        if (!animationWrapper.classList.contains(Animation.wrapperClassName)) {
             return null;
         }
-        return wrapDiv;
+        return animationWrapper;
     }
 
     private removeAnimationWrappers(page: HTMLElement) {
         if (
             page.firstElementChild &&
-            page.firstElementChild.classList.contains("hidePage")
+            page.firstElementChild.classList.contains("bloom-animationBackground")
         ) {
             page.removeChild(page.firstElementChild);
         }
     }
 
+    //returns true if:
+    //  bloom player core has set this.PlayAnimations to true (this.PlayAnimations = bookInfo.playAnimations)
+    //  AND the page in question is in landscape orientation
     public shouldAnimate(page: HTMLElement): boolean {
         return (
             this.PlayAnimations &&
@@ -398,28 +406,28 @@ export class TransformBasedAnimator{
     private initialTop:number;
     private finalTop:number;
 
-    private toAnimate : HTMLElement;
+    private canvasToAnimate : HTMLElement;
 
     private lastFrameTime : number;
     private totalElapsedTime : number;
-    private duration : number;
+    private duration : number; //stored in milliseconds
 
     private paused : boolean;
     
     //initial and final rect strings come in as space-separated "left top width height"
-        //all four parameters are reperesented as fractions of the canvas
+        //all four of these parameters are reperesented as fractions of the canvas
     //duration is the length of the animation in seconds
-    //toAnimate is the whole canvas containing the images to be animated.
-        //note that toAnimate needs to be the child of an element that has the correct aspect ratio, has overflow set to hidden, AND has a transform applied
-            //the parent's transform can just be translateZ(0), but it needs to be moved out of the page stacking context in the same way as its child in order for overflow:hidden to have any effect
-    constructor(initialRect: string, finalRect: string, duration:number, toAnimate:HTMLElement){
-        this.duration = duration * 1000; //this.duration is stored in milliseconds
+    //canvasToAnimate is the whole canvas containing the images to be animated.
+        //note that canvasToAnimate needs to be the child of an element that has the correct aspect ratio, has overflow set to hidden, AND has a transform applied
+        //the parent's transform can just be translateZ(0), but it needs to be moved out of the page stacking context in the same way as its child in order for overflow:hidden to have any effect
+    constructor(initialRect: string, finalRect: string, duration:number, canvasToAnimate:HTMLElement){
+        this.duration = duration * 1000;//this.duration is stored in milliseconds
         this.totalElapsedTime = 0;
         this.lastFrameTime = Date.now();
 
         this.paused = true;
 
-        this.toAnimate = toAnimate;
+        this.canvasToAnimate = canvasToAnimate;
 
         const initialVals = initialRect.split(" ").map(parseFloat);
         const finalVals = finalRect.split(" ").map(parseFloat);
@@ -442,7 +450,7 @@ export class TransformBasedAnimator{
             //for now, we'll let scale default to the more zoomed-in of width or height.
             //By just changing scale, we maintain the original aspect ratio.
             this.initialScale = 1 / Math.min(initialVals[2], initialVals[3]);
-            if(this.initialScale == 1) this.initialScale = 1.0001; //avoid edge case where scale=1 and we divide by zero below
+            if(this.initialScale == 1) this.initialScale = 1.0001;//avoid edge case where scale=1 and we divide by zero below
             this.finalScale = 1 / Math.min(finalVals[2], finalVals[3]);
             if(this.finalScale == 1) this.finalScale = 1.0001;
 
@@ -458,8 +466,8 @@ export class TransformBasedAnimator{
         //this is noticeable at low speeds.
         //consider coordinating scale with left/top somehow
     private getScaleAndPosition():{scale: number, left: number, top: number}{
-        let fractionComplete = this.totalElapsedTime / this.duration; 
-        fractionComplete = Math.min(1, Math.max(0, fractionComplete)); //paranoia
+        let fractionComplete = this.totalElapsedTime / this.duration;
+        fractionComplete = Math.min(1, Math.max(0, fractionComplete));//paranoia
         const easingFactor = this.easingFunction(fractionComplete);
         const currentScale = this.initialScale + (this.finalScale - this.initialScale)*easingFactor;
         const currentLeft = this.initialLeft + (this.finalLeft - this.initialLeft)*easingFactor;
@@ -480,18 +488,17 @@ export class TransformBasedAnimator{
     }
 
     private advanceAnimation(){
-        const currentTime = Date.now();
+        //only advance the animation if we aren't paused.
+        if(this.paused) return;
 
-        //only advance the animation if we aren't paused
-        if(!this.paused){
-            this.totalElapsedTime += currentTime - this.lastFrameTime;
-        
-            const {scale, left, top} = this.getScaleAndPosition();
-            this.toAnimate.style.transform = `translate(${left}%, ${top}%) scale(${scale})`;
-        }
+        const currentTime = Date.now();
+        this.totalElapsedTime += currentTime - this.lastFrameTime;
+    
+        const {scale, left, top} = this.getScaleAndPosition();
+        this.canvasToAnimate.style.transform = `translate(${left}%, ${top}%) scale(${scale})`;
 
         this.lastFrameTime = currentTime;
-
+        
         if(this.totalElapsedTime < this.duration) requestAnimationFrame(()=>this.advanceAnimation());
     }
 
@@ -501,20 +508,22 @@ export class TransformBasedAnimator{
 
     public play(){
         this.paused = false;
+        this.lastFrameTime = Date.now();
+        this.advanceAnimation();
     }
 
     public startAnimation(){
-        this.totalElapsedTime = 0;
         this.paused = false;
-        requestAnimationFrame(()=>this.advanceAnimation());
+        this.totalElapsedTime = 0;
+        this.lastFrameTime = Date.now();
+        this.advanceAnimation();
     }
 
     public endAnimation(){
-        this.paused = true;
         this.totalElapsedTime = this.duration + 1;
     }
 
     public showInitialState(){
-        this.toAnimate.style.transform = `translate(${this.initialLeft}%, ${this.initialTop}%) scale(${this.initialScale})`;
+        this.canvasToAnimate.style.transform = `translate(${this.initialLeft}%, ${this.initialTop}%) scale(${this.initialScale})`;
     }
 }
