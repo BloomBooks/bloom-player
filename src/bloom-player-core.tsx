@@ -254,6 +254,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private bookInfo: BookInfo = new BookInfo();
     private bookInteraction: BookInteraction = new BookInteraction();
+    private mustUseOriginalPageSize: boolean = false;
 
     private static currentPagePlayer: BloomPlayerCore;
     private indicesOfPagesWhereWeShouldPreserveDOMState: any = {};
@@ -707,6 +708,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
                         const body =
                             bookHtmlElement.getElementsByTagName("body")[0];
+                        this.mustUseOriginalPageSize =
+                            this.computeMustUseOriginalPageSize(body);
 
                         this.bookInfo.setSomeBookInfoFromBody(body);
                         // contains conditions to limit this to one time only after assembleStyleSheets has completed.
@@ -1357,6 +1360,27 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         ) as HTMLElement[];
     }
 
+    // We must use the original page size if the book has canvas elements. We used to detect this
+    // by looking for the 'comic' feature in meta.json, but at some point we limited this
+    // feature to books that have actual comicaljs overlays and which the author claims to
+    // be comics during publishing. But any kind of overlay will be wrongly positioned if
+    // we change the page size under it. So now we have to actually look for such elements.
+    // And unfortunately we may encounter old books that use the old class for canvas elements.
+    // (Unfortunately, it's not satisfactory to search for the SVG element that is usually present
+    // in comic pages in both old and new books. We need to prevent changing page size even if
+    // the only canvas elements present are ones like simple text or pictures that do not
+    // result in SVGs.)
+    private computeMustUseOriginalPageSize(body: HTMLElement): boolean {
+        if (this.props.useOriginalPageSize) {
+            return true;
+        }
+        if (body.querySelector(".bloom-canvas-element")) {
+            return true;
+        }
+        // for older books, we're looking for this class
+        return !!body.querySelector(".bloom-textOverPicture");
+    }
+
     private updateOverlayPositionsByLangCode(): void {
         if (!this.props.activeLanguageCode || !this.htmlElement) {
             return; // shouldn't happen, just a precaution
@@ -1626,7 +1650,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             page,
             this.bookInfo.canRotate,
             this.props.landscape,
-            this.props.useOriginalPageSize || this.bookInfo.hasFeature("comic"),
+            this.mustUseOriginalPageSize,
             this.originalPageClass,
         );
     }
