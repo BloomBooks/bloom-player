@@ -242,7 +242,7 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
     Array.from(page.getElementsByClassName("drag-item-order-sentence")).forEach(
         (elt: HTMLElement) => {
             const contentElt = elt.getElementsByClassName(
-                "bloom-content1",
+                "bloom-content1 bloom-visibility-code-on",
             )[0] as HTMLElement;
             const content = contentElt?.textContent?.trim();
             if (!content) return;
