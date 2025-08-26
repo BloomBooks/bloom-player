@@ -146,8 +146,8 @@
     // here, which are critical for making the motion-book animation fill the page and cover the other
     // content.
     .bloom-page {
-        div.bloom-imageContainer.bloom-animationBackground,
-        div.bloom-canvas.bloom-animationBackground {
+        div.bloom-imageContainer.hidePage,
+        div.bloom-canvas.hidePage {
             height: 100%;
             width: 100%;
             position: absolute !important; // !important should not be needed, but there's a bug in FF45.
@@ -161,7 +161,7 @@
     // If we're trying to hide the page, then the sibling elements must have a lower z-index
     // for stacking.
     // See https://issues.bloomlibrary.org/youtrack/issue/BL-7452 for details.
-    .bloom-animationBackground ~ * {
+    .hidePage ~ * {
         z-index: 1;
     }
 }

@@ -12,6 +12,3 @@ export * from "./dragActivityRuntime";
 
 // Re-export from scrolling.ts
 export * from "./scrolling";
-
-//Re-export from animation.ts
-export * from "./animation"

@@ -12,7 +12,7 @@ import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
 import LiteEvent from "./shared/event";
-import { Animation } from "./shared/animation";
+import { Animation } from "./animation";
 import { IPageVideoComplete, Video } from "./video";
 import { Music } from "./music";
 import { LocalizationManager } from "./l10n/localizationManager";
@@ -87,7 +87,6 @@ import {
 } from "./navigation";
 import { getBloomPlayerVersion } from "./bloom-player-version-control";
 import { compareVersions } from "compare-versions";
-import { ExpandLessSharp } from "@material-ui/icons";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -1333,7 +1332,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                     this.video.play(); // sets currentPlaybackMode = VideoPlaying
                 } else {
                     playNarration(); // sets currentPlaybackMode = AudioPlaying
-                    this.animation.resumeAnimation();
+                    this.animation.PlayAnimation();
                     this.music.play();
                 }
             }
@@ -2347,15 +2346,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
             if (!this.props.paused) {
                 this.resetForNewPageAndPlay(bloomPage);
-            } else if (this.animation.shouldAnimate(bloomPage)) {
-                //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
-                this.animation.HandlePageBeforeVisible(bloomPage);
-                this.animation.HandlePageVisible(bloomPage);
-                this.animation.HandlePageDurationAvailable(
-                    bloomPage,
-                    computeDuration(bloomPage),
-                );
-                this.animation.PauseOnFirstFrame();
             }
 
             if (!this.isXmatterPage()) {
@@ -2489,6 +2479,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (this.props.paused) {
             return; // shouldn't call when paused
         }
+        this.animation.PlayAnimation(); // get rid of classes that made it pause
         setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
