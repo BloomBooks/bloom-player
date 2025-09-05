@@ -925,6 +925,10 @@ function startDragWordInSentence(e: PointerEvent) {
     draggableReposition.style.position = "absolute";
     draggableReposition.style.left = wordBeingRepositioned.offsetLeft + "px";
     draggableReposition.style.top = wordBeingRepositioned.offsetTop + "px";
+    draggableReposition.setAttribute(
+        "lang",
+        wordBeingRepositioned.getAttribute("lang")!,
+    );
     // We don't want it to show while we're dragging the clone. We need something to take up the space,
     // though, until we decide it has moved. We could mess with its own properties, but then we have
     // to put everything back. Also, we want to move it in the paragraph, and if we move the thing
