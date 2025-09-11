@@ -2516,11 +2516,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // Tail end of the method, happens at once if we're not posting, only after
         // the post completes if we are.
         const finishUp = () => {
-            playAllSentences(bloomPage);
             if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
                 this.animation.HandlePageBeforeVisible(bloomPage);
             }
             this.animation.HandlePageVisible(bloomPage);
+            // After we set up the animation, because we'd prefer to play the copies of any
+            // narratable overlays in it.
+            playAllSentences(bloomPage, this.animation.animatableCanvas);
             this.music.HandlePageVisible(bloomPage);
         };
 
