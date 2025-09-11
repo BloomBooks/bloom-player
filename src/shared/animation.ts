@@ -95,6 +95,7 @@ export class Animation {
         if (this.shouldAnimate(page)) {
             //if we've already gotten this page's duration, set up the animation
             this.currentPage = page;
+            this.animatableCanvas = Animation.getAnimatableCanvas(page);
             if (this.currentPage === this.lastDurationPage) {
                 // already got the corresponding durationAvailable event
                 this.setupAnimation(page, false);
@@ -142,13 +143,14 @@ export class Animation {
         this.animationEngine.pause();
     }
 
+    public animatableCanvas: HTMLElement | null = null;
+
     private setupAnimation(page: HTMLElement, beforeVisible: boolean): void {
         if (!this.PlayAnimations) {
             return;
         }
 
-        const animatableCanvas = Animation.getAnimatableCanvas(page);
-        if (!animatableCanvas) {
+        if (!this.animatableCanvas) {
             return; // no image to animate
         }
 
@@ -184,14 +186,14 @@ export class Animation {
             // It's of particular note that properly hiding the page's regular contents depends on
             //      the bloom-animationBackground class in ./src/bloom-player-content.less
             animationBackground = document.createElement("div");
-            for (let i = 0; i < animatableCanvas.classList.length; i++) {
+            for (let i = 0; i < this.animatableCanvas.classList.length; i++) {
                 animationBackground.classList.add(
-                    animatableCanvas.classList[i],
+                    this.animatableCanvas.classList[i],
                 );
             }
             animationBackground.classList.add("bloom-animationBackground");
 
-            const animationCanvas = animatableCanvas.cloneNode(
+            const animationCanvas = this.animatableCanvas.cloneNode(
                 true,
             ) as HTMLDivElement;
 
@@ -200,7 +202,8 @@ export class Animation {
             //I'm unsure why this is happening at all, but my best guess is it's related to swiper's handling of lazy-load.
             //Enhance: consider disabling swiper's lazy-load. It's likely unnecessary anyway, as our code never makes it possible to load more than three pages at a time anyway
             const checkForBackgroundImage = () => {
-                const backgroundImage = animatableCanvas.style.backgroundImage;
+                const backgroundImage =
+                    this.animatableCanvas.style.backgroundImage;
                 if (backgroundImage) {
                     animationCanvas.style.backgroundImage = backgroundImage;
                 } else {

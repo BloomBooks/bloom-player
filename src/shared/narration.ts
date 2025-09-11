@@ -250,12 +250,15 @@ let audioPlayCurrentStartTime: number | null = null; // milliseconds (since 1970
 
 // Roughly equivalent to BloomDesktop's AudioRecording::listen() function.
 // As long as there is audio on the page, this method will play it.
-export function playAllSentences(page: HTMLElement | null): void {
+export function playAllSentences(
+    page: HTMLElement | null,
+    canvasToExclude?: HTMLElement,
+): void {
     if (!page && !currentPlayPage) {
         return; // this shouldn't happen
     }
     const pageToPlay = page ?? currentPlayPage!;
-    playAllAudio(getPageAudioElements(pageToPlay), pageToPlay);
+    playAllAudio(getPageAudioElements(pageToPlay, canvasToExclude), pageToPlay);
 }
 
 export function playAllAudio(elements: HTMLElement[], page: HTMLElement): void {
@@ -1125,26 +1128,39 @@ function findAll(
         : allMatches.filter((match) => !isImageDescriptionSegment(match));
 }
 
-function getPlayableDivs(container: HTMLElement) {
+function getPlayableDivs(
+    container: HTMLElement,
+    canvasToExclude?: HTMLElement,
+) {
     // We want to play any audio we have from divs the user can see.
     // This is a crude test, but currently we always use display:none to hide unwanted languages.
-    return findAll(".bloom-editable", container).filter(
+    var results = findAll(".bloom-editable", container).filter(
         (e) => window.getComputedStyle(e).display !== "none",
     );
+    if (canvasToExclude) {
+        results = results.filter((e) => !canvasToExclude.contains(e));
+    }
+    return results;
 }
 
 // Optional param is for use when 'playerPage' has NOT been initialized.
 // Not using the optional param assumes 'playerPage' has been initialized
-function getPagePlayableDivs(page?: HTMLElement): HTMLElement[] {
-    return getPlayableDivs(page ? page : currentPlayPage!);
+function getPagePlayableDivs(
+    page?: HTMLElement,
+    canvasToExclude?: HTMLElement,
+): HTMLElement[] {
+    return getPlayableDivs(page ? page : currentPlayPage!, canvasToExclude);
 }
 
 // Optional param is for use when 'playerPage' has NOT been initialized.
 // Not using the optional param assumes 'playerPage' has been initialized
-function getPageAudioElements(page?: HTMLElement): HTMLElement[] {
+function getPageAudioElements(
+    page?: HTMLElement,
+    canvasToExclude?: HTMLElement,
+): HTMLElement[] {
     return [].concat.apply(
         [],
-        getPagePlayableDivs(page).map((x) =>
+        getPagePlayableDivs(page, canvasToExclude).map((x) =>
             findAll(".audio-sentence", x, true),
         ),
     );
