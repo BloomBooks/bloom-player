@@ -80,10 +80,11 @@ export function adjustDraggablesForLanguage(page: HTMLElement) {
         }
     });
 }
-export function IsRunningOnBloomDesktop(bloomPage?: Element): boolean {
+export function IsRunningOnBloomDesktop(bloomPage: Element): boolean {
     // REVIEW: is there a better way to detect this?
-    if (bloomPage) return bloomPage.closest("#page-scaling-container") !== null;
-    return document.body.querySelector("div#page-scaling-container") !== null;
+    return bloomPage.closest("#page-scaling-container") !== null;
+    // not reliable: in BE, document might be the toolbox doc.
+    //return document.body.querySelector("div#page-scaling-container") !== null;
 }
 
 // Function to call to get everything ready for playing the game.
@@ -796,12 +797,29 @@ export const classSetter = (
 
 let draggableReposition: HTMLElement;
 let wordBeingRepositioned: HTMLElement;
+
+// The default sounds have to be found in different ways depending on whether we are running
+// in Bloom desktop or Bloom Player. Conditional code is particularly tricky because bloom-player
+// imports these sounds using a vite trick that results in a URL with a hash in it that changes
+// each version. The simplest thing is for this code to just have a way the host can initialize
+// what it wants.
+let defaultCorrectSoundUrl: string | undefined;
+let defaultWrongSoundUrl: string | undefined;
+
+export function setDefaultSoundUrls(
+    correctSoundUrl: string | undefined,
+    wrongSoundUrl: string | undefined,
+) {
+    defaultCorrectSoundUrl = correctSoundUrl;
+    defaultWrongSoundUrl = wrongSoundUrl;
+}
+
 function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
     classSetter(page, "drag-activity-correct", correct);
     classSetter(page, "drag-activity-wrong", !correct);
 
     // play sound
-    const soundFile = page.getAttribute(
+    let soundFile = page.getAttribute(
         correct ? "data-correct-sound" : "data-wrong-sound",
     );
     const playOtherStuff = () => {
@@ -819,16 +837,26 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
         const playables = getAudioSentences(possibleNarrationElements);
         playAllVideo(videoElements, () => playAllAudio(playables, page));
     };
+    // if the attribute is not there at all, use the default sound, if one has been set.
+    const addPrefix = soundFile !== null;
+    if (soundFile === null) {
+        soundFile = correct ? defaultCorrectSoundUrl : defaultWrongSoundUrl;
+    } else if (soundFile === "none") {
+        // explicity no sound, go straight to other stuff if any
+        soundFile = undefined;
+    }
     if (soundFile) {
-        playSound(page, soundFile);
+        playSound(page, soundFile, addPrefix);
     } else {
         playOtherStuff();
     }
 }
 
-function playSound(someElt: HTMLElement, soundFile: string) {
-    const audio = new Audio(urlPrefix() + "/audio/" + soundFile);
-    if (IsRunningOnBloomDesktop()) {
+function playSound(someElt: HTMLElement, soundFile: string, addPrefix = true) {
+    const audio = new Audio(
+        (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile,
+    );
+    if (IsRunningOnBloomDesktop(someElt)) {
         audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
     }
     audio.style.visibility = "hidden";
