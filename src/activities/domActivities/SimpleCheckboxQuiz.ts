@@ -154,9 +154,9 @@ class SimpleCheckboxQuiz implements IActivityObject {
         this.choiceWasClicked(currentTarget);
         const correct = currentTarget!.classList.contains("correct-answer");
         if (correct) {
-            this.activityContext.playCorrect();
+            this.activityContext.playCorrect(event);
         } else {
-            this.activityContext.playWrong();
+            this.activityContext.playWrong(event);
         }
         // The ui shows items that were (selected but wrong) differently than
         // items that were never tried.

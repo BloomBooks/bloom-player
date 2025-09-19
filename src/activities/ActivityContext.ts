@@ -3,6 +3,7 @@ import {
     getPageData,
     storePageData,
 } from "../page-api";
+import { setDefaultSoundUrls, urlPrefix } from "../shared";
 import rightAnswer from "./right_answer.mp3";
 import wrongAnswer from "./wrong_answer.mp3";
 
@@ -33,6 +34,10 @@ export class ActivityContext {
         this.pageElement = pageDiv;
         this.analyticsCategory = analyticsCategory;
         this.pagesToGroupForAnalytics = pagesToGroupForAnalytics;
+        setDefaultSoundUrls(
+            this.fixViteSoundPath(rightAnswer),
+            this.fixViteSoundPath(wrongAnswer),
+        );
     }
 
     // Report a score that can be used for analytics. The caller can call this repeatedly without worrying
@@ -68,20 +73,35 @@ export class ActivityContext {
         storePageData(this.pageIndex, key, value);
     }
 
-    public playCorrect() {
-        let path = rightAnswer;
+    public playCorrect(evt: Event) {
+        this.playCorrectOrWrong(evt, rightAnswer, "data-correct-sound");
+    }
+
+    public playWrong(evt: Event) {
+        this.playCorrectOrWrong(evt, wrongAnswer, "data-wrong-sound");
+    }
+
+    fixViteSoundPath(path: string) {
         if (path.startsWith("/")) {
             // I can't figure out how to get rid of the leading slash in the path in the production build.
             path = path.substring(1);
         }
-        this.playSound(path);
+        return path;
     }
 
-    public playWrong() {
-        let path = wrongAnswer;
-        if (path.startsWith("/")) {
-            // I can't figure out how to get rid of the leading slash in the path in the production build.
-            path = path.substring(1);
+    // This is knows some of the same stuff as dragActivityRuntime.showCorrectOrWrongItems,
+    // but that code has to deal with far more, since there may be items to show which
+    // might include videos or narration to play. I don't see a good way to pull out the
+    // common parts, and this is not very tricky.
+    playCorrectOrWrong(evt: Event, defaultPath: string, attrName: string) {
+        const target = evt.currentTarget as HTMLElement;
+        const page = target?.closest(".bloom-page") as HTMLElement;
+        let path = page?.getAttribute(attrName);
+        if (path === "none") return; // explicitly no sound
+        if (path) {
+            path = urlPrefix() + "/audio/" + path;
+        } else {
+            path = this.fixViteSoundPath(defaultPath);
         }
         this.playSound(path);
     }

@@ -85,7 +85,7 @@ class MultipleChoiceDomActivity implements IActivityObject {
     }
     private onCorrectClick = (evt: Event) => {
         (evt.currentTarget as HTMLElement).classList.add("chosen-correct");
-        this.activityContext.playCorrect();
+        this.activityContext.playCorrect(evt);
         this.activityContext.reportScore(
             1 /*total possible on page*/,
             1 /*score*/,
@@ -94,7 +94,7 @@ class MultipleChoiceDomActivity implements IActivityObject {
 
     private onWrongClick = (evt: Event) => {
         (evt.currentTarget as HTMLElement).classList.add("chosen-wrong");
-        this.activityContext.playWrong();
+        this.activityContext.playWrong(evt);
         this.activityContext.reportScore(
             1 /*total possible on page*/,
             0 /*score*/,
