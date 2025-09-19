@@ -108,11 +108,38 @@ export class Video {
             this.currentVideoElement?.pause();
         } else {
             if (!isMacOrIOS()) {
+                // We ideally want to show the first frame without starting motion
+                // for a second or so to let the user take in the page as a whole.
+                // This is automatic with some browsers, but not all, especially
+                // the one in Android WebView that BloomReader uses.
+                // To get as close as we can, we immediately tell the first video
+                // to play, and immediately pause it when it starts playing.
+                // That leaves it frozen on the first frame.
+                // Then after a second, we start playing normally.
+                // Just in case it takes more than a second to load the first frame,
+                // we set a flag to avoid pausing it if the main playback already started.
+                const videos = this.getVideoElements();
+                let loading = true;
+                if (videos.length > 0) {
+                    videos[0].addEventListener(
+                        "playing",
+                        () => {
+                            if (loading) {
+                                videos[0].pause();
+                            }
+                        },
+                        { once: true },
+                    );
+                    videos[0].play();
+                }
                 // Delay the start of the video by a little bit so the user can get oriented (BL-6985)
                 window.setTimeout(() => {
-                    this.playAllVideo(this.getVideoElements());
+                    loading = false;
+                    this.playAllVideo(videos);
                 }, 1000);
             } else {
+                // Review: the code above might work on Mac/IOS, too, since it was changed so that
+                // at least one video is played immediately. Worth trying?
                 // To auto-play a video w/sound on Apple Webkit browsers, the JS that invokes video.play()
                 // "must have directly resulted from a handler for touchend, click, doubleclick, or keydown"
                 // (See https://webkit.org/blog/6784/new-video-policies-for-ios/)
