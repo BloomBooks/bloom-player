@@ -107,7 +107,12 @@ export class Video {
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
         } else {
-            if (!isMacOrIOS()) {
+            const videos = this.getVideoElements();
+            if (videos.length > 0) {
+                const firstVideo = videos[0];
+                // Set a 1x1 transparent PNG as the poster. That means we don't show anything
+                // until the video starts to play (which we will try to do immediately)
+                firstVideo.setAttribute("poster", "/1x1.png");
                 // We ideally want to show the first frame without starting motion
                 // for a second or so to let the user take in the page as a whole.
                 // This is automatic with some browsers, but not all, especially
@@ -118,40 +123,28 @@ export class Video {
                 // Then after a second, we start playing normally.
                 // Just in case it takes more than a second to load the first frame,
                 // we set a flag to avoid pausing it if the main playback already started.
-                const videos = this.getVideoElements();
+                // Another reason for starting the video immediately is that
+                // browsers are increasingly blocking videos with audio from
+                // autoplaying (e.g., this was previously a problem on iOS and Mac).
+                // Starting it immediately in response to a user action
+                // (the page turning) seems to satisfy that requirement.
                 let loading = true;
-                if (videos.length > 0) {
-                    videos[0].addEventListener(
-                        "playing",
-                        () => {
-                            if (loading) {
-                                videos[0].pause();
-                            }
-                        },
-                        { once: true },
-                    );
-                    videos[0].play();
-                }
-                // Delay the start of the video by a little bit so the user can get oriented (BL-6985)
+                firstVideo.addEventListener(
+                    "playing",
+                    () => {
+                        if (loading) {
+                            // This is where we freeze it for a second.
+                            // The timeout below will restart it.
+                            videos[0].pause();
+                        }
+                    },
+                    { once: true },
+                );
+                firstVideo.play(); // but it will pause at once.
                 window.setTimeout(() => {
                     loading = false;
                     this.playAllVideo(videos);
                 }, 1000);
-            } else {
-                // Review: the code above might work on Mac/IOS, too, since it was changed so that
-                // at least one video is played immediately. Worth trying?
-                // To auto-play a video w/sound on Apple Webkit browsers, the JS that invokes video.play()
-                // "must have directly resulted from a handler for touchend, click, doubleclick, or keydown"
-                // (See https://webkit.org/blog/6784/new-video-policies-for-ios/)
-                // The setTimeout delay in the other branch is nice to have,
-                // but it prevents the video from auto-playing in Apple Webkit browsers (BL-9383).
-                //
-                // Currently, this code goes down this path for all videos, regardless of if they have an audio track or not.
-                // In theory, videos w/o an audio track can go down the normal path instead.
-                // However, when I tried to detect audio tracks, it didn't detect the correct result
-                // the first time a video with audio was loaded, even when I tried checking the readyState.
-                // So, for now we'll just do this for all videos on Mac or iOS, even if they don't have audio tracks.
-                this.playAllVideo(this.getVideoElements());
             }
         }
     }
