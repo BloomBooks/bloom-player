@@ -47,6 +47,24 @@ export class Video {
         return icon;
     }
 
+    // A 1x1 transparent GIF to use as a poster. This gets copied into every video element in the book,
+    // so I did some hunting to find the shortest possible string. Using a data-image for the poster
+    // saves the browser having to load it from a file, avoids a network request, and should make
+    // absolutely sure nothing is shown before the poster!
+    private static onePixelTransparentPoster =
+        "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
+
+    // Running this on the whole document as we load it makes sure that whatever happens
+    // as we switch pages, load pages, transition between pages, etc., we never see
+    // anything where the video should be until we start playing it.
+    // (Other code makes sure we show the first frame as soon as possible.)
+    public static setAllVideoPostersTo1x1TransparentPNG(root: HTMLElement) {
+        const videos = root.getElementsByTagName("video");
+        for (let i = 0; i < videos.length; i++) {
+            const video = videos[i];
+            video.setAttribute("poster", Video.onePixelTransparentPoster);
+        }
+    }
     // Work we prefer to do before the page is visible. This makes sure that when the video
     // is loaded it will begin to play automatically.
     public HandlePageBeforeVisible(page: HTMLElement) {
@@ -110,9 +128,6 @@ export class Video {
             const videos = this.getVideoElements();
             if (videos.length > 0) {
                 const firstVideo = videos[0];
-                // Set a 1x1 transparent PNG as the poster. That means we don't show anything
-                // until the video starts to play (which we will try to do immediately)
-                firstVideo.setAttribute("poster", "/1x1.png");
                 // We ideally want to show the first frame without starting motion
                 // for a second or so to let the user take in the page as a whole.
                 // This is automatic with some browsers, but not all, especially
