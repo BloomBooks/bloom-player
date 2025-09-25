@@ -928,6 +928,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (!this.htmlElement) {
             return;
         }
+        Video.setAllVideoPostersTo1x1TransparentPNG(this.htmlElement);
         const pages = this.htmlElement.getElementsByClassName("bloom-page");
         const swiperContent: string[] = [];
         if (isNewBook) {
