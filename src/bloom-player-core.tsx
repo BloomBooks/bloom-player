@@ -2345,9 +2345,9 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // It's not expensive so leaving it in for robustness.
             this.setPageSizeClass(bloomPage);
 
-            if (!this.props.paused) {
-                this.resetForNewPageAndPlay(bloomPage);
-            }
+            // This doesn't do much if we are paused. But we need to call it to get the first frame
+            // of videos to show.
+            this.resetForNewPageAndPlay(bloomPage);
 
             if (!this.isXmatterPage()) {
                 this.bookInteraction.pageShown(index);
@@ -2478,14 +2478,17 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     // and animation from the beginning of the page.
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
         if (this.props.paused) {
-            return; // shouldn't call when paused
+            // still need to do this to show the first frame.
+            this.video.HandlePageVisible(bloomPage, () => this.props.paused);
+            // Don't do anything else if paused
+            return;
         }
         this.animation.PlayAnimation(); // get rid of classes that made it pause
         setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-            this.video.HandlePageVisible(bloomPage);
+            this.video.HandlePageVisible(bloomPage, () => this.props.paused);
             this.music.pause(); // in case we have audio from previous page
         } else {
             this.playAudioAndAnimation(bloomPage);
