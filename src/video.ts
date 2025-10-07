@@ -116,7 +116,7 @@ export class Video {
         });
     }
 
-    public HandlePageVisible(bloomPage: HTMLElement) {
+    public HandlePageVisible(bloomPage: HTMLElement, isPaused: () => boolean) {
         this.currentPage = bloomPage as HTMLDivElement;
         if (!Video.pageHasVideo(this.currentPage)) {
             this.currentVideoElement = undefined;
@@ -124,43 +124,45 @@ export class Video {
         }
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
-        } else {
-            const videos = this.getVideoElements();
-            if (videos.length > 0) {
-                const firstVideo = videos[0];
-                // We ideally want to show the first frame without starting motion
-                // for a second or so to let the user take in the page as a whole.
-                // This is automatic with some browsers, but not all, especially
-                // the one in Android WebView that BloomReader uses.
-                // To get as close as we can, we immediately tell the first video
-                // to play, and immediately pause it when it starts playing.
-                // That leaves it frozen on the first frame.
-                // Then after a second, we start playing normally.
-                // Just in case it takes more than a second to load the first frame,
-                // we set a flag to avoid pausing it if the main playback already started.
-                // Another reason for starting the video immediately is that
-                // browsers are increasingly blocking videos with audio from
-                // autoplaying (e.g., this was previously a problem on iOS and Mac).
-                // Starting it immediately in response to a user action
-                // (the page turning) seems to satisfy that requirement.
-                let loading = true;
-                firstVideo.addEventListener(
-                    "playing",
-                    () => {
-                        if (loading) {
-                            // This is where we freeze it for a second.
-                            // The timeout below will restart it.
-                            videos[0].pause();
-                        }
-                    },
-                    { once: true },
-                );
-                firstVideo.play(); // but it will pause at once.
-                window.setTimeout(() => {
-                    loading = false;
+        }
+        const videos = this.getVideoElements();
+        if (videos.length > 0) {
+            const firstVideo = videos[0];
+            // We ideally want to show the first frame without starting motion
+            // for a second or so to let the user take in the page as a whole.
+            // This is automatic with some browsers, but not all, especially
+            // the one in Android WebView that BloomReader uses.
+            // To get as close as we can, we immediately tell the first video
+            // to play, and immediately pause it when it starts playing.
+            // That leaves it frozen on the first frame.
+            // Then after a second, we start playing normally.
+            // Just in case it takes more than a second to load the first frame,
+            // we set a flag to avoid pausing it if the main playback already started.
+            // Another reason for starting the video immediately is that
+            // browsers are increasingly blocking videos with audio from
+            // autoplaying (e.g., this was previously a problem on iOS and Mac).
+            // Starting it immediately in response to a user action
+            // (the page turning) seems to satisfy that requirement.
+            let loading = true;
+            firstVideo.addEventListener(
+                "playing",
+                () => {
+                    if (loading || isPaused()) {
+                        // This is where we freeze it for a second (or until pause ends).
+                        // The timeout below will restart it if we are not paused.
+                        firstVideo.pause();
+                    }
+                },
+                { once: true },
+            );
+            firstVideo.play(); // but it will pause at once unless the timeout already passed.
+            // If we're not paused, we will resume playing after the initial 1s pause.
+            window.setTimeout(() => {
+                loading = false;
+                if (!isPaused()) {
                     this.playAllVideo(videos);
-                }, 1000);
-            }
+                }
+            }, 1000);
         }
     }
 

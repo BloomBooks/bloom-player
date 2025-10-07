@@ -2346,9 +2346,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // It's not expensive so leaving it in for robustness.
             this.setPageSizeClass(bloomPage);
 
-            if (!this.props.paused) {
-                this.resetForNewPageAndPlay(bloomPage);
-            } else if (this.animation.shouldAnimate(bloomPage)) {
+            // This doesn't do much if we are paused. But we need to call it to get the first frame
+            // of videos to show.
+            this.resetForNewPageAndPlay(bloomPage);
+            
+            if (this.props.paused && this.animation.shouldAnimate(bloomPage)) {
                 //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
                 this.animation.HandlePageBeforeVisible(bloomPage);
                 this.animation.HandlePageVisible(bloomPage);
@@ -2488,13 +2490,16 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     // and animation from the beginning of the page.
     private resetForNewPageAndPlay(bloomPage: HTMLElement): void {
         if (this.props.paused) {
-            return; // shouldn't call when paused
+            // still need to do this to show the first frame.
+            this.video.HandlePageVisible(bloomPage, () => this.props.paused);
+            // Don't do anything else if paused
+            return;
         }
         setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-            this.video.HandlePageVisible(bloomPage);
+            this.video.HandlePageVisible(bloomPage, () => this.props.paused);
             this.music.pause(); // in case we have audio from previous page
         } else {
             this.playAudioAndAnimation(bloomPage);
