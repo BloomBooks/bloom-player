@@ -12,7 +12,7 @@ import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
 import LiteEvent from "./shared/event";
-import { Animation } from "./animation";
+import { Animation } from "./shared/animation";
 import { IPageVideoComplete, Video } from "./video";
 import { Music } from "./music";
 import { LocalizationManager } from "./l10n/localizationManager";
@@ -87,6 +87,7 @@ import {
 } from "./navigation";
 import { getBloomPlayerVersion } from "./bloom-player-version-control";
 import { compareVersions } from "compare-versions";
+import { ExpandLessSharp } from "@material-ui/icons";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)
@@ -1333,7 +1334,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                     this.video.play(); // sets currentPlaybackMode = VideoPlaying
                 } else {
                     playNarration(); // sets currentPlaybackMode = AudioPlaying
-                    this.animation.PlayAnimation();
+                    this.animation.resumeAnimation();
                     this.music.play();
                 }
             }
@@ -2348,6 +2349,17 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // This doesn't do much if we are paused. But we need to call it to get the first frame
             // of videos to show.
             this.resetForNewPageAndPlay(bloomPage);
+            
+            if (this.props.paused && this.animation.shouldAnimate(bloomPage)) {
+                //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
+                this.animation.HandlePageBeforeVisible(bloomPage);
+                this.animation.HandlePageVisible(bloomPage);
+                this.animation.HandlePageDurationAvailable(
+                    bloomPage,
+                    computeDuration(bloomPage),
+                );
+                this.animation.PauseOnFirstFrame();
+            }
 
             if (!this.isXmatterPage()) {
                 this.bookInteraction.pageShown(index);
@@ -2483,7 +2495,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // Don't do anything else if paused
             return;
         }
-        this.animation.PlayAnimation(); // get rid of classes that made it pause
         setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
@@ -2511,11 +2522,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // Tail end of the method, happens at once if we're not posting, only after
         // the post completes if we are.
         const finishUp = () => {
-            playAllSentences(bloomPage);
             if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
                 this.animation.HandlePageBeforeVisible(bloomPage);
             }
             this.animation.HandlePageVisible(bloomPage);
+            // After we set up the animation, because we'd prefer to play the copies of any
+            // narratable overlays in it.
+            playAllSentences(bloomPage, this.animation.animatableCanvas);
             this.music.HandlePageVisible(bloomPage);
         };
 
