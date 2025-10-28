@@ -1167,7 +1167,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // The most likely thing the user wants to do next, but also,
                 // we need to focus something in the reader to make the arrow keys
                 // work immediately.
-                nextButton?.focus();
+                // But not if we're embedded in an document. BL-15371.
+                if (this.shouldFocusNextButtonForNewBook()) nextButton?.focus();
             }, 500);
         } else {
             if (BloomPlayerCore.currentPage) {
@@ -1186,6 +1187,16 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 }, 200);
             }
         }
+    }
+
+    private shouldFocusNextButtonForNewBook(): boolean {
+        // If we're not embedded in an iframe, go ahead and focus the button. (can this happen?)
+        if (window.self === window.top) return true;
+        // If we got here from localhost (development or BloomPub viewer), focus the button.
+        if (document.referrer.startsWith("http://localhost:")) return true;
+        // If we didn't get here from bloomlibrary.org/player, let the normal focus behavior happen.
+        // But from bloomlibrary.org/player, we must be reading the book and want the button focused.
+        return document.referrer.includes("bloomlibrary.org/player/");
     }
 
     // If a book is displayed in some language other than the one it was primarily published in,
@@ -2349,7 +2360,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // This doesn't do much if we are paused. But we need to call it to get the first frame
             // of videos to show.
             this.resetForNewPageAndPlay(bloomPage);
-            
+
             if (this.props.paused && this.animation.shouldAnimate(bloomPage)) {
                 //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
                 this.animation.HandlePageBeforeVisible(bloomPage);
