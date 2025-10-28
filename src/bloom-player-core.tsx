@@ -1167,7 +1167,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // The most likely thing the user wants to do next, but also,
                 // we need to focus something in the reader to make the arrow keys
                 // work immediately.
-                nextButton?.focus();
+                // But not if we're in an iframe (e.g., embedded in a web page). BL-15371.
+                if (window.self === window.top) nextButton?.focus();
             }, 500);
         } else {
             if (BloomPlayerCore.currentPage) {
@@ -2349,7 +2350,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // This doesn't do much if we are paused. But we need to call it to get the first frame
             // of videos to show.
             this.resetForNewPageAndPlay(bloomPage);
-            
+
             if (this.props.paused && this.animation.shouldAnimate(bloomPage)) {
                 //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
                 this.animation.HandlePageBeforeVisible(bloomPage);
