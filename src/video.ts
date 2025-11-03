@@ -125,17 +125,27 @@ export class Video {
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
         }
+        // Not sure if we want this. I think it would be a new behavior.
+        // if (isPaused()) {
+        //     // This will show the on-video controls to allow them to be started.
+        //     this.markAllVideosPaused();
+        // }
         const videos = this.getVideoElements();
-        if (videos.length > 0) {
-            const firstVideo = videos[0];
-            // We ideally want to show the first frame without starting motion
-            // for a second or so to let the user take in the page as a whole.
+        let firstVideo: HTMLVideoElement | undefined;
+        let loading = true;
+        for (const video of videos) {
+            if (!firstVideo) {
+                firstVideo = video;
+            }
+            // We ideally want to show the first frame of each video without starting motion
+            // for a second or so to let the user take in the page as a whole, before starting
+            // to play the first one.
             // This is automatic with some browsers, but not all, especially
             // the one in Android WebView that BloomReader uses.
-            // To get as close as we can, we immediately tell the first video
-            // to play, and immediately pause it when it starts playing.
-            // That leaves it frozen on the first frame.
-            // Then after a second, we start playing normally.
+            // To get as close as we can, we immediately tell the videos
+            // to play, and quickly pause each when it starts playing.
+            // That leaves it frozen on the first (or maybe second) frame.
+            // Then after a second, we start playing the first one normally.
             // Just in case it takes more than a second to load the first frame,
             // we set a flag to avoid pausing it if the main playback already started.
             // Another reason for starting the video immediately is that
@@ -143,20 +153,34 @@ export class Video {
             // autoplaying (e.g., this was previously a problem on iOS and Mac).
             // Starting it immediately in response to a user action
             // (the page turning) seems to satisfy that requirement.
-            let loading = true;
-            firstVideo.addEventListener(
+            video.addEventListener(
                 "playing",
                 () => {
-                    if (loading || isPaused()) {
-                        // This is where we freeze it for a second (or until pause ends).
-                        // The timeout below will restart it if we are not paused.
-                        firstVideo.pause();
-                    }
+                    // Stop it after 1/25 second. The idea is that this is about 1 frame.
+                    // That much motion shouldn't be noticeable, but without it, there
+                    // seems to be some randomness on IOS about whether even the first frame
+                    // gets painted.
+                    setTimeout(() => {
+                        if (loading || isPaused() || video != firstVideo) {
+                            // This is where we freeze it for a second (or until pause ends,
+                            // or until it is this video's turn to play).
+                            // The timeout below will restart the first one if we are not paused.
+                            // (There might be a pathological case where the first video loads
+                            // and finishes playing before the second one finishes loading.
+                            // In such a case we might pause it here undesirably. But I think
+                            // the chances are vanishingly small, especially since we don't even
+                            // know of any current uses of multiple videos on one page. And the
+                            // user can always tap to start it.)
+                            video.pause();
+                        }
+                    }, 4);
                 },
                 { once: true },
             );
-            firstVideo.play(); // but it will pause at once unless the timeout already passed.
+            video.play(); // but it will pause at once unless the timeout already passed.
             // If we're not paused, we will resume playing after the initial 1s pause.
+        }
+        if (firstVideo) {
             window.setTimeout(() => {
                 loading = false;
                 if (!isPaused()) {
@@ -292,6 +316,12 @@ export class Video {
         this.playAllVideo([video]);
     }
 
+    private markAllVideosPaused(): void {
+        Array.from(
+            this.currentPage.getElementsByClassName("bloom-videoContainer"),
+        ).forEach((element) => element.classList.add("paused"));
+    }
+
     // Play the specified elements, one after the other. When the last completes, raise the PageVideoComplete event.
     //
     // Note, there is a very similar function in narration.ts. It would be nice to combine them, but
@@ -309,6 +339,8 @@ export class Video {
                     videos: this.getVideoElements(),
                 });
             }
+            // Add the paused class to all videos on the page, so those controls can be used to replay.
+            this.markAllVideosPaused();
             return;
         }
 
