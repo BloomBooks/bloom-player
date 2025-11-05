@@ -87,12 +87,6 @@ export class Video {
                 "videoPlayIcon",
             );
             playButton.addEventListener("click", this.handlePlayClick);
-            const pauseButton = this.wrapVideoIcon(
-                videoElement,
-                getPauseIcon("#ffffff"),
-                "videoPauseIcon",
-            );
-            pauseButton.addEventListener("click", this.handlePauseClick);
             const replayButton = this.wrapVideoIcon(
                 videoElement,
                 getReplayIcon("#ffffff"),
@@ -209,6 +203,7 @@ export class Video {
         if (!video) {
             return; // should not happen
         }
+        this.fadePlayButton(video);
         if (video === this.currentVideoElement) {
             this.play(); // we may have paused before all videos played, resume the sequence.
         } else {
@@ -225,6 +220,45 @@ export class Video {
             this.handlePauseClick(ev);
         }
     };
+
+    // After a click on the video or Play (or even Replay) button, the Play button
+    // fades out over a second.
+    // I think this code would do so even if the button wasn't visible before calling this,
+    // (that is, it would flash on and then fade out). Youtube does something like that
+    // so it's probably a good thing. But I don't think this function can currently
+    // be called in a situation where the button is not visible.
+    private fadePlayButton(video: HTMLVideoElement) {
+        const playIconContainer = video
+            .closest(".bloom-videoContainer")
+            ?.querySelector<HTMLElement>(
+                ".videoControlContainer.videoPlayIcon",
+            );
+        if (!playIconContainer) {
+            return;
+        }
+
+        const existingTimeout = playIconContainer.dataset.fadeTimeout;
+        if (existingTimeout) {
+            window.clearTimeout(Number(existingTimeout));
+        }
+
+        playIconContainer.classList.remove("videoPlayIcon-flash");
+        // Restart the animation by forcing a reflow before re-adding the class.
+        void playIconContainer.offsetWidth;
+        playIconContainer.classList.add("videoPlayIcon-flash");
+
+        const timeoutId = window.setTimeout(() => {
+            if (
+                !playIconContainer
+                    .closest(".bloom-videoContainer")
+                    ?.classList.contains("paused")
+            ) {
+                playIconContainer.classList.remove("videoPlayIcon-flash");
+            }
+            delete playIconContainer.dataset.fadeTimeout;
+        }, 1000);
+        playIconContainer.dataset.fadeTimeout = timeoutId.toString();
+    }
 
     private handleReplayClick = (ev: MouseEvent) => {
         ev.stopPropagation(); // we don't want the navigation bar to toggle on and off
@@ -261,7 +295,8 @@ export class Video {
         this.playAllVideo(videoElements);
     }
 
-    // This is called when the user clicks the pause button on a video.
+    // This is called when the user clicks a playing video (previously also from an on-video
+    // pause button, but we removed that).
     // Unlike when pause is done from the control bar, we add a class that shows some buttons.
     public handlePauseClick = (ev: MouseEvent) => {
         ev.stopPropagation(); // we don't want the navigation bar to toggle on and off

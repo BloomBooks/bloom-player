@@ -453,13 +453,27 @@ div.videoControlContainer {
     display: none;
 }
 
+.videoControlContainer.videoPlayIcon.videoPlayIcon-flash {
+    display: flex;
+    opacity: 1;
+    animation: bloomVideoPlayIconFade 1s ease-out forwards;
+}
+
+@keyframes bloomVideoPlayIconFade {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
 svg.videoControl {
     height: @videoIconSize;
 }
 
 // never shown at the same time, so same location is fine.
-.videoPlayIcon,
-.videoPauseIcon {
+.videoPlayIcon {
     left: calc(50% - @videoIconSize - 5px); // always the left of two icons
 }
 
@@ -471,16 +485,6 @@ svg.videoControl {
 .bloom-videoContainer.paused {
     .videoControlContainer {
         &.videoPlayIcon,
-        &.videoReplayIcon {
-            display: flex;
-        }
-    }
-}
-
-// Show pause and replay when playing and hovered.
-.bloom-videoContainer.playing:hover {
-    .videoControlContainer {
-        &.videoPauseIcon,
         &.videoReplayIcon {
             display: flex;
         }
