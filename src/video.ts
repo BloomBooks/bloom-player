@@ -221,43 +221,58 @@ export class Video {
         }
     };
 
+    private fadePlayButton(video: HTMLVideoElement) {
+        const playIconContainer = this.getPlayIconContainer(video);
+        if (!playIconContainer) {
+            return;
+        }
+
+        this.stopPlayButtonContainerFade(playIconContainer);
+        // Restart the animation by forcing a reflow before re-adding the class.
+        void playIconContainer.offsetWidth;
+        playIconContainer.classList.add("videoPlayIcon-flash");
+
+        const timeoutId = window.setTimeout(() => {
+            this.stopPlayButtonContainerFade(playIconContainer);
+        }, 1000);
+        playIconContainer.dataset.fadeTimeout = timeoutId.toString();
+    }
+
     // After a click on the video or Play (or even Replay) button, the Play button
     // fades out over a second.
     // I think this code would do so even if the button wasn't visible before calling this,
     // (that is, it would flash on and then fade out). Youtube does something like that
     // so it's probably a good thing. But I don't think this function can currently
     // be called in a situation where the button is not visible.
-    private fadePlayButton(video: HTMLVideoElement) {
-        const playIconContainer = video
-            .closest(".bloom-videoContainer")
-            ?.querySelector<HTMLElement>(
-                ".videoControlContainer.videoPlayIcon",
-            );
-        if (!playIconContainer) {
-            return;
-        }
+    private getPlayIconContainer(video: HTMLVideoElement): HTMLElement | null {
+        return (
+            video
+                .closest(".bloom-videoContainer")
+                ?.querySelector<HTMLElement>(
+                    ".videoControlContainer.videoPlayIcon",
+                ) ?? null
+        );
+    }
 
+    // Remove all traces of a fade in progress or completed.
+    // This allows us to use animation-fill-mode: forwards in the CSS,
+    // which leaves the button invisible at the end of the fade, but
+    // also allows us to cancel an in-progress fade.
+    private stopPlayButtonContainerFade(playIconContainer: HTMLElement) {
         const existingTimeout = playIconContainer.dataset.fadeTimeout;
         if (existingTimeout) {
             window.clearTimeout(Number(existingTimeout));
-        }
-
-        playIconContainer.classList.remove("videoPlayIcon-flash");
-        // Restart the animation by forcing a reflow before re-adding the class.
-        void playIconContainer.offsetWidth;
-        playIconContainer.classList.add("videoPlayIcon-flash");
-
-        const timeoutId = window.setTimeout(() => {
-            if (
-                !playIconContainer
-                    .closest(".bloom-videoContainer")
-                    ?.classList.contains("paused")
-            ) {
-                playIconContainer.classList.remove("videoPlayIcon-flash");
-            }
             delete playIconContainer.dataset.fadeTimeout;
-        }, 1000);
-        playIconContainer.dataset.fadeTimeout = timeoutId.toString();
+        }
+        playIconContainer.classList.remove("videoPlayIcon-flash");
+        playIconContainer.style.removeProperty("opacity");
+    }
+
+    private stopPlayButtonFade(video: HTMLVideoElement) {
+        const playIconContainer = this.getPlayIconContainer(video);
+        if (playIconContainer) {
+            this.stopPlayButtonContainerFade(playIconContainer);
+        }
     }
 
     private handleReplayClick = (ev: MouseEvent) => {
@@ -333,7 +348,11 @@ export class Video {
                 videoElement.currentTime - this.currentVideoStartTime,
             );
         }
-        videoElement?.closest(".bloom-videoContainer")?.classList.add("paused");
+        const container = videoElement?.closest(
+            ".bloom-videoContainer",
+        ) as HTMLDivElement | null;
+        container?.classList.add("paused");
+        this.stopPlayButtonFade(videoElement);
         videoElement.pause();
     }
 
@@ -354,7 +373,13 @@ export class Video {
     private markAllVideosPaused(): void {
         Array.from(
             this.currentPage.getElementsByClassName("bloom-videoContainer"),
-        ).forEach((element) => element.classList.add("paused"));
+        ).forEach((element) => {
+            element.classList.add("paused");
+            const video = element.getElementsByTagName("video")[0];
+            if (video) {
+                this.stopPlayButtonFade(video);
+            }
+        });
     }
 
     // Play the specified elements, one after the other. When the last completes, raise the PageVideoComplete event.
