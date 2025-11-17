@@ -2362,14 +2362,15 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.resetForNewPageAndPlay(bloomPage);
 
             if (this.props.paused && this.animation.shouldAnimate(bloomPage)) {
-                //we want to play a ken burns animation, but we're paused. Show the first frame of the animation.
+                //we want to play a ken burns animation, but we're paused. Do enough of the setup
+                // to show the first frame, but passing true for paused will prevent it advancing further.
                 this.animation.HandlePageBeforeVisible(bloomPage);
-                this.animation.HandlePageVisible(bloomPage);
+                this.animation.HandlePageVisible(bloomPage, this.props.paused);
                 this.animation.HandlePageDurationAvailable(
                     bloomPage,
                     computeDuration(bloomPage),
+                    this.props.paused,
                 );
-                this.animation.PauseOnFirstFrame();
             }
 
             if (!this.isXmatterPage()) {
@@ -2528,7 +2529,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (!bloomPage) return;
 
         const duration = computeDuration(bloomPage);
-        this.animation.HandlePageDurationAvailable(bloomPage!, duration);
+        this.animation.HandlePageDurationAvailable(
+            bloomPage!,
+            duration,
+            this.props.paused,
+        );
 
         // Tail end of the method, happens at once if we're not posting, only after
         // the post completes if we are.
@@ -2536,7 +2541,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             if (Animation.pageHasAnimation(bloomPage as HTMLDivElement)) {
                 this.animation.HandlePageBeforeVisible(bloomPage);
             }
-            this.animation.HandlePageVisible(bloomPage);
+            this.animation.HandlePageVisible(bloomPage, this.props.paused);
             // After we set up the animation, because we'd prefer to play the copies of any
             // narratable overlays in it.
             playAllSentences(bloomPage, this.animation.animatableCanvas);
