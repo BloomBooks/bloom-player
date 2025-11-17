@@ -119,11 +119,11 @@ export class Video {
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
         }
-        // Not sure if we want this. I think it would be a new behavior.
-        // if (isPaused()) {
-        //     // This will show the on-video controls to allow them to be started.
-        //     this.markAllVideosPaused();
-        // }
+        if (isPaused()) {
+            // This will show the on-video controls to allow them to be individuallystarted,
+            // and provide a visual clue that they are videos.
+            this.markAllVideosPaused();
+        }
         const videos = this.getVideoElements();
         let firstVideo: HTMLVideoElement | undefined;
         let loading = true;
