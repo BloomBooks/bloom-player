@@ -497,16 +497,19 @@ export class TransformBasedAnimator {
         const finalVals = finalRect.split(" ").map(parseFloat);
 
         //error handling: if any inputs attempt to do anything that will result in any part of the animation box being blank at any time,
-        //set class variables such that no animation plays
+        //set class variables such that no animation plays.
+        // JT November 2025: The book in BL-15408 has initialVals[1] + initialVals[3] adding up to 1.0003, probably because
+        // of a rounding error. I'm not sure I fully understand what problem it causes when this sum is much larger than 1,
+        // but it doesn't seem to cause any problem when it's just a tiny bit over, so I added some tolerance here.
         if (
             initialVals.length != 4 ||
             finalVals.length != 4 ||
             Math.min(...finalVals) < 0 ||
             Math.min(...initialVals) < 0 ||
-            initialVals[0] + initialVals[2] > 1 ||
-            initialVals[1] + initialVals[3] > 1 ||
-            finalVals[0] + finalVals[2] > 1 ||
-            finalVals[1] + finalVals[3] > 1
+            initialVals[0] + initialVals[2] > 1.01 ||
+            initialVals[1] + initialVals[3] > 1.01 ||
+            finalVals[0] + finalVals[2] > 1.01 ||
+            finalVals[1] + finalVals[3] > 1.01
         ) {
             this.initialScale = 1;
             this.finalScale = 1;
