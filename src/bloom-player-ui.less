@@ -491,3 +491,17 @@ svg.videoControl {
         }
     }
 }
+
+// Hide the video play/pause/replay icons when recording the video for publishing.
+.bloom-page.bloom-publish-video .bloom-videoContainer {
+    &.paused,
+    &.playing {
+        .videoControlContainer {
+            &.videoPlayIcon,
+            &.videoPauseIcon,
+            &.videoReplayIcon {
+                display: none !important;
+            }
+        }
+    }
+}
