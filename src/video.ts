@@ -87,12 +87,6 @@ export class Video {
                 "videoPlayIcon",
             );
             playButton.addEventListener("click", this.handlePlayClick);
-            const pauseButton = this.wrapVideoIcon(
-                videoElement,
-                getPauseIcon("#ffffff"),
-                "videoPauseIcon",
-            );
-            pauseButton.addEventListener("click", this.handlePauseClick);
             const replayButton = this.wrapVideoIcon(
                 videoElement,
                 getReplayIcon("#ffffff"),
@@ -125,11 +119,11 @@ export class Video {
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
         }
-        // Not sure if we want this. I think it would be a new behavior.
-        // if (isPaused()) {
-        //     // This will show the on-video controls to allow them to be started.
-        //     this.markAllVideosPaused();
-        // }
+        if (isPaused()) {
+            // This will show the on-video controls to allow them to be individuallystarted,
+            // and provide a visual clue that they are videos.
+            this.markAllVideosPaused();
+        }
         const videos = this.getVideoElements();
         let firstVideo: HTMLVideoElement | undefined;
         let loading = true;
@@ -209,6 +203,7 @@ export class Video {
         if (!video) {
             return; // should not happen
         }
+        this.fadePlayButton(video);
         if (video === this.currentVideoElement) {
             this.play(); // we may have paused before all videos played, resume the sequence.
         } else {
@@ -225,6 +220,60 @@ export class Video {
             this.handlePauseClick(ev);
         }
     };
+
+    // After a click on the video or Play (or even Replay) button, the Play button
+    // fades out over a second.
+    // I think this code would do so even if the button wasn't visible before calling this,
+    // (that is, it would flash on and then fade out). Youtube does something like that
+    // so it's probably a good thing. But I don't think this function can currently
+    // be called in a situation where the button is not visible.
+    private fadePlayButton(video: HTMLVideoElement) {
+        const playIconContainer = this.getPlayIconContainer(video);
+        if (!playIconContainer) {
+            return;
+        }
+
+        this.stopPlayButtonContainerFade(playIconContainer);
+        // Restart the animation by forcing a reflow before re-adding the class.
+        void playIconContainer.offsetWidth;
+        playIconContainer.classList.add("videoPlayIcon-flash");
+
+        const timeoutId = window.setTimeout(() => {
+            this.stopPlayButtonContainerFade(playIconContainer);
+        }, 1000);
+        playIconContainer.dataset.fadeTimeout = timeoutId.toString();
+    }
+
+    private getPlayIconContainer(video: HTMLVideoElement): HTMLElement | null {
+        return (
+            video
+                .closest(".bloom-videoContainer")
+                ?.querySelector<HTMLElement>(
+                    ".videoControlContainer.videoPlayIcon",
+                ) ?? null
+        );
+    }
+
+    // Remove all traces of a fade in progress or completed.
+    // This allows us to use animation-fill-mode: forwards in the CSS,
+    // which leaves the button invisible at the end of the fade, but
+    // also allows us to cancel an in-progress fade.
+    private stopPlayButtonContainerFade(playIconContainer: HTMLElement) {
+        const existingTimeout = playIconContainer.dataset.fadeTimeout;
+        if (existingTimeout) {
+            window.clearTimeout(Number(existingTimeout));
+            delete playIconContainer.dataset.fadeTimeout;
+        }
+        playIconContainer.classList.remove("videoPlayIcon-flash");
+        playIconContainer.style.removeProperty("opacity");
+    }
+
+    private stopPlayButtonFade(video: HTMLVideoElement) {
+        const playIconContainer = this.getPlayIconContainer(video);
+        if (playIconContainer) {
+            this.stopPlayButtonContainerFade(playIconContainer);
+        }
+    }
 
     private handleReplayClick = (ev: MouseEvent) => {
         ev.stopPropagation(); // we don't want the navigation bar to toggle on and off
@@ -261,7 +310,8 @@ export class Video {
         this.playAllVideo(videoElements);
     }
 
-    // This is called when the user clicks the pause button on a video.
+    // This is called when the user clicks a playing video (previously also from an on-video
+    // pause button, but we removed that).
     // Unlike when pause is done from the control bar, we add a class that shows some buttons.
     public handlePauseClick = (ev: MouseEvent) => {
         ev.stopPropagation(); // we don't want the navigation bar to toggle on and off
@@ -298,7 +348,11 @@ export class Video {
                 videoElement.currentTime - this.currentVideoStartTime,
             );
         }
-        videoElement?.closest(".bloom-videoContainer")?.classList.add("paused");
+        const container = videoElement?.closest(
+            ".bloom-videoContainer",
+        ) as HTMLDivElement | null;
+        container?.classList.add("paused");
+        this.stopPlayButtonFade(videoElement);
         videoElement.pause();
     }
 
@@ -319,7 +373,13 @@ export class Video {
     private markAllVideosPaused(): void {
         Array.from(
             this.currentPage.getElementsByClassName("bloom-videoContainer"),
-        ).forEach((element) => element.classList.add("paused"));
+        ).forEach((element) => {
+            element.classList.add("paused");
+            const video = element.getElementsByTagName("video")[0];
+            if (video) {
+                this.stopPlayButtonFade(video);
+            }
+        });
     }
 
     // Play the specified elements, one after the other. When the last completes, raise the PageVideoComplete event.

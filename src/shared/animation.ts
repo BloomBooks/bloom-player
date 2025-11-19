@@ -92,29 +92,33 @@ export class Animation {
     }
 
     // What we need to do when the page becomes visible (possibly start the animation,
-    // if we already have the duration).
-    public HandlePageVisible(page: HTMLElement) {
+    // if we already have the duration and are not paused).
+    public HandlePageVisible(page: HTMLElement, paused: boolean) {
         if (this.shouldAnimate(page)) {
             //if we've already gotten this page's duration, set up the animation
             this.currentPage = page;
             this.animatableCanvas = Animation.getAnimatableCanvas(page);
             if (this.currentPage === this.lastDurationPage) {
                 // already got the corresponding durationAvailable event
-                this.setupAnimation(page, false);
+                this.setupAnimation(page, paused);
             }
         }
     }
 
     // What we need to do when we get the duration of a page (possibly start the animation,
-    // if the page is already visible).
-    public HandlePageDurationAvailable(page: HTMLElement, duration: number) {
+    // if the page is already visible and we are not paused).
+    public HandlePageDurationAvailable(
+        page: HTMLElement,
+        duration: number,
+        paused: boolean,
+    ) {
         if (this.shouldAnimate(page)) {
             this.animationDuration = duration;
             //if the page is already visible, set up the animation
             this.lastDurationPage = page;
             if (this.currentPage === this.lastDurationPage) {
                 // already got the corresponding pageVisible event
-                this.setupAnimation(page, false);
+                this.setupAnimation(page, paused);
             }
         }
     }
@@ -137,17 +141,9 @@ export class Animation {
         this.animationEngine.pause();
     }
 
-    public PauseOnFirstFrame() {
-        if (!this.PlayAnimations || !this.animationEngine) {
-            return;
-        }
-        this.animationEngine.showInitialState();
-        this.animationEngine.pause();
-    }
-
     public animatableCanvas: HTMLElement | null = null;
 
-    private setupAnimation(page: HTMLElement, beforeVisible: boolean): void {
+    private setupAnimation(page: HTMLElement, paused: boolean): void {
         if (!this.PlayAnimations) {
             return;
         }
@@ -230,6 +226,7 @@ export class Animation {
                 page,
                 animationWrapper,
                 animationCanvas,
+                paused,
             );
         } else {
             // We already made the animation div, just retrieve the animationWrapper from inside it.
@@ -241,19 +238,20 @@ export class Animation {
                 // it might still be wrongly positioned if we changed orientation
                 // since it was computed.
                 this.placeAnimationWrapper(animationWrapper);
-                this.createAndPlayAnimation(page);
+                this.createAndPlayAnimation(page, paused);
             } else {
                 //we haven't yet determined its aspect ratio.
                 this.applyCanvasAspectRatioToAnimationWrapper(
                     page,
                     animationWrapper,
                     animationWrapper.firstElementChild as HTMLElement,
+                    paused,
                 );
             }
         }
     }
 
-    private createAndPlayAnimation(page: HTMLElement) {
+    private createAndPlayAnimation(page: HTMLElement, paused: boolean) {
         const animationCanvas = Animation.getAnimationCanvas(page);
 
         //stop the old engine's animation so it doesn't compete with the new animation
@@ -269,7 +267,14 @@ export class Animation {
                 this.animationDuration,
                 animationCanvas,
             );
-            this.animationEngine.startAnimation();
+            if (paused) {
+                // Just advance to the initial frame.
+                // The animation engine is created in the paused state with totalElapsedTime = 0,
+                // so we just need to set the transform to correspond.
+                this.animationEngine.setCurrentAnimationFrame();
+            } else {
+                this.animationEngine.startAnimation();
+            }
         }
     }
 
@@ -277,11 +282,12 @@ export class Animation {
         page: HTMLElement,
         animationWrapper: HTMLElement,
         canvas: HTMLElement,
+        paused: boolean,
     ): void {
         if (page.hasAttribute("data-aspectRatio")) {
             //if the task we started before loading has already found the aspect ratio:
             this.placeAnimationWrapper(animationWrapper);
-            this.createAndPlayAnimation(page);
+            this.createAndPlayAnimation(page, paused);
         }
         //if the canvas has this attribute, it's trivial to find the aspect ratio
         else if (canvas.hasAttribute("data-imgsizebasedon")) {
@@ -294,7 +300,7 @@ export class Animation {
                 (canvasDimensions[0] / canvasDimensions[1]).toString(),
             );
             this.placeAnimationWrapper(animationWrapper);
-            this.createAndPlayAnimation(page);
+            this.createAndPlayAnimation(page, paused);
         }
         //if there's no imgSizeBasedOn attribute, default to the old method of looking at the background image
         //however, the animation canvas's background image may not have been loaded yet. In that case, wait until it exists.
@@ -312,7 +318,7 @@ export class Animation {
                             ).toString(),
                         );
                         this.placeAnimationWrapper(animationWrapper);
-                        this.createAndPlayAnimation(page);
+                        this.createAndPlayAnimation(page, paused);
                     });
                     virtualImage.src =
                         DomHelper.getActualUrlFromCSSPropertyValue(
@@ -497,16 +503,19 @@ export class TransformBasedAnimator {
         const finalVals = finalRect.split(" ").map(parseFloat);
 
         //error handling: if any inputs attempt to do anything that will result in any part of the animation box being blank at any time,
-        //set class variables such that no animation plays
+        //set class variables such that no animation plays.
+        // JT November 2025: The book in BL-15408 has initialVals[1] + initialVals[3] adding up to 1.0003, probably because
+        // of a rounding error. I'm not sure I fully understand what problem it causes when this sum is much larger than 1,
+        // but it doesn't seem to cause any problem when it's just a tiny bit over, so I added some tolerance here.
         if (
             initialVals.length != 4 ||
             finalVals.length != 4 ||
             Math.min(...finalVals) < 0 ||
             Math.min(...initialVals) < 0 ||
-            initialVals[0] + initialVals[2] > 1 ||
-            initialVals[1] + initialVals[3] > 1 ||
-            finalVals[0] + finalVals[2] > 1 ||
-            finalVals[1] + finalVals[3] > 1
+            initialVals[0] + initialVals[2] > 1.01 ||
+            initialVals[1] + initialVals[3] > 1.01 ||
+            finalVals[0] + finalVals[2] > 1.01 ||
+            finalVals[1] + finalVals[3] > 1.01
         ) {
             this.initialScale = 1;
             this.finalScale = 1;
@@ -592,12 +601,16 @@ export class TransformBasedAnimator {
         //      That's necessary because there can still be one more call to this method after endAnimation has been called.
         if (this.totalElapsedTime >= this.duration) return;
 
-        const { scale, left, top } = this.getScaleAndPosition();
-        this.canvasToAnimate.style.transform = `translate(${left}%, ${top}%) scale(${scale})`;
+        this.setCurrentAnimationFrame();
 
         this.lastFrameTime = currentTime;
 
         requestAnimationFrame(() => this.advanceAnimation());
+    }
+
+    public setCurrentAnimationFrame() {
+        const { scale, left, top } = this.getScaleAndPosition();
+        this.canvasToAnimate.style.transform = `translate(${left}%, ${top}%) scale(${scale})`;
     }
 
     public pause() {
@@ -621,9 +634,5 @@ export class TransformBasedAnimator {
     // which will see that the duration has been exceeded and do nothing.
     public endAnimation() {
         this.totalElapsedTime = this.duration + 1;
-    }
-
-    public showInitialState() {
-        this.canvasToAnimate.style.transform = `translate(${this.initialLeft}%, ${this.initialTop}%) scale(${this.initialScale})`;
     }
 }
