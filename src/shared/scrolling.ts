@@ -106,6 +106,11 @@ export function addScrollbarsToPage(
                         entries.forEach((entry) => {
                             countOfObserversThatHaveReported++;
                             ob.unobserve(entry.target); // don't want to keep getting them, or leak observers
+                            if (!entry.target.parentElement) {
+                                // We can't do anything with this target.  It must be in another DOM.  (BL-15508)
+                                // I'm not sure how that can happen, but with iframes around, who knows?
+                                return;
+                            }
                             const isBubble = !!entry.target.closest(
                                 kLegacyCanvasElementSelector,
                             );
