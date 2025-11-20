@@ -164,4 +164,14 @@
     .bloom-animationBackground ~ * {
         z-index: 1;
     }
+
+    @canvasElementCanvasZIndex: 1001; // must match value in BloomDesktop's bloomUI.less
+
+    // Allow clickable images to be above the canvas so they can be clicked.
+    .bloom-canvas .bloom-imageContainer[data-href] {
+        z-index: @canvasElementCanvasZIndex + 1 !important;
+        &:hover {
+            cursor: pointer;
+        }
+    }
 }
