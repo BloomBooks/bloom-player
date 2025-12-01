@@ -165,6 +165,12 @@ export const Talking = AddBloomPlayerStory(
 );
 Talking.storyName = "Talking book with image descriptions";
 
+export const VideoLinks = AddBloomPlayerStory(
+    "Sign language with links",
+    "s3/bloomharvest/mmalecki%40worldvision.org%2f465d8325-136d-4862-a6c0-989445b2fe79%2Fbloomdigital%2findex.htm",
+);
+VideoLinks.storyName = "Sign language with links";
+
 export const DifficultForIOS = AddBloomPlayerStory(
     "Difficult book for IOS",
     "s3/share.bloomlibrary.org/debug/9144p2/bloomdigital/index.htm",
