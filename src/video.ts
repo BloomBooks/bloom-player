@@ -116,6 +116,14 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
+        var videoControls = this.currentPage.getElementsByClassName(
+            "videoControlContainer",
+        );
+        if (videoControls.length === 0) {
+            // We haven't initialized the video controls yet; probably because we
+            // jumped to this page without a sliding transition.
+            this.HandlePageBeforeVisible(this.currentPage);
+        }
         if (currentPlaybackMode === PlaybackMode.VideoPaused) {
             this.currentVideoElement?.pause();
         }
