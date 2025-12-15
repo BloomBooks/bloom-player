@@ -8,7 +8,7 @@ The Bloom project uses _bloom-player_ in the following places:
 - In the [Bloom Reader](https://github.com/bloombooks/bloomreader) Android app
 - On [BloomLibrary.org](https://bloomlibrary.org)
 - In [BloomPUB Viewer](https://github.com/bloombooks/bloompub-viewer)
-- In Android and IOS apps created with Reading App Builder
+- In Android and iOS apps created with Reading App Builder
 
 # Using bloom-player in a website
 
