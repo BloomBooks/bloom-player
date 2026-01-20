@@ -823,7 +823,9 @@ function setHighlightTo({
         translationGroup &&
         translationGroup.classList.contains(kImageDescriptionClass)
     ) {
-        const imgContainer = translationGroup.closest(".bloom-imageContainer");
+        const imgContainer = translationGroup.closest(
+            ".bloom-imageContainer, .bloom-canvas",
+        );
         if (imgContainer) {
             imgContainer.classList.add("ui-audioCurrentImg");
         }
