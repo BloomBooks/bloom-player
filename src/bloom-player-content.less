@@ -171,6 +171,15 @@
     .bloom-canvas .bloom-imageContainer[data-href] {
         z-index: @canvasElementCanvasZIndex + 1 !important;
     }
+
+    // Detector with z-index above canvas so we can detect clicks of playback controls
+    .videoMouseDetector {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        z-index: @canvasElementCanvasZIndex + 1;
+    }
 }
 @media (hover: hover) {
     .bloomPlayer .bloom-canvas .bloom-imageContainer[data-href]:hover {

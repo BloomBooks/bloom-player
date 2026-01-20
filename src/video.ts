@@ -34,7 +34,7 @@ export class Video {
     // configure one of the icons we display over videos. We put a div around it and apply
     // various classes and append it to the parent of the video.
     private wrapVideoIcon(
-        videoElement: HTMLVideoElement,
+        parent: HTMLElement,
         icon: HTMLElement,
         iconClass: string,
     ): HTMLElement {
@@ -43,7 +43,7 @@ export class Video {
         wrapper.appendChild(icon);
         wrapper.classList.add(iconClass);
         icon.classList.add("videoControl");
-        videoElement.parentElement?.appendChild(wrapper);
+        parent.appendChild(wrapper);
         return icon;
     }
 
@@ -75,9 +75,12 @@ export class Video {
         }
         this.getVideoElements().forEach((videoElement) => {
             videoElement.removeAttribute("controls");
-            videoElement.addEventListener("click", this.handleVideoClick);
+            const mouseDetector = document.createElement("div");
+            mouseDetector.classList.add("videoMouseDetector");
+            mouseDetector.addEventListener("click", this.handleVideoClick);
+            videoElement.parentElement?.appendChild(mouseDetector);
             const playButton = this.wrapVideoIcon(
-                videoElement,
+                mouseDetector,
                 // Alternatively, we could import the Material UI icon, make this file a TSX, and use
                 // ReactDom.render to render the icon into the div. But just creating the SVG
                 // ourselves (as these methods do) seems more natural to me. We would not be using
@@ -88,7 +91,7 @@ export class Video {
             );
             playButton.addEventListener("click", this.handlePlayClick);
             const replayButton = this.wrapVideoIcon(
-                videoElement,
+                mouseDetector,
                 getReplayIcon("#ffffff"),
                 "videoReplayIcon",
             );
