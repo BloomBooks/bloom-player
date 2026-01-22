@@ -29,6 +29,10 @@ import {
 } from "./videoRecordingSupport";
 import LangData from "./langData";
 
+// Used to force the app bar (part of the controls) to be displayed,
+// e.g. when we need to force the back button to appear when there is an error loading a book.
+export const ForceShowAppBar = new LiteEvent<void>();
+
 // See related comments in controlBar.tsx
 import IconButton from "@material-ui/core/IconButton";
 import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
@@ -422,7 +426,12 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     }
     // called by bloom-player-controls
     public HandleBackButtonClickedIfHavePlayerHistory(): boolean {
-        const backLocation = tryPopPlayerHistory(this.bookInfo.bookInstanceId);
+        // When a linked book fails to load, bookInfo.bookInstanceId may still be the previous book.
+        // If our current URL is a /book/{id}/index.htm-style URL, prefer that for navigation history.
+        const currentBookIdForHistory =
+            this.getBookIdFromBookUrlForHistory(this.state.bookUrl) ||
+            this.bookInfo.bookInstanceId;
+        const backLocation = tryPopPlayerHistory(currentBookIdForHistory);
         if (backLocation) {
             this.navigate(backLocation.bookUrl, backLocation.pageId);
             return true;
@@ -457,6 +466,22 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         } else if (pageId !== undefined) {
             const pageIndex = this.state.pageIdToIndexMap[pageId];
             this.swiperInstance.slideTo(pageIndex);
+        }
+    }
+
+    private getBookIdFromBookUrlForHistory(
+        bookUrl: string | undefined,
+    ): string | undefined {
+        if (!bookUrl) {
+            return undefined;
+        }
+        try {
+            const pathname = new URL(bookUrl, window.location.href).pathname;
+            // Expected format from navigation.ts: /book/{guid}/index.htm
+            const match = pathname.match(/^\/book\/([^/]+)\/index\.htm$/i);
+            return match ? match[1] : undefined;
+        } catch {
+            return undefined;
         }
     }
 
@@ -585,8 +610,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // This happens in Bloom Editor preview, where a render of some outer component does not
             // yet have the URL. There's nothing useful we can do.
             if (!this.props.url) return;
-            if (this.state.loadFailed) {
-                return; // otherwise we'll just be stuck in here forever trying to load
+            // If a load failed, we normally stop trying to reload (otherwise we can loop forever).
+            // But we still want to allow navigation (e.g. Back) to a different URL to recover.
+            if (
+                this.state.loadFailed &&
+                prevState.bookUrl === this.state.bookUrl
+            ) {
+                return;
             }
             // also one-time setup; only the first time through
             this.initializeMedia();
@@ -888,31 +918,48 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private HandleLoadingError(axiosError: any) {
         const errorMessage = axiosError.message as string;
-        // Note: intentionally no bothering to add this to the l10n load, at this time.
+        // Note: intentionally not bothering to add this to the l10n load, at this time.
         let msg = `<p>There was a problem displaying this book: ${errorMessage}<p>`; // just show the raw thing
-        // If it's a file:/// url, we're probably on an Android, and something
-        // went wrong with unpacking it, or it is corrupt. This typically results in an error
-        // message that is NOT a 404 but IS reported, unhelpfully, as a "Network Error" (BL-7813).
-        // A file:/// url can't possibly be a network error, so the "part of the book is missing"
-        // error is at least a little more helpful, maybe to the user, and certainly to a developer
-        // trying to fix the problem, especially if the user reports the problem URL.
-        const localFileMissing =
-            axiosError.config &&
-            axiosError.config.url &&
-            axiosError.config.url.startsWith("file://");
-        if (localFileMissing || axiosError.message.indexOf("404") >= 0) {
-            msg = "<p>This book (or some part of it) was not found.<p>";
-            if (axiosError.config && axiosError.config.url) {
-                msg += `<p class='errorDetails'>${htmlEncode(
-                    axiosError.config.url,
-                )}</p>`;
+
+        const isBookUrlLoadFailure =
+            !!axiosError.config?.url &&
+            new URL(
+                axiosError.config.url,
+                window.location.href,
+            ).pathname.startsWith("/book/");
+
+        if (isBookUrlLoadFailure) {
+            msg = "<p>We could not find that book.</p>";
+        } else {
+            // If it's a file:/// url, we're probably on an Android, and something
+            // went wrong with unpacking it, or it is corrupt. This typically results in an error
+            // message that is NOT a 404 but IS reported, unhelpfully, as a "Network Error" (BL-7813).
+            // A file:/// url can't possibly be a network error, so the "part of the book is missing"
+            // error is at least a little more helpful, maybe to the user, and certainly to a developer
+            // trying to fix the problem, especially if the user reports the problem URL.
+            const localFileMissing =
+                axiosError.config &&
+                axiosError.config.url &&
+                axiosError.config.url.startsWith("file://");
+            if (localFileMissing || axiosError.message.indexOf("404") >= 0) {
+                msg = "<p>This book (or some part of it) was not found.<p>";
+                if (axiosError.config && axiosError.config.url) {
+                    msg += `<p class='errorDetails'>${htmlEncode(
+                        axiosError.config.url,
+                    )}</p>`;
+                }
             }
         }
+
         this.setState({
             isLoading: false,
             loadFailed: true,
             loadErrorHtml: msg,
         });
+
+        if (isBookUrlLoadFailure) {
+            ForceShowAppBar.raise();
+        }
     }
 
     private finishUpCalled = false;
