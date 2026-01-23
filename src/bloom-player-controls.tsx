@@ -2,7 +2,7 @@
 BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to preview the
 book inside of the Bloom:Publish:Android screen.
 */
-import { BloomPlayerCore } from "./bloom-player-core";
+import { BloomPlayerCore, ForceShowAppBar } from "./bloom-player-core";
 import * as ReactDOM from "react-dom";
 import {
     informHostOfBackAction,
@@ -213,6 +213,20 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
     const [showAppBar, setShowAppBar] = useState<boolean>(
         props.initiallyShowAppBar,
     );
+
+    // If showAppBar is already true, we still may have to force a render to update the state of the controls.
+    const [, forceRerender] = useState(0);
+    useEffect(() => {
+        const onForceShowAppBar = () => {
+            setShowAppBar(true);
+            forceRerender((n) => n + 1);
+        };
+
+        ForceShowAppBar.subscribe(onForceShowAppBar);
+        return () => {
+            ForceShowAppBar.unsubscribe(onForceShowAppBar);
+        };
+    }, []);
 
     const [pageNumberControlPos, setPageNumberControlPos] = useState(
         props.startPage ?? 0,
