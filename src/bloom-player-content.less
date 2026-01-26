@@ -167,9 +167,13 @@
 
     @canvasElementCanvasZIndex: 1001; // must match value in BloomDesktop's bloomUI.less
 
-    // Allow clickable images to be above the canvas so they can be clicked.
-    .bloom-canvas .bloom-imageContainer[data-href] {
-        z-index: @canvasElementCanvasZIndex + 1 !important;
+    // comical bubbles show up in BP as an svg. It needs to be above the canvas elements
+    // so all the bubbles can be seen, but some elements (such as ones with hrefs) need to
+    // be clickable even when behind it.
+    // (Don't be tempted to put things with hrefs above the comical bubble svg, because then
+    // they will cover parts of the bubble that are supposed to be visible. BL-15707)
+    svg.comical-generated {
+        pointer-events: none;
     }
 }
 @media (hover: hover) {
