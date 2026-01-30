@@ -9,7 +9,7 @@
     "sideEffects": false,
     "repository": {
         "type": "git",
-        "url": "https://github.com/BloomBooks/bloom-player.git"
+        "url": "git+https://github.com/BloomBooks/bloom-player.git"
     },
     "type": "module",
     "module": "lib/shared.es.js",
