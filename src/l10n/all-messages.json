@@ -130,6 +130,18 @@
     "Button.IgnoreImageDescriptions": {
         "message": "Ignorer la Description des Images",
         "description": "tooltip for the button to disable reading image descriptions"
+    },
+    "Version.Problem.Web": {
+        "message": "Ce livre utilise la fonctionnalité {feature}. Malheureusement, {hostname} n'est pas encore prêt à afficher ce livre. Veuillez revenir plus tard ou bien écrivez à issues@bloomlibrary.org si vous pensez que c'est une réponse inattendue.",
+        "description": "Please make sure that your translation contains {feature} and {hostname} as placeholders; they will be replaced with actual data. Do not translate those words."
+    },
+    "Version.Problem.NoHost": {
+        "message": "Ce livre utilise la fonctionnalité {feature} et nécessite une version plus récente du programme que vous utilisez pour le lire. Veuillez faire une mise à jour pour la dernière version.",
+        "description": "Please make sure that your translation contains {feature} as a placeholder; it will be replaced with actual data. Do not translate that word."
+    },
+    "Version.Problem.Host": {
+        "message": "Ce livre utilise la fonctionnalité {feature} et nécessite une version plus récente de {host} pour le lire. Veuillez faire une mise à jour pour la dernière version.",
+        "description": "Please make sure that your translation contains {feature} and {host} as placeholders; they will be replaced with actual data. Do not translate those words. Host is the name of the app that should be upgraded, e.g., Bloom Reader."
     }
 },
  "ha": {
@@ -226,7 +238,7 @@
 },
  "pt": {
     "Quiz.CheckYourUnderstanding": {
-        "message": "Verifique seu entendimento",
+        "message": "Verifique a sua compreensão",
         "description": "the heading on (some) quiz pages"
     },
     "Audio.Play": {
@@ -250,15 +262,15 @@
         "description": "tooltip for the button to go show detail view of book"
     },
     "Button.FullScreen": {
-        "message": "Tela cheia",
+        "message": "Tela Cheia (Ecrã inteiro)",
         "description": "tooltip for the display on full screen button"
     },
     "Button.ExitFullScreen": {
-        "message": "Sair da tela cheia",
+        "message": "Sair da tela cheia (ecrã inteiro)",
         "description": "tooltip for the exit full screen button"
     },
     "Button.ChooseLanguage": {
-        "message": "Selecionar o idioma",
+        "message": "Selecionar a língua",
         "description": "tooltip for the language menu button"
     },
     "Button.Next": {
@@ -276,6 +288,18 @@
     "Button.IgnoreImageDescriptions": {
         "message": "Ignorar Descrições da Imagem",
         "description": "tooltip for the button to disable reading image descriptions"
+    },
+    "Version.Problem.Web": {
+        "message": "Este livro usa o recurso {feature}. Infelizmente, {hostname} ainda não está pronto para exibir este livro. Por favor, volte mais tarde ou escreva para issues@bloomlibrary.org se isto for inesperado.",
+        "description": "Please make sure that your translation contains {feature} and {hostname} as placeholders; they will be replaced with actual data. Do not translate those words."
+    },
+    "Version.Problem.NoHost": {
+        "message": "Este livro utiliza o recurso {feature} e requer uma versão mais recente do programa que você usa para lê-lo. Por favor, atualize para a versão mais recente.",
+        "description": "Please make sure that your translation contains {feature} as a placeholder; it will be replaced with actual data. Do not translate that word."
+    },
+    "Version.Problem.Host": {
+        "message": "Este livro utiliza o recurso {feature} e requer uma versão mais recente do {host} para ser lido. Atualize para a versão mais recente.",
+        "description": "Please make sure that your translation contains {feature} and {host} as placeholders; they will be replaced with actual data. Do not translate those words. Host is the name of the app that should be upgraded, e.g., Bloom Reader."
     }
 },
  "quc": {

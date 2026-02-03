@@ -83,10 +83,15 @@ export class Music {
             // If data-backgroundaudio is present and has a value, that page starts the music;
             // If data-backgroundaudio is NOT present, that page continues the music
             //   (if the previous page had music);
-            // if data-backgroundaudio is present and has NO value, that page has no music
-            //   (and nor will subsequent pages, until one has a non-empty data-backgroundaudio).
+            // if data-backgroundaudio is present and has NO value (old versions of Blom) or the
+            //   exact string "none", that page has no music (and nor will subsequent pages,
+            //   until one has a non-empty data-backgroundaudio).
             const attrValue = page.getAttribute("data-backgroundaudio");
-            if (attrValue !== null && attrValue !== "") {
+            if (
+                attrValue !== null &&
+                attrValue !== "" &&
+                attrValue !== "none"
+            ) {
                 // Music starts on this page
                 selection = {
                     id: ++iSelection,

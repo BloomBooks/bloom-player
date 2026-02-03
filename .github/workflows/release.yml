@@ -1,5 +1,10 @@
 name: Build-Test-Release
 
+permissions:
+    contents: write
+    id-token: write
+    actions: write
+
 on:
     push:
         branches:
@@ -18,19 +23,21 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   # Keep in sync with volta -> node version in package.json
-                  node-version: 20
+                  node-version: 24
+                  registry-url: https://registry.npmjs.org
+                  cache: yarn
 
             - name: Install dependencies
               run: yarn
 
             - name: Determine next version
               id: next_version
-              uses: cycjimmy/semantic-release-action@v4
+              uses: cycjimmy/semantic-release-action@v6
               with:
                   dry_run: true
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  NPM_CONFIG_PROVENANCE: true
 
             - name: Update version in package.json
               if: steps.next_version.outputs.new_release_version
@@ -61,10 +68,10 @@ jobs:
 
             - name: Publish package
               id: semantic_release
-              uses: cycjimmy/semantic-release-action@v4
+              uses: cycjimmy/semantic-release-action@v6
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  NPM_CONFIG_PROVENANCE: true
 
             - name: Trigger dependent builds if release published
               if: steps.semantic_release.outputs.new_release_published == 'true'
