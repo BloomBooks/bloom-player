@@ -39,7 +39,7 @@ export class Music {
         if (this.pageHasMusic(this.currentPage)) {
             this.listen();
         } else {
-            this.getPlayer().pause();
+            this.pause();
         }
     }
 
