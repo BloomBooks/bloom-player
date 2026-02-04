@@ -39,7 +39,7 @@ export class Music {
         if (this.pageHasMusic(this.currentPage)) {
             this.listen();
         } else {
-            this.getPlayer().pause();
+            this.pause();
         }
     }
 
@@ -144,6 +144,9 @@ export class Music {
         if (selection === this.selectionPlaying) {
             return;
         }
+        // could just call pause, but then we have to start the player again
+        // to play the new sound. Just log that we're not playing any more of the old sound.
+        logSoundPaused(this.musicLogIndex);
         this.selectionPlaying = selection;
 
         const music = selection.src;
