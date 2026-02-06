@@ -5,16 +5,19 @@
 # but as far as I can tell, those don't work with GUI git clients like GitKraken.
 # And they are actually overkill for what we need here (though we could custom configure them).
 
-# Read the commit message from the file passed as an argument
-COMMIT_MSG=$(cat "$1")
+# Git commit message files may contain comment lines (starting with '#')
+# inserted by the editor/template. Validate the first non-comment, non-blank line.
+FIRST_LINE=$(grep -vE '^[[:space:]]*#' "$1" | sed -e '/^[[:space:]]*$/d' -e 's/^[[:space:]]*//' | head -n 1)
 
 # Check if the commit message starts with an expected keyword followed by a colon.
-if ! echo "$COMMIT_MSG" | grep -q "^\(fix\|feat\|chore\):"; then
+# Allows optional scope, e.g. "fix(ui): message".
+if ! echo "$FIRST_LINE" | grep -Eq '^(fix|feat|chore)(\([^)]*\))?(!)?:|^Merge'; then
     echo "Improper commit message for semantic-release."
-    echo "Please use the format 'type: message'"
+    echo "Please use the format 'type: message' or 'Merge'"
     echo "e.g. chore: Updated README"
-    echo "e.g. fix: Made a repair"
-    echo "e.g. feat: Added a new thing"
+    echo "     fix: Made a repair"
+    echo "     feat: Added a new thing"
+    echo "     Merge alpha into main"
     exit 1
 fi
 
