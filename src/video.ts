@@ -382,7 +382,8 @@ export class Video {
         Array.from(
             this.currentPage.getElementsByClassName("bloom-videoContainer"),
         ).forEach((element) => {
-            element.classList.add("paused");
+            if (!element.closest(".bloom-canvas-element[data-draggable-id]"))
+                element.classList.add("paused");
             const video = element.getElementsByTagName("video")[0];
             if (video) {
                 this.stopPlayButtonFade(video);
@@ -425,6 +426,16 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
+
+        // Don't autoplay draggable videos.  (BL-15833)
+        const dragContainer = video.closest(
+            ".bloom-canvas-element[data-draggable-id]",
+        ) as HTMLDivElement | null;
+        if (dragContainer) {
+            this.playAllVideo(elements.slice(1));
+            return;
+        }
+
         this.currentVideoElement = video;
 
         // If there is an error, try to continue with the next video.
