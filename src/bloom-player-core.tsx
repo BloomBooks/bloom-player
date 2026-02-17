@@ -89,7 +89,7 @@ import {
     checkClickForBookOrPageJump,
     tryPopPlayerHistory,
 } from "./navigation";
-import { getBloomPlayerVersion } from "./bloom-player-version-control";
+import { getBloomPlayerVersion } from "./diagnostic-info-control";
 import { compareVersions } from "compare-versions";
 import { ExpandLessSharp } from "@material-ui/icons";
 
@@ -128,6 +128,7 @@ interface IProps {
         preferredLanguages: string[];
         pageNumbers: string[]; // one per page, from data-page-number; some empty
         internalUrl: string; // the URL the player is actually using (may change after following internal link)
+        bookInstanceId: string;
     }) => void;
 
     // 'controlsCallback' feeds information about the book's contents and other things
@@ -1047,6 +1048,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                     ),
                     isRtl: this.metaDataObject.isRtl,
                     internalUrl: this.state.bookUrl,
+                    bookInstanceId: this.bookInfo.bookInstanceId,
                 });
             }
             if (isNewBook) {

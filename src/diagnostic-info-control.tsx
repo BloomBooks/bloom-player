@@ -14,7 +14,13 @@ export function getBloomPlayerVersion(): string {
     return version;
 }
 
-export const BloomPlayerVersionControl: React.FC = () => {
+interface DiagnosticInfoControlProps {
+    bookInstanceId?: string;
+}
+
+export const DiagnosticInfoControl: React.FC<DiagnosticInfoControlProps> = ({
+    bookInstanceId,
+}) => {
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
     const version = getBloomPlayerVersion();
     const buildDate = new Date(__BUILD_DATE__).toLocaleDateString();
@@ -45,15 +51,19 @@ export const BloomPlayerVersionControl: React.FC = () => {
 
     return (
         <div
-            className="version-control"
+            className="diagnostic-info-control"
             style={{
                 color: bloomRed,
                 fontFamily: "sans-serif",
                 padding: "5px",
                 zIndex: 1000,
+                lineHeight: "1.5",
             }}
         >
-            Bloom Player v{version} (built {buildDate})
+            <div>
+                Bloom Player v{version} (built {buildDate})
+            </div>
+            <div>Book ID: {bookInstanceId ?? ""}</div>
         </div>
     );
 };
