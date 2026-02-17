@@ -235,7 +235,6 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
     const [isRtl, setIsRtl] = useState(false);
     const [hidingNavigationButtons, setHidingNavigationButtons] =
         useState(false);
-    const [bookInstanceId, setBookInstanceId] = useState("");
 
     // When we're in storybook we won't get a new page when we change the book,
     // so we need to be able to detect that the book changed and thus do new size calculations.
@@ -966,7 +965,11 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                 nowReadingImageDescription={nowReadingImageDescription}
                 videoPreviewMode={props.videoPreviewMode}
             ></ControlBar>
-            <DiagnosticInfoControl bookInstanceId={bookInstanceId} />
+            <DiagnosticInfoControl
+                getBookInstanceId={() =>
+                    coreRef.current?.getBookInstanceId() ?? ""
+                }
+            />
             <BloomPlayerCore
                 // We believe/hope we can do this a better way (without LegacyRef) once BloomPlayerCore is a function component.
                 ref={coreRef as LegacyRef<BloomPlayerCore>}
@@ -993,7 +996,6 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     );
                     setPageNumbers(bookProps.pageNumbers);
                     setIsRtl(bookProps.isRtl);
-                    setBookInstanceId(bookProps.bookInstanceId);
                     if (bookProps.internalUrl != currentCoreUrl) {
                         if (currentCoreUrl) {
                             // We're changing books, so we need to re-scale.

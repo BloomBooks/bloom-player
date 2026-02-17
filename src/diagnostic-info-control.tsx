@@ -14,12 +14,18 @@ export function getBloomPlayerVersion(): string {
     return version;
 }
 
-interface DiagnosticInfoControlProps {
-    bookInstanceId?: string;
+interface IDiagnosticInfoControlProps {
+    // This is a frustrating hack. When this was simply bookInstanceId and BloomPlayerControls
+    // had [bookInstanceId, setBookInstanceId] = useState(""), calling setBookInstanceId
+    // was causing a crash when displaying the book (or sometimes navigating to the next page).
+    // I never could fully understand the issue. After hours trying, the best an AI could come up with
+    // was an extremely convoluted way to delay calling setBookInstanceId until after a resize event.
+    // So I punted and made this a function. See BL-15905.
+    getBookInstanceId?: () => string;
 }
 
-export const DiagnosticInfoControl: React.FC<DiagnosticInfoControlProps> = ({
-    bookInstanceId,
+export const DiagnosticInfoControl: React.FC<IDiagnosticInfoControlProps> = ({
+    getBookInstanceId,
 }) => {
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
     const version = getBloomPlayerVersion();
@@ -49,6 +55,7 @@ export const DiagnosticInfoControl: React.FC<DiagnosticInfoControlProps> = ({
 
     if (!isCtrlPressed) return null;
 
+    const bookInstanceId = getBookInstanceId?.();
     return (
         <div
             className="diagnostic-info-control"

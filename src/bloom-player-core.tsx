@@ -128,7 +128,6 @@ interface IProps {
         preferredLanguages: string[];
         pageNumbers: string[]; // one per page, from data-page-number; some empty
         internalUrl: string; // the URL the player is actually using (may change after following internal link)
-        bookInstanceId: string;
     }) => void;
 
     // 'controlsCallback' feeds information about the book's contents and other things
@@ -1048,7 +1047,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                     ),
                     isRtl: this.metaDataObject.isRtl,
                     internalUrl: this.state.bookUrl,
-                    bookInstanceId: this.bookInfo.bookInstanceId,
                 });
             }
             if (isNewBook) {
@@ -1846,6 +1844,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (this.swiperInstance) {
             this.swiperInstance.slidePrev();
         }
+    }
+
+    public getBookInstanceId(): string {
+        return this.bookInfo.bookInstanceId;
     }
 
     private getPlayerOptionsForPage(
