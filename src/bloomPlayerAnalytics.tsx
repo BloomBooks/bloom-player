@@ -2,6 +2,46 @@ import { Environment } from "./Environment";
 
 // This file contains code for sending analytics information to segment.io.
 
+// Important notes about analytics/session state and host lifecycle
+//
+// Bloom Player analytics/progress reporting keeps some per-book-session state in memory
+// (module-level variables in this file, and state inside BookInteraction) and in localStorage
+// (e.g. bloom-player-read-duration). This assumes that a “book session” corresponds to the
+// lifetime of a single bloom-player document (iframe/WebView load -> unload).
+//
+// If a host ever reuses the same bloom-player document to show multiple books without reloading,
+// state can leak from one book into the next and contaminate analytics.
+//
+// Two concrete failure modes we’ve seen discussed:
+// - BL-15851: Once a book reaches its last numbered page, we send "Pages Read" with
+//   lastNumberedPageRead=true and set an in-memory guard (allPagesRead) so we don’t send duplicate
+//   "Pages Read" events for that book. If another book is opened in the same JS runtime,
+//   allPagesRead could still be true and the later book’s "Pages Read" analytics (and stored
+//   progress report) could be suppressed.
+// - BL-15852: When switching to a new book, BookInteraction.clearPagesShown() must reset *all*
+//   analytics-related state for the new book, not just the sets tracking which pages were shown.
+//   If it fails to reset duration accumulators, completion flags, "already reported" flags, or
+//   the beginReadTime timestamp, then the next book’s progress report can inherit inflated
+//   audio/video durations, incorrect completion status, and incorrect timestamps from the
+//   previous book.
+//
+// Why this is not currently a problem in our main hosts (they reload between books):
+// - BloomReader (Android): each book is shown in its own ReaderActivity/WebView and the WebView is
+//   destroyed at the end of the reading session; it also uses independent=false and forwards
+//   analytics/progress to native code for final reporting.
+// - bloomlibrary.org (BloomLibrary2 repo): the Read view hosts bloom-player in an <iframe> whose
+//   src is constructed per-book as `/bloom-player/bloomplayer.htm?url=...&independent=false&host=bloomlibrary`.
+// - BloomPUB Viewer (Electron): bloom-player runs in an <iframe> whose src points at bloomplayer.htm
+//   with a per-book url=... parameter; switching the “primary” book updates the iframe src.
+// - Reading App Builder (mobile): Similar to BloomReader, each book is shown in its own WebView.
+//
+// If a host ever changes to reuse one bloom-player document across multiple books (e.g. linked-book
+// navigation without reloading the iframe/WebView), we need to ensure *all* per-book analytics state
+// is reset at the start of each new book session.
+//
+// Note, an important caveat here is that now we do allow book navigation between books using /book/ urls.
+// We have yet to figure out how to handle analytics in these cases. This is bigger issue than just the above.
+
 // This block is boilerplate stuff from segment.io.  It is only modified by automatic line breaking and
 // to pass typescript, to remove the automatic root-page notification, to extract the line that sets the
 // ID so we can make that configurable, and to load a modified analytics.min.js that uses one of our
@@ -135,6 +175,7 @@ export function track(event: string, params: object) {
 }
 
 const pendingBookAnalytics = new Map<string, object>();
+// Per-book gate for "Pages Read"; see "Important notes about analytics/session state and host lifecycle" above.
 let allPagesRead: boolean = false;
 // If we get to the "last numbered page" in the book, send the tracking report that
 // all the pages in the book have been read.  (even though this might be sent before
