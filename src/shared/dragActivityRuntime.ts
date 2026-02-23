@@ -164,7 +164,6 @@ export function prepareActivity(
 
     const videos = Array.from(page.getElementsByTagName("video"));
     videos.forEach((video) => {
-        video.addEventListener("pointerdown", playVideo);
         if (
             video
                 .closest(kLegacyCanvasElementSelector)
