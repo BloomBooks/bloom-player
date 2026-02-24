@@ -36,6 +36,7 @@ export class BookInteraction {
         this.videoPagesShown.add(index);
     }
 
+    // See "Important notes about analytics/session state and host lifecycle" in bloomPlayerAnalytics.tsx
     public clearPagesShown(): void {
         this.pagesShown.clear();
         this.audioPagesShown.clear();
