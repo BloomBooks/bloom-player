@@ -164,7 +164,6 @@ export function prepareActivity(
 
     const videos = Array.from(page.getElementsByTagName("video"));
     videos.forEach((video) => {
-        video.addEventListener("pointerdown", playVideo);
         if (
             video
                 .closest(kLegacyCanvasElementSelector)
@@ -173,6 +172,7 @@ export function prepareActivity(
             // don't want to show controls on these, because they are typically too small,
             // and the play time is short enough that just click-to-play is fine
             video.classList.add("bloom-ui-no-controls");
+            video.addEventListener("pointerdown", playVideo); // non-draggable video click detectors are handled separately
         }
     });
 
