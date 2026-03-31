@@ -2562,7 +2562,22 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // State must be set before calling HandlePageVisible() and related methods.
         if (BloomPlayerCore.currentPageHasVideo) {
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
-            this.video.HandlePageVisible(bloomPage, () => this.props.paused);
+            if (!this.sentBloomNotification) {
+                this.sentBloomNotification = true; // actually we may not, but if we don't, we never want to
+                // This notification allows Bloom to start recording video at the optimum moment,
+                // when the first page is rendered enough for us to start playing its video (if any).
+                if (this.props.shouldReportSoundLog) {
+                    sendStringToBloomApi(
+                        "/publish/av/startRecording",
+                        this.videoList,
+                    ).then(() => {
+                        this.video.HandlePageVisible(
+                            bloomPage,
+                            () => this.props.paused,
+                        );
+                    });
+                }
+            }
             this.music.pause(); // in case we have audio from previous page
         } else {
             this.playAudioAndAnimation(bloomPage);
