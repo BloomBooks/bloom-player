@@ -28,7 +28,7 @@ export class Video {
     public PageVideoComplete: LiteEvent<IPageVideoComplete>;
 
     public static pageHasVideo(page: HTMLElement): boolean {
-        return !!Video.getVideoElements(page).length;
+        return !!Video.getAllVideoElements(page).length;
     }
 
     // configure one of the icons we display over videos. We put a div around it and apply
@@ -73,7 +73,7 @@ export class Video {
             this.currentVideoElement = undefined;
             return;
         }
-        this.getVideoElements().forEach((videoElement) => {
+        Video.getAllVideoElements(this.currentPage).forEach((videoElement) => {
             videoElement.removeAttribute("controls");
             videoElement.addEventListener("click", this.handleVideoClick);
             const playButton = this.wrapVideoIcon(
@@ -133,6 +133,16 @@ export class Video {
             this.markAllVideosPaused();
         }
         const videos = this.getVideoElements();
+        if (videos.length === 0) {
+            this.currentVideoElement = undefined;
+            if (this.PageVideoComplete) {
+                this.PageVideoComplete.raise({
+                    page: this.currentPage,
+                    videos: Video.getAllVideoElements(this.currentPage),
+                });
+            }
+            return;
+        }
         let firstVideo: HTMLVideoElement | undefined;
         let loading = true;
         for (const video of videos) {
@@ -192,10 +202,34 @@ export class Video {
         }
     }
 
-    private static getVideoElements(page: HTMLElement): HTMLVideoElement[] {
+    private static getAllVideoElements(page: HTMLElement): HTMLVideoElement[] {
         return Array.from(page.getElementsByClassName("bloom-videoContainer"))
             .map((container) => container.getElementsByTagName("video")[0])
             .filter((video) => video !== undefined);
+    }
+
+    private static getVideoElements(page: HTMLElement): HTMLVideoElement[] {
+        return Video.getAllVideoElements(page)
+            .filter((container) =>
+                Video.isElementVisible(
+                    container.closest(".bloom-videoContainer") as HTMLElement,
+                ),
+            )
+            .filter((video) => video !== undefined);
+    }
+
+    // Hidden feedback elements (for example drag-item-correct/drag-item-wrong)
+    // can contain videos that should not autoplay until made visible.
+    private static isElementVisible(element: HTMLElement): boolean {
+        let current: HTMLElement | null = element;
+        while (current) {
+            const style = window.getComputedStyle(current);
+            if (style.display === "none" || style.visibility === "hidden") {
+                return false;
+            }
+            current = current.parentElement;
+        }
+        return true;
     }
     private getVideoElements(): HTMLVideoElement[] {
         return Video.getVideoElements(this.currentPage);
