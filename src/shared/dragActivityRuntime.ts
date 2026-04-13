@@ -850,16 +850,29 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
         soundFile = undefined;
     }
     if (soundFile) {
-        playSound(page, soundFile, addPrefix);
+        playSound(page, soundFile, addPrefix, playOtherStuff);
     } else {
         playOtherStuff();
     }
 }
 
-function playSound(someElt: HTMLElement, soundFile: string, addPrefix = true) {
+function playSound(
+    someElt: HTMLElement,
+    soundFile: string,
+    addPrefix = true,
+    then?: () => void,
+) {
     const audio = new Audio(
         (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile,
     );
+    let finished = false;
+    const finish = () => {
+        if (finished) {
+            return;
+        }
+        finished = true;
+        then?.();
+    };
     if (IsRunningOnBloomDesktop(someElt)) {
         audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
     }
@@ -868,7 +881,10 @@ function playSound(someElt: HTMLElement, soundFile: string, addPrefix = true) {
     // But in Bloom proper, it does not. I think it is because this code is part of the toolbox,
     // so the audio element doesn't have the right context to interpret the relative URL.
     someElt.append(audio);
-    audio.play();
+    const playPromise = audio.play();
+    playPromise?.catch(() => {
+        finish();
+    });
     // It feels cleaner if we remove it when done. This could fail, e.g., if the user
     // switches tabs or pages before we get done playing. Removing it immediately
     // prevents the sound being played. It's not a big deal if it doesn't get removed.
@@ -876,6 +892,17 @@ function playSound(someElt: HTMLElement, soundFile: string, addPrefix = true) {
         "ended",
         () => {
             someElt.removeChild(audio);
+            finish();
+        },
+        { once: true },
+    );
+    audio.addEventListener(
+        "error",
+        () => {
+            if (audio.parentElement === someElt) {
+                someElt.removeChild(audio);
+            }
+            finish();
         },
         { once: true },
     );
