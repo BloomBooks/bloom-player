@@ -1266,6 +1266,86 @@ export function hidingPage() {
     // If it DOES have audio, a pause here can interfere with playing it.
     //pausePlaying(); // Doesn't set AudioPaused state.  Caller sets NewPage state.
     clearTimeout(fakeNarrationTimer);
+    stopPlayAllVideoPlayback();
+}
+
+let playAllVideoGeneration = 0;
+let activePlayAllVideoElement: HTMLVideoElement | undefined;
+
+export function stopPlayAllVideoPlayback() {
+    playAllVideoGeneration++;
+    if (activePlayAllVideoElement) {
+        activePlayAllVideoElement.pause();
+        activePlayAllVideoElement.currentTime = 0;
+        activePlayAllVideoElement = undefined;
+    }
+}
+
+// Attempt to show a video's first frame by briefly starting playback and then pausing.
+// The callback allows callers to decide at the moment playback starts whether pausing
+// is still desired (for example, page-level logic may stop pausing after initial load).
+export function showVideoFirstFrameWhenReady(
+    video: HTMLVideoElement,
+    shouldPauseAfterPlaying: () => boolean = () => true,
+) {
+    let canceled = false;
+    const attempt = () => {
+        if (canceled) {
+            return;
+        }
+        // If something else has already started playback, don't attach our
+        // pause-on-playing behavior.
+        if (!video.paused) {
+            return;
+        }
+        const playingListener = () => {
+            window.clearTimeout(removePlayingListenerTimeout);
+            if (!shouldPauseAfterPlaying()) {
+                return;
+            }
+            // Pause after about one frame so the first frame stays visible.
+            setTimeout(() => {
+                if (shouldPauseAfterPlaying()) {
+                    video.pause();
+                }
+            }, 4);
+        };
+        video.addEventListener("playing", playingListener, { once: true });
+        // If our play() attempt doesn't lead to playback soon, remove the
+        // listener so it can't affect unrelated later playback.
+        const removePlayingListenerTimeout = window.setTimeout(() => {
+            video.removeEventListener("playing", playingListener);
+        }, 1000);
+        const promise = video.play();
+        if (promise && promise.catch) {
+            promise.catch(() => {
+                window.clearTimeout(removePlayingListenerTimeout);
+                // If play() fails (e.g., autoplay policy), remove the listener
+                // so it won't interfere if playback starts later by other means.
+                video.removeEventListener("playing", playingListener);
+            });
+        }
+    };
+    // HAVE_CURRENT_DATA (2) means at least the first frame is decoded.
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        attempt();
+    } else {
+        const cancelAttempt = () => {
+            canceled = true;
+            video.removeEventListener("loadeddata", attempt);
+        };
+        // If something requests playback before the video has loaded enough data,
+        // don't run this first-frame trick when loadeddata eventually fires.
+        video.addEventListener("play", cancelAttempt, { once: true });
+        video.addEventListener(
+            "loadeddata",
+            () => {
+                video.removeEventListener("play", cancelAttempt);
+                attempt();
+            },
+            { once: true },
+        );
+    }
 }
 
 // Play the specified elements, one after the other. When the last completes (or at once if the array is empty),
@@ -1279,11 +1359,25 @@ export function hidingPage() {
 // (This function would be more natural in video.ts. But at least for now I'm trying to minimize the
 // number of source files shared with Bloom Desktop, and we need this for Bloom Games.)
 export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
+    const generation = ++playAllVideoGeneration;
+    playAllVideoInternal(elements, then, generation);
+}
+
+function playAllVideoInternal(
+    elements: HTMLVideoElement[],
+    then: () => void,
+    generation: number,
+) {
+    if (generation !== playAllVideoGeneration) {
+        return;
+    }
     if (elements.length === 0) {
+        activePlayAllVideoElement = undefined;
         then();
         return;
     }
     const video = elements[0];
+    activePlayAllVideoElement = video;
 
     // If there is an error, try to continue with the next video.
     if (
@@ -1291,13 +1385,16 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
         video.readyState === HTMLMediaElement.HAVE_NOTHING
     ) {
         showVideoError(video);
-        playAllVideo(elements.slice(1), then);
+        playAllVideoInternal(elements.slice(1), then, generation);
     } else {
         hideVideoError(video);
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
         const promise = video.play();
         promise
             .then(() => {
+                if (generation !== playAllVideoGeneration) {
+                    return;
+                }
                 // The promise resolves when the video starts playing. We want to know when it ends.
                 // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is
                 // played to the end.  I have not figured out why. It may be something to do with how we are
@@ -1310,15 +1407,25 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
                 video.addEventListener(
                     "ended",
                     () => {
-                        playAllVideo(elements.slice(1), then);
+                        if (generation !== playAllVideoGeneration) {
+                            return;
+                        }
+                        playAllVideoInternal(
+                            elements.slice(1),
+                            then,
+                            generation,
+                        );
                     },
                     { once: true },
                 );
             })
             .catch((reason) => {
+                if (generation !== playAllVideoGeneration) {
+                    return;
+                }
                 console.error("Video play failed", reason);
                 showVideoError(video);
-                playAllVideo(elements.slice(1), then);
+                playAllVideoInternal(elements.slice(1), then, generation);
             });
     }
 }
@@ -1353,6 +1460,6 @@ export function hideVideoError(video: HTMLVideoElement): void {
     const parent = video.parentElement;
     if (parent) {
         const divs = parent.getElementsByClassName("video-error-message");
-        while (divs.length > 1) parent.removeChild(divs[0]);
+        while (divs.length > 0) parent.removeChild(divs[0]);
     }
 }
