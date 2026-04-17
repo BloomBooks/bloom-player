@@ -1266,6 +1266,19 @@ export function hidingPage() {
     // If it DOES have audio, a pause here can interfere with playing it.
     //pausePlaying(); // Doesn't set AudioPaused state.  Caller sets NewPage state.
     clearTimeout(fakeNarrationTimer);
+    stopPlayAllVideoPlayback();
+}
+
+let playAllVideoGeneration = 0;
+let activePlayAllVideoElement: HTMLVideoElement | undefined;
+
+export function stopPlayAllVideoPlayback() {
+    playAllVideoGeneration++;
+    if (activePlayAllVideoElement) {
+        activePlayAllVideoElement.pause();
+        activePlayAllVideoElement.currentTime = 0;
+        activePlayAllVideoElement = undefined;
+    }
 }
 
 // Play the specified elements, one after the other. When the last completes (or at once if the array is empty),
@@ -1279,11 +1292,25 @@ export function hidingPage() {
 // (This function would be more natural in video.ts. But at least for now I'm trying to minimize the
 // number of source files shared with Bloom Desktop, and we need this for Bloom Games.)
 export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
+    const generation = ++playAllVideoGeneration;
+    playAllVideoInternal(elements, then, generation);
+}
+
+function playAllVideoInternal(
+    elements: HTMLVideoElement[],
+    then: () => void,
+    generation: number,
+) {
+    if (generation !== playAllVideoGeneration) {
+        return;
+    }
     if (elements.length === 0) {
+        activePlayAllVideoElement = undefined;
         then();
         return;
     }
     const video = elements[0];
+    activePlayAllVideoElement = video;
 
     // If there is an error, try to continue with the next video.
     if (
@@ -1291,13 +1318,16 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
         video.readyState === HTMLMediaElement.HAVE_NOTHING
     ) {
         showVideoError(video);
-        playAllVideo(elements.slice(1), then);
+        playAllVideoInternal(elements.slice(1), then, generation);
     } else {
         hideVideoError(video);
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
         const promise = video.play();
         promise
             .then(() => {
+                if (generation !== playAllVideoGeneration) {
+                    return;
+                }
                 // The promise resolves when the video starts playing. We want to know when it ends.
                 // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is
                 // played to the end.  I have not figured out why. It may be something to do with how we are
@@ -1310,15 +1340,25 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
                 video.addEventListener(
                     "ended",
                     () => {
-                        playAllVideo(elements.slice(1), then);
+                        if (generation !== playAllVideoGeneration) {
+                            return;
+                        }
+                        playAllVideoInternal(
+                            elements.slice(1),
+                            then,
+                            generation,
+                        );
                     },
                     { once: true },
                 );
             })
             .catch((reason) => {
+                if (generation !== playAllVideoGeneration) {
+                    return;
+                }
                 console.error("Video play failed", reason);
                 showVideoError(video);
-                playAllVideo(elements.slice(1), then);
+                playAllVideoInternal(elements.slice(1), then, generation);
             });
     }
 }
@@ -1353,6 +1393,6 @@ export function hideVideoError(video: HTMLVideoElement): void {
     const parent = video.parentElement;
     if (parent) {
         const divs = parent.getElementsByClassName("video-error-message");
-        while (divs.length > 1) parent.removeChild(divs[0]);
+        while (divs.length > 0) parent.removeChild(divs[0]);
     }
 }

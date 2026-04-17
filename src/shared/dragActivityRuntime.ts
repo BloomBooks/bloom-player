@@ -17,6 +17,7 @@ import {
     kAudioSentence,
     playAllAudio,
     playAllVideo,
+    stopPlayAllVideoPlayback,
     urlPrefix,
 } from "./narration";
 
@@ -85,6 +86,76 @@ export function IsRunningOnBloomDesktop(bloomPage: Element): boolean {
     return bloomPage.closest("#page-scaling-container") !== null;
     // not reliable: in BE, document might be the toolbox doc.
     //return document.body.querySelector("div#page-scaling-container") !== null;
+}
+
+// Play a draggable video briefly then pause it, so its first frame is visible rather
+// than the transparent poster that bloom-player sets on all videos at book load time.
+// If the video data hasn't arrived yet (cold cache after a rebuild, lazy load, etc.)
+// we wait for the loadeddata event so the attempt is never silently dropped.
+// We wait for the "playing" event before pausing, to ensure the first frame has
+// been rendered (similar to the approach in video.ts HandlePageVisible).
+function showDraggableVideoFirstFrame(video: HTMLVideoElement) {
+    let canceled = false;
+    const attempt = () => {
+        if (canceled) {
+            return;
+        }
+        // If something else has already started playback, don't attach our
+        // pause-on-playing behavior.
+        if (!video.paused) {
+            return;
+        }
+        // Listen for "playing" to fire before pausing. This ensures the browser has
+        // actually started playback and rendered the first frame.
+        const playingListener = () => {
+            window.clearTimeout(removePlayingListenerTimeout);
+            // Pause after ~1 frame (4ms at 25fps). This is enough to show the first
+            // frame without noticeable motion.
+            setTimeout(() => video.pause(), 4);
+        };
+        video.addEventListener("playing", playingListener, { once: true });
+        // If our play() attempt doesn't actually lead to playback soon, remove the
+        // listener so it can't pause a later user-initiated play.
+        const removePlayingListenerTimeout = window.setTimeout(() => {
+            video.removeEventListener("playing", playingListener);
+        }, 1000);
+        const promise = video.play();
+        if (promise) {
+            // Modern browsers return a promise from play()
+            promise.catch(() => {
+                window.clearTimeout(removePlayingListenerTimeout);
+                // If play() fails (e.g., autoplay policy), remove the listener
+                // so it won't interfere if the user manually plays the video later.
+                video.removeEventListener("playing", playingListener);
+            });
+        }
+        // For now, I'm not going to worry about the possibility that the video fails
+        // to play in a browser that is so old it doesn't return a promise. Activities
+        // are not the first page in a book, so the video should not be blocked by
+        // autoplay policy (the user will have interacted to get to this page).
+        // Assuming the video file is present and usable, almost always it will play
+        // and the timeout will fire once and stop it, just like we want.
+    };
+    // HAVE_CURRENT_DATA (2) means at least the first frame is decoded.
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        attempt();
+    } else {
+        const cancelAttempt = () => {
+            canceled = true;
+            video.removeEventListener("loadeddata", attempt);
+        };
+        // If something requests playback before the video has loaded enough data,
+        // don't run the first-frame trick when loadeddata eventually fires.
+        video.addEventListener("play", cancelAttempt, { once: true });
+        video.addEventListener(
+            "loadeddata",
+            () => {
+                video.removeEventListener("play", cancelAttempt);
+                attempt();
+            },
+            { once: true },
+        );
+    }
 }
 
 // Function to call to get everything ready for playing the game.
@@ -175,6 +246,13 @@ export function prepareActivity(
             // non-draggable video click detectors are handled separately, see handleVideoClick in video.ts,
             // and in BloomDesktop handleVideoClick in bloomVideo.ts.
             video.addEventListener("pointerdown", playVideo);
+            // Ensure the first frame is visible. The transparent poster (set globally by
+            // bloom-player at book load) hides the video until playback begins. Non-draggable
+            // videos get a play+pause first-frame trick in video.ts HandlePageVisible, but
+            // draggable videos are skipped there. If the video source hasn't loaded yet
+            // (e.g. cold cache after a build), play() fails silently, leaving the video blank.
+            // We use a loadeddata listener so the trick runs whenever the data is available.
+            showDraggableVideoFirstFrame(video);
         }
     });
 
@@ -272,6 +350,7 @@ const playVideo = (e: MouseEvent) => {
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 export function undoPrepareActivity(page: HTMLElement) {
+    stopPlayAllVideoPlayback();
     restorePositions();
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
     // if we leave the page completely.
@@ -631,6 +710,26 @@ const showCorrect = (e: MouseEvent) => {
     });
     classSetter(currentPage!, "drag-activity-wrong", false);
     classSetter(currentPage!, "drag-activity-solution", true);
+
+    // Play any videos that are part of a correct answer, in document order.
+    const videoElements: HTMLVideoElement[] = [];
+    currentPage!
+        .querySelectorAll("[data-draggable-id]")
+        .forEach((elt: HTMLElement) => {
+            const targetId = elt.getAttribute("data-draggable-id");
+            const target = currentPage?.querySelector(
+                `[data-target-of="${targetId}"]`,
+            ) as HTMLElement;
+            if (!target) {
+                return; // not a required draggable
+            }
+            videoElements.push(
+                ...Array.from(elt.getElementsByTagName("video")),
+            );
+        });
+    if (videoElements.length > 0) {
+        playAllVideo(videoElements, () => {});
+    }
 };
 
 // where the mouse started the drag, relative to the top left of dragTarget
@@ -783,6 +882,8 @@ export const performTryAgain = (e: MouseEvent) => {
     classSetter(page, "drag-activity-solution", false);
     // Restore everything to the starting positions.  BL-14482.
     restorePositions();
+    // If we're still playing video, e.g. a 'wrong' video, stop it.
+    stopPlayAllVideoPlayback();
 };
 
 export const classSetter = (
