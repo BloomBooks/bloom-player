@@ -6,6 +6,7 @@ import {
     setCurrentPlaybackMode,
     PlaybackMode,
     hideVideoError,
+    showVideoFirstFrameWhenReady,
     showVideoError,
 } from "./shared/narration";
 import { getPlayIcon } from "./playIcon";
@@ -165,31 +166,10 @@ export class Video {
             // autoplaying (e.g., this was previously a problem on iOS and Mac).
             // Starting it immediately in response to a user action
             // (the page turning) seems to satisfy that requirement.
-            video.addEventListener(
-                "playing",
-                () => {
-                    // Stop it after 1/25 second. The idea is that this is about 1 frame.
-                    // That much motion shouldn't be noticeable, but without it, there
-                    // seems to be some randomness on IOS about whether even the first frame
-                    // gets painted.
-                    setTimeout(() => {
-                        if (loading || isPaused() || video != firstVideo) {
-                            // This is where we freeze it for a second (or until pause ends,
-                            // or until it is this video's turn to play).
-                            // The timeout below will restart the first one if we are not paused.
-                            // (There might be a pathological case where the first video loads
-                            // and finishes playing before the second one finishes loading.
-                            // In such a case we might pause it here undesirably. But I think
-                            // the chances are vanishingly small, especially since we don't even
-                            // know of any current uses of multiple videos on one page. And the
-                            // user can always tap to start it.)
-                            video.pause();
-                        }
-                    }, 4);
-                },
-                { once: true },
+            showVideoFirstFrameWhenReady(
+                video,
+                () => loading || isPaused() || video != firstVideo,
             );
-            video.play(); // but it will pause at once unless the timeout already passed.
             // If we're not paused, we will resume playing after the initial 1s pause.
         }
         if (firstVideo) {
