@@ -1303,12 +1303,28 @@ export function showVideoFirstFrameWhenReady(
             if (!shouldPauseAfterPlaying()) {
                 return;
             }
-            // Pause after about one frame so the first frame stays visible.
-            setTimeout(() => {
+            const pauseIfStillWanted = () => {
                 if (shouldPauseAfterPlaying()) {
                     video.pause();
                 }
-            }, 4);
+            };
+            // Prefer pausing after a composited video frame, not just after a timer.
+            // Some videos/devices can report "playing" before pixels are actually painted.
+            const requestVideoFrameCallback = (video as any)
+                .requestVideoFrameCallback as
+                | ((callback: (...args: any[]) => void) => number)
+                | undefined;
+            if (requestVideoFrameCallback) {
+                requestVideoFrameCallback.call(video, () => {
+                    pauseIfStillWanted();
+                });
+            } else {
+                // Fallback for older browsers. This sometimes helps, but is not as reliable as the
+                // above on browsers that implement it.
+                setTimeout(() => {
+                    pauseIfStillWanted();
+                }, 4);
+            }
         };
         video.addEventListener("playing", playingListener, { once: true });
         // If our play() attempt doesn't lead to playback soon, remove the
