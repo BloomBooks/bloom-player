@@ -17,6 +17,8 @@ import {
     kAudioSentence,
     playAllAudio,
     playAllVideo,
+    showVideoFirstFrameWhenReady,
+    stopPlayAllVideoPlayback,
     urlPrefix,
 } from "./narration";
 
@@ -175,6 +177,13 @@ export function prepareActivity(
             // non-draggable video click detectors are handled separately, see handleVideoClick in video.ts,
             // and in BloomDesktop handleVideoClick in bloomVideo.ts.
             video.addEventListener("pointerdown", playVideo);
+            // Ensure the first frame is visible. The transparent poster (set globally by
+            // bloom-player at book load) hides the video until playback begins. Non-draggable
+            // videos get a play+pause first-frame trick in video.ts HandlePageVisible, but
+            // draggable videos are skipped there. If the video source hasn't loaded yet
+            // (e.g. cold cache after a build), play() fails silently, leaving the video blank.
+            // We use a loadeddata listener so the trick runs whenever the data is available.
+            showVideoFirstFrameWhenReady(video);
         }
     });
 
@@ -272,6 +281,7 @@ const playVideo = (e: MouseEvent) => {
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 export function undoPrepareActivity(page: HTMLElement) {
+    stopPlayAllVideoPlayback();
     restorePositions();
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
     // if we leave the page completely.
@@ -631,6 +641,26 @@ const showCorrect = (e: MouseEvent) => {
     });
     classSetter(currentPage!, "drag-activity-wrong", false);
     classSetter(currentPage!, "drag-activity-solution", true);
+
+    // Play any videos that are part of a correct answer, in document order.
+    const videoElements: HTMLVideoElement[] = [];
+    currentPage!
+        .querySelectorAll("[data-draggable-id]")
+        .forEach((elt: HTMLElement) => {
+            const targetId = elt.getAttribute("data-draggable-id");
+            const target = currentPage?.querySelector(
+                `[data-target-of="${targetId}"]`,
+            ) as HTMLElement;
+            if (!target) {
+                return; // not a required draggable
+            }
+            videoElements.push(
+                ...Array.from(elt.getElementsByTagName("video")),
+            );
+        });
+    if (videoElements.length > 0) {
+        playAllVideo(videoElements, () => {});
+    }
 };
 
 // where the mouse started the drag, relative to the top left of dragTarget
@@ -783,6 +813,8 @@ export const performTryAgain = (e: MouseEvent) => {
     classSetter(page, "drag-activity-solution", false);
     // Restore everything to the starting positions.  BL-14482.
     restorePositions();
+    // If we're still playing video, e.g. a 'wrong' video, stop it.
+    stopPlayAllVideoPlayback();
 };
 
 export const classSetter = (

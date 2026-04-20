@@ -1,5 +1,40 @@
-import { sortAudioElements } from "./shared/narration";
+import {
+    hidingPage,
+    playAllVideo,
+    sortAudioElements,
+} from "./shared/narration";
 import { createDiv, createPara, createSpan } from "./test/testHelper";
+
+test("hidingPage stops shared sequential video playback", async () => {
+    const firstVideo = document.createElement("video");
+    const secondVideo = document.createElement("video");
+    const firstPlay = vi.fn(() => Promise.resolve());
+    const secondPlay = vi.fn(() => Promise.resolve());
+    const firstPause = vi.fn();
+    const secondPause = vi.fn();
+    const then = vi.fn();
+
+    Object.defineProperty(firstVideo, "play", { value: firstPlay });
+    Object.defineProperty(secondVideo, "play", { value: secondPlay });
+    Object.defineProperty(firstVideo, "pause", { value: firstPause });
+    Object.defineProperty(secondVideo, "pause", { value: secondPause });
+
+    playAllVideo([firstVideo, secondVideo], then);
+    await Promise.resolve();
+
+    expect(firstPlay).toHaveBeenCalledTimes(1);
+
+    hidingPage();
+
+    expect(firstPause).toHaveBeenCalledTimes(1);
+    expect(firstVideo.currentTime).toBe(0);
+
+    firstVideo.dispatchEvent(new Event("ended"));
+    await Promise.resolve();
+
+    expect(secondPlay).not.toHaveBeenCalled();
+    expect(then).not.toHaveBeenCalled();
+});
 
 test("sortAudioElements with no tabindexes preserves order", () => {
     const input = document.createElement("div");
