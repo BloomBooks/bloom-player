@@ -1292,6 +1292,11 @@ export function copyContentToTarget(draggable: HTMLElement) {
     Array.from(throwAway.querySelectorAll("[tabindex]")).forEach((e) => {
         e.removeAttribute("tabindex");
     });
+    // Nor should it be allowed to become the container of the video we will
+    // record if the user turns on video recording.
+    throwAway.querySelectorAll(".bloom-selected").forEach((el) => {
+        el.classList.remove("bloom-selected");
+    });
     let imageContainer = throwAway.getElementsByClassName(
         "bloom-canvas",
     )[0] as HTMLElement;
