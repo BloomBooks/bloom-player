@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import theme from "../bloomPlayerTheme";
-import { Meta, StoryFn, StoryObj } from "@storybook/react";
+import { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
 import { ThemeProvider } from "@material-ui/styles";
 import {
     autoPlayType,
     BloomPlayerControls,
     BloomPlayerProps,
 } from "../bloom-player-controls";
-import { fn } from "@storybook/test";
+import { fn } from "storybook/test";
 
 const meta = {
     title: "Various books",

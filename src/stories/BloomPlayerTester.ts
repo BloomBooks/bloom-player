@@ -1,4 +1,4 @@
-import { userEvent, waitFor, within, expect, fireEvent } from "@storybook/test";
+import { userEvent, waitFor, within, expect, fireEvent } from "storybook/test";
 export class BloomPlayerTester {
     private iframeDoc: Document;
 

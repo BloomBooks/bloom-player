@@ -1,7 +1,7 @@
 import React from "react";
-import { Meta, StoryFn } from "@storybook/react";
-import { within, userEvent } from "@storybook/test";
-import { expect } from "@storybook/test";
+import { Meta, StoryFn } from "@storybook/react-vite";
+import { within, userEvent } from "storybook/test";
+import { expect } from "storybook/test";
 import { ControlBar } from "../controlBar";
 import LangData from "../langData";
 

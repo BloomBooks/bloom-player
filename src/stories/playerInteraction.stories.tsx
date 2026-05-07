@@ -1,7 +1,7 @@
 import React from "react";
-import { StoryFn, Meta } from "@storybook/react";
-import { within, userEvent, waitFor, fireEvent } from "@storybook/test";
-import { expect } from "@storybook/test";
+import { StoryFn, Meta } from "@storybook/react-vite";
+import { within, userEvent, waitFor, fireEvent } from "storybook/test";
+import { expect } from "storybook/test";
 import { BloomPlayerControls } from "../bloom-player-controls";
 
 // Function to emulate pausing between interactions
