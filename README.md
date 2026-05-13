@@ -134,25 +134,25 @@ As an example, in this repository, the file `.storybook/main.ts` sets up Storybo
 
 # Development
 
-If you haven't already, install `volta` globally. Volta takes care of getting all the correct versions of things like node and yarn to match what this repository expects.
+If you haven't already, install `volta` globally. Volta takes care of getting all the correct versions of things like node and pnpm to match what this repository expects.
 
-Run `yarn` to get the dependencies.
-
-Either run `yarn storybook` (which has multiple books),
-
-or run `yarn dev` (which will use `index-for-developing.html`).
+Run `pnpm install` to get the dependencies.
 
 To build the standalone js file that can be used from an html file:
 
 ```bash
-yarn build:standalone
+pnpm build:standalone
 ```
 
 To build the library used by the Bloom Editor
 
 ```bash
-yarn build:sharedlib
+pnpm build:sharedlib
 ```
+
+After building the standalone js file, either run `pnpm storybook` (which has multiple books),
+
+or run `pnpm dev` (which will use `index-for-developing.html`).
 
 See package.json for other scripts.
 
@@ -160,19 +160,19 @@ See package.json for other scripts.
 
 Depending on what book you are loading, if the book is on bloomlibrary.org or dev.bloomlibrary.org, CORS headers there will normally prevent your local bloom-player from loading the book, because it is not in the right domain. To get around this, you need to run your browser in a special low-security mode.
 
-Both `yarn storybook` and `yarn dev` do this for you.
+Both `pnpm storybook` and `pnpm dev` do this for you.
 
 ### Testing with a book hosted by Bloom
 
 To test Bloom Player on a book in the Bloom Editor, follow these steps:
 
 1. Go to the Publish tab in Bloom, choose "BloomPUB", and click "Preview".
-2. Back in this repository, run storybook (`yarn storybook`).
+2. Back in this repository, run storybook (`pnpm storybook`).
 3. Choose the "Live From Bloom Editor" story.
 
 ### Running unit tests
 
-To run unit tests use `yarn test`. This will run all `*.test.ts`, which should be collocated with the thing being tested.
+To run unit tests use `pnpm test`. This will run all `*.test.ts`, which should be collocated with the thing being tested.
 
 
 ### Version Info

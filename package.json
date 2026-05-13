@@ -4,6 +4,7 @@
     "author": "SIL Global",
     "license": "MIT",
     "version": "0.0.0",
+    "packageManager": "pnpm@10.26.0",
     "private": false,
     "// sideeffects might need to be ['*.css'] to avoid 'shaking' our CSS, if we ever get tree shaking working": "",
     "sideEffects": false,
@@ -22,11 +23,11 @@
         }
     },
     "scripts": {
-        "// COMMENTS: make the action a space rather than empty string so `yarn run` can list the scripts": " ",
+        "// COMMENTS: make the action a space rather than empty string so `pnpm run` can list the scripts": " ",
         "//": " ",
-        "// 'yarn dev' will build, watch, start a server, and open the player in a brower": " ",
+        "// 'pnpm dev' will build, watch, start a server, and open the player in a brower": " ",
         "// You can edit index-for-developing.html to point to different books": " ",
-        "// Or just use 'yarn storybook' and skip this dev approach entirely": " ",
+        "// Or just use 'pnpm storybook' and skip this dev approach entirely": " ",
         "dev": "vite",
         "build:standalone": "vite build",
         "build:sharedlib": "vite build --mode lib",
@@ -35,18 +36,20 @@
         "prepare": "husky install && git config blame.ignoreRevsFile .git-blame-ignore-revs",
         "storybook": "storybook dev -p 6006",
         "// run this when working with stories that use an iframe and bloomplayer.htm instead of the raw react components": " ",
-        "watchForStorybook": "yarn vite build --watch --mode development",
-        "strings:download": "crowdin download --config src/l10n/crowdin.yml  && yarn strings:compile",
+        "watchForStorybook": "pnpm vite build --watch --mode development",
+        "strings:download": "crowdin download --config src/l10n/crowdin.yml  && pnpm strings:compile",
         "strings:upload": "crowdin upload  --config src/l10n/crowdin.yml",
-        "strings:compile": "yarn tsx ./src/l10n/compileL10Strings.ts",
-        "strings:sync": "yarn strings:upload && yarn strings:download"
+        "strings:compile": "pnpm tsx ./src/l10n/compileL10Strings.ts",
+        "strings:sync": "pnpm strings:upload && pnpm strings:download"
     },
     "dependencies": {
         "@material-ui/core": "^4.12.3",
         "@material-ui/icons": "^4.11.2",
+        "@material-ui/styles": "^4.11.5",
         "axios": "^0.18.0",
         "compare-versions": "^6.1.1",
         "dynamic-import-polyfill": "^0.1.1",
+        "jquery": "^4.0.0",
         "jquery.nicescroll": "^3.7.6",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
@@ -59,8 +62,8 @@
         "@storybook/addon-docs": "10.3.6",
         "@storybook/addon-links": "10.3.6",
         "@storybook/react-vite": "10.3.6",
-        "@types/jquery": "^3.5.5",
         "@testing-library/dom": "^7.21.4",
+        "@types/jquery": "^3.5.5",
         "@types/jquery.nicescroll": "^3.7.1",
         "@types/node": "^22.7.6",
         "@types/react": "^17.0.2",
@@ -77,7 +80,7 @@
         "tsx": "^4.19.1",
         "typescript": "*",
         "vite": "^7.3.2",
-        "vite-plugin-dts": "^4.5.4",
+        "vite-plugin-dts": "^5.0.0",
         "vite-plugin-html": "^3.2.2",
         "vite-plugin-static-copy": "^3.4.0",
         "vitest": "^4.1.5"
@@ -98,11 +101,8 @@
         "dist/*.css",
         "dist/*.tsv"
     ],
-    "resolutions": {
-        "vite": "^7.3.2"
-    },
     "volta": {
         "node": "24.13.0",
-        "yarn": "1.22.19"
+        "pnpm": "10.26.0"
     }
 }

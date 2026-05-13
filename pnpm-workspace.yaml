@@ -1,0 +1,12 @@
+packages:
+    - .
+
+minimumReleaseAge: 10080
+strictDepBuilds: true
+allowBuilds: {}
+blockExoticSubdeps: true
+
+savePrefix: "^"
+
+overrides:
+    vite: ^7.3.2
