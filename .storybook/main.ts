@@ -10,7 +10,7 @@ const proxy = viteConfigFn({
 const config: StorybookConfig = {
     stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
     // For stories that include an iframe and thus need access to bloomplayer.htm and the bundles it loads.
-    // When using those stories, use `yarn watchForStorybook` to update non-storybook code.
+    // When using those stories, use `pnpm watchForStorybook` to update non-storybook code.
     staticDirs: ["../dist"],
     addons: ["@storybook/addon-links", "@storybook/addon-docs"],
     framework: {
@@ -89,7 +89,6 @@ const config: StorybookConfig = {
         return {
             ...config,
             server: { ...config.server, proxy: updatedProxy },
-            addons: ["@storybook/addon-interactions"],
         };
     },
 };
