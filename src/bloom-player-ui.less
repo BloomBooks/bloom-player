@@ -492,6 +492,39 @@ svg.videoControl {
     }
 }
 
+// If autoplay is blocked and we can't show the first frame, keep an obvious
+// visual cue that this is a video and invite a user click.
+.bloom-videoContainer.autoplayBlocked {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(0, 0, 0, 0.22),
+        rgba(0, 0, 0, 0.22) 14px,
+        rgba(255, 255, 255, 0.1) 14px,
+        rgba(255, 255, 255, 0.1) 28px
+    );
+
+    .videoControlContainer {
+        &.videoPlayIcon {
+            display: flex;
+        }
+        &.videoReplayIcon {
+            display: none;
+        }
+    }
+}
+
+.bloom-videoContainer.autoplayBlockedSuppressed {
+    pointer-events: none;
+
+    .videoControlContainer {
+        display: none !important;
+    }
+}
+
+.bloom-videoContainer.autoplayBlockedPrimary {
+    pointer-events: auto;
+}
+
 // Hide the video play/pause/replay icons when recording the video for publishing.
 .bloom-page.bloom-publish-video .bloom-videoContainer {
     &.paused,
