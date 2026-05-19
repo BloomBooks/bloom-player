@@ -226,6 +226,8 @@ export const PlayCompleted = new LiteEvent<HTMLElement>();
 // Raised when we can't play narration, specifically because the browser won't allow it until
 // the user has interacted with the page.
 export const PlayFailed = new LiteEvent<HTMLElement>();
+// Raised when a user interaction resolves an autoplay-blocked state and media is about to resume.
+export const PlayUnblocked = new LiteEvent<void>();
 
 // This event allows Narration to inform its controllers when we start/stop reading
 // image descriptions. It is raised for each segment we read and passed true if the one
@@ -1282,7 +1284,7 @@ export function stopPlayAllVideoPlayback() {
     }
 }
 
-function isTransientVideoPlayFailure(reason: any): boolean {
+export function isTransientVideoPlayFailure(reason: any): boolean {
     if (!reason) {
         return false;
     }
@@ -1348,6 +1350,7 @@ export function showVideoFirstFrameWhenReady(
         const removePlayingListenerTimeout = window.setTimeout(() => {
             video.removeEventListener("playing", playingListener);
         }, 1000);
+        hideVideoAutoplayBlockedHint(video);
         const promise = video.play();
         if (promise && promise.catch) {
             promise.catch((reason) => {
@@ -1400,7 +1403,7 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
     playAllVideoInternal(elements, then, generation);
 }
 
-function isDefiniteVideoPlaybackSupportFailure(
+export function isDefiniteVideoPlaybackSupportFailure(
     video: HTMLVideoElement,
     reason?: any,
 ): boolean {
@@ -1492,11 +1495,10 @@ function playAllVideoInternal(
                         "Video autoplay blocked until user interaction",
                     );
                     showVideoAutoplayBlockedHint(video);
-                } else {
-                    console.error("Video play failed", reason);
+                    return;
                 }
+                const retries = transientVideoRetryCounts.get(video) ?? 0;
                 if (isTransientVideoPlayFailure(reason)) {
-                    const retries = transientVideoRetryCounts.get(video) ?? 0;
                     if (retries < 2) {
                         transientVideoRetryCounts.set(video, retries + 1);
                         window.setTimeout(() => {
@@ -1505,10 +1507,9 @@ function playAllVideoInternal(
                         return;
                     }
                 }
+                console.error("Video play failed", reason);
                 transientVideoRetryCounts.delete(video);
-                if (isDefiniteVideoPlaybackSupportFailure(video, reason)) {
-                    showVideoError(video);
-                }
+                showVideoError(video);
                 playAllVideoInternal(elements.slice(1), then, generation);
             });
     }

@@ -7,22 +7,23 @@ import {
     PlaybackMode,
     hideVideoError,
     hideVideoAutoplayBlockedHint,
+    isDefiniteVideoPlaybackSupportFailure,
+    isTransientVideoPlayFailure,
     PlayFailed,
+    PlayUnblocked,
     showVideoFirstFrameWhenReady,
-    showVideoAutoplayBlockedHint,
     showVideoError,
 } from "./shared/narration";
 import { getPlayIcon } from "./playIcon";
 import { getPauseIcon } from "./pauseIcon";
 import { getReplayIcon } from "./replayIcon";
 
-// class Video contains functionality to get videos to play properly in bloom-player
-
 export interface IPageVideoComplete {
     page: HTMLElement;
     videos: HTMLVideoElement[];
 }
 
+// class Video contains functionality to get videos to play properly in bloom-player
 export class Video {
     private static readonly autoplayBlockedClassNames = [
         "autoplayBlocked",
@@ -35,7 +36,10 @@ export class Video {
     private currentVideoStartTime: number = 0;
     private isPlayingSingleVideo: boolean = false;
     private transientPlayRetryCounts = new WeakMap<HTMLVideoElement, number>();
+    private playAllVideoGeneration: number = 0;
     private autoplayBlockedSequence: HTMLVideoElement[] | undefined;
+    private delayedAutoplayTimeoutId: number | undefined;
+    private hasStartedPlaybackOnCurrentPage: boolean = false;
 
     public PageVideoComplete: LiteEvent<IPageVideoComplete>;
 
@@ -123,7 +127,10 @@ export class Video {
     }
 
     public HandlePageVisible(bloomPage: HTMLElement, isPaused: () => boolean) {
+        this.pauseCurrentVideo();
         this.currentPage = bloomPage as HTMLDivElement;
+        this.hasStartedPlaybackOnCurrentPage = false;
+        this.clearDelayedAutoplayTimeout();
         this.resetAutoplayBlockedState();
         if (!Video.pageHasVideo(this.currentPage)) {
             this.currentVideoElement = undefined;
@@ -137,11 +144,8 @@ export class Video {
             // jumped to this page without a sliding transition.
             this.HandlePageBeforeVisible(this.currentPage);
         }
-        if (currentPlaybackMode === PlaybackMode.VideoPaused) {
-            this.currentVideoElement?.pause();
-        }
         if (isPaused()) {
-            // This will show the on-video controls to allow them to be individuallystarted,
+            // This will show the on-video controls to allow them to be individually started,
             // and provide a visual clue that they are videos.
             this.markAllVideosPaused();
         }
@@ -177,25 +181,39 @@ export class Video {
             // browsers are increasingly blocking videos with audio from
             // autoplaying (e.g., this was previously a problem on iOS and Mac).
             // Starting it immediately in response to a user action
-            // (the page turning) seems to satisfy that requirement.
+            // (the page turning) seems to satisfy that requirement,
+            // though a Refresh can still put us in a state where we want to play
+            // video on the first page and the browser insists the user hasn't interacted.
             showVideoFirstFrameWhenReady(
                 video,
                 () => loading || isPaused() || video != firstVideo,
                 () => {
                     if (video === firstVideo) {
-                        showVideoAutoplayBlockedHint(video);
+                        this.enterAutoplayBlockedMode(videos);
                     }
                 },
             );
-            // If we're not paused, we will resume playing after the initial 1s pause.
         }
+        // If we're not paused, we will resume playing after the initial 1s pause.
         if (firstVideo) {
-            window.setTimeout(() => {
+            this.delayedAutoplayTimeoutId = window.setTimeout(() => {
                 loading = false;
-                if (!isPaused()) {
+                this.delayedAutoplayTimeoutId = undefined;
+                if (
+                    !isPaused() &&
+                    !this.autoplayBlockedSequence &&
+                    !this.hasStartedPlaybackOnCurrentPage
+                ) {
                     this.playAllVideo(videos);
                 }
             }, 1000);
+        }
+    }
+
+    private clearDelayedAutoplayTimeout(): void {
+        if (this.delayedAutoplayTimeoutId !== undefined) {
+            window.clearTimeout(this.delayedAutoplayTimeoutId);
+            this.delayedAutoplayTimeoutId = undefined;
         }
     }
 
@@ -405,48 +423,9 @@ export class Video {
         BloomPlayerCore.storeVideoAnalytics(duration);
     }
 
-    private static isDefiniteVideoPlaybackSupportFailure(
-        video: HTMLVideoElement,
-        reason?: any,
-    ): boolean {
-        if (
-            video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
-            video.readyState === HTMLMediaElement.HAVE_NOTHING
-        ) {
-            return true;
-        }
-
-        if (!reason) {
-            return false;
-        }
-
-        if (reason.name === "NotSupportedError") {
-            return true;
-        }
-
-        // Some browsers expose codec/source failures only through media.error.
-        return (
-            video.error?.code ===
-            (window.MediaError
-                ? window.MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
-                : 4)
-        );
-    }
-
-    private static isTransientVideoPlayFailure(reason: any): boolean {
-        if (!reason) {
-            return false;
-        }
-        if (reason.name === "AbortError") {
-            return true;
-        }
-        const message =
-            (typeof reason.message === "string" && reason.message) ||
-            (typeof reason.toString === "function" ? reason.toString() : "");
-        return message.includes("interrupted by a call to pause()");
-    }
-
     public hidingPage() {
+        this.clearDelayedAutoplayTimeout();
+        this.hasStartedPlaybackOnCurrentPage = false;
         this.resetAutoplayBlockedState();
         this.pauseCurrentVideo(); // but don't set paused state.
     }
@@ -507,9 +486,10 @@ export class Video {
     }
 
     private enterAutoplayBlockedMode(videos: HTMLVideoElement[]): void {
-        if (!videos.length) {
+        if (!videos.length || this.autoplayBlockedSequence) {
             return;
         }
+        this.clearDelayedAutoplayTimeout();
         this.autoplayBlockedSequence = videos;
         const firstVideo = videos[0];
         this.currentVideoElement = firstVideo;
@@ -540,7 +520,9 @@ export class Video {
         }
 
         this.autoplayBlockedSequence = undefined;
+        this.clearDelayedAutoplayTimeout();
         this.clearAutoplayBlockedUi();
+        PlayUnblocked?.raise();
 
         const firstVideo = videos[0];
         videos.forEach((video) => {
@@ -557,7 +539,29 @@ export class Video {
     //
     // Note, there is a very similar function in narration.ts. It would be nice to combine them, but
     // this one must be here and must be part of the Video class so it can handle play/pause, analytics, etc.
+    /**
+     * Play the specified elements, one after the other. When the last completes, raise the PageVideoComplete event.
+     * This method is the public API and hides the generation argument from external callers.
+     */
     public playAllVideo(elements: HTMLVideoElement[]) {
+        this.playAllVideoWithGeneration(
+            elements,
+            ++this.playAllVideoGeneration,
+        );
+    }
+
+    /**
+     * Internal: Handles the actual playback logic, using the provided generation for retry safety.
+     * Only this method should recurse for retries; external callers should use playAllVideo().
+     */
+    private playAllVideoWithGeneration(
+        elements: HTMLVideoElement[],
+        generation: number,
+    ) {
+        // Guard: only proceed if this is the latest generation
+        if (generation !== this.playAllVideoGeneration) {
+            return;
+        }
         Array.from(this.currentPage.getElementsByClassName("playing")).forEach(
             (element) => element.classList.remove("playing"),
         );
@@ -574,6 +578,8 @@ export class Video {
             this.markAllVideosPaused();
             return;
         }
+
+        this.hasStartedPlaybackOnCurrentPage = true;
 
         // Remove the paused class from all videos on the page. We're playing.
         Array.from(this.currentPage.getElementsByClassName("paused")).forEach(
@@ -594,17 +600,17 @@ export class Video {
             ".bloom-canvas-element[data-draggable-id]",
         ) as HTMLDivElement | null;
         if (dragContainer) {
-            this.playAllVideo(elements.slice(1));
+            this.playAllVideoWithGeneration(elements.slice(1), generation);
             return;
         }
 
         this.currentVideoElement = video;
 
         // If there is an error, try to continue with the next video.
-        if (Video.isDefiniteVideoPlaybackSupportFailure(video)) {
+        if (isDefiniteVideoPlaybackSupportFailure(video)) {
             this.transientPlayRetryCounts.delete(video);
             showVideoError(video);
-            this.playAllVideo(elements.slice(1));
+            this.playAllVideoWithGeneration(elements.slice(1), generation);
         } else {
             hideVideoError(video);
             hideVideoAutoplayBlockedHint(video);
@@ -628,7 +634,10 @@ export class Video {
                             // bloom-player-core's props.hideSwiperButtons is false, to make sure we don't
                             // get it when auto-playing to make a video.
                             video.currentTime = 0;
-                            this.playAllVideo(elements.slice(1));
+                            this.playAllVideoWithGeneration(
+                                elements.slice(1),
+                                generation,
+                            );
                         },
                         { once: true },
                     );
@@ -638,35 +647,52 @@ export class Video {
                         console.debug(
                             "Video autoplay blocked until user interaction",
                         );
+                        // Remove 'playing' class from all elements on the page
+                        if (this.currentPage) {
+                            Array.from(
+                                this.currentPage.getElementsByClassName(
+                                    "playing",
+                                ),
+                            ).forEach((element) =>
+                                element.classList.remove("playing"),
+                            );
+                        }
                         this.enterAutoplayBlockedMode(elements);
                         return;
-                    } else {
-                        console.error("Video play failed", reason);
                     }
-                    if (Video.isTransientVideoPlayFailure(reason)) {
-                        const retries =
-                            this.transientPlayRetryCounts.get(video) ?? 0;
+
+                    const retries =
+                        this.transientPlayRetryCounts.get(video) ?? 0;
+
+                    if (isTransientVideoPlayFailure(reason)) {
                         if (retries < 2) {
                             this.transientPlayRetryCounts.set(
                                 video,
                                 retries + 1,
                             );
+                            const myGeneration = generation;
                             window.setTimeout(() => {
-                                this.playAllVideo(elements);
+                                if (
+                                    myGeneration === this.playAllVideoGeneration
+                                ) {
+                                    this.playAllVideoWithGeneration(
+                                        elements,
+                                        myGeneration,
+                                    );
+                                }
                             }, 50);
                             return;
                         }
                     }
+
+                    console.error("Video play failed", reason);
+
                     this.transientPlayRetryCounts.delete(video);
-                    if (
-                        Video.isDefiniteVideoPlaybackSupportFailure(
-                            video,
-                            reason,
-                        )
-                    ) {
-                        showVideoError(video);
-                    }
-                    this.playAllVideo(elements.slice(1));
+                    showVideoError(video);
+                    this.playAllVideoWithGeneration(
+                        elements.slice(1),
+                        generation,
+                    );
                 });
         }
     }

@@ -1,9 +1,30 @@
 import {
     hidingPage,
     playAllVideo,
+    showVideoFirstFrameWhenReady,
     sortAudioElements,
 } from "./shared/narration";
 import { createDiv, createPara, createSpan } from "./test/testHelper";
+
+test("showVideoFirstFrameWhenReady clears autoplay hint before retrying play", () => {
+    const container = document.createElement("div");
+    container.classList.add("bloom-videoContainer", "autoplayBlocked");
+    const video = document.createElement("video");
+    container.appendChild(video);
+    document.body.appendChild(container);
+
+    const play = vi.fn(() => Promise.resolve());
+    Object.defineProperty(video, "play", { value: play });
+    Object.defineProperty(video, "readyState", {
+        value: HTMLMediaElement.HAVE_CURRENT_DATA,
+        configurable: true,
+    });
+
+    showVideoFirstFrameWhenReady(video);
+
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(container.classList.contains("autoplayBlocked")).toBe(false);
+});
 
 test("hidingPage stops shared sequential video playback", async () => {
     const firstVideo = document.createElement("video");
@@ -34,6 +55,97 @@ test("hidingPage stops shared sequential video playback", async () => {
 
     expect(secondPlay).not.toHaveBeenCalled();
     expect(then).not.toHaveBeenCalled();
+});
+
+test("playAllVideo retries transient failures and succeeds without showing an error", async () => {
+    vi.useFakeTimers();
+    try {
+        const container = document.createElement("div");
+        const video = document.createElement("video");
+        container.appendChild(video);
+        document.body.appendChild(container);
+
+        const play = vi
+            .fn<() => Promise<void>>()
+            .mockRejectedValueOnce({ name: "AbortError" })
+            .mockRejectedValueOnce({
+                message:
+                    "The play() request was interrupted by a call to pause().",
+            })
+            .mockResolvedValue(undefined);
+
+        Object.defineProperty(video, "play", { value: play });
+
+        const then = vi.fn();
+        playAllVideo([video], then);
+
+        await Promise.resolve();
+        expect(play).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(50);
+        expect(play).toHaveBeenCalledTimes(2);
+
+        await vi.advanceTimersByTimeAsync(50);
+        expect(play).toHaveBeenCalledTimes(3);
+
+        video.dispatchEvent(new Event("ended"));
+        await Promise.resolve();
+
+        expect(then).toHaveBeenCalledTimes(1);
+        expect(
+            container.getElementsByClassName("video-error-message").length,
+        ).toBe(0);
+    } finally {
+        vi.useRealTimers();
+    }
+});
+
+test("playAllVideo shows an error after transient retries are exhausted and continues", async () => {
+    vi.useFakeTimers();
+    try {
+        const firstContainer = document.createElement("div");
+        const firstVideo = document.createElement("video");
+        firstContainer.appendChild(firstVideo);
+        document.body.appendChild(firstContainer);
+
+        const secondContainer = document.createElement("div");
+        const secondVideo = document.createElement("video");
+        secondContainer.appendChild(secondVideo);
+        document.body.appendChild(secondContainer);
+
+        const firstPlay = vi
+            .fn<() => Promise<void>>()
+            .mockRejectedValueOnce({ name: "AbortError" })
+            .mockRejectedValueOnce({ name: "AbortError" })
+            .mockRejectedValueOnce({ name: "AbortError" });
+        const secondPlay = vi.fn(() => Promise.resolve());
+
+        Object.defineProperty(firstVideo, "play", { value: firstPlay });
+        Object.defineProperty(secondVideo, "play", { value: secondPlay });
+
+        const then = vi.fn();
+        playAllVideo([firstVideo, secondVideo], then);
+
+        await Promise.resolve();
+        expect(firstPlay).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(50);
+        expect(firstPlay).toHaveBeenCalledTimes(2);
+
+        await vi.advanceTimersByTimeAsync(50);
+        expect(firstPlay).toHaveBeenCalledTimes(3);
+        expect(secondPlay).toHaveBeenCalledTimes(1);
+        expect(
+            firstContainer.getElementsByClassName("video-error-message").length,
+        ).toBe(1);
+
+        secondVideo.dispatchEvent(new Event("ended"));
+        await Promise.resolve();
+
+        expect(then).toHaveBeenCalledTimes(1);
+    } finally {
+        vi.useRealTimers();
+    }
 });
 
 test("sortAudioElements with no tabindexes preserves order", () => {

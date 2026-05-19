@@ -63,6 +63,7 @@ import {
     computeDuration,
     PageNarrationComplete,
     PlayFailed,
+    PlayUnblocked,
     PlayCompleted,
     ToggleImageDescription,
     pauseNarration,
@@ -1302,6 +1303,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
     };
 
+    private handlePlayUnblocked = () => {
+        if (this.state.inPauseForced && this.props.setForcedPausedCallback) {
+            this.props.setForcedPausedCallback(false);
+        }
+        this.setState({ inPauseForced: false });
+    };
+
     private handlePlayCompleted = () => {
         setCurrentPlaybackMode(PlaybackMode.MediaFinished);
         this.props.imageDescriptionCallback(false); // whether or not we were before, now we're certainly not playing one.
@@ -1328,6 +1336,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
         PageNarrationComplete.subscribe(this.handlePageNarrationComplete);
         PlayFailed.subscribe(this.handlePlayFailed);
+        PlayUnblocked.subscribe(this.handlePlayUnblocked);
         PlayCompleted.subscribe(this.handlePlayCompleted);
         listenForPlayDuration(this.storeAudioAnalytics.bind(this));
         ToggleImageDescription.subscribe(
@@ -1648,6 +1657,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         this.video.PageVideoComplete.unsubscribe(this.handlePageVideoComplete);
         PageNarrationComplete.unsubscribe(this.handlePageNarrationComplete);
         PlayFailed.unsubscribe(this.handlePlayFailed);
+        PlayUnblocked.unsubscribe(this.handlePlayUnblocked);
         PlayCompleted.unsubscribe(this.handlePlayCompleted);
         ToggleImageDescription.unsubscribe(this.handleToggleImageDescription);
     }
