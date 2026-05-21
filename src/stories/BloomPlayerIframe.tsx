@@ -11,7 +11,7 @@ export function BloomPlayerIframe({
     if (!useBuildIsReady()) {
         return (
             <div>
-                Waiting for Bloom Player to build. See "yarn watchForStorybook"
+                Waiting for Bloom Player to build. See "pnpm watchForStorybook"
             </div>
         );
     }

@@ -72,7 +72,7 @@ When you are through debugging bloom-player in the other program, go to the same
 
     `pnpm unlink`
 
-Note that think unlinks all links that have been made.  If you are testing multiple local package builds, then try this command instead:
+Note that this unlinks all links that have been made.  If you are testing multiple local package builds, then try this command instead:
 
     `pnpm unlink --filter bloom-player`
 
