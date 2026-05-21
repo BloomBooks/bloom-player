@@ -19,16 +19,24 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  # Keep in sync with packageManager/volta -> pnpm version in package.json
+                  version: 11.1.2
+                  run_install: false
+
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
                   # Keep in sync with volta -> node version in package.json
                   node-version: 24
                   registry-url: https://registry.npmjs.org
-                  cache: yarn
+                  cache: pnpm
+                  cache-dependency-path: pnpm-lock.yaml
 
             - name: Install dependencies
-              run: yarn
+              run: pnpm install --frozen-lockfile
 
             - name: Determine next version
               id: next_version
@@ -48,18 +56,18 @@ jobs:
                   BLOOM_CROWDIN_TOKEN: ${{ secrets.BLOOM_CROWDIN_TOKEN }}
               run: |
                   if [ "${{ github.ref }}" = "refs/heads/master" ]; then
-                    yarn strings:sync
+                    pnpm run strings:sync
                   else
-                    yarn strings:download
+                    pnpm run strings:download
                   fi
 
             - name: Build package
               run: |
-                  yarn build:standalone
-                  yarn build:sharedlib
+                  pnpm run build:standalone
+                  pnpm run build:sharedlib
 
             - name: Run tests
-              run: yarn test
+              run: pnpm test
 
             - name: Clean up package.json
               # We used to use the clean-publish package to do this, but when
