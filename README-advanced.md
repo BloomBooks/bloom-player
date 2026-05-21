@@ -2,7 +2,7 @@
 
 ## Getting the pieces
 
-    `yarn add bloom-player`
+    `pnpm add bloom-player`
 
 This puts the files you need at
 
@@ -43,7 +43,7 @@ Otherwise, you will have to arrange for the server that is serving the book data
 
 ## Getting and using the shared code
 
-    `yarn add bloom-player`
+    `pnpm add bloom-player`
 
 This shares the code from the files in `src/shared` in
 
@@ -59,3 +59,21 @@ After this setup, and updating the library, the exported function can be importe
 into your program's typescript code:
 
     `import { function1, function2 } from "bloom-player";
+
+## Debugging bloom-player development in another program (pnpm 11)
+
+In the other program's development folder where package.json lives, use this command:
+
+    `pnpm link <path-to-bloom-player>` (provide the relative or absolute path)
+
+This adjusts node_modules to use a link to the live output in the bloom-player output folder.  Any changes made to the bloom-player code can be tested without waiting for packages to be created and downloaded.
+
+When you are through debugging bloom-player in the other program, go to the same spot in the other program's development folder and type:
+
+    `pnpm unlink`
+
+Note that this unlinks all links that have been made.  If you are testing multiple local package builds, then try this command instead:
+
+    `pnpm unlink --filter bloom-player`
+
+See pnpm link documentation for current usage details.

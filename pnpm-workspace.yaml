@@ -1,0 +1,24 @@
+# Tell pnpm which directories are workspace packages.
+packages:
+  # "." means the repository root is the only workspace package in this repo.
+  - .
+
+# Only install dependency versions that have been published for at least
+# 10,080 minutes (7 days) to reduce the risk of pulling a freshly compromised
+# release.
+minimumReleaseAge: 10080
+
+# Fail installs when a dependency tries to run an unreviewed install/build
+# script.
+strictDepBuilds: true
+
+# Explicitly allow or deny dependency build scripts package by package.
+allowBuilds:
+  # esbuild needs its install script to fetch/configure the correct binary.
+  esbuild: true
+  # swiper is explicitly blocked from running install/build scripts.
+  swiper: false
+
+# Prevent transitive dependencies from using exotic sources such as git URLs or
+# direct tarball links; only direct dependencies may use those sources.
+blockExoticSubdeps: true
