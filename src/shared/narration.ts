@@ -226,6 +226,8 @@ export const PlayCompleted = new LiteEvent<HTMLElement>();
 // Raised when we can't play narration, specifically because the browser won't allow it until
 // the user has interacted with the page.
 export const PlayFailed = new LiteEvent<HTMLElement>();
+// Raised when a user interaction resolves an autoplay-blocked state and media is about to resume.
+export const PlayUnblocked = new LiteEvent<void>();
 
 // This event allows Narration to inform its controllers when we start/stop reading
 // image descriptions. It is raised for each segment we read and passed true if the one
@@ -1271,6 +1273,7 @@ export function hidingPage() {
 
 let playAllVideoGeneration = 0;
 let activePlayAllVideoElement: HTMLVideoElement | undefined;
+const transientVideoRetryCounts = new WeakMap<HTMLVideoElement, number>();
 
 export function stopPlayAllVideoPlayback() {
     playAllVideoGeneration++;
@@ -1281,12 +1284,26 @@ export function stopPlayAllVideoPlayback() {
     }
 }
 
+export function isTransientVideoPlayFailure(reason: any): boolean {
+    if (!reason) {
+        return false;
+    }
+    if (reason.name === "AbortError") {
+        return true;
+    }
+    const message =
+        (typeof reason.message === "string" && reason.message) ||
+        (typeof reason.toString === "function" ? reason.toString() : "");
+    return message.includes("interrupted by a call to pause()");
+}
+
 // Attempt to show a video's first frame by briefly starting playback and then pausing.
 // The callback allows callers to decide at the moment playback starts whether pausing
 // is still desired (for example, page-level logic may stop pausing after initial load).
 export function showVideoFirstFrameWhenReady(
     video: HTMLVideoElement,
     shouldPauseAfterPlaying: () => boolean = () => true,
+    onAutoplayBlocked: () => void = () => showVideoAutoplayBlockedHint(video),
 ) {
     let canceled = false;
     const attempt = () => {
@@ -1300,6 +1317,7 @@ export function showVideoFirstFrameWhenReady(
         }
         const playingListener = () => {
             window.clearTimeout(removePlayingListenerTimeout);
+            hideVideoAutoplayBlockedHint(video);
             if (!shouldPauseAfterPlaying()) {
                 return;
             }
@@ -1332,13 +1350,20 @@ export function showVideoFirstFrameWhenReady(
         const removePlayingListenerTimeout = window.setTimeout(() => {
             video.removeEventListener("playing", playingListener);
         }, 1000);
+        hideVideoAutoplayBlockedHint(video);
         const promise = video.play();
         if (promise && promise.catch) {
-            promise.catch(() => {
+            promise.catch((reason) => {
                 window.clearTimeout(removePlayingListenerTimeout);
                 // If play() fails (e.g., autoplay policy), remove the listener
                 // so it won't interfere if playback starts later by other means.
                 video.removeEventListener("playing", playingListener);
+                // If autoplay is blocked, remove our transparent poster so a decoded
+                // first frame can be shown when available.
+                if (reason?.name === "NotAllowedError") {
+                    video.removeAttribute("poster");
+                    onAutoplayBlocked();
+                }
             });
         }
     };
@@ -1378,6 +1403,32 @@ export function playAllVideo(elements: HTMLVideoElement[], then: () => void) {
     playAllVideoInternal(elements, then, generation);
 }
 
+export function isDefiniteVideoPlaybackSupportFailure(
+    video: HTMLVideoElement,
+    reason?: any,
+): boolean {
+    if (
+        video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
+        video.readyState === HTMLMediaElement.HAVE_NOTHING
+    ) {
+        return true;
+    }
+
+    if (!reason) {
+        return false;
+    }
+
+    if (reason.name === "NotSupportedError") {
+        return true;
+    }
+
+    // Some browsers expose codec/source failures only through media.error.
+    return (
+        video.error?.code ===
+        (window.MediaError ? window.MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED : 4)
+    );
+}
+
 function playAllVideoInternal(
     elements: HTMLVideoElement[],
     then: () => void,
@@ -1395,14 +1446,13 @@ function playAllVideoInternal(
     activePlayAllVideoElement = video;
 
     // If there is an error, try to continue with the next video.
-    if (
-        video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
-        video.readyState === HTMLMediaElement.HAVE_NOTHING
-    ) {
+    if (isDefiniteVideoPlaybackSupportFailure(video)) {
+        transientVideoRetryCounts.delete(video);
         showVideoError(video);
         playAllVideoInternal(elements.slice(1), then, generation);
     } else {
         hideVideoError(video);
+        hideVideoAutoplayBlockedHint(video);
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
         const promise = video.play();
         promise
@@ -1410,6 +1460,8 @@ function playAllVideoInternal(
                 if (generation !== playAllVideoGeneration) {
                     return;
                 }
+                transientVideoRetryCounts.delete(video);
+                hideVideoAutoplayBlockedHint(video);
                 // The promise resolves when the video starts playing. We want to know when it ends.
                 // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is
                 // played to the end.  I have not figured out why. It may be something to do with how we are
@@ -1438,7 +1490,25 @@ function playAllVideoInternal(
                 if (generation !== playAllVideoGeneration) {
                     return;
                 }
+                if (reason?.name === "NotAllowedError") {
+                    console.debug(
+                        "Video autoplay blocked until user interaction",
+                    );
+                    showVideoAutoplayBlockedHint(video);
+                    return;
+                }
+                const retries = transientVideoRetryCounts.get(video) ?? 0;
+                if (isTransientVideoPlayFailure(reason)) {
+                    if (retries < 2) {
+                        transientVideoRetryCounts.set(video, retries + 1);
+                        window.setTimeout(() => {
+                            playAllVideoInternal(elements, then, generation);
+                        }, 50);
+                        return;
+                    }
+                }
                 console.error("Video play failed", reason);
+                transientVideoRetryCounts.delete(video);
                 showVideoError(video);
                 playAllVideoInternal(elements.slice(1), then, generation);
             });
@@ -1467,10 +1537,26 @@ export function showVideoError(video: HTMLVideoElement): void {
             msgDiv.style.top = "10%";
             msgDiv.style.width = "80%";
             msgDiv.style.fontSize = "x-large";
+            msgDiv.style.pointerEvents = "none";
             parent.appendChild(msgDiv);
         }
     }
 }
+
+export function showVideoAutoplayBlockedHint(video: HTMLVideoElement): void {
+    const container =
+        (video.closest(".bloom-videoContainer") as HTMLElement | null) ||
+        video.parentElement;
+    container?.classList.add("autoplayBlocked");
+}
+
+export function hideVideoAutoplayBlockedHint(video: HTMLVideoElement): void {
+    const container =
+        (video.closest(".bloom-videoContainer") as HTMLElement | null) ||
+        video.parentElement;
+    container?.classList.remove("autoplayBlocked");
+}
+
 export function hideVideoError(video: HTMLVideoElement): void {
     const parent = video.parentElement;
     if (parent) {
