@@ -527,7 +527,13 @@ export class Video {
         const firstVideo = videos[0];
         videos.forEach((video) => {
             if (video !== firstVideo) {
-                showVideoFirstFrameWhenReady(video);
+                // Start later videos so their first frame can appear, but do not let a
+                // lingering listener that is waiting for the first frame to play
+                // pause the video's real turn in the sequence.
+                showVideoFirstFrameWhenReady(
+                    video,
+                    () => this.currentVideoElement !== video,
+                );
             }
         });
 

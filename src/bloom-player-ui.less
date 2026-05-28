@@ -272,11 +272,8 @@ We just make them follow the main content normally. */
 
 .bigButtonOverlay {
     position: absolute;
-    // Did a lot of fiddling here to try to get the button centered,
-    // large, and scaling with the book. I have not yet succeeded
-    // in getting the hover shadow to be circular, but decided not
-    // to focus on the problem as JohnH is likely to want to tweak
-    // things anyway. If you mess with this, make sure things work
+    // Keep this centered and robust across landscape/portrait and letterboxing.
+    // If you tweak this, make sure things work
     // in landscape as well as portrait and with black bars on
     // the top as well as the sides and with a very short, wide
     // viewport.
@@ -291,23 +288,30 @@ We just make them follow the main content normally. */
     justify-items: center;
     // pass through clicks outside the actual play icon (e.g., on next page button)
     pointer-events: none;
-    svg {
-        width: 80%;
-        height: 80%;
-        opacity: 0.5;
-        // But the actual icon wants them
+
+    .bigPlayButton {
+        // Constrain hit/ripple area so hover/focus shadow remains circular and button-sized.
+        width: 80vmin;
+        height: 80vmin;
+        border-radius: 50%;
+        padding: 0;
         pointer-events: all;
-    }
-    button {
-        width: 80%;
-    }
-    .MuiIconButton-label {
-        // without this the icon can overflow vertically, with the button bigger than parent.
-        // But this makes the shadow very tall in some situations.
-        // Seems like max-height should work, but although it produces a .MuiIconButton-label
-        // element which is the same height as using height:, the icon grows vertically as
-        // if the label were much larger, despite being set to preserveAspectRatio="xMidYMid meet"
-        height: 100%;
+
+        .MuiTouchRipple-root {
+            border-radius: 50%;
+        }
+
+        .MuiIconButton-label {
+            width: 100%;
+            height: 100%;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
     }
 }
 // This covers the whole page and dims it, to make the bigButtonOverlay more conspicuous.
