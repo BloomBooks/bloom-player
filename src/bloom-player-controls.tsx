@@ -905,6 +905,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                         <div className="bigButtonOverlay">
                             <ThemeProvider theme={bigButtonOverlayTheme}>
                                 <IconButton
+                                    className="bigPlayButton"
                                     color="secondary"
                                     onClick={() => {
                                         setBrowserForcedPaused(false);
