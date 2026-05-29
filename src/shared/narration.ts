@@ -158,6 +158,7 @@ const kDisableHighlightClass = "ui-disableHighlight";
 // but may become highlighted later.
 // For example, audio highlighting is suppressed until the related audio starts playing (to avoid flashes)
 const kSuppressHighlightClass = "ui-suppressHighlight";
+const kBackgroundHighlightClass = "ui-audioBackgroundHighlight";
 
 let durationOfPagesWithoutNarration = 3.0; // seconds
 export function setDurationOfPagesWithoutNarration(d: number) {
@@ -805,6 +806,9 @@ function createAudioBackgroundHighlightElement(eltToMakeCurrent: Element): Eleme
     const overlayParagraph = containingParagraph.cloneNode(true) as HTMLElement;
     overlayParagraph.classList.add("ui-audioBackground");
     overlayParagraph.setAttribute("aria-hidden", "true");
+    overlayParagraph.querySelectorAll("[id]").forEach((element) => {
+        element.removeAttribute("id");
+    });
     overlayParagraph.style.top = `${containingParagraph.offsetTop}px`;
     overlayParagraph.style.left = `${containingParagraph.offsetLeft}px`;
     overlayParagraph.style.width = `${containingParagraph.offsetWidth}px`;
@@ -819,6 +823,10 @@ function createAudioBackgroundHighlightElement(eltToMakeCurrent: Element): Eleme
         overlayElement,
         overlayParagraph,
     );
+
+    eltToMakeCurrent.classList.add("ui-audioCurrent");
+    eltToMakeCurrent.classList.add(kSuppressHighlightClass);
+    overlayElement.classList.add(kBackgroundHighlightClass);
 
     return overlayElement;
 }
@@ -841,6 +849,20 @@ function removeAudioCurrent(around?: HTMLElement) {
     for (let i = 0; i < audioCurrentArray.length; i++) {
         audioCurrentArray[i].classList.remove("ui-audioCurrent");
     }
+
+    const backgroundHighlightArray = Array.from(
+        doc.getElementsByClassName(kBackgroundHighlightClass),
+    );
+    backgroundHighlightArray.forEach((element) => {
+        element.classList.remove(kBackgroundHighlightClass);
+    });
+
+    const suppressedHighlightArray = Array.from(
+        doc.getElementsByClassName(kSuppressHighlightClass),
+    );
+    suppressedHighlightArray.forEach((element) => {
+        element.classList.remove(kSuppressHighlightClass);
+    });
 
     const audioBackgroundArray = Array.from(
         doc.getElementsByClassName("ui-audioBackground"),
@@ -900,27 +922,9 @@ function setHighlightTo({
     // If the audio is missing, then strange things happen in the interaction between
     // narration and drag activity text.  See BL-14797
     const hasError = mediaPlayer.error !== null;
-    if (!hasError && disableHighlightIfNoAudio) {
-        const isAlreadyPlaying = mediaPlayer.currentTime > 0;
-        // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
-        if (!isAlreadyPlaying) {
-            // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
-            // In react-based bloom-player, canPlayAudio() can't trivially identify whether or not audio exists,
-            // so we need to incorporate a derivative of Bloom Desktop's .ui-suppressHighlight code
-            highlightElement.classList.add(kSuppressHighlightClass);
-            // When it starts playing, we know we really have such an audio file, so we can stop
-            // suppressing the highlight.
-            mediaPlayer.addEventListener("playing", () => {
-                highlightElement.classList.remove(kSuppressHighlightClass);
-            });
-            mediaPlayer.addEventListener("error", () => {
-                highlightElement.classList.remove("ui-audioCurrent");
-                highlightElement.classList.remove(kSuppressHighlightClass);
-            });
-        }
+    if (!hasError && highlightElement === newElement) {
+        newElement.classList.add("ui-audioCurrent");
     }
-
-    if (!hasError) highlightElement.classList.add("ui-audioCurrent");
     // If the current audio is part of a (currently typically hidden) image description,
     // highlight the image.
     // it's important to check for imageDescription on the translationGroup;
