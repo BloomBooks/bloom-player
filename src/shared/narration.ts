@@ -1454,6 +1454,74 @@ function playAllVideoInternal(
         hideVideoError(video);
         hideVideoAutoplayBlockedHint(video);
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+        // Always play each queued video from the beginning.
+        // Without this, a previously played element may remain at end-of-stream
+        // and fail to raise the expected ended event for sequencing.
+        video.currentTime = 0;
+        // Note that we get a new instance of this for each recursive call to playAllVideoInternal.
+        // It serves to make sure we don't try to advance twice if we get both an ended and a pause event.
+        let advanced = false;
+        let watchdogTimerId: number | undefined;
+        const watchdogGraceMs = 250;
+        const clearWatchdog = () => {
+            if (watchdogTimerId !== undefined) {
+                window.clearTimeout(watchdogTimerId);
+                watchdogTimerId = undefined;
+            }
+        };
+        const scheduleWatchdogFromDuration = () => {
+            const duration = video.duration;
+            if (!Number.isFinite(duration) || duration <= 0) {
+                return;
+            }
+            clearWatchdog();
+            const playbackRate =
+                Number.isFinite(video.playbackRate) && video.playbackRate > 0
+                    ? video.playbackRate
+                    : 1;
+            const timeoutMs = Math.max(
+                duration * 1000 / playbackRate + watchdogGraceMs,
+                watchdogGraceMs,
+            );
+            watchdogTimerId = window.setTimeout(() => {
+                advanceToNextVideo();
+            }, timeoutMs);
+        };
+        const advanceToNextVideo = () => {
+            if (advanced) {
+                return;
+            }
+            advanced = true;
+            clearWatchdog();
+            video.removeEventListener("ended", endedHandler);
+            video.removeEventListener("pause", pauseHandler);
+            video.removeEventListener("loadedmetadata", metadataHandler);
+            if (generation !== playAllVideoGeneration) {
+                return;
+            }
+            playAllVideoInternal(elements.slice(1), then, generation);
+        };
+        const endedHandler = () => {
+            advanceToNextVideo();
+        };
+        // In some environments, playback can pause at the end without raising ended.
+        // Treat that as completion so a short first video can't stall the sequence.
+        const pauseHandler = () => {
+            const duration = video.duration;
+            if (!Number.isFinite(duration) || duration <= 0) {
+                return;
+            }
+            if (video.currentTime >= duration - 0.05) {
+                advanceToNextVideo();
+            }
+        };
+        const metadataHandler = () => {
+            scheduleWatchdogFromDuration();
+        };
+        // Register ended before play() so we don't miss extremely fast end transitions.
+        video.addEventListener("ended", endedHandler, { once: true });
+        video.addEventListener("pause", pauseHandler);
+        video.addEventListener("loadedmetadata", metadataHandler);
         const promise = video.play();
         promise
             .then(() => {
@@ -1462,34 +1530,16 @@ function playAllVideoInternal(
                 }
                 transientVideoRetryCounts.delete(video);
                 hideVideoAutoplayBlockedHint(video);
-                // The promise resolves when the video starts playing. We want to know when it ends.
-                // Note: in Bloom Desktop, sometimes this event does not fire normally, even when the video is
-                // played to the end.  I have not figured out why. It may be something to do with how we are
-                // trimming the videos.
-                // In Bloom Desktop, this is worked around by raising the ended event when we detect that it has
-                // paused past the end point in resetToStartAfterPlayingToEndPoint.
-                // In BloomPlayer,I don't think this is a problem. Videos are trimmed when published, so we always
-                // play to the real end (unless the user pauses). So one way or another, we should get the ended
-                // event.
-                video.addEventListener(
-                    "ended",
-                    () => {
-                        if (generation !== playAllVideoGeneration) {
-                            return;
-                        }
-                        playAllVideoInternal(
-                            elements.slice(1),
-                            then,
-                            generation,
-                        );
-                    },
-                    { once: true },
-                );
+                scheduleWatchdogFromDuration();
             })
             .catch((reason) => {
                 if (generation !== playAllVideoGeneration) {
                     return;
                 }
+                clearWatchdog();
+                video.removeEventListener("ended", endedHandler);
+                video.removeEventListener("pause", pauseHandler);
+                video.removeEventListener("loadedmetadata", metadataHandler);
                 if (reason?.name === "NotAllowedError") {
                     console.debug(
                         "Video autoplay blocked until user interaction",

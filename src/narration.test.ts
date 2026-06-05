@@ -148,6 +148,99 @@ test("playAllVideo shows an error after transient retries are exhausted and cont
     }
 });
 
+test("playAllVideo still advances when ended fires before play promise resolves", async () => {
+    let resolveFirstPlay: (() => void) | undefined;
+    const firstPlayPromise = new Promise<void>((resolve) => {
+        resolveFirstPlay = resolve;
+    });
+
+    const firstVideo = document.createElement("video");
+    const secondVideo = document.createElement("video");
+    const firstPlay = vi.fn(() => firstPlayPromise);
+    const secondPlay = vi.fn(() => Promise.resolve());
+    const then = vi.fn();
+
+    Object.defineProperty(firstVideo, "play", { value: firstPlay });
+    Object.defineProperty(secondVideo, "play", { value: secondPlay });
+
+    playAllVideo([firstVideo, secondVideo], then);
+
+    // Simulate an early ended signal that can happen before the play() promise settles.
+    firstVideo.dispatchEvent(new Event("ended"));
+    resolveFirstPlay?.();
+    await Promise.resolve();
+
+    expect(secondPlay).toHaveBeenCalledTimes(1);
+
+    secondVideo.dispatchEvent(new Event("ended"));
+    await Promise.resolve();
+
+    expect(then).toHaveBeenCalledTimes(1);
+});
+
+test("playAllVideo advances when video pauses at end without ended", async () => {
+    const firstVideo = document.createElement("video");
+    const secondVideo = document.createElement("video");
+    const firstPlay = vi.fn(() => Promise.resolve());
+    const secondPlay = vi.fn(() => Promise.resolve());
+    const then = vi.fn();
+
+    Object.defineProperty(firstVideo, "play", { value: firstPlay });
+    Object.defineProperty(secondVideo, "play", { value: secondPlay });
+
+    Object.defineProperty(firstVideo, "duration", {
+        value: 1,
+        configurable: true,
+    });
+
+    playAllVideo([firstVideo, secondVideo], then);
+    await Promise.resolve();
+
+    // Simulate environments where end-of-stream results in pause without ended.
+    firstVideo.currentTime = 0.98;
+    firstVideo.dispatchEvent(new Event("pause"));
+    await Promise.resolve();
+
+    expect(secondPlay).toHaveBeenCalledTimes(1);
+
+    secondVideo.dispatchEvent(new Event("ended"));
+    await Promise.resolve();
+
+    expect(then).toHaveBeenCalledTimes(1);
+});
+
+test("playAllVideo advances when duration elapses without ended or pause", async () => {
+    vi.useFakeTimers();
+    try {
+        const firstVideo = document.createElement("video");
+        const secondVideo = document.createElement("video");
+        const firstPlay = vi.fn(() => Promise.resolve());
+        const secondPlay = vi.fn(() => Promise.resolve());
+        const then = vi.fn();
+
+        Object.defineProperty(firstVideo, "play", { value: firstPlay });
+        Object.defineProperty(secondVideo, "play", { value: secondPlay });
+        Object.defineProperty(firstVideo, "duration", {
+            value: 0.1,
+            configurable: true,
+        });
+
+        playAllVideo([firstVideo, secondVideo], then);
+        await Promise.resolve();
+
+        // No ended/pause event: watchdog should advance after duration + grace.
+        await vi.advanceTimersByTimeAsync(400);
+        expect(secondPlay).toHaveBeenCalledTimes(1);
+
+        secondVideo.dispatchEvent(new Event("ended"));
+        await Promise.resolve();
+
+        expect(then).toHaveBeenCalledTimes(1);
+    } finally {
+        vi.useRealTimers();
+    }
+});
+
 test("sortAudioElements with no tabindexes preserves order", () => {
     const input = document.createElement("div");
     const tg1 = createDiv({
