@@ -158,6 +158,7 @@ const kDisableHighlightClass = "ui-disableHighlight";
 // but may become highlighted later.
 // For example, audio highlighting is suppressed until the related audio starts playing (to avoid flashes)
 const kSuppressHighlightClass = "ui-suppressHighlight";
+const kBackgroundHighlightClass = "ui-audioBackgroundHighlight";
 
 let durationOfPagesWithoutNarration = 3.0; // seconds
 export function setDurationOfPagesWithoutNarration(d: number) {
@@ -730,23 +731,147 @@ function onSubElementHighlightTimeEnded(originalSessionNum: number) {
     highlightNextSubElement(originalSessionNum, nextStartTimeInSecs);
 }
 
+// Ideally, the clone paragraph should lay out exactly like the original. However, the original
+// may have more environmental constraints, like being compressed or expanded by being
+// inside a flexbox. To improve the chances of aligning the background and the text, we
+// tweak the top of the clone paragraph so that at least the tops of the highlighted
+// children line up.
+function adjustAudioBackgroundOverlayTop(
+    originalElement: Element,
+    overlayElement: Element,
+    overlayParagraph: HTMLElement,
+) {
+    const originalRect = originalElement.getBoundingClientRect();
+    const overlayRect = overlayElement.getBoundingClientRect();
+    const topDeltaInViewportPx = originalRect.top - overlayRect.top;
+
+    const offsetParent = overlayParagraph.offsetParent as HTMLElement | null;
+    const scaleY =
+        offsetParent && offsetParent.offsetHeight > 0
+            ? offsetParent.getBoundingClientRect().height /
+              offsetParent.offsetHeight
+            : 1;
+    const safeScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
+    const topDelta = topDeltaInViewportPx / safeScaleY;
+
+    if (Math.abs(topDelta) < 0.5) {
+        return;
+    }
+
+    const currentTop = Number.parseFloat(overlayParagraph.style.top || "0");
+    overlayParagraph.style.top = `${currentTop + topDelta}px`;
+}
+
+// The element that is passed should be displayed as the current one being read.
+// In some cases, we just return the element passed in, in which case, it will be
+// given the class ui-audioCurrent, causing it to have an appropriate highlight
+// background color. However, if the element is a child (typically a span) of a
+// paragraph, that might not look good. In particular, if line spacing is tight,
+// most browsers will allow the background color of one line to overwrite some of
+// the text on the line above. To get around this, we create a temporary clone
+// of the containing paragraph and insert it before the original, giving it the
+// class "ui-audioBackground", and give it a top and left which (along with
+// CSS that positions it absolutely) will put it in the same place as the
+// original paragraph. The clone will have the same text, but its text is made
+// invisible. Only the highlight background shows in the clone, and the
+// original text is then drawn "on top". This puts the highlight background
+// entirely behind the text.
+// Review: assuming the is not too risky to do at all, should we limit it
+// (as we did previously with the display:inline-block fix) to title elements?
+function createAudioBackgroundHighlightElement(eltToMakeCurrent: Element): Element {
+    const containingParagraph = eltToMakeCurrent.parentElement as HTMLElement | null;
+
+    // It's not an anomaly if the element is not in a paragraph. For example, it
+    // might be a case of highlighting a whole bloom-editable div. In such cases,
+    // or any unexpected situation, it's fine to just return the element passed in,
+    // and let that receive the class that produces the highlight. In particular,
+    // when we hightlight a whole div, we don't get the undesirable effect of
+    // background color overlapping text.
+    if (!containingParagraph || containingParagraph.tagName !== "P") {
+        return eltToMakeCurrent;
+    }
+
+    const highlightedChildIndex = Array.from(containingParagraph.children).indexOf(
+        eltToMakeCurrent,
+    );
+    if (highlightedChildIndex < 0) {
+        return eltToMakeCurrent;
+    }
+
+    if (!containingParagraph || !containingParagraph.parentElement) {
+        return eltToMakeCurrent;
+    }
+
+    const parent = containingParagraph.parentElement;
+    const overlayParagraph = containingParagraph.cloneNode(true) as HTMLElement;
+    overlayParagraph.classList.add("ui-audioBackground");
+    overlayParagraph.setAttribute("aria-hidden", "true");
+    overlayParagraph.querySelectorAll("[id]").forEach((element) => {
+        element.removeAttribute("id");
+    });
+    overlayParagraph.style.top = `${containingParagraph.offsetTop}px`;
+    overlayParagraph.style.left = `${containingParagraph.offsetLeft}px`;
+    overlayParagraph.style.width = `${containingParagraph.offsetWidth}px`;
+    overlayParagraph.style.height = `${containingParagraph.offsetHeight}px`;
+
+    parent.insertBefore(overlayParagraph, containingParagraph);
+
+    const overlayElement =
+        overlayParagraph.children.item(highlightedChildIndex) || overlayParagraph;
+    adjustAudioBackgroundOverlayTop(
+        eltToMakeCurrent,
+        overlayElement,
+        overlayParagraph,
+    );
+
+    eltToMakeCurrent.classList.add("ui-audioCurrent");
+    eltToMakeCurrent.classList.add(kSuppressHighlightClass);
+    overlayElement.classList.add(kBackgroundHighlightClass);
+
+    return overlayElement;
+}
+
 // Removes the .ui-audioCurrent class from all elements (also ui-audioCurrentImg)
 // Equivalent of removeAudioCurrentFromPageDocBody() in BloomDesktop.
 // "around" might be the element that has the highlight, or the one getting it;
 // the important thing is that it belongs to the right document (which is in question
 // with multiple iframes in Bloom desktop).
-function removeAudioCurrent(around: HTMLElement = document.body) {
+function removeAudioCurrent(around?: HTMLElement) {
+    const doc =
+        around?.ownerDocument || currentPlayPage?.ownerDocument || document;
+
     // Note that HTMLCollectionOf's length can change if you change the number of elements matching the selector.
     // For safety we get rid of all existing ones.
     const audioCurrentArray = Array.from(
-        around.ownerDocument.getElementsByClassName("ui-audioCurrent"),
+        doc.getElementsByClassName("ui-audioCurrent"),
     );
 
     for (let i = 0; i < audioCurrentArray.length; i++) {
         audioCurrentArray[i].classList.remove("ui-audioCurrent");
     }
-    const currentImg =
-        around.ownerDocument.getElementsByClassName("ui-audioCurrentImg")[0];
+
+    const backgroundHighlightArray = Array.from(
+        doc.getElementsByClassName(kBackgroundHighlightClass),
+    );
+    backgroundHighlightArray.forEach((element) => {
+        element.classList.remove(kBackgroundHighlightClass);
+    });
+
+    const suppressedHighlightArray = Array.from(
+        doc.getElementsByClassName(kSuppressHighlightClass),
+    );
+    suppressedHighlightArray.forEach((element) => {
+        element.classList.remove(kSuppressHighlightClass);
+    });
+
+    const audioBackgroundArray = Array.from(
+        doc.getElementsByClassName("ui-audioBackground"),
+    );
+    audioBackgroundArray.forEach((element) => {
+        element.parentElement?.removeChild(element);
+    });
+
+    const currentImg = doc.getElementsByClassName("ui-audioCurrentImg")[0];
     if (currentImg) {
         currentImg.classList.remove("ui-audioCurrentImg");
     }
@@ -790,32 +915,16 @@ function setHighlightTo({
 
     removeAudioCurrent((oldElement || newElement) as HTMLElement);
 
+    const highlightElement = createAudioBackgroundHighlightElement(newElement);
+
     const mediaPlayer = getPlayer();
     // The "error" may just be that audio has not been recorded for this element.
     // If the audio is missing, then strange things happen in the interaction between
     // narration and drag activity text.  See BL-14797
     const hasError = mediaPlayer.error !== null;
-    if (!hasError && disableHighlightIfNoAudio) {
-        const isAlreadyPlaying = mediaPlayer.currentTime > 0;
-        // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
-        if (!isAlreadyPlaying) {
-            // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
-            // In react-based bloom-player, canPlayAudio() can't trivially identify whether or not audio exists,
-            // so we need to incorporate a derivative of Bloom Desktop's .ui-suppressHighlight code
-            newElement.classList.add(kSuppressHighlightClass);
-            // When it starts playing, we know we really have such an audio file, so we can stop
-            // suppressing the highlight.
-            mediaPlayer.addEventListener("playing", () => {
-                newElement.classList.remove(kSuppressHighlightClass);
-            });
-            mediaPlayer.addEventListener("error", () => {
-                newElement.classList.remove("ui-audioCurrent");
-                newElement.classList.remove(kSuppressHighlightClass);
-            });
-        }
+    if (!hasError && highlightElement === newElement) {
+        newElement.classList.add("ui-audioCurrent");
     }
-
-    if (!hasError) newElement.classList.add("ui-audioCurrent");
     // If the current audio is part of a (currently typically hidden) image description,
     // highlight the image.
     // it's important to check for imageDescription on the translationGroup;
@@ -1053,7 +1162,7 @@ function reportPlayEnded() {
     elementsToPlayConsecutivelyStack = [];
     subElementsWithTimings = [];
 
-    removeAudioCurrent();
+    removeAudioCurrent(currentPlayPage || undefined);
     PageNarrationComplete?.raise(currentPlayPage!);
     PlayCompleted?.raise();
 }
