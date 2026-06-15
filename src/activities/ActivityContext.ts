@@ -3,7 +3,12 @@ import {
     getPageData,
     storePageData,
 } from "../page-api";
-import { setDefaultSoundUrls, urlPrefix } from "../shared";
+import {
+    cleanupActivitySounds,
+    playCorrectOrWrongSound,
+    preloadSoundsForActivity,
+    setDefaultSoundUrls,
+} from "../shared";
 import rightAnswer from "./right_answer.mp3";
 import wrongAnswer from "./wrong_answer.mp3";
 
@@ -38,6 +43,7 @@ export class ActivityContext {
             this.fixViteSoundPath(rightAnswer),
             this.fixViteSoundPath(wrongAnswer),
         );
+        preloadSoundsForActivity(this.pageElement);
     }
 
     // Report a score that can be used for analytics. The caller can call this repeatedly without worrying
@@ -74,11 +80,11 @@ export class ActivityContext {
     }
 
     public playCorrect(evt: Event) {
-        this.playCorrectOrWrong(evt, rightAnswer, "data-correct-sound");
+        playCorrectOrWrongSound(this.pageElement, true);
     }
 
     public playWrong(evt: Event) {
-        this.playCorrectOrWrong(evt, wrongAnswer, "data-wrong-sound");
+        playCorrectOrWrongSound(this.pageElement, false);
     }
 
     fixViteSoundPath(path: string) {
@@ -87,23 +93,6 @@ export class ActivityContext {
             path = path.substring(1);
         }
         return path;
-    }
-
-    // This is knows some of the same stuff as dragActivityRuntime.showCorrectOrWrongItems,
-    // but that code has to deal with far more, since there may be items to show which
-    // might include videos or narration to play. I don't see a good way to pull out the
-    // common parts, and this is not very tricky.
-    playCorrectOrWrong(evt: Event, defaultPath: string, attrName: string) {
-        const target = evt.currentTarget as HTMLElement;
-        const page = target?.closest(".bloom-page") as HTMLElement;
-        let path = page?.getAttribute(attrName);
-        if (path === "none") return; // explicitly no sound
-        if (path) {
-            path = urlPrefix() + "/audio/" + path;
-        } else {
-            path = this.fixViteSoundPath(defaultPath);
-        }
-        this.playSound(path);
     }
 
     private getPagePlayer(): any {
@@ -167,6 +156,8 @@ export class ActivityContext {
         this.listeners.forEach((l) =>
             l.target.removeEventListener(l.name, l.listener),
         );
+        // Cancel any in-progress preload downloads
+        cleanupActivitySounds(this.pageElement);
     }
 
     private sendMessageToPlayer(message: string) {
