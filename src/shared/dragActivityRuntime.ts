@@ -235,6 +235,9 @@ export function prepareActivity(
 
     prepareOrderSentenceActivity(page);
 
+    // Start preloading correct/wrong sounds now so they are buffered by the time the user answers.
+    preloadSoundsForActivity(page);
+
     // Slider:     // for drag-word-chooser-slider
     //     setupWordChooserSlider(page);
     //     setSlideablesVisibility(page, false);
@@ -346,6 +349,15 @@ export function undoPrepareActivity(page: HTMLElement) {
     ).forEach((elt: HTMLElement) => {
         elt.parentElement?.removeChild(elt);
     });
+
+    // Remove any preloaded sound elements added by preloadSoundsForActivity
+    page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`).forEach(
+        (audio) => {
+            audio.src = "";
+            audio.remove();
+        },
+    );
+
     const inPlayer = page.closest(".swiper-slide") !== null;
     doShowAnswersInTargets(!inPlayer, page);
     //Slider: setSlideablesVisibility(page, true);
@@ -848,6 +860,52 @@ export function setDefaultSoundUrls(
     defaultWrongSoundUrl = wrongSoundUrl;
 }
 
+// Attribute used to mark audio elements preloaded for correct/wrong sounds.
+const kPreloadSoundAttr = "data-preload-sound";
+
+// Preload both correct and wrong sounds so they are buffered before the user answers.
+// Called from prepareActivity so loading starts as soon as the page is shown.
+function preloadSoundsForActivity(page: HTMLElement): void {
+    const preloadIfNeeded = (
+        soundFile: string | null,
+        defaultUrl: string | undefined,
+    ): void => {
+        const addPrefix = soundFile !== null;
+        if (soundFile === null) {
+            soundFile = defaultUrl ?? null;
+        } else if (soundFile === "none") {
+            return;
+        }
+        if (!soundFile) return;
+
+        const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+        // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
+        const already = Array.from(
+            page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+        ).find((a) => a.dataset.preloadSound === url);
+        if (already) return;
+
+        const audio = document.createElement("audio");
+        audio.dataset.preloadSound = url;
+        audio.style.visibility = "hidden";
+        if (IsRunningOnBloomDesktop(page)) {
+            audio.classList.add("bloom-ui");
+        }
+        audio.src = url;
+        audio.load();
+        page.append(audio);
+    };
+
+    preloadIfNeeded(
+        page.getAttribute("data-correct-sound"),
+        defaultCorrectSoundUrl,
+    );
+    preloadIfNeeded(
+        page.getAttribute("data-wrong-sound"),
+        defaultWrongSoundUrl,
+    );
+}
+
 function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
     classSetter(page, "drag-activity-correct", correct);
     classSetter(page, "drag-activity-wrong", !correct);
@@ -894,9 +952,31 @@ function playSound(
     addPrefix = true,
     then?: () => void,
 ) {
-    const audio = new Audio(
-        (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile,
-    );
+    const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+
+    // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
+    // This avoids re-downloading the file and removes the delay before playback starts.
+    const preloaded = Array.from(
+        someElt.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+    ).find((a) => a.dataset.preloadSound === url);
+
+    let audio: HTMLAudioElement;
+    if (preloaded) {
+        delete preloaded.dataset.preloadSound; // mark as consumed
+        preloaded.currentTime = 0;
+        audio = preloaded;
+    } else {
+        audio = new Audio(url);
+        if (IsRunningOnBloomDesktop(someElt)) {
+            audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
+        }
+        audio.style.visibility = "hidden";
+        // To my surprise, in BP storybook it works without adding the audio to any document.
+        // But in Bloom proper, it does not. I think it is because this code is part of the toolbox,
+        // so the audio element doesn't have the right context to interpret the relative URL.
+        someElt.append(audio);
+    }
+
     let finished = false;
     const finish = () => {
         if (finished) {
@@ -905,14 +985,6 @@ function playSound(
         finished = true;
         then?.();
     };
-    if (IsRunningOnBloomDesktop(someElt)) {
-        audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
-    }
-    audio.style.visibility = "hidden";
-    // To my surprise, in BP storybook it works without adding the audio to any document.
-    // But in Bloom proper, it does not. I think it is because this code is part of the toolbox,
-    // so the audio element doesn't have the right context to interpret the relative URL.
-    someElt.append(audio);
     const playPromise = audio.play();
     playPromise?.catch(() => {
         finish();

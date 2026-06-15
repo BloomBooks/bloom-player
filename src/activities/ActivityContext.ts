@@ -24,6 +24,10 @@ export class ActivityContext {
         listener: EventListener;
     }>();
 
+    // Pre-loaded audio elements so correct/wrong sounds start instantly on first click.
+    private correctSoundPlayer: HTMLAudioElement | null = null;
+    private wrongSoundPlayer: HTMLAudioElement | null = null;
+
     constructor(
         pageIndex: number,
         pageDiv: HTMLElement,
@@ -38,6 +42,32 @@ export class ActivityContext {
             this.fixViteSoundPath(rightAnswer),
             this.fixViteSoundPath(wrongAnswer),
         );
+        this.preloadActivitySounds();
+    }
+
+    private preloadActivitySounds(): void {
+        const makePlayer = (url: string): HTMLAudioElement => {
+            const audio = document.createElement("audio");
+            audio.src = url;
+            audio.load();
+            return audio;
+        };
+
+        const correctAttr = this.pageElement.getAttribute("data-correct-sound");
+        if (correctAttr !== "none") {
+            const url = correctAttr
+                ? urlPrefix() + "/audio/" + correctAttr
+                : this.fixViteSoundPath(rightAnswer);
+            this.correctSoundPlayer = makePlayer(url);
+        }
+
+        const wrongAttr = this.pageElement.getAttribute("data-wrong-sound");
+        if (wrongAttr !== "none") {
+            const url = wrongAttr
+                ? urlPrefix() + "/audio/" + wrongAttr
+                : this.fixViteSoundPath(wrongAnswer);
+            this.wrongSoundPlayer = makePlayer(url);
+        }
     }
 
     // Report a score that can be used for analytics. The caller can call this repeatedly without worrying
@@ -74,11 +104,21 @@ export class ActivityContext {
     }
 
     public playCorrect(evt: Event) {
-        this.playCorrectOrWrong(evt, rightAnswer, "data-correct-sound");
+        if (this.correctSoundPlayer) {
+            this.correctSoundPlayer.currentTime = 0;
+            this.correctSoundPlayer.play();
+        } else {
+            this.playCorrectOrWrong(evt, rightAnswer, "data-correct-sound");
+        }
     }
 
     public playWrong(evt: Event) {
-        this.playCorrectOrWrong(evt, wrongAnswer, "data-wrong-sound");
+        if (this.wrongSoundPlayer) {
+            this.wrongSoundPlayer.currentTime = 0;
+            this.wrongSoundPlayer.play();
+        } else {
+            this.playCorrectOrWrong(evt, wrongAnswer, "data-wrong-sound");
+        }
     }
 
     fixViteSoundPath(path: string) {
@@ -167,6 +207,15 @@ export class ActivityContext {
         this.listeners.forEach((l) =>
             l.target.removeEventListener(l.name, l.listener),
         );
+        // Cancel any in-progress preload downloads
+        if (this.correctSoundPlayer) {
+            this.correctSoundPlayer.src = "";
+            this.correctSoundPlayer = null;
+        }
+        if (this.wrongSoundPlayer) {
+            this.wrongSoundPlayer.src = "";
+            this.wrongSoundPlayer = null;
+        }
     }
 
     private sendMessageToPlayer(message: string) {
