@@ -235,6 +235,9 @@ export function prepareActivity(
 
     prepareOrderSentenceActivity(page);
 
+    // Start preloading correct/wrong sounds now so they are buffered by the time the user answers.
+    preloadSoundsForActivity(page);
+
     // Slider:     // for drag-word-chooser-slider
     //     setupWordChooserSlider(page);
     //     setSlideablesVisibility(page, false);
@@ -346,6 +349,9 @@ export function undoPrepareActivity(page: HTMLElement) {
     ).forEach((elt: HTMLElement) => {
         elt.parentElement?.removeChild(elt);
     });
+
+    cleanupActivitySounds(page);
+
     const inPlayer = page.closest(".swiper-slide") !== null;
     doShowAnswersInTargets(!inPlayer, page);
     //Slider: setSlideablesVisibility(page, true);
@@ -848,14 +854,95 @@ export function setDefaultSoundUrls(
     defaultWrongSoundUrl = wrongSoundUrl;
 }
 
+// Attribute used to mark audio elements preloaded for correct/wrong sounds.
+const kPreloadSoundAttr = "data-preload-sound";
+
+// Remove any audio elements previously added by preloadSoundsForActivity.
+// Called from undoPrepareActivity and ActivityContext.stop().
+export function cleanupActivitySounds(page: HTMLElement): void {
+    page.querySelectorAll<HTMLAudioElement>(
+        `audio[${kPreloadSoundAttr}]`,
+    ).forEach((audio) => {
+        audio.src = "";
+        audio.remove();
+    });
+}
+
+// Preload both correct and wrong sounds so they are buffered before the user answers.
+// Called from prepareActivity so loading starts as soon as the page is shown.
+// Also called from ActivityContext so the sounds are ready for non-drag activities.
+export function preloadSoundsForActivity(page: HTMLElement): void {
+    const preloadIfNeeded = (
+        soundFile: string | null,
+        defaultUrl: string | undefined,
+    ): void => {
+        const addPrefix = soundFile !== null;
+        if (soundFile === null) {
+            soundFile = defaultUrl ?? null;
+        } else if (soundFile === "none") {
+            return;
+        }
+        if (!soundFile) return;
+
+        const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+        // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
+        const already = Array.from(
+            page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+        ).find((a) => a.dataset.preloadSound === url);
+        if (already) return;
+
+        const audio = document.createElement("audio");
+        audio.dataset.preloadSound = url;
+        audio.style.visibility = "hidden";
+        if (IsRunningOnBloomDesktop(page)) {
+            audio.classList.add("bloom-ui");
+        }
+        audio.src = url;
+        audio.load();
+        page.append(audio);
+    };
+
+    preloadIfNeeded(
+        page.getAttribute("data-correct-sound"),
+        defaultCorrectSoundUrl,
+    );
+    preloadIfNeeded(
+        page.getAttribute("data-wrong-sound"),
+        defaultWrongSoundUrl,
+    );
+}
+
+// Play the correct or wrong sound for the given page, then call `then` when done (or immediately
+// if there is no sound). Handles the data-correct-sound / data-wrong-sound attribute and the
+// registered default URLs. Exported so ActivityContext can share this logic.
+export function playCorrectOrWrongSound(
+    page: HTMLElement,
+    correct: boolean,
+    then?: () => void,
+): void {
+    let soundFile = page.getAttribute(
+        correct ? "data-correct-sound" : "data-wrong-sound",
+    );
+    // if the attribute is not there at all, use the default sound, if one has been set.
+    // The default is not relative to the audio folder in the book, so we won't add a prefix.
+    const addPrefix = soundFile !== null;
+    if (soundFile === null) {
+        soundFile = correct ? defaultCorrectSoundUrl : defaultWrongSoundUrl;
+    } else if (soundFile === "none") {
+        // explicitly no sound
+        soundFile = undefined;
+    }
+    if (soundFile) {
+        playSound(page, soundFile, addPrefix, then);
+    } else {
+        then?.();
+    }
+}
+
 function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
     classSetter(page, "drag-activity-correct", correct);
     classSetter(page, "drag-activity-wrong", !correct);
 
-    // play sound
-    let soundFile = page.getAttribute(
-        correct ? "data-correct-sound" : "data-wrong-sound",
-    );
     const playOtherStuff = () => {
         const elementsMadeVisible = Array.from(
             page.getElementsByClassName(
@@ -871,21 +958,7 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
         const playables = getAudioSentences(possibleNarrationElements);
         playAllVideo(videoElements, () => playAllAudio(playables, page));
     };
-    // if the attribute is not there at all, use the default sound, if one has been set.
-    // This is not in relative to the audio folder in the book, so we won't add a prefix
-    // in that case.
-    const addPrefix = soundFile !== null;
-    if (soundFile === null) {
-        soundFile = correct ? defaultCorrectSoundUrl : defaultWrongSoundUrl;
-    } else if (soundFile === "none") {
-        // explicity no sound, go straight to other stuff if any
-        soundFile = undefined;
-    }
-    if (soundFile) {
-        playSound(page, soundFile, addPrefix, playOtherStuff);
-    } else {
-        playOtherStuff();
-    }
+    playCorrectOrWrongSound(page, correct, playOtherStuff);
 }
 
 function playSound(
@@ -894,9 +967,31 @@ function playSound(
     addPrefix = true,
     then?: () => void,
 ) {
-    const audio = new Audio(
-        (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile,
-    );
+    const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+
+    // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
+    // This avoids re-downloading the file and removes the delay before playback starts.
+    const preloaded = Array.from(
+        someElt.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+    ).find((a) => a.dataset.preloadSound === url);
+
+    let audio: HTMLAudioElement;
+    if (preloaded) {
+        delete preloaded.dataset.preloadSound; // mark as consumed
+        preloaded.currentTime = 0;
+        audio = preloaded;
+    } else {
+        audio = new Audio(url);
+        if (IsRunningOnBloomDesktop(someElt)) {
+            audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
+        }
+        audio.style.visibility = "hidden";
+        // To my surprise, in BP storybook it works without adding the audio to any document.
+        // But in Bloom proper, it does not. I think it is because this code is part of the toolbox,
+        // so the audio element doesn't have the right context to interpret the relative URL.
+        someElt.append(audio);
+    }
+
     let finished = false;
     const finish = () => {
         if (finished) {
@@ -905,14 +1000,6 @@ function playSound(
         finished = true;
         then?.();
     };
-    if (IsRunningOnBloomDesktop(someElt)) {
-        audio.classList.add("bloom-ui"); // in case remove code fails, should make sure it doesn't get saved.
-    }
-    audio.style.visibility = "hidden";
-    // To my surprise, in BP storybook it works without adding the audio to any document.
-    // But in Bloom proper, it does not. I think it is because this code is part of the toolbox,
-    // so the audio element doesn't have the right context to interpret the relative URL.
-    someElt.append(audio);
     const playPromise = audio.play();
     playPromise?.catch(() => {
         finish();

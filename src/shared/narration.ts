@@ -312,6 +312,15 @@ export function playAllAudio(elements: HTMLElement[], page: HTMLElement): void {
     }
 
     const firstElementToPlay = elementsToPlayConsecutivelyStack[stackSize - 1]; // Remember to pop it when you're done playing it. (i.e., in playEnded)
+
+    // Discard any preloaded audio from the previous page, then start preloading the second
+    // segment now so the browser has the full duration of the first segment to download it.
+    // (The first segment is loaded normally by the setSoundAndHighlight call below.)
+    clearPreloadedAudio();
+    if (stackSize >= 2) {
+        preloadAudioForElement(elementsToPlayConsecutivelyStack[stackSize - 2]);
+    }
+
     // At one point it seemed to help something to delete the media player and make a new one each time.
     // I didn't comment this at the time, but my recollection is that this could help with some cases
     // where the old one was in a bad state, such as in the middle of pausing.
@@ -558,6 +567,18 @@ function playCurrentInternal() {
             ++currentAudioSessionNum;
             audioPlayCurrentStartTime = new Date().getTime();
             highlightNextSubElement(currentAudioSessionNum);
+
+            // While this segment plays, preload the next one so its audio is buffered by the
+            // time we need it.  The current segment is at stack[length-1] (not yet popped), so
+            // the next is at stack[length-2].
+            const nextPreloadIndex =
+                elementsToPlayConsecutivelyStack.length - 2;
+            if (nextPreloadIndex >= 0) {
+                preloadAudioForElement(
+                    elementsToPlayConsecutivelyStack[nextPreloadIndex],
+                );
+            }
+
             handlePlayPromise(promise);
         }
     }
@@ -796,7 +817,12 @@ function setHighlightTo({
     // narration and drag activity text.  See BL-14797
     const hasError = mediaPlayer.error !== null;
     if (!hasError && disableHighlightIfNoAudio) {
-        const isAlreadyPlaying = mediaPlayer.currentTime > 0;
+        // Use paused/ended to detect whether audio is actively playing.
+        // currentTime > 0 was the old check, but it also returns true right after a clip ends
+        // (the player is paused but currentTime is non-zero), which incorrectly skipped suppression
+        // for the next segment. The Soft Split case (one audio file, multiple highlighted sentences)
+        // still works because the player is neither paused nor ended while playing.
+        const isAlreadyPlaying = !mediaPlayer.paused && !mediaPlayer.ended;
         // If it's already playing, no need to disable (Especially in the Soft Split case, where only one file is playing but multiple sentences need to be highlighted).
         if (!isAlreadyPlaying) {
             // Start off in a highlight-disabled state so we don't display any momentary highlight for cases where there is no audio for this element.
@@ -805,13 +831,36 @@ function setHighlightTo({
             newElement.classList.add(kSuppressHighlightClass);
             // When it starts playing, we know we really have such an audio file, so we can stop
             // suppressing the highlight.
-            mediaPlayer.addEventListener("playing", () => {
+            // Remove any previous suppress listeners before adding new ones so they don't
+            // accumulate across segments (we keep explicit references instead of { once: true }
+            // because { once: true } on the error listener broke auto-advance).
+            if (currentSuppressPlayingListener) {
+                mediaPlayer.removeEventListener(
+                    "playing",
+                    currentSuppressPlayingListener,
+                );
+            }
+            if (currentSuppressErrorListener) {
+                mediaPlayer.removeEventListener(
+                    "error",
+                    currentSuppressErrorListener,
+                );
+            }
+            currentSuppressPlayingListener = () => {
                 newElement.classList.remove(kSuppressHighlightClass);
-            });
-            mediaPlayer.addEventListener("error", () => {
+            };
+            currentSuppressErrorListener = () => {
                 newElement.classList.remove("ui-audioCurrent");
                 newElement.classList.remove(kSuppressHighlightClass);
-            });
+            };
+            mediaPlayer.addEventListener(
+                "playing",
+                currentSuppressPlayingListener,
+            );
+            mediaPlayer.addEventListener(
+                "error",
+                currentSuppressErrorListener,
+            );
         }
     }
 
@@ -957,6 +1006,55 @@ function setCurrentAudioId(id: string) {
     }
 }
 
+// When we know which audio element comes next, we preload it on a hidden audio element so the
+// browser starts downloading before we actually need to play it. We generate the URL once (with
+// a fixed timestamp) and store it; updatePlayerStatus reuses that same URL so the browser can
+// serve the response from its cache rather than fetching again.
+let preloadedAudioId: string = "";
+let preloadedAudioSrc: string = "";
+
+// Suppress-highlight listeners attached to the shared media player.  We keep explicit references
+// so we can remove them before attaching new ones for the next segment — ensuring at most one of
+// each exists at any time without relying on { once: true }, which caused auto-advance to break.
+let currentSuppressPlayingListener: EventListener | null = null;
+let currentSuppressErrorListener: EventListener | null = null;
+
+function getPreloadPlayer(): HTMLAudioElement {
+    let el = document.getElementById(
+        "bloom-audio-preload",
+    ) as HTMLAudioElement | null;
+    if (!el) {
+        el = document.createElement("audio");
+        el.id = "bloom-audio-preload";
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
+function preloadAudioForElement(element: Element): void {
+    const firstAudioSentence = getFirstAudioSentenceWithinElement(element);
+    const id = firstAudioSentence ? firstAudioSentence.id : element.id;
+    if (preloadedAudioId === id) return; // already preloading this one
+
+    const url =
+        currentAudioUrl(id) +
+        "?nocache=" +
+        new Date().getTime() +
+        "&optional=true";
+    preloadedAudioId = id;
+    preloadedAudioSrc = url;
+
+    const preloadPlayer = getPreloadPlayer();
+    preloadPlayer.src = url;
+    // load() tells the browser to actively fetch the resource rather than waiting.
+    preloadPlayer.load();
+}
+
+function clearPreloadedAudio(): void {
+    preloadedAudioId = "";
+    preloadedAudioSrc = "";
+}
+
 function updatePlayerStatus() {
     const player = getPlayer();
     if (!player) {
@@ -970,15 +1068,21 @@ function updatePlayerStatus() {
     }
     const url = currentAudioUrl(currentAudioId);
     logNarration(url);
-    // because this code is meant to work in both Bloom and BloomPlayer, we can't call a Bloom API to find
-    // out whether we actually have a recording (as we well might not, if we just opened the talking book
-    // tool and haven't recorded anything yet). So we just try to play it and see what happens.
-    // The optional param tells Bloom not to report an error if the file isn't found, and is ignored in
-    // other contexts.
-    player.setAttribute(
-        "src",
-        url + "?nocache=" + new Date().getTime() + "&optional=true",
-    );
+    // If we preloaded this audio segment, reuse the same URL so the browser can serve the
+    // already-downloaded response from its cache instead of issuing a new request.
+    let src: string;
+    if (preloadedAudioId === currentAudioId && preloadedAudioSrc) {
+        src = preloadedAudioSrc;
+        clearPreloadedAudio();
+    } else {
+        // because this code is meant to work in both Bloom and BloomPlayer, we can't call a Bloom API to find
+        // out whether we actually have a recording (as we well might not, if we just opened the talking book
+        // tool and haven't recorded anything yet). So we just try to play it and see what happens.
+        // The optional param tells Bloom not to report an error if the file isn't found, and is ignored in
+        // other contexts.
+        src = url + "?nocache=" + new Date().getTime() + "&optional=true";
+    }
+    player.setAttribute("src", src);
 }
 
 function currentAudioUrl(id: string): string {
