@@ -110,15 +110,16 @@ export class Video {
             );
             replayButton.addEventListener("click", this.handleReplayClick);
 
+            // Prevent iOS from opening the video in a fullscreen/PiP pop-up window,
+            // which breaks playback (especially for draggable videos). See BL-16146.
+            videoElement.setAttribute("playsinline", "");
+            videoElement.setAttribute("webkit-playsinline", "");
+            videoElement.setAttribute("disablePictureInPicture", "");
             // These settings are useful if we use the built-in controls.
-            // videoElement.setAttribute("disablepictureinpicture", "true");
             // videoElement.setAttribute(
             //     "controlsList",
             //     "noplaybackrate nofullscreen nodownload noremoteplayback"
             // );
-            // if (!videoElement.hasAttribute("playsinline")) {
-            //     videoElement.setAttribute("playsinline", "true");
-            // }
             if (videoElement.currentTime !== 0) {
                 // in case we previously played this video and are returning to this page...
                 videoElement.currentTime = 0;
