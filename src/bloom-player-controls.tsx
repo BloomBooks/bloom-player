@@ -3,6 +3,7 @@ BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to previ
 book inside of the Bloom:Publish:Android screen.
 */
 import { BloomPlayerCore, ForceShowAppBar } from "./bloom-player-core";
+import { getPageSizeClass } from "./pageSizing";
 import * as ReactDOM from "react-dom";
 import {
     informHostOfBackAction,
@@ -402,7 +403,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
         // and have to make sure the resulting timeouts occur in the right order...
         let localMaxPageDimension = maxPageDimension;
         let localAspectRatio = pageAspectRatio;
-        const pageClass = BloomPlayerCore.getPageSizeClass(page);
+        const pageClass = getPageSizeClass(page);
         if (props.url !== previousUrl || pageClass !== previousPageClass) {
             setPreviousUrl(props.url);
             setPreviousPageClass(pageClass);
