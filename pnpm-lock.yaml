@@ -41,9 +41,6 @@ importers:
       react-id-swiper:
         specifier: 2.3.2
         version: 2.3.2(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(swiper@4.5.1)
-      style-scoped:
-        specifier: 0.2.2
-        version: 0.2.2
       swiper:
         specifier: 4.5.1
         version: 4.5.1
@@ -2319,9 +2316,6 @@ packages:
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
-
-  style-scoped@0.2.2:
-    resolution: {integrity: sha512-KOVGTDx6XhrHncmgBQrZBICZVNEfCH+pCO2z1pH9602Vd0zUJ+qONuX0qBba4jS//H1H8lKCc/lxfGG31wlTuQ==}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -4901,8 +4895,6 @@ snapshots:
   strip-indent@4.1.1: {}
 
   strip-json-comments@3.1.1: {}
-
-  style-scoped@0.2.2: {}
 
   supports-color@7.2.0:
     dependencies:
