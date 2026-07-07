@@ -5,8 +5,9 @@ bloom-player-core is responsible for all the behavior of working through a book,
 import * as React from "react";
 import axios from "axios";
 import Swiper, { SwiperInstance } from "react-id-swiper";
-// This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature
-import "style-scoped/scoped.min.js";
+// This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature.
+// We use a patched version that fixes a bug with comma-separated selectors containing attribute selectors.
+import "./scoped-styles-polyfill.js";
 import "swiper/dist/css/swiper.min.css";
 import "./bloom-player-ui.less";
 import "./bloom-player-content.less";

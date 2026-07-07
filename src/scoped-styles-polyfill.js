@@ -68,10 +68,18 @@
   }
 
 
-  // This monstrosity matches any valid `[foo="bar"]` block, with either quote style. Parenthesis
-  // have no special meaning within an attribute selector, and the complex regexp below mostly
-  // exists to allow \" or \' in string parts (e.g. `[foo="b\"ar"]`).
-  const attrRe = /^\[.*?(?:(["'])(?:.|\\\1)*\1.*)*\]/;
+  // This matches any valid `[foo="bar"]` block, with either quote style. The regex explicitly
+  // handles quoted content to allow \" or \' in string parts (e.g. `[foo="b\"ar"]`) and
+  // allows ] inside quoted values (e.g. `[attr="a]b"]`).
+  //
+  // FIX: The original regex had a greedy `.*` after quoted values that could match across
+  // multiple attribute selectors, breaking comma-separated lists. Now we explicitly match:
+  // 1. Unquoted content (no brackets or quotes)
+  // 2. Quoted strings (allowing ] and escaped quotes inside)
+  // 3. Repeat as needed
+  // 4. Final unquoted content (no brackets)
+  // This ensures we stop at the ] of THIS attribute only, not consume across commas.
+  const attrRe = /^\[(?:[^"'\[\]]*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))*[^"'\[\]]*\]/;
   const walkSelectorRe = /([([,]|:scope\b)/;  // "interesting" setups
   const scopeRe = /^:scope\b/;
 
@@ -82,6 +90,7 @@
    * @return {?{selector: string, rest: string}}
    */
   function consumeSelector(raw, prefix) {
+    const startPos = raw.search(/\S/);  // find where actual selector starts (skip leading whitespace)
     let i = raw.search(walkSelectorRe);
     if (i === -1) {
       // found literally nothing interesting, success
@@ -91,15 +100,17 @@
       };
     } else if (raw[i] === ',') {
       // found comma without anything interesting, yield rest
+      // Extract from startPos to exclude leading whitespace
+      const selectorPart = startPos >= 0 && startPos < i ? raw.substring(startPos, i) : raw.substr(0, i);
       return {
-        selector: `${prefix} ${raw.substr(0, i)}`,
-        rest: raw.substr(i + 1),
+        selector: `${prefix} ${selectorPart}`,
+        rest: raw.substr(i + 1).trimStart(),
       }
     }
 
     let leftmost = true;   // whether we're past a descendant or similar selector
     let scope = false;     // whether :scope has been found + replaced
-    i = raw.search(/\S/);  // place i after initial whitespace only
+    i = startPos;
 
     let depth = 0;
   outer:
@@ -158,8 +169,8 @@
       }
     }
 
-    const selector = (scope ? '' : `${prefix} `) + raw.substr(0, i);
-    return {selector, rest: raw.substr(i + 1)};
+    const selector = (scope ? '' : `${prefix} `) + raw.substring(startPos, i);
+    return {selector, rest: raw.substr(i + 1).trimStart()};
   }
 
   function updateSelectorText(selectorText, prefix) {
