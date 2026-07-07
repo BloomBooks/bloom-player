@@ -94,6 +94,10 @@ import {
 } from "./bookLoader";
 import { getPageSizeClass, setPageSizeClass } from "./pageSizing";
 import {
+    registerCurrentPlayer,
+    unregisterCurrentPlayer,
+} from "./currentPlayer";
+import {
     showOrHideL1OnlyText,
     updateDivVisibilityByLangCode,
     updateOverlayPositionsByLangCode,
@@ -274,7 +278,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private bookInteraction: BookInteraction = new BookInteraction();
     private mustUseOriginalPageSize: boolean = false;
 
-    private static currentPagePlayer: BloomPlayerCore;
     private indicesOfPagesWhereWeShouldPreserveDOMState: any = {};
     // This is set true just before isLoading is set false. Therefore it is true during
     // the initial render that actually creates the main swiper, and through (typically) a few
@@ -337,9 +340,6 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.state.startPageIndex = props.startPageIndex;
         }
         this.state.bookUrl = parsedUrl.href;
-        // Make this player (currently always the only one) the recipient for
-        // notifications from narration.ts etc about duration etc.
-        BloomPlayerCore.currentPagePlayer = this;
         this.legacyQuestionHandler = new LegacyQuestionHandler(
             props.locationOfDistFolder,
         );
@@ -379,68 +379,72 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     private isPagesLocalized: boolean = false;
 
-    private static currentPage: HTMLElement | null;
-    private static currentPageIndex: number;
-    private static currentPageHasVideo: boolean;
+    private currentPage: HTMLElement | null = null;
+    private currentPageIndex: number;
+    private currentPageHasVideo: boolean;
     private currentPageHidesNavigationButtons: boolean = false;
 
     private indexOflastNumberedPage: number;
 
+    // These document/window handlers are instance fields so that
+    // componentWillUnmount can remove exactly the same function objects it added.
+
+    private handleWindowFocusEvent = () => this.handleWindowFocus();
+    private handleWindowBlurEvent = () => this.handleWindowBlur();
+
+    // Prevent unwanted behavior on things from getting to swiper where they might be interpreted as a drag.
+    private handlePointerDownCapture = (event: PointerEvent) => {
+        if (
+            // anything with a link
+            (event.target as HTMLElement).closest("[href], [data-href]") ||
+            // video too, unless intended to be draggable (BL-14599)
+            ((event.target as HTMLElement).closest(".bloom-videoContainer") &&
+                !(event.target as HTMLElement).closest("[data-draggable-id]"))
+        ) {
+            // Stop the swiper from starting a drag
+            event.stopPropagation();
+            // Stop the browser from showing a thing like you're trying to drag the link to some other window
+            event.preventDefault();
+        }
+    };
+
+    // Prevent the browser's occasional desire to drag things instead of swipe the page.
+    // Text and images can get dragged in this way, and somehow it seems to be able to put
+    // us in a state where we miss a mouse up and the page gets stuck in a state where every
+    // mouse move is interpreted as page turning. See BL-14199.
+    private handleDragStartCapture = (event: DragEvent) => {
+        // This might be too strong...there could be activities that use dragging
+        // and still don't want the browser's default behavior. But I also can't be
+        // sure that we wouldn't break some of them.
+        if (!this.activityManager.getActivityAbsorbsDragging()) {
+            event.preventDefault();
+        }
+    };
+
     public componentDidMount() {
         LocalizationManager.setUp();
 
-        window.addEventListener("focus", () => this.handleWindowFocus());
-        window.addEventListener("blur", () => this.handleWindowBlur());
+        // Make this player the one that non-React modules (video analytics,
+        // page-api) reach through the currentPlayer registry.
+        registerCurrentPlayer(this);
+
+        window.addEventListener("focus", this.handleWindowFocusEvent);
+        window.addEventListener("blur", this.handleWindowBlurEvent);
 
         // To get this to fire consistently no matter where the focus is,
         // we have to attach to the document itself. No level of react component
         // seems to work (using the OnKeyDown prop). So we use good ol'-fashioned js.
-        document.addEventListener("keydown", (e) =>
-            this.handleDocumentLevelKeyDown(e),
-        );
+        document.addEventListener("keydown", this.handleDocumentLevelKeyDown);
 
-        // Prevent unwanted behavior on things from getting to swiper where they might be interpreted as a drag.
         document.addEventListener(
             "pointerdown",
-            (event) => {
-                if (
-                    // anything with a link
-                    (event.target as HTMLElement).closest(
-                        "[href], [data-href]",
-                    ) ||
-                    // video too, unless intended to be draggable (BL-14599)
-                    ((event.target as HTMLElement).closest(
-                        ".bloom-videoContainer",
-                    ) &&
-                        !(event.target as HTMLElement).closest(
-                            "[data-draggable-id]",
-                        ))
-                ) {
-                    // Stop the swiper from starting a drag
-                    event.stopPropagation();
-                    // Stop the browser from showing a thing like you're trying to drag the link to some other window
-                    event.preventDefault();
-                }
-            },
+            this.handlePointerDownCapture,
             { capture: true }, // Let us see this before children see it.
         );
 
-        // Prevent the browser's occasional desire to drag things instead of swipe the page.
-        // Text and images can get dragged in this way, and somehow it seems to be able to put
-        // us in a state where we miss a mouse up and the page gets stuck in a state where every
-        // mouse move is interpreted as page turning. See BL-14199.
-        document.addEventListener(
-            "dragstart",
-            (event) => {
-                // This might be too strong...there could be activities that use dragging
-                // and still don't want the browser's default behavior. But I also can't be
-                // sure that we wouldn't break some of them.
-                if (!this.activityManager.getActivityAbsorbsDragging()) {
-                    event.preventDefault();
-                }
-            },
-            { capture: true },
-        );
+        document.addEventListener("dragstart", this.handleDragStartCapture, {
+            capture: true,
+        });
 
         // March 2020 - Andrew/JohnH got confused about this line because 1) we don't actually *know* the
         // previous props & state, so it's a bit bogus (but it does work), and 2) when we remove it
@@ -1170,19 +1174,19 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 if (this.shouldFocusNextButtonForNewBook()) nextButton?.focus();
             }, 500);
         } else {
-            if (BloomPlayerCore.currentPage) {
+            if (this.currentPage) {
                 this.setPlayerTimeout(() => {
                     // Presumably, the language was just changed.
                     // Reset the index / re-show the page
                     // Even though we're setting it to the same index, setIndex and showingPage have other useful/necessary side effects such as:
-                    // * Replace BloomPlayerCore.currentPage with the new page created from the updated content
+                    // * Replace this.currentPage with the new page created from the updated content
                     // * Update the Play/Pause button visibility based on the new language
                     // * Stops the playback of the old language's audio (if in Play mode)
                     // * Starts the playback of the new language's audio (if in Play mode)
                     // * Update whether scrollbars should appear
                     // * etc.
-                    this.setIndex(BloomPlayerCore.currentPageIndex);
-                    this.showingPage(BloomPlayerCore.currentPageIndex);
+                    this.setIndex(this.currentPageIndex);
+                    this.showingPage(this.currentPageIndex);
                 }, 200);
             }
         }
@@ -1218,7 +1222,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     private handlePageVideoComplete = (pageVideoData) => {
         // Verify we're on the current page before playing audio (BL-10039)
         // If the user if flipping pages rapidly, video completed events can overlap.
-        if (pageVideoData!.page === BloomPlayerCore.currentPage) {
+        if (pageVideoData!.page === this.currentPage) {
             this.playAudioAndAnimation(pageVideoData!.page); // play audio after video finishes
         }
     };
@@ -1319,10 +1323,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // This test determines if we changed pages while paused,
             // since the narration object won't yet be updated.
             if (
-                BloomPlayerCore.currentPage !== getCurrentNarrationPage() ||
+                this.currentPage !== getCurrentNarrationPage() ||
                 currentPlaybackMode === PlaybackMode.MediaFinished
             ) {
-                this.resetForNewPageAndPlay(BloomPlayerCore.currentPage!);
+                this.resetForNewPageAndPlay(this.currentPage!);
             } else {
                 if (currentPlaybackMode === PlaybackMode.VideoPaused) {
                     this.video.play(); // sets currentPlaybackMode = VideoPlaying
@@ -1358,12 +1362,26 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
     public componentWillUnmount() {
         this.pauseAllMultimedia();
-        document.removeEventListener("keydown", (e) =>
-            this.handleDocumentLevelKeyDown(e),
+        window.removeEventListener("focus", this.handleWindowFocusEvent);
+        window.removeEventListener("blur", this.handleWindowBlurEvent);
+        document.removeEventListener(
+            "keydown",
+            this.handleDocumentLevelKeyDown,
+        );
+        document.removeEventListener(
+            "pointerdown",
+            this.handlePointerDownCapture,
+            { capture: true },
+        );
+        document.removeEventListener(
+            "dragstart",
+            this.handleDragStartCapture,
+            { capture: true },
         );
         this.unsubscribeAllEvents();
         this.pendingTimeouts.forEach((id) => window.clearTimeout(id));
         this.pendingTimeouts.clear();
+        unregisterCurrentPlayer(this);
     }
 
     private unsubscribeAllEvents() {
@@ -1960,12 +1978,13 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         return bloomPage.getAttribute("id")!;
     }
 
-    public static getCurrentPage(): HTMLElement {
-        return BloomPlayerCore.currentPage!;
+    // part of the ICurrentPlayer interface (see currentPlayer.ts)
+    public getCurrentPage(): HTMLElement | null {
+        return this.currentPage;
     }
 
     private isXmatterPage(): boolean {
-        const page = BloomPlayerCore.currentPage;
+        const page = this.currentPage;
         if (!page) {
             return true; // shouldn't happen, but at least it won't be counted in analytics
         }
@@ -2029,9 +2048,9 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // scrolling it into view. So now we allow that to finish, then do this stuff.
         //console.log(`ShowingPage(${index})`);
         this.setPlayerTimeout(() => {
-            BloomPlayerCore.currentPage = bloomPage;
-            BloomPlayerCore.currentPageIndex = index;
-            BloomPlayerCore.currentPageHasVideo = Video.pageHasVideo(bloomPage);
+            this.currentPage = bloomPage;
+            this.currentPageIndex = index;
+            this.currentPageHasVideo = Video.pageHasVideo(bloomPage);
 
             // This is probably redundant, since we update all the page sizes on rotate, and again in setIndex.
             // It's not expensive so leaving it in for robustness.
@@ -2065,7 +2084,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 this.props.reportPageProperties({
                     hasAudio: pageHasAudio(bloomPage),
                     hasMusic: this.music.pageHasMusic(bloomPage),
-                    hasVideo: BloomPlayerCore.currentPageHasVideo,
+                    hasVideo: this.currentPageHasVideo,
                 });
             }
 
@@ -2156,30 +2175,28 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         if (!this.bookInteraction.reportedAudioOnCurrentPage) {
             this.bookInteraction.reportedAudioOnCurrentPage = true;
             this.bookInteraction.audioPageShown(
-                BloomPlayerCore.currentPageIndex,
+                this.currentPageIndex,
             );
         }
         this.sendUpdateOfBookProgressReportToExternalContext();
     }
 
-    public static storeVideoAnalytics(duration: number) {
+    // part of the ICurrentPlayer interface (see currentPlayer.ts)
+    public storeVideoAnalytics(duration: number) {
         // We get some spurious very small durations, including sometimes a zero on a page that
         // doesn't have any video.
         if (duration < 0.001) {
             return;
         }
-        const player = BloomPlayerCore.currentPagePlayer;
-        player.bookInteraction.totalVideoDuration += duration;
+        this.bookInteraction.totalVideoDuration += duration;
         if (
-            !player.bookInteraction.reportedVideoOnCurrentPage &&
-            !player.isXmatterPage()
+            !this.bookInteraction.reportedVideoOnCurrentPage &&
+            !this.isXmatterPage()
         ) {
-            player.bookInteraction.reportedVideoOnCurrentPage = true;
-            player.bookInteraction.videoPageShown(
-                BloomPlayerCore.currentPageIndex,
-            );
+            this.bookInteraction.reportedVideoOnCurrentPage = true;
+            this.bookInteraction.videoPageShown(this.currentPageIndex);
         }
-        player.sendUpdateOfBookProgressReportToExternalContext();
+        this.sendUpdateOfBookProgressReportToExternalContext();
     }
 
     // This should only be called when NOT paused, because it will begin to play audio and highlighting
@@ -2193,7 +2210,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         }
         setCurrentNarrationPage(bloomPage);
         // State must be set before calling HandlePageVisible() and related methods.
-        if (BloomPlayerCore.currentPageHasVideo) {
+        if (this.currentPageHasVideo) {
             const handleVideoAndMusic = () => {
                 this.video.HandlePageVisible(
                     bloomPage,

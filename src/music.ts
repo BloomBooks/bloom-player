@@ -1,5 +1,4 @@
 import LiteEvent from "./shared/event";
-import { BloomPlayerCore } from "./bloom-player-core";
 import {
     logSound,
     logSoundPaused,
