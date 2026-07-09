@@ -114,6 +114,7 @@ Bloom books link to each other using each book's "Instance ID". This is a guid t
   "credits":"มิได้จัดจำหน่าย  แต่จัดทำเพื่อส่งเสริมการเรียนรู้",
   "tags":["topic:Fiction"],
   "pageCount":16,
+  ...
 ```
 
 To support this, your host needs to:
