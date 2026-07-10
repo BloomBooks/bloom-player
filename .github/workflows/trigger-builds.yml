@@ -19,14 +19,20 @@ jobs:
                         ref: 'master'
                       });
 
-            - name: Trigger TeamCity Build for Bloom Reader Alpha
-              uses: fjogeleit/http-request-action@v1
+            # Bloom Reader alpha builds moved from TeamCity to GitHub Actions;
+            # the workflow upgrades to the latest bloom-player@alpha at build
+            # time, so dispatching it on master is all that's needed here.
+            - name: Trigger GHA for Bloom Reader Alpha
+              uses: actions/github-script@v7
               with:
-                  url: "${{ secrets.TEAMCITY_URL }}/app/rest/buildQueue"
-                  method: "POST"
-                  contentType: "application/json"
-                  customHeaders: '{"Authorization": "Bearer ${{ secrets.TEAMCITY_TOKEN_RUN_BUILD }}"}'
-                  data: '{"buildType": {"id": "Bloom_BloomReader_BloomReaderMasterAlphaContinuousPublish"}}'
+                  github-token: ${{ secrets.GH_TOKEN_BLOOMREADER_ACTIONS }}
+                  script: |
+                      await github.rest.actions.createWorkflowDispatch({
+                        owner: 'BloomBooks',
+                        repo: 'BloomReader',
+                        workflow_id: 'play-publish.yml',
+                        ref: 'master'
+                      });
 
             - name: Trigger TeamCity Build for Bloom Desktop Alpha
               uses: fjogeleit/http-request-action@v1
