@@ -5,11 +5,13 @@ permissions:
     id-token: write
     actions: write
 
+# Which npm dist-tag each branch publishes to (release -> latest,
+# master -> alpha) is configured in .releaserc.json.
 on:
     push:
         branches:
+            - release
             - master
-            - alpha
 
 jobs:
     build-test-release:
@@ -55,7 +57,7 @@ jobs:
               env:
                   BLOOM_CROWDIN_TOKEN: ${{ secrets.BLOOM_CROWDIN_TOKEN }}
               run: |
-                  if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+                  if [ "${{ github.ref }}" = "refs/heads/release" ]; then
                     pnpm run strings:sync
                   else
                     pnpm run strings:download
