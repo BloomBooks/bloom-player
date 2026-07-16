@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  react-docgen-typescript@2.4.0: 80fc0db0b733fd9af3910c2409de327aa30b08f588ce7756487eecd85ac991e4
+
 importers:
 
   .:
@@ -3340,7 +3343,7 @@ snapshots:
   '@joshwooding/vite-plugin-react-docgen-typescript@0.7.0(typescript@7.0.2)(vite@7.3.3(@types/node@22.19.18)(less@4.6.4)(terser@5.47.1)(tsx@4.21.0))':
     dependencies:
       glob: 13.0.6
-      react-docgen-typescript: 2.4.0(typescript@7.0.2)
+      react-docgen-typescript: 2.4.0(patch_hash=80fc0db0b733fd9af3910c2409de327aa30b08f588ce7756487eecd85ac991e4)(typescript@7.0.2)
       vite: 7.3.3(@types/node@22.19.18)(less@4.6.4)(terser@5.47.1)(tsx@4.21.0)
     optionalDependencies:
       typescript: 7.0.2
@@ -3645,7 +3648,7 @@ snapshots:
       '@storybook/react-dom-shim': 10.3.6(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(storybook@10.3.6(@testing-library/dom@10.4.1)(prettier@3.8.3)(react-dom@17.0.2(react@17.0.2))(react@17.0.2))
       react: 17.0.2
       react-docgen: 8.0.3
-      react-docgen-typescript: 2.4.0(typescript@7.0.2)
+      react-docgen-typescript: 2.4.0(patch_hash=80fc0db0b733fd9af3910c2409de327aa30b08f588ce7756487eecd85ac991e4)(typescript@7.0.2)
       react-dom: 17.0.2(react@17.0.2)
       storybook: 10.3.6(@testing-library/dom@10.4.1)(prettier@3.8.3)(react-dom@17.0.2(react@17.0.2))(react@17.0.2)
     optionalDependencies:
@@ -5294,7 +5297,7 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-docgen-typescript@2.4.0(typescript@7.0.2):
+  react-docgen-typescript@2.4.0(patch_hash=80fc0db0b733fd9af3910c2409de327aa30b08f588ce7756487eecd85ac991e4)(typescript@7.0.2):
     dependencies:
       typescript: 7.0.2
 
