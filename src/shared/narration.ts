@@ -386,8 +386,8 @@ function removeHighlightClasses(element: HTMLElement) {
     element.classList.remove(kDisableHighlightClass);
     element.classList.remove(kEnableHighlightClass);
 
-    Array.from(element.children).forEach((child: HTMLElement) => {
-        removeHighlightClasses(child);
+    Array.from(element.children).forEach((child) => {
+        removeHighlightClasses(child as HTMLElement);
     });
 }
 
@@ -1266,7 +1266,7 @@ function getPageAudioElements(
     page?: HTMLElement,
     canvasToExclude?: HTMLElement,
 ): HTMLElement[] {
-    return [].concat.apply(
+    return ([] as HTMLElement[]).concat.apply(
         [],
         getPagePlayableDivs(page, canvasToExclude).map((x) =>
             findAll(".audio-sentence", x, true),

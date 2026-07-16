@@ -893,7 +893,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.setState({
                 isLoading: false,
                 loadFailed: true,
-                loadErrorHtml: error.message,
+                loadErrorHtml: (error as Error).message,
             });
         }
     }
@@ -1883,7 +1883,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 "getPlayerOptionsForPage failed to parse json: " +
                     optionJson +
                     " with error " +
-                    e.message,
+                    (e as Error).message,
             );
             return;
         }
@@ -2468,7 +2468,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             }
 
             const soundItems = Array.from(
-                bloomPage.querySelectorAll("[data-sound]"),
+                bloomPage.querySelectorAll<HTMLElement>("[data-sound]"),
             );
             soundItems.forEach((elt: HTMLElement) => {
                 elt.addEventListener("click", playSoundOf);
