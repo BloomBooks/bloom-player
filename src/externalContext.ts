@@ -200,7 +200,7 @@ export function receiveMessage(data: any) {
             "receiveMessage failed to parse json: " +
                 data +
                 " with error " +
-                e.message,
+                (e as Error).message,
         );
         return;
     }

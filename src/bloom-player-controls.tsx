@@ -870,7 +870,8 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
             // until we select them. And even if we could get them instantiated as needed,
             // continuous scrolling would probably be too slow to allow the page number control to be
             // responsive. So wait until we release.
-            onChangeCommitted={(ev, val: number) => {
+            onChangeCommitted={(ev, value) => {
+                const val = value as number; // not a range slider, so never number[]
                 if (val - 1 != pageNumberControlPos) {
                     setPageNumberControlPos(val - 1);
                     if (pageNumberSetter.current) {

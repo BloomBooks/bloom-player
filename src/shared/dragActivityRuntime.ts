@@ -43,7 +43,7 @@ let positionsToRestore: { x: string; y: string; elt: HTMLElement }[] = [];
 // Save the current positions of all draggables (when entering Play tab, so we can restore them when leaving).
 const savePositions = (page: HTMLElement) => {
     positionsToRestore = [];
-    page.querySelectorAll("[data-draggable-id]").forEach((elt: HTMLElement) => {
+    page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
         positionsToRestore.push({
             x: elt.style.left,
             y: elt.style.top,
@@ -66,7 +66,9 @@ export function adjustDraggablesForLanguage(page: HTMLElement) {
     if (page.getAttribute("data-activity") !== "drag-letter-to-target") {
         return;
     }
-    const draggables = Array.from(page.querySelectorAll("[data-draggable-id]"));
+    const draggables = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-draggable-id]"),
+    );
     draggables.shift(); // The first one is always visible.
     draggables.forEach((draggable: HTMLElement) => {
         const shouldBeVisible = !!(
@@ -110,7 +112,9 @@ export function prepareActivity(
 
     // Set up event listeners for any change page buttons.
     const changePageButtons = Array.from(
-        page.getElementsByClassName("bloom-change-page-button"),
+        page.getElementsByClassName(
+            "bloom-change-page-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     changePageButtons.forEach((b) =>
         b.addEventListener("click", changePageButtonClicked),
@@ -138,7 +142,9 @@ export function prepareActivity(
     // Add event listeners to draggables to start dragging.
     targetPositions = [];
     originalPositions = new Map<HTMLElement, { x: number; y: number }>();
-    const draggables = Array.from(page.querySelectorAll("[data-draggable-id]"));
+    const draggables = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-draggable-id]"),
+    );
     const targets: HTMLElement[] = [];
     draggables.forEach((elt: HTMLElement) => {
         const targetId = elt.getAttribute("data-draggable-id");
@@ -190,7 +196,9 @@ export function prepareActivity(
     // Add event listeners to (other) text items that should play audio when clicked.
     const dontPlayWhenClicked = draggables.concat(targets);
     const otherTextItems = Array.from(
-        page.getElementsByClassName("bloom-visibility-code-on"),
+        page.getElementsByClassName(
+            "bloom-visibility-code-on",
+        ) as HTMLCollectionOf<HTMLElement>,
     ).filter((e) => {
         var top = e.closest(kLegacyCanvasElementSelector) as HTMLElement;
         if (!top) {
@@ -209,13 +217,19 @@ export function prepareActivity(
 
     // Add event listeners to check, try again, and show correct buttons.
     const checkButtons = Array.from(
-        page.getElementsByClassName("check-button"),
+        page.getElementsByClassName(
+            "check-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     const tryAgainButtons = Array.from(
-        page.getElementsByClassName("try-again-button"),
+        page.getElementsByClassName(
+            "try-again-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     const showCorrectButtons = Array.from(
-        page.getElementsByClassName("show-correct-button"),
+        page.getElementsByClassName(
+            "show-correct-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
 
     checkButtons.forEach((elt: HTMLElement) => {
@@ -228,7 +242,9 @@ export function prepareActivity(
         elt.addEventListener("click", showCorrect);
     });
 
-    const soundItems = Array.from(page.querySelectorAll("[data-sound]"));
+    const soundItems = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-sound]"),
+    );
     soundItems.forEach((elt: HTMLElement) => {
         elt.addEventListener("click", playSoundOf);
     });
@@ -254,7 +270,11 @@ export function prepareActivity(
 // Break any order-sentence element into words and
 // randomize word order in sentence for reader to sort
 const prepareOrderSentenceActivity = (page: HTMLElement) => {
-    Array.from(page.getElementsByClassName("drag-item-order-sentence")).forEach(
+    Array.from(
+        page.getElementsByClassName(
+            "drag-item-order-sentence",
+        ) as HTMLCollectionOf<HTMLElement>,
+    ).forEach(
         (elt: HTMLElement) => {
             const contentElt = elt.getElementsByClassName(
                 "bloom-content1 bloom-visibility-code-on",
@@ -291,19 +311,23 @@ export function undoPrepareActivity(page: HTMLElement) {
     positionsToRestore = [];
 
     const changePageButtons = Array.from(
-        page.getElementsByClassName("bloom-change-page-button"),
+        page.getElementsByClassName(
+            "bloom-change-page-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     changePageButtons.forEach((b) =>
         b.removeEventListener("click", changePageButtonClicked),
     );
 
-    Array.from(page.getElementsByClassName("bloom-visibility-code-on")).forEach(
-        (e) => {
-            e.removeEventListener("pointerdown", playAudioOfTarget);
-        },
-    );
+    Array.from(
+        page.getElementsByClassName(
+            "bloom-visibility-code-on",
+        ) as HTMLCollectionOf<HTMLElement>,
+    ).forEach((e) => {
+        e.removeEventListener("pointerdown", playAudioOfTarget);
+    });
 
-    page.querySelectorAll("[data-draggable-id]").forEach((elt: HTMLElement) => {
+    page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
         elt.removeEventListener("pointerdown", startDrag, { capture: true });
     });
 
@@ -317,13 +341,19 @@ export function undoPrepareActivity(page: HTMLElement) {
         video.classList.remove("bloom-ui-no-controls");
     });
     const checkButtons = Array.from(
-        page.getElementsByClassName("check-button"),
+        page.getElementsByClassName(
+            "check-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     const tryAgainButtons = Array.from(
-        page.getElementsByClassName("try-again-button"),
+        page.getElementsByClassName(
+            "try-again-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
     const showCorrectButtons = Array.from(
-        page.getElementsByClassName("show-correct-button"),
+        page.getElementsByClassName(
+            "show-correct-button",
+        ) as HTMLCollectionOf<HTMLElement>,
     );
 
     checkButtons.forEach((elt: HTMLElement) => {
@@ -339,13 +369,17 @@ export function undoPrepareActivity(page: HTMLElement) {
     // In Bloom Player, this will have been done by other play code, since data-sound is not
     // specific to games. But we're adding a listener for the same function, so it doesn't matter.
     // In Bloom desktop, we need this to make clicking data-sound elements work in Play mode.
-    const soundItems = Array.from(page.querySelectorAll("[data-sound]"));
+    const soundItems = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-sound]"),
+    );
     soundItems.forEach((elt: HTMLElement) => {
         elt.removeEventListener("click", playSoundOf);
     });
 
     Array.from(
-        page.getElementsByClassName("drag-item-random-sentence"),
+        page.getElementsByClassName(
+            "drag-item-random-sentence",
+        ) as HTMLCollectionOf<HTMLElement>,
     ).forEach((elt: HTMLElement) => {
         elt.parentElement?.removeChild(elt);
     });
@@ -602,7 +636,7 @@ const showCorrect = (e: MouseEvent) => {
     }
     restorePositions(); // any distractors return to start positions.
     currentPage
-        .querySelectorAll("[data-draggable-id]")
+        .querySelectorAll<HTMLElement>("[data-draggable-id]")
         .forEach((elt: HTMLElement) => {
             const targetId = elt.getAttribute("data-draggable-id");
             const target = currentPage?.querySelector(
@@ -631,7 +665,9 @@ const showCorrect = (e: MouseEvent) => {
             elt.style.top = y + "px";
         });
     Array.from(
-        currentPage.getElementsByClassName("drag-item-random-sentence"),
+        currentPage.getElementsByClassName(
+            "drag-item-random-sentence",
+        ) as HTMLCollectionOf<HTMLElement>,
     ).forEach((container: HTMLElement) => {
         const correctAnswer =
             container.getAttribute("data-answer")?.split(" ") ?? [];
@@ -651,7 +687,7 @@ const showCorrect = (e: MouseEvent) => {
     // Play any videos that are part of a correct answer, in document order.
     const videoElements: HTMLVideoElement[] = [];
     currentPage!
-        .querySelectorAll("[data-draggable-id]")
+        .querySelectorAll<HTMLElement>("[data-draggable-id]")
         .forEach((elt: HTMLElement) => {
             const targetId = elt.getAttribute("data-draggable-id");
             const target = currentPage?.querySelector(
@@ -751,7 +787,9 @@ const stopDrag = (e: PointerEvent) => {
     // back to its original position.
     // Enhance: animate?
     const page = dragTarget.closest(".bloom-page") as HTMLElement;
-    const draggables = Array.from(page.querySelectorAll("[data-draggable-id]"));
+    const draggables = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-draggable-id]"),
+    );
     draggables.forEach((elt: HTMLElement) => {
         if (elt === dragTarget) {
             return;
@@ -1029,7 +1067,9 @@ function playSound(
 
 function checkDraggables(page: HTMLElement) {
     let allCorrect = true;
-    const draggables = Array.from(page.querySelectorAll("[data-draggable-id]"));
+    const draggables = Array.from(
+        page.querySelectorAll<HTMLElement>("[data-draggable-id]"),
+    );
     draggables.forEach((draggableToCheck: HTMLElement) => {
         const targetId = draggableToCheck.getAttribute("data-draggable-id");
         const target = page.querySelector(
