@@ -69,6 +69,21 @@ jobs:
             - name: Run tests
               run: pnpm test
 
+            - name: Install Playwright browsers
+              run: pnpm exec playwright install --with-deps chromium
+
+            # Uses the dist/ produced by the Build package step above.
+            - name: Run e2e tests
+              run: pnpm run test:e2e
+
+            - name: Upload Playwright report
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: playwright-report/
+                  retention-days: 7
+
             - name: Clean up package.json
               # We used to use the clean-publish package to do this, but when
               # we switched to using semantic-release, we had to do it manually.

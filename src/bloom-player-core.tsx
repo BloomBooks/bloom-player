@@ -279,6 +279,20 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
     // It might be a good thing to combine them somehow.
     private startingUpSwiper = true;
 
+    // Timeouts created with setPlayerTimeout, so componentWillUnmount can cancel
+    // any still pending. Timers that touch state or the swiper must use this
+    // rather than window.setTimeout, or they fire after unmount (a React
+    // "state update on an unmounted component" warning, or worse).
+    private pendingTimeouts = new Set<number>();
+
+    private setPlayerTimeout(action: () => void, delayMs: number): void {
+        const id = window.setTimeout(() => {
+            this.pendingTimeouts.delete(id);
+            action();
+        }, delayMs);
+        this.pendingTimeouts.add(id);
+    }
+
     constructor(props: IProps, state: IPlayerState) {
         super(props, state);
         // This.state.bookUrl is the URL we actually use to load the book and its parts.
@@ -1178,7 +1192,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // Note: typically in Chrome we won't actually start playing, because
         // of a rule that the user must interact with the document first.
         if (isNewBook) {
-            window.setTimeout(() => {
+            this.setPlayerTimeout(() => {
                 this.setState({ isFinishUpForNewBookComplete: true });
                 const originalStartingUpSwiper = this.startingUpSwiper; // excess caution perhaps
                 this.startingUpSwiper = false; // transition phase is over
@@ -1195,7 +1209,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 // Now we want all that to happen.
                 this.setIndex(startPage);
                 this.showingPage(startPage);
-                if (originalStartingUpSwiper) {
+                // swiperInstance can be missing here: it is never created if we are
+                // showing the required-version message instead of the book, and it is
+                // gone if we were unmounted before this timeout fired.
+                if (originalStartingUpSwiper && this.swiperInstance) {
                     // We need to instantiate any needed scrollbars on the first page displayed.
                     // scrollbars on later pages are instantiated by a transition event which
                     // doesn't fire on the very first page.
@@ -1221,7 +1238,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             }, 500);
         } else {
             if (BloomPlayerCore.currentPage) {
-                window.setTimeout(() => {
+                this.setPlayerTimeout(() => {
                     // Presumably, the language was just changed.
                     // Reset the index / re-show the page
                     // Even though we're setting it to the same index, setIndex and showingPage have other useful/necessary side effects such as:
@@ -1652,6 +1669,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.handleDocumentLevelKeyDown(e),
         );
         this.unsubscribeAllEvents();
+        this.pendingTimeouts.forEach((id) => window.clearTimeout(id));
+        this.pendingTimeouts.clear();
     }
 
     private unsubscribeAllEvents() {
@@ -1960,13 +1979,18 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
 
             on: {
                 slideChange: () => {
-                    if (
-                        this.state.inPauseForced &&
-                        this.props.setForcedPausedCallback
-                    ) {
-                        this.props.setForcedPausedCallback(false);
+                    if (this.state.inPauseForced) {
+                        if (this.props.setForcedPausedCallback) {
+                            this.props.setForcedPausedCallback(false);
+                        }
+                        // Only setState when there is something to change:
+                        // swiper can emit slideChange from swiper.update(),
+                        // which react-id-swiper calls on every React render, so
+                        // an unconditional setState here can become a
+                        // render -> update -> slideChange -> setState loop
+                        // ("Maximum update depth exceeded").
+                        this.setState({ inPauseForced: false });
                     }
-                    this.setState({ inPauseForced: false });
 
                     if (!this.startingUpSwiper) {
                         // console.log(
@@ -2386,7 +2410,11 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // scroll using the slider, so we're switching to a page that is, for the moment,
             // empty due to laziness. A later render will fill it in. We want to try again then. Not sure how
             // else to make sure that happens.
-            window.setTimeout(() => this.showingPage(index), 50);
+            // But if swiper itself is gone (we were unmounted), the page is never
+            // coming; retrying would loop forever.
+            if (this.swiperInstance) {
+                this.setPlayerTimeout(() => this.showingPage(index), 50);
+            }
             return; // nothing more we can do until the page we want really exists.
         }
         // We will pass options on how to deal with the current page to BP via the
@@ -2410,7 +2438,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         // Even though the new page was already computed, we found that this blocked the ui from
         // scrolling it into view. So now we allow that to finish, then do this stuff.
         //console.log(`ShowingPage(${index})`);
-        window.setTimeout(() => {
+        this.setPlayerTimeout(() => {
             BloomPlayerCore.currentPage = bloomPage;
             BloomPlayerCore.currentPageIndex = index;
             BloomPlayerCore.currentPageHasVideo = Video.pageHasVideo(bloomPage);
@@ -2487,10 +2515,14 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             // scroll using the slider, so we're switching to a page that is, for the moment,
             // empty due to laziness. A later render will fill it in. We want to try again then. Not sure how
             // else to make sure that happens.
-            window.setTimeout(
-                () => this.addScrollbarsToPageWhenReady(index),
-                50,
-            );
+            // But if swiper itself is gone (we were unmounted), the page is never
+            // coming; retrying would loop forever.
+            if (this.swiperInstance) {
+                this.setPlayerTimeout(
+                    () => this.addScrollbarsToPageWhenReady(index),
+                    50,
+                );
+            }
             return; // nothing more we can do until the page we want really exists.
         }
         addScrollbarsToPage(bloomPage, BloomPlayerCore.handlePointerMoveEvent);

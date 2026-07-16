@@ -17,3 +17,7 @@ src/bloom-player.css
 *storybook.log
 src/l10n/bloom-player
 
+
+# Playwright e2e output
+test-results/
+playwright-report/

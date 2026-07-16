@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- Simulates how real hosts (BloomLibrary, Bloom Reader, RAB) embed the player:
+     an iframe pointing at bloomplayer.htm, listening for postMessage traffic. -->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>bloom-player e2e host page</title>
+    </head>
+    <body>
+        <script>
+            window.__messagesFromPlayer = [];
+            window.addEventListener("message", (event) => {
+                window.__messagesFromPlayer.push(String(event.data));
+            });
+        </script>
+        <iframe
+            id="player"
+            src="/bloomplayer.htm?url=%2FtestBooks%2Fmultibook-target1%2Findex.htm&showBackButton=true&initiallyShowAppBar=true"
+            style="width: 800px; height: 600px"
+            allow="autoplay; fullscreen"
+        ></iframe>
+    </body>
+</html>
