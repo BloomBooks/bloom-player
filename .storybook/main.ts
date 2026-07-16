@@ -17,6 +17,12 @@ const config: StorybookConfig = {
         name: "@storybook/react-vite",
         options: {},
     },
+    typescript: {
+        // We don't use the auto-generated prop tables, and react-docgen-typescript
+        // crashes under TypeScript 7.0 (it reads enum values the TS 7 package no
+        // longer exposes at runtime). Turn docgen off entirely.
+        reactDocgen: false,
+    },
     viteFinal: (config, options) => {
         const idToBookName = {
             "2e492eb1-bcc5-4b2b-b756-6cda33e1eee4": "multibook-index",
