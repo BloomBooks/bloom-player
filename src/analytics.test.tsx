@@ -24,6 +24,15 @@
  * The parts of analytics that require real swiper page turns (pageShown counts
  * from showingPage) can't run in jsdom (see the coverage note at the end of
  * bloom-player-core.test.tsx); those are covered by e2e/analytics.spec.ts.
+ *
+ * CAUTION for future tests in this file: bloomPlayerAnalytics.tsx holds
+ * module-level per-book-session state (the allPagesRead gate,
+ * pendingBookAnalytics), and this file does NOT re-import modules per test.
+ * That is fine for everything here — the progress-report tests all run in
+ * host mode, which bypasses that state, and reportAnalytics is ungated — but
+ * do not add an independent-mode "Pages Read" test to this file: it would be
+ * order-dependent. That path belongs in analyticsChannels.test.ts, which
+ * imports the modules freshly for each test.
  */
 import * as React from "react";
 import { render, waitFor } from "@testing-library/react";
@@ -220,6 +229,13 @@ describe("analytics: media durations feed the book progress report", () => {
     // through storeAudioAnalytics (wired up via listenForPlayDuration).
     // From there everything through bookInteraction and externalContext to
     // the host message is the real pipeline.
+    //
+    // The exact report counts below assume that startup emits NO progress
+    // report in jsdom (showingPage's deferred block never runs — swiper can't
+    // show a page here, see the file header). In a real browser it does; the
+    // e2e tests assert that. If a refactor starts emitting a startup report
+    // without a page turn, these counts will shift by one — that's the test
+    // doing its job; re-derive the expected counts.
 
     async function renderBookForHost(host: string) {
         window.history.replaceState(

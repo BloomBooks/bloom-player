@@ -219,7 +219,10 @@ test.describe("analytics to a host (independent=false)", () => {
                     // still unanswered.
                     expect(await comprehensionEvents()).toEqual([]);
                 }
-                await correctAnswerOnCurrentPage().click();
+                // .first() so the test survives a quiz page acquiring more
+                // than one correct answer (strict mode would otherwise throw);
+                // one correct click per page is all the scoring needs.
+                await correctAnswerOnCurrentPage().first().click();
                 answered++;
                 await page.waitForTimeout(200);
             }
@@ -244,7 +247,7 @@ test.describe("analytics to a host (independent=false)", () => {
         expect(comprehension[0].params.questionCount).toBe(4);
 
         // Trying again must not report a second time.
-        await correctAnswerOnCurrentPage().click();
+        await correctAnswerOnCurrentPage().first().click();
         await page.waitForTimeout(300);
         expect((await comprehensionEvents()).length).toBe(1);
     });
@@ -346,7 +349,11 @@ test.describe("analytics sent internally to segment.io (independent)", () => {
             (await trackedEvents(page)).filter((e) => e.event === "Pages Read"),
         ).toEqual([]);
 
-        // Leaving the book part-way flushes the pending report.
+        // Leaving the book part-way flushes the pending report. Dispatching a
+        // synthetic "beforeunload" invokes the window.onbeforeunload property
+        // handler in Chromium (per-spec behavior for dispatched events); note
+        // that vitest's jsdom does NOT do this, which is why
+        // analyticsChannels.test.ts calls the handler directly instead.
         await page.evaluate(() =>
             window.dispatchEvent(new Event("beforeunload")),
         );
