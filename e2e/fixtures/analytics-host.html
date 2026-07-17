@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- Parameterized variant of host.html for the analytics specs: pass the
+     (url-encoded) player url as ?player=... . Captures every postMessage the
+     player sends, the way real hosts (BloomLibrary, Bloom Reader, RAB) do. -->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>bloom-player analytics e2e host page</title>
+    </head>
+    <body>
+        <script>
+            window.__messagesFromPlayer = [];
+            window.addEventListener("message", (event) => {
+                window.__messagesFromPlayer.push(String(event.data));
+            });
+            const params = new URLSearchParams(window.location.search);
+            const iframe = document.createElement("iframe");
+            iframe.id = "player";
+            iframe.src = params.get("player");
+            iframe.style.width = "800px";
+            iframe.style.height = "600px";
+            iframe.setAttribute("allow", "autoplay; fullscreen");
+            document.body.appendChild(iframe);
+        </script>
+    </body>
+</html>
