@@ -24,3 +24,15 @@ if (innerTextProbe.innerText === undefined) {
         configurable: true,
     });
 }
+
+// jsdom does not implement HTMLMediaElement playback methods (load/play/pause);
+// calling them emits "Not implemented: HTMLMediaElement.prototype.<x>" errors on
+// the virtual console (they don't throw, so tests still pass). Our activity,
+// narration, and music code legitimately calls these, so stub them as no-ops to
+// keep the test output clean and let real errors stand out. play() returns a
+// resolved Promise to match the real API, which several call sites await.
+Object.defineProperties(HTMLMediaElement.prototype, {
+    load: { configurable: true, value: () => {} },
+    pause: { configurable: true, value: () => {} },
+    play: { configurable: true, value: () => Promise.resolve() },
+});
