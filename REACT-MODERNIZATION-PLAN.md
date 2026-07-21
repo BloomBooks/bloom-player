@@ -99,6 +99,13 @@ The existing vitest suite covers utility modules (`navigation`, `bookInfo`,
 
 Deliverable: a checklist we re-run at the end of every phase.
 
+_Status note (July 2026): Phases 1–2 are implemented and merged down the stacked
+branches `phase1-shrink-core` → `phase2-remove-statics`. Phase 3 (the dependency
+upgrades), split into Phase 3a (MUI v5) and Phase 3b (Swiper 11), is in progress on
+the stacked branches `phase3a-mui` → `phase3b-swiper`. See
+[MODERNIZATION-REVIEW-NOTES.md](MODERNIZATION-REVIEW-NOTES.md)
+for the judgment calls and the remaining manual verification items._
+
 ## Phase 1 — Shrink the class in place (no behavior change)
 
 _Status: partially done (PR #433). Extraction items (1) and (2) landed; the class is
@@ -175,28 +182,35 @@ reporting channels through the new registry/callback seams.
 
 ## Phase 3 — Dependency upgrades that unblock React 18
 
-Do these **while still on React 17 and still a class**, so each upgrade is isolated:
+Phase 3 is the "one risky dependency per phase" work, split into two independent
+upgrades — MUI (3a) and Swiper (3b) — each its own commit/PR with the Phase 0
+checklist run against it. Do both **while still on React 17 and still a class**, so
+each upgrade is isolated and (for Swiper) comparable old/new side by side in storybook.
 
-1. **Material-UI v4 → MUI v5** (`@material-ui/core` → `@mui/material` +
-   `@emotion/*`). MUI v5 supports React 17, so this doesn't force the React upgrade.
-   `BloomPlayerCore` itself only uses `CircularProgress` and an icon; the bulk of the
-   work is in the already-functional controls components. Use the official codemods;
-   audit theme/`makeStyles` usage across the app.
-2. **Swiper: `react-id-swiper` 2.3.2 + swiper 4 → `swiper/react` (Swiper 11+).** This
-   is the highest-behavior-risk upgrade in the whole plan, and it is *easier* as a
-   class because we can compare old/new side by side in storybook. Specific items:
-    - replace the `getSwiper` callback and `SwiperInstance` typing with `onSwiper`;
-    - replace the RTL kluges in `render()` (`el.setAttribute("dir","rtl")`,
-      `swiper.rtl = true`, `rtlTranslate = true`) with Swiper's supported `dir="rtl"`;
-    - re-verify `simulateTouch`, `touchStartPreventDefault: false` (niceScroll
-      depends on it), lazy-loading of slides, `keyboard` handling, and the
-      `preserveDOMState` slide-caching behavior;
-    - re-verify the pointerdown capture hack that stops swiper drags on links/videos
-      (BL-14599) still works with the new event system.
-3. **TypeScript/types housekeeping**: `@types/react` 17 → matching versions staged
-   with the React upgrade in Phase 5.
+### Phase 3a — Material-UI v4 → MUI v5
 
-Each of these is its own PR with the Phase 0 checklist run against it.
+**Material-UI v4 → MUI v5** (`@material-ui/core` → `@mui/material` + `@emotion/*`).
+MUI v5 supports React 17, so this doesn't force the React upgrade. `BloomPlayerCore`
+itself only uses `CircularProgress` and an icon; the bulk of the work is in the
+already-functional controls components. Use the official codemods; audit
+theme/`makeStyles` usage across the app.
+
+### Phase 3b — Swiper 4 → Swiper 11
+
+**Swiper: `react-id-swiper` 2.3.2 + swiper 4 → `swiper/react` (Swiper 11+).** This is
+the highest-behavior-risk upgrade in the whole plan. Specific items:
+
+-   replace the `getSwiper` callback and `SwiperInstance` typing with `onSwiper`;
+-   replace the RTL kluges in `render()` (`el.setAttribute("dir","rtl")`,
+    `swiper.rtl = true`, `rtlTranslate = true`) with Swiper's supported `dir="rtl"`;
+-   re-verify `simulateTouch`, `touchStartPreventDefault: false` (niceScroll depends on
+    it), lazy-loading of slides, `keyboard` handling, and the `preserveDOMState`
+    slide-caching behavior;
+-   re-verify the pointerdown capture hack that stops swiper drags on links/videos
+    (BL-14599) still works with the new event system.
+
+**TypeScript/types housekeeping** (rides along with this phase): `@types/react` 17 →
+matching versions staged with the React upgrade in Phase 5.
 
 ## Phase 4 — Convert `BloomPlayerCore` to a function component
 
@@ -270,17 +284,17 @@ Evaluate after Phase 5 has been in production for a release cycle:
 
 | Risk | Phase | Mitigation |
 | --- | --- | --- |
-| Swiper 4 → 11 behavior drift (drag thresholds, RTL, lazy slides, DOM structure that page CSS targets) | 3 | Own PR; side-by-side storybook comparison; RTL and activity books in the checklist |
+| Swiper 4 → 11 behavior drift (drag thresholds, RTL, lazy slides, DOM structure that page CSS targets) | 3b | Own PR; side-by-side storybook comparison; RTL and activity books in the checklist |
 | Book-load race conditions surfacing when `componentDidUpdate` becomes effects | 4 | Stale-result guards in `useBookLoader`; smoke test that rapidly switches `url` prop |
 | Statics assumed a singleton player; hosts that remount the player may behave differently once registration/unregistration is real | 2 | Keep registry semantics identical (last-registered wins); log a dev warning on double-register |
-| MUI v5 visual regressions in controls (theme defaults changed between v4 and v5) | 3 | Screenshot comparison of control bar, menus, spinner in storybook |
+| MUI v5 visual regressions in controls (theme defaults changed between v4 and v5) | 3a | Screenshot comparison of control bar, menus, spinner in storybook |
 | React 18 batching changes swiper-startup timing | 5 | Targeted manual testing of first-page audio/animation start, `autoplay`, and `startPage` handling |
 | Untracked consumers of `BloomPlayerCore` statics outside this repo | 2 | The npm package's public surface is `bloom-player-controls`/embed API; note the removal in CHANGELOG anyway |
 
 ## Suggested order of work
 
 Phases 0 → 1 → 2 can proceed immediately and are safe alongside normal feature work.
-Phase 3's two upgrades (MUI, Swiper) should each land in a quiet week with time to
+Phases 3a and 3b (MUI, then Swiper) should each land in a quiet week with time to
 observe. Phase 4 is the largest single review and should happen when no big feature
 branch is in flight against `bloom-player-core.tsx`. Phase 5 is small once 0–4 are
 done. Nothing in this plan requires a code freeze longer than the individual PR.
