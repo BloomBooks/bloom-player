@@ -101,10 +101,10 @@ Deliverable: a checklist we re-run at the end of every phase.
 
 _Status note (July 2026): Phases 1–2 are implemented and merged down the stacked
 branches `phase1-shrink-core` → `phase2-remove-statics`. Phase 3 (the dependency
-upgrades) is underway on the stacked branches `phase3a-mui` → `phase3b-swiper`:
-Phase 3a (MUI v5) is done and Phase 3b (Swiper 11) follows. See
-[MODERNIZATION-REVIEW-NOTES.md](MODERNIZATION-REVIEW-NOTES.md)
-for the judgment calls and the remaining manual verification items._
+upgrades) has a first implementation on the stacked branches `phase3a-mui` →
+`phase3b-swiper`: Phase 3a (MUI v5) and Phase 3b (Swiper 11) are both done. See
+[MODERNIZATION-REVIEW-NOTES.md](MODERNIZATION-REVIEW-NOTES.md) for the judgment calls
+and the remaining manual verification items._
 
 ## Phase 1 — Shrink the class in place (no behavior change)
 
@@ -213,6 +213,8 @@ the highest-behavior-risk upgrade in the whole plan. Specific items:
 
 **TypeScript/types housekeeping** (rides along with this phase): `@types/react` 17 →
 matching versions staged with the React upgrade in Phase 5.
+
+_Status: done (Swiper 11 via `swiper/react`) — see review notes items 14–21._
 
 ## Phase 4 — Convert `BloomPlayerCore` to a function component
 

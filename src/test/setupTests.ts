@@ -8,6 +8,16 @@ if (document.getElementsByTagName("script").length === 0) {
     document.head.appendChild(document.createElement("script"));
 }
 
+// jsdom does not implement ResizeObserver, which swiper uses to track its
+// container size. A no-op suffices: there is no layout in jsdom anyway.
+if (typeof window.ResizeObserver === "undefined") {
+    (window as any).ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+    };
+}
+
 // jsdom does not implement innerText (it would require layout). Several code
 // paths (langData.ts, stylesheets.ts) read it, so approximate it with
 // textContent, which is equivalent for the simple content our fixtures use.

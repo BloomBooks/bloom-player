@@ -169,14 +169,15 @@ export function fixRelativeUrls(page: Element, urlPrefix: string) {
             continue;
         }
         const newUrl = fullUrl(match[1], urlPrefix);
+        // Apply the corrected url directly. (When we used swiper 4, we instead
+        // stripped the style and stored the url in data-background with the
+        // swiper-lazy class, letting swiper's lazy module apply it; swiper 11
+        // has no lazy module. Loading stays bounded because only slides near
+        // the current page get real content at all.)
         const newStyle = style.replace(
             regexp,
-            // if we weren't using lazy-load:
-            //  "background-image:url('" + newUrl + "'"
-            "",
+            "background-image:url('" + newUrl + "')",
         );
         item.setAttribute("style", newStyle);
-        item.setAttribute("data-background", newUrl);
-        item.classList.add("swiper-lazy");
     }
 }

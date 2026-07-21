@@ -44,12 +44,9 @@ importers:
       react-dom:
         specifier: 17.0.2
         version: 17.0.2(react@17.0.2)
-      react-id-swiper:
-        specifier: 2.3.2
-        version: 2.3.2(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(swiper@4.5.1)
       swiper:
-        specifier: 4.5.1
-        version: 4.5.1
+        specifier: 11.2.10
+        version: 11.2.10
     devDependencies:
       '@crowdin/cli':
         specifier: 4.14.2
@@ -1565,9 +1562,6 @@ packages:
   dom-serializer@1.4.1:
     resolution: {integrity: sha512-VHwB3KfrcOOkelEG2ZOfxqLZdfkil8PtJi4P8N2MMXucZq2yLp75ClViUlOVwyoHEDjYU433Aq+5zWP61+RGag==}
 
-  dom7@2.1.5:
-    resolution: {integrity: sha512-xnhwVgyOh3eD++/XGtH+5qBwYTgCm0aW91GFgPJ3XG+jlsRLyJivnbP0QmUBFhI+Oaz9FV0s7cxgXHezwOEBYA==}
-
   domelementtype@2.3.0:
     resolution: {integrity: sha512-OLETBj6w0OsagBwdXnPdN0cnMfF9opN69co+7ZrbfPGrdpPVNBUj02spi6B1N7wChLQiPn4CSH/zJvXw56gmHw==}
 
@@ -2512,14 +2506,6 @@ packages:
     peerDependencies:
       react: 17.0.2
 
-  react-id-swiper@2.3.2:
-    resolution: {integrity: sha512-lxlASsBok+M8YmwYICEXUaVj44AyCaGfSc+YGZX5vWCqKLnVj3ceUbFFBfO+G8Glrya7WJhrfvzMae0r77MCSQ==}
-    engines: {node: '>= 6.11.0'}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-      swiper: '>=4.0.0'
-
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -2685,12 +2671,6 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  ssr-window@1.0.1:
-    resolution: {integrity: sha512-dgFqB+f00LJTEgb6UXhx0h+SrG50LJvti2yMKMqAgzfUmUXZrLSv2fjULF7AWGwK25EXu8+smLR3jYsJQChPsg==}
-
-  ssr-window@2.0.0:
-    resolution: {integrity: sha512-NXzN+/HPObKAx191H3zKlYomE5WrVIkoCB5IaSdvKokxTpjBdWfr0RaP+1Z5KOfDT0ZVz+2tdtiBkhsEQ9p+0A==}
-
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
@@ -2760,8 +2740,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  swiper@4.5.1:
-    resolution: {integrity: sha512-se6I7PWWu950NAMXXT+ENtF/6SVb8mPyO+bTfNxbQBILSeLqsYp3Ndap+YOA0EczOIUlea274PKejT6gKZDseA==}
+  swiper@11.2.10:
+    resolution: {integrity: sha512-RMeVUUjTQH+6N3ckimK93oxz6Sn5la4aDlgPzB+rBrG/smPdCTicXyhxa+woIpopz+jewEloiEE3lKo1h9w2YQ==}
     engines: {node: '>= 4.7.0'}
 
   symbol-tree@3.2.4:
@@ -4493,10 +4473,6 @@ snapshots:
       domhandler: 4.3.1
       entities: 2.2.0
 
-  dom7@2.1.5:
-    dependencies:
-      ssr-window: 2.0.0
-
   domelementtype@2.3.0: {}
 
   domhandler@4.3.1:
@@ -5488,13 +5464,6 @@ snapshots:
       react: 17.0.2
       scheduler: 0.20.2
 
-  react-id-swiper@2.3.2(react-dom@17.0.2(react@17.0.2))(react@17.0.2)(swiper@4.5.1):
-    dependencies:
-      object-assign: 4.1.1
-      react: 17.0.2
-      react-dom: 17.0.2(react@17.0.2)
-      swiper: 4.5.1
-
   react-is@16.13.1: {}
 
   react-is@17.0.2: {}
@@ -5696,10 +5665,6 @@ snapshots:
 
   source-map@0.6.1: {}
 
-  ssr-window@1.0.1: {}
-
-  ssr-window@2.0.0: {}
-
   stackback@0.0.2: {}
 
   std-env@4.1.0: {}
@@ -5773,10 +5738,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  swiper@4.5.1:
-    dependencies:
-      dom7: 2.1.5
-      ssr-window: 1.0.1
+  swiper@11.2.10: {}
 
   symbol-tree@3.2.4: {}
 

@@ -108,6 +108,15 @@ We just make them follow the main content normally. */
     }
     .swiper-button-next,
     .swiper-button-prev {
+        // Base positioning that swiper 4's bundled stylesheet used to provide
+        // for buttons with these class names. (Swiper 11's core css doesn't
+        // style navigation buttons at all, and we don't use its navigation
+        // module - these are our own buttons.)
+        position: absolute;
+        width: 27px;
+        z-index: 10;
+        cursor: pointer;
+
         height: 66%;
         top: 17%; // height at 66% leaves 34% spacing, half of that is 17%
         margin-top: unset; // defeat Swiper's own positioning that would throw ours off
@@ -248,7 +257,8 @@ We just make them follow the main content normally. */
         // If we need the buttons, we are back to possibly needing extra scaling
         // to have room for them. See above and search for extraScalingForChrome85Bug.
         &.extraScalingForChrome85Bug {
-            .swiper-container {
+            // (.swiper is the swiper 5+ name for what used to be .swiper-container)
+            .swiper {
                 transform: scale(1);
             }
         }

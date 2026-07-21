@@ -412,9 +412,9 @@ describe("BloomPlayerCore right-to-left books", () => {
             />,
         );
         await waitForStartupToComplete(container);
-        // The RTL kluges in render() set dir="rtl" on the swiper container.
+        // render() gives the swiper container dir="rtl".
         expect(
-            container.querySelector('.swiper-container[dir="rtl"]'),
+            container.querySelector('.swiper[dir="rtl"]'),
         ).not.toBeNull();
         expect(reportBookProperties.mock.calls[0][0].isRtl).toBe(true);
     });

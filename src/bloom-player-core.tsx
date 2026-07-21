@@ -4,11 +4,14 @@ bloom-player-core is responsible for all the behavior of working through a book,
 */
 import * as React from "react";
 import axios from "axios";
-import Swiper, { SwiperInstance } from "react-id-swiper";
+import { Swiper, SwiperSlide } from "swiper/react";
+import type { Swiper as SwiperInstance } from "swiper";
+import { Keyboard, EffectFade } from "swiper/modules";
 // This loads some JS right here that is a polyfill for the (otherwise discontinued) scoped-styles html feature.
 // We use a patched version that fixes a bug with comma-separated selectors containing attribute selectors.
 import "./scoped-styles-polyfill.js";
-import "swiper/dist/css/swiper.min.css";
+import "swiper/css";
+import "swiper/css/effect-fade";
 import "./bloom-player-ui.less";
 import "./bloom-player-content.less";
 import "./bloom-player-pre-appearance-system-book.less";
@@ -853,12 +856,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             if (prevProps.paused !== this.props.paused) {
                 this.handlePausePlay();
             }
-            if (this.swiperInstance) {
-                // Other refactoring seems to have fixed an earlier problem with switching orientation,
-                // so that we no longer need either the Swiper update or even the setTimeout here.
-                // OTOH, we need to do a lazy.load(), otherwise all our pictures disappear when changing languages!
-                this.swiperInstance.lazy.load();
-            }
+            // (With swiper 4 we needed a swiperInstance.lazy.load() here so pictures
+            // didn't disappear when changing languages. Swiper 11 has no lazy module;
+            // background images are now applied directly in fixRelativeUrls, and our
+            // own placeholder-slide laziness limits what actually gets loaded.)
         } catch (error) {
             this.setState({
                 isLoading: false,
@@ -1553,108 +1554,8 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
         setIncludeImageDescriptions(
             this.props.shouldReadImageDescriptions && this.hasImageDescriptions,
         );
-        const swiperParams: any = {
-            // This is how we'd expect to make the next/prev buttons show up.
-            // However, swiper puts them inside the swiper-container div, which has position:relative
-            // and overflow:hidden. This hides the buttons when we want them to be outside the book
-            // (e.g., bloom library). So instead we make our own buttons.
-            // navigation: {
-            //     nextEl: ".swiper-button-next",
-            //     prevEl: ".swiper-button-prev"
-            // },
-            getSwiper: (s) => {
-                this.swiperInstance = s;
-                if (this.metaDataObject?.isRtl && this.swiperInstance) {
-                    // These kluges cause swiper to display the pages in reverse order.
-                    // We are digging deep into the current implementation of Swiper; this might
-                    // not work with any other version.
-                    // The latest Swiper apparently has a method to do this. We should use it,
-                    // even if this still works, if we upgrade. But when we upgrade, we really want
-                    // to switch to the React support that is now provided by the core Swiper
-                    // component. And that is currently in transition as Swiper converts to a
-                    // web component. It doesn't feel like a good time to attempt the conversion.
-                    this.swiperInstance.el?.setAttribute("dir", "rtl");
-                    // These two steps for some reason don't seem to be needed when loading an RTL
-                    // book in storybook, but in Bloom Editor preview, without them, we get
-                    // blank content for all but the first page.
-                    this.swiperInstance.rtl = true;
-                    this.swiperInstance.rtlTranslate = true;
-                }
-            },
-            simulateTouch: true, //Swiper will accept mouse events like touch events (click and drag to change slides)
-            touchStartPreventDefault: false, // If true, would prevent the default, which would cause niceScroll not to receive mousedown events.
-
-            on: {
-                slideChange: () => {
-                    if (this.state.inPauseForced) {
-                        if (this.props.setForcedPausedCallback) {
-                            this.props.setForcedPausedCallback(false);
-                        }
-                        // Only setState when there is something to change:
-                        // swiper can emit slideChange from swiper.update(),
-                        // which react-id-swiper calls on every React render, so
-                        // an unconditional setState here can become a
-                        // render -> update -> slideChange -> setState loop
-                        // ("Maximum update depth exceeded").
-                        this.setState({ inPauseForced: false });
-                    }
-
-                    if (!this.startingUpSwiper) {
-                        // console.log(
-                        //     "changing page to " +
-                        //         this.swiperInstance.activeIndex +
-                        //         " in slideChange; state active index is " +
-                        //         this.state.currentSwiperIndex
-                        // );
-                        this.showingPage(this.swiperInstance.activeIndex);
-                    }
-                },
-                slideChangeTransitionStart: () => {
-                    if (!this.startingUpSwiper) {
-                        // console.log(
-                        //     "setting index to " +
-                        //         this.swiperInstance.activeIndex +
-                        //         " in slideChangeTransitionStart; state active index is " +
-                        //         this.state.currentSwiperIndex
-                        // );
-                        this.setIndex(this.swiperInstance.activeIndex);
-                    }
-                },
-                slideChangeTransitionEnd: () => {
-                    this.addScrollbarsToPageWhenReady(
-                        this.swiperInstance.activeIndex,
-                    );
-                },
-            },
-            keyboard: {
-                enabled: true,
-                onlyInViewport: false,
-            },
-            // Disable preloading of all images
-            preloadImages: false,
-
-            // Enable lazy loading, but load anything needed for the next couple of slides.
-            // (I'm trying to avoid a problem where, in landscape mode of motion books,
-            // we see a flash of the page without the full-screen picture overlaid.
-            // I don't _think_ I saw this before implementing laziness. So far, I haven't
-            // found settings that eliminate it completely, even commenting out preloadImages:false,
-            // which defeats much of the purpose.)
-            lazy: {
-                loadPrevNext: true,
-                loadOnTransitionStart: true,
-                loadPrevNextAmount: 2,
-            },
-            // This seems make it unnecessary to call Swiper.update at the end of componentDidUpdate.
-            shouldSwiperUpdate: true,
-        };
-        if (this.startingUpSwiper) {
-            // When we first render swiper, we need to force it to the right page. But not later,
-            // otherwise, it prevents us ever changing page! (This badly named param is the index
-            // of the slide to show.) (There's possibly some drastic redesign that would let the
-            // current page be a fully controlled paramter. But maybe not...react-id-slider is a
-            // thin layer over something that isn't fully React.)
-            swiperParams.activeSlideKey = this.state.startPageIndex?.toString();
-        }
+        const effect = this.shouldAutoPlay() ? "fade" : "slide";
+        const isRtl = !!this.metaDataObject?.isRtl;
 
         let bloomPlayerClass = "bloomPlayer";
         if (this.currentPageHidesNavigationButtons) {
@@ -1691,14 +1592,63 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                 ref={(bloomplayer) => (this.rootDiv = bloomplayer)}
             >
                 <Swiper
-                    // key is necessary to guarantee we get a new swiper when this.shouldAutoPlay changes.
-                    // Otherwise, effect does not change.
-                    key={this.shouldAutoPlay() ? "fade" : "slide"}
-                    {...swiperParams}
-                    effect={this.shouldAutoPlay() ? "fade" : "slide"}
+                    // key is necessary to guarantee we get a new swiper when the effect or
+                    // page direction changes: both are only applied when swiper initializes.
+                    key={`${effect}-${isRtl ? "rtl" : "ltr"}`}
+                    modules={[Keyboard, EffectFade]}
+                    effect={effect}
                     // For now, we will go with the default transition time,
                     // but I'm leaving this here because if we decide to change it, this is how.
                     // speed={this.shouldAutoPlay() ? 1500 : 300} // 300 is the default
+                    //
+                    // Current swiper supports RTL page order natively via the dir attribute
+                    // (this replaces the deep rtl/rtlTranslate kluges we needed with swiper 4).
+                    dir={isRtl ? "rtl" : "ltr"}
+                    onSwiper={(s) => {
+                        this.swiperInstance = s;
+                    }}
+                    // Note: we make our own next/prev buttons (rendered below) rather than
+                    // using swiper's navigation module: swiper puts its buttons inside the
+                    // swiper container, which has position:relative and overflow:hidden,
+                    // hiding them when we want them outside the book (e.g., bloom library).
+                    simulateTouch={true} //Swiper will accept mouse events like touch events (click and drag to change slides)
+                    touchStartPreventDefault={false} // If true, would prevent the default, which would cause niceScroll not to receive mousedown events.
+                    keyboard={{ enabled: true, onlyInViewport: false }}
+                    // When we first render swiper, we need to force it to the right page.
+                    // After startup this only matters when the key above changes (e.g.,
+                    // autoplay mode changed, BL-11090): the replacement swiper should wake
+                    // up on the page we were already showing.
+                    initialSlide={
+                        this.startingUpSwiper
+                            ? (this.state.startPageIndex ?? 0)
+                            : this.state.currentSwiperIndex
+                    }
+                    onSlideChange={(swiper) => {
+                        if (this.state.inPauseForced) {
+                            if (this.props.setForcedPausedCallback) {
+                                this.props.setForcedPausedCallback(false);
+                            }
+                            // Only setState when there is something to change:
+                            // swiper can emit slideChange from swiper.update(),
+                            // which runs on every React render, so an
+                            // unconditional setState here can become a
+                            // render -> update -> slideChange -> setState loop
+                            // ("Maximum update depth exceeded").
+                            this.setState({ inPauseForced: false });
+                        }
+
+                        if (!this.startingUpSwiper) {
+                            this.showingPage(swiper.activeIndex);
+                        }
+                    }}
+                    onSlideChangeTransitionStart={(swiper) => {
+                        if (!this.startingUpSwiper) {
+                            this.setIndex(swiper.activeIndex);
+                        }
+                    }}
+                    onSlideChangeTransitionEnd={(swiper) => {
+                        this.addScrollbarsToPageWhenReady(swiper.activeIndex);
+                    }}
                 >
                     {this.state.pages.map((slide, index) => {
                         const pageIsCloseToCurrentOne =
@@ -1710,10 +1660,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                             ];
 
                         return (
-                            <div
+                            <SwiperSlide
                                 key={index}
                                 className={"page-preview-slide"}
-                                onClick={(e) => this.handlePageClick(e)} // Changed this line
+                                onClick={(e) => this.handlePageClick(e)}
                             >
                                 {/* This is a huge performance enhancement on large books (from several minutes to a few seconds):
                     Only load up the one that is about to be current page and the ones on either side of it with
@@ -1773,7 +1723,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                                     //     {"page " + index}
                                     // </div>
                                 )}
-                            </div>
+                            </SwiperSlide>
                         );
                     })}
                 </Swiper>
