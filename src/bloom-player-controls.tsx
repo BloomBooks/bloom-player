@@ -19,7 +19,7 @@ import {
     IExtraButton,
     IVideoSettings,
 } from "./controlBar";
-import { ThemeProvider } from "@material-ui/styles";
+import { ThemeProvider } from "@mui/material/styles";
 import theme from "./bloomPlayerTheme";
 import React, { useState, useEffect, useRef, LegacyRef } from "react";
 import LangData from "./langData";
@@ -28,14 +28,14 @@ import {
     getBooleanUrlParam,
     getNumericUrlParam,
 } from "./utilities/urlUtils";
-import { IconButton } from "@material-ui/core";
+import { IconButton } from "@mui/material";
 //tslint:disable-next-line:no-submodule-imports
-import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
+import PlayCircleOutline from "@mui/icons-material/PlayCircleOutline";
 import { LocalizationManager } from "./l10n/localizationManager";
-import { withStyles, createTheme } from "@material-ui/core/styles";
+import { styled, createTheme } from "@mui/material/styles";
 // We don't want to call this thing a slider in Bloom Player, because the control that actually holds
 // the pages is already known as a slider, so the two would get confused.
-import DragBar from "@material-ui/core/Slider";
+import DragBar from "@mui/material/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
 import { setDurationOfPagesWithoutNarration } from "./shared/narration";
 import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
@@ -802,57 +802,48 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
         setNowReadingImageDescription(inImageDescription);
     };
 
-    // MUI-type styles seem to be the only currently practical way to style the parts of a complex control.
-    // MUI 5 is supposed to have an Emotion-type alternative.
-    const PageChooserBar = withStyles({
-        root: {
-            color: bloomRed,
-            height: 2,
-            padding: "15px 0",
+    // Styling the slots of the slider. (Since MUI 5 this uses emotion's styled();
+    // it was previously a JSS withStyles with per-slot rule names.)
+    // Note: the v4 version also nudged the valueLabel position (left/top offsets)
+    // to compensate for v4's thumb internals; v5's redesigned value label centers
+    // itself, so those offsets are no longer applied.
+    const PageChooserBar = styled(DragBar)({
+        color: bloomRed,
+        height: 2,
+        padding: "15px 0",
+        "& .MuiSlider-valueLabel": {
+            background: bloomRed,
+            color: "white",
         },
-        active: {},
-        valueLabel: {
-            // material styles make the thumb, which is the parent of the valueLabel (the circle above it),
-            // a little smaller when disabled. To keep the center of the label aligned with the center of
-            // the thumb, the calculation of its left position needs to include half the width
-            // of the thumb itself.
-            left: "calc(50% - 16px)",
-            top: -31,
-            "& *": {
-                background: bloomRed,
-                color: "white",
-                // color: "#000"
-            },
-        },
-        track: {
+        "& .MuiSlider-track": {
             height: 4,
             opacity: 0.5,
         },
-        rail: {
+        "& .MuiSlider-rail": {
             height: 2,
             opacity: 0.5,
             backgroundColor: bloomRed,
         },
-        mark: {
+        "& .MuiSlider-mark": {
             // we don't want the mark to show up on the track, it's just there for the label
             // that shows the total number of pages. (That could change if we use marks for bookmarks.)
             backgroundColor: "transparent",
         },
-        markActive: {
+        "& .MuiSlider-markActive": {
             // Yet another default applies when it's selected, so override it again.
             backgroundColor: "transparent",
         },
-        markLabel: {
+        "& .MuiSlider-markLabel": {
             top: 20,
             fontSize: "0.6rem",
             color: bloomRed,
         },
-        markLabelActive: {
+        "& .MuiSlider-markLabelActive": {
             top: 20,
             fontSize: "0.6rem",
             color: bloomRed,
         },
-    })(DragBar);
+    });
 
     const rtlTheme = createTheme({
         direction: "rtl",

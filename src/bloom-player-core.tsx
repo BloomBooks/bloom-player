@@ -35,14 +35,14 @@ import LangData from "./langData";
 export const ForceShowAppBar = new LiteEvent<void>();
 
 // See related comments in controlBar.tsx
-import IconButton from "@material-ui/core/IconButton";
-import ArrowBack from "@material-ui/icons/ArrowBackIosRounded";
-import ArrowForward from "@material-ui/icons/ArrowForwardIosRounded";
-import LoadFailedIcon from "@material-ui/icons/SentimentVeryDissatisfied";
+import IconButton from "@mui/material/IconButton";
+import ArrowBack from "@mui/icons-material/ArrowBackIosRounded";
+import ArrowForward from "@mui/icons-material/ArrowForwardIosRounded";
+import LoadFailedIcon from "@mui/icons-material/SentimentVeryDissatisfied";
 
 import { ActivityManager } from "./activities/activityManager";
 import { LegacyQuestionHandler } from "./activities/legacyQuizHandling/LegacyQuizHandler";
-import { CircularProgress } from "@material-ui/core";
+import { CircularProgress } from "@mui/material";
 import { BookInfo } from "./bookInfo";
 import { BookInteraction } from "./bookInteraction";
 import $ from "jquery";
@@ -109,7 +109,6 @@ import {
 } from "./navigation";
 import { getBloomPlayerVersion } from "./diagnostic-info-control";
 import { compareVersions } from "compare-versions";
-import { ExpandLessSharp } from "@material-ui/icons";
 
 // BloomPlayer takes a URL param that directs it to Bloom book.
 // (See comment on sourceUrl for exactly how.)

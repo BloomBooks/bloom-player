@@ -1,4 +1,3 @@
-import { AspectRatio } from "@material-ui/icons";
 import { DomHelper } from "../utilities/domHelper";
 import { easing } from "jquery";
 import { request } from "http";

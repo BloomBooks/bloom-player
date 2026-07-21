@@ -101,8 +101,8 @@ Deliverable: a checklist we re-run at the end of every phase.
 
 _Status note (July 2026): Phases 1–2 are implemented and merged down the stacked
 branches `phase1-shrink-core` → `phase2-remove-statics`. Phase 3 (the dependency
-upgrades), split into Phase 3a (MUI v5) and Phase 3b (Swiper 11), is in progress on
-the stacked branches `phase3a-mui` → `phase3b-swiper`. See
+upgrades) is underway on the stacked branches `phase3a-mui` → `phase3b-swiper`:
+Phase 3a (MUI v5) is done and Phase 3b (Swiper 11) follows. See
 [MODERNIZATION-REVIEW-NOTES.md](MODERNIZATION-REVIEW-NOTES.md)
 for the judgment calls and the remaining manual verification items._
 
@@ -194,6 +194,8 @@ MUI v5 supports React 17, so this doesn't force the React upgrade. `BloomPlayerC
 itself only uses `CircularProgress` and an icon; the bulk of the work is in the
 already-functional controls components. Use the official codemods; audit
 theme/`makeStyles` usage across the app.
+
+_Status: done (5.18.0) — see review notes items 9–13._
 
 ### Phase 3b — Swiper 4 → Swiper 11
 

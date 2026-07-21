@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 
 // We'd prefer to use this more elegant form of import:
-//import { AppBar, Toolbar, IconButton } from "@material-ui/core";
+//import { AppBar, Toolbar, IconButton } from "@mui/material";
 // import {
 //     ArrowBack,
 //     PlayCircleOutline,
 //     PauseCircleOutline
-// } from "@material-ui/icons";
+// } from "@mui/icons-material";
 // However, @material-ui doc indicates that the second-level imports are supported,
 // and using the first-level ones has unfortunate consequences on build times and sizes.
 // It takes roughly twice as long to build our bundles, and they end up roughly
@@ -15,28 +15,28 @@ import React, { useState } from "react";
 // The latter two effects probably indicate that I have not yet figured out how to
 // configure webpack to really do tree-shaking, even in our production build.
 
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import ArrowBack from "@material-ui/icons/ArrowBack";
-import MoreHoriz from "@material-ui/icons/MoreHoriz";
-import PlayCircleOutline from "@material-ui/icons/PlayCircleOutline";
-import PauseCircleOutline from "@material-ui/icons/PauseCircleOutline";
-import Language from "@material-ui/icons/Language";
-import Fullscreen from "@material-ui/icons/Fullscreen";
-import FullscreenExit from "@material-ui/icons/FullscreenExit";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import IconButton from "@mui/material/IconButton";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import MoreHoriz from "@mui/icons-material/MoreHoriz";
+import PlayCircleOutline from "@mui/icons-material/PlayCircleOutline";
+import PauseCircleOutline from "@mui/icons-material/PauseCircleOutline";
+import Language from "@mui/icons-material/Language";
+import Fullscreen from "@mui/icons-material/Fullscreen";
+import FullscreenExit from "@mui/icons-material/FullscreenExit";
 import { ImageDescriptionIcon } from "./imageDescriptionIcon";
 
 import theme, { bloomYellow } from "./bloomPlayerTheme";
-import { ThemeProvider } from "@material-ui/styles";
-import { createTheme } from "@material-ui/core/styles";
+import { ThemeProvider } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
 
 import LanguageMenu from "./languageMenu";
 import LangData from "./langData";
 import { sendMessageToHost } from "./externalContext";
 import { sendStringToBloomApi } from "./videoRecordingSupport";
 import { LocalizationManager } from "./l10n/localizationManager";
-import { Button } from "@material-ui/core";
+import { Button } from "@mui/material";
 
 // react control (using hooks) for the bar of controls across the top of a bloom-player-controls
 

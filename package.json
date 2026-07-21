@@ -47,9 +47,10 @@
         "strings:sync": "pnpm strings:upload && pnpm strings:download"
     },
     "dependencies": {
-        "@material-ui/core": "4.12.4",
-        "@material-ui/icons": "4.11.3",
-        "@material-ui/styles": "4.11.5",
+        "@emotion/react": "11.14.0",
+        "@emotion/styled": "11.14.1",
+        "@mui/icons-material": "5.18.0",
+        "@mui/material": "5.18.0",
         "axios": "0.18.1",
         "compare-versions": "6.1.1",
         "dynamic-import-polyfill": "0.1.1",

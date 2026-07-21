@@ -8,9 +8,9 @@ import {
     FormControlLabel,
     Radio,
     RadioGroup,
-} from "@material-ui/core";
+} from "@mui/material";
 // tslint:disable-next-line: no-submodule-imports
-import VolumeUp from "@material-ui/icons/VolumeUp";
+import VolumeUp from "@mui/icons-material/VolumeUp";
 import LangData from "./langData";
 
 interface ILanguageMenuProps {

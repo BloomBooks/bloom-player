@@ -301,11 +301,8 @@ We just make them follow the main content normally. */
             border-radius: 50%;
         }
 
-        .MuiIconButton-label {
-            width: 100%;
-            height: 100%;
-        }
-
+        // (MUI 5 removed the .MuiIconButton-label wrapper span; the svg rule
+        // below applies directly to the icon.)
         svg {
             width: 100%;
             height: 100%;

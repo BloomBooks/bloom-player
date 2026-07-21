@@ -1,4 +1,4 @@
-import { createTheme } from "@material-ui/core/styles";
+import { createTheme } from "@mui/material/styles";
 
 export const bloomRed = "#d65649"; // also in bloom-player-ui.less
 const bloomGrey = "#2e2e2e"; // also in bloom-player-ui.less
