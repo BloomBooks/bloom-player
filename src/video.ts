@@ -2,6 +2,7 @@ import LiteEvent from "./shared/event";
 import { BloomPlayerCore } from "./bloom-player-core";
 import { isMacOrIOS } from "./utilities/osUtils";
 import {
+    cancelVideoFirstFramePriming,
     currentPlaybackMode,
     setCurrentPlaybackMode,
     PlaybackMode,
@@ -622,6 +623,9 @@ export class Video {
             hideVideoError(video);
             hideVideoAutoplayBlockedHint(video);
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+            // This is real playback; a pending first-frame priming attempt
+            // must not mute or pause it.
+            cancelVideoFirstFramePriming(video);
             this.currentVideoStartTime = video.currentTime || 0;
             video.closest(".bloom-videoContainer")?.classList.add("playing");
             const promise = video.play();

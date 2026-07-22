@@ -1401,6 +1401,18 @@ export function isTransientVideoPlayFailure(reason: any): boolean {
     return message.includes("interrupted by a call to pause()");
 }
 
+// Cancel functions for in-progress first-frame priming attempts (see
+// showVideoFirstFrameWhenReady below), keyed by the video being primed.
+const firstFramePrimingCancels = new WeakMap<HTMLVideoElement, () => void>();
+
+// Anything about to start real playback of a video should call this first:
+// if a first-frame priming attempt is in progress on the video, it is
+// cancelled (restoring the video's muted state and removing the transparent
+// poster) so the primer can't mute or pause the real playback.
+export function cancelVideoFirstFramePriming(video: HTMLVideoElement) {
+    firstFramePrimingCancels.get(video)?.();
+}
+
 // Attempt to show a video's first frame by briefly starting muted playback and
 // then pausing. We mute while priming because gestureless unmuted play() is
 // rejected by autoplay policies (iOS especially, where a past tap elsewhere on
@@ -1430,16 +1442,22 @@ export function showVideoFirstFrameWhenReady(
             return;
         }
         done = true;
+        firstFramePrimingCancels.delete(video);
         window.clearTimeout(giveUpTimeout);
         video.removeEventListener("playing", playingListener);
         video.muted = wasMuted;
     };
-    // If playAllVideo has meanwhile taken this video for real playback, we
-    // must neither pause it nor leave it muted.
-    const sequencerOwnsVideo = () => activePlayAllVideoElement === video;
+    // Let real-playback initiators cancel this priming attempt so it can't
+    // mute or pause the playback they are about to start.
+    firstFramePrimingCancels.set(video, () => {
+        finish();
+        // Real playback is starting; make sure our transparent poster can't
+        // hide it.
+        video.removeAttribute("poster");
+    });
     const playingListener = () => {
         hideVideoAutoplayBlockedHint(video);
-        if (!shouldPauseAfterPlaying() || sequencerOwnsVideo()) {
+        if (!shouldPauseAfterPlaying()) {
             // Real playback has taken over; restore audio and get out of the way.
             finish();
             video.removeAttribute("poster");
@@ -1449,7 +1467,7 @@ export function showVideoFirstFrameWhenReady(
             if (done) {
                 return; // we already gave up or something else took over
             }
-            if (shouldPauseAfterPlaying() && !sequencerOwnsVideo()) {
+            if (shouldPauseAfterPlaying()) {
                 video.pause();
             }
             finish();
@@ -1481,8 +1499,7 @@ export function showVideoFirstFrameWhenReady(
     // audio, and remove the transparent poster so the browser can show its own
     // first frame when it has one, rather than leaving the video invisible.
     giveUpTimeout = window.setTimeout(() => {
-        const pauseWanted = shouldPauseAfterPlaying() && !sequencerOwnsVideo();
-        if (pauseWanted && !video.paused) {
+        if (shouldPauseAfterPlaying() && !video.paused) {
             video.pause();
         }
         finish();
@@ -1570,6 +1587,9 @@ function playAllVideoInternal(
         hideVideoError(video);
         hideVideoAutoplayBlockedHint(video);
         setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+        // This is real playback; a pending first-frame priming attempt must
+        // not mute or pause it.
+        cancelVideoFirstFramePriming(video);
         // Always play each queued video from the beginning.
         // Without this, a previously played element may remain at end-of-stream
         // and fail to raise the expected ended event for sequencing.

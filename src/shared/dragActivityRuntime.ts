@@ -14,6 +14,7 @@
 
 import { ActivityManager } from "../activities/activityManager";
 import {
+    cancelVideoFirstFramePriming,
     kAudioSentence,
     playAllAudio,
     playAllVideo,
@@ -295,6 +296,9 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
 
 const playVideo = (e: MouseEvent) => {
     const video = e.currentTarget as HTMLVideoElement;
+    // The user asked for real playback; a pending first-frame priming attempt
+    // must not mute or pause it.
+    cancelVideoFirstFramePriming(video);
     video.play();
 };
 

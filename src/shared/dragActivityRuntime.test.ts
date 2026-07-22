@@ -7,6 +7,7 @@ const narrationMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./narration", () => ({
+    cancelVideoFirstFramePriming: vi.fn(),
     kAudioSentence: "audio-sentence",
     playAllAudio: narrationMocks.playAllAudio,
     playAllVideo: narrationMocks.playAllVideo,

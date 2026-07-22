@@ -58,6 +58,26 @@ test("showVideoFirstFrameWhenReady primes muted without waiting for data, then p
     expect(video.hasAttribute("poster")).toBe(false);
 });
 
+test("starting real playback cancels an in-progress priming attempt", async () => {
+    const video = document.createElement("video");
+    const play = vi.fn(() => Promise.resolve());
+    const pause = vi.fn();
+    Object.defineProperty(video, "play", { value: play });
+    Object.defineProperty(video, "pause", { value: pause });
+
+    showVideoFirstFrameWhenReady(video);
+    expect(video.muted).toBe(true);
+
+    // Real playback of the same video (e.g. Show Correct) must cancel the
+    // primer so it can't mute or pause it.
+    playAllVideo([video], () => {});
+    expect(video.muted).toBe(false);
+
+    video.dispatchEvent(new Event("playing"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(pause).not.toHaveBeenCalled();
+});
+
 test("showVideoFirstFrameWhenReady gives up after a timeout, unmuting and removing the poster", () => {
     vi.useFakeTimers();
     try {
