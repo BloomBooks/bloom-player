@@ -261,16 +261,16 @@ describe("analytics: media durations feed the book progress report", () => {
         );
     }
 
-    afterEach(() => {
-        // undo the current-page arrangement some tests below make
-        (BloomPlayerCore as any).currentPage = null;
-        (BloomPlayerCore as any).currentPageIndex = undefined;
-    });
+    // (No afterEach reset needed for currentPage/currentPageIndex: since the
+    // Phase 2 registry refactor those are per-instance, and each test renders a
+    // fresh player that is unmounted by testing-library between tests, so the
+    // arrangement can't leak the way the old class statics could.)
 
     it("accumulates video duration into 'Pages Read' progress updates sent to the host", async () => {
-        const { hostMessages } = await renderBookForHost("bloomlibrary");
+        const { hostMessages, playerRef } =
+            await renderBookForHost("bloomlibrary");
 
-        BloomPlayerCore.storeVideoAnalytics(3.5);
+        playerRef.current!.storeVideoAnalytics(3.5);
         let reports = progressReports(hostMessages);
         expect(reports.length).toBe(1);
         expect(reports[0].params.videoDuration).toBe(3.5);
@@ -281,16 +281,17 @@ describe("analytics: media durations feed the book progress report", () => {
         expect(typeof reports[0].params.readDuration).toBe("number");
 
         // durations keep accumulating across reports
-        BloomPlayerCore.storeVideoAnalytics(1.5);
+        playerRef.current!.storeVideoAnalytics(1.5);
         reports = progressReports(hostMessages);
         expect(reports.length).toBe(2);
         expect(reports[1].params.videoDuration).toBe(5);
     });
 
     it("ignores the spurious near-zero video durations the video code warns about", async () => {
-        const { hostMessages } = await renderBookForHost("bloomlibrary");
+        const { hostMessages, playerRef } =
+            await renderBookForHost("bloomlibrary");
 
-        BloomPlayerCore.storeVideoAnalytics(0.0005);
+        playerRef.current!.storeVideoAnalytics(0.0005);
         expect(progressReports(hostMessages).length).toBe(0);
     });
 
@@ -315,7 +316,7 @@ describe("analytics: media durations feed the book progress report", () => {
         expect(progressReports(hostMessages).length).toBe(0);
 
         // ...and rides along on the next update that is sent.
-        BloomPlayerCore.storeVideoAnalytics(1);
+        playerRef.current!.storeVideoAnalytics(1);
         const reports = progressReports(hostMessages);
         expect(reports.length).toBe(1);
         expect(reports[0].params.audioDuration).toBe(2.25);
@@ -328,14 +329,13 @@ describe("analytics: media durations feed the book progress report", () => {
         // Make page 1 (a numbered content page) the player's current page.
         // On a real page turn showingPage does this; in jsdom swiper cannot
         // turn pages (see the coverage note in bloom-player-core.test.tsx).
-        // NOTE to future refactorers: if this assignment stops working
-        // because currentPage stops being a static (react modernization),
-        // update these two lines to arrange the new seam; the assertions
-        // below must keep passing unchanged.
+        // currentPage/currentPageIndex became per-instance members in the
+        // Phase 2 registry refactor, so we arrange the seam on the live player
+        // instance (playerRef.current) rather than on the class.
         const contentPage = document.querySelectorAll(".bloom-page")[1];
         expect(contentPage.classList.contains("numberedPage")).toBe(true);
-        (BloomPlayerCore as any).currentPage = contentPage;
-        (BloomPlayerCore as any).currentPageIndex = 1;
+        (playerRef.current as any).currentPage = contentPage;
+        (playerRef.current as any).currentPageIndex = 1;
 
         playerRef.current!.storeAudioAnalytics(2.25);
         let reports = progressReports(hostMessages);
@@ -356,9 +356,10 @@ describe("analytics: media durations feed the book progress report", () => {
         // Hosts like Bloom Reader accumulate read time natively (window
         // focus/blur don't work in their webviews), so the player must not
         // send them its own (wrong) readDuration.
-        const { hostMessages } = await renderBookForHost("bloomreader");
+        const { hostMessages, playerRef } =
+            await renderBookForHost("bloomreader");
 
-        BloomPlayerCore.storeVideoAnalytics(2);
+        playerRef.current!.storeVideoAnalytics(2);
         const reports = progressReports(hostMessages);
         expect(reports.length).toBe(1);
         expect(reports[0].params.videoDuration).toBe(2);
