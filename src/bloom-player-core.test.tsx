@@ -529,6 +529,20 @@ describe("BloomPlayerCore forced-pause reporting (BL-8864)", () => {
     });
 });
 
+describe("BloomPlayerCore current-player registry", () => {
+    it("registers on mount and unregisters on unmount", async () => {
+        const { getCurrentPlayer } = await import("./currentPlayer");
+        serveTestBook(mockedGet, makeTestBookHtml());
+        const { container, unmount } = render(
+            <BloomPlayerCore {...defaultProps()} />,
+        );
+        await waitForStartupToComplete(container);
+        expect(getCurrentPlayer()).toBeDefined();
+        unmount();
+        expect(getCurrentPlayer()).toBeUndefined();
+    });
+});
+
 // Note on coverage limits: props.reportPageProperties (and the other side effects
 // of showingPage's deferred block, like starting narration) cannot be tested in
 // jsdom at all: they read the page via swiper's internal `slides` collection,

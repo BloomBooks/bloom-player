@@ -1,4 +1,4 @@
-import { BloomPlayerCore } from "./bloom-player-core";
+import { getCurrentPlayer } from "./currentPlayer";
 import { storePageDataExternally, reportAnalytics } from "./externalContext";
 import { TransientPageDataSingleton } from "./transientPageData";
 
@@ -45,7 +45,7 @@ export function reportScoreForCurrentPage(
     analyticsCategory: string,
     pagesToGroupForAnalytics: number[] | undefined,
 ): void {
-    if (!BloomPlayerCore.getCurrentPage()) {
+    if (!getCurrentPlayer()?.getCurrentPage()) {
         alert("null currentPage in reportScoreForCurrentPage()");
         return;
     }

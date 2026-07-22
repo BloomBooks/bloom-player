@@ -1,5 +1,5 @@
 import LiteEvent from "./shared/event";
-import { BloomPlayerCore } from "./bloom-player-core";
+import { getCurrentPlayer } from "./currentPlayer";
 import { isMacOrIOS } from "./utilities/osUtils";
 import {
     cancelVideoFirstFramePriming,
@@ -422,7 +422,7 @@ export class Video {
     }
 
     private reportVideoPlayed(duration: number) {
-        BloomPlayerCore.storeVideoAnalytics(duration);
+        getCurrentPlayer()?.storeVideoAnalytics(duration);
     }
 
     public hidingPage() {
