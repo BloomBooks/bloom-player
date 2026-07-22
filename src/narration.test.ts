@@ -26,6 +26,62 @@ test("showVideoFirstFrameWhenReady clears autoplay hint before retrying play", (
     expect(container.classList.contains("autoplayBlocked")).toBe(false);
 });
 
+// BL-16146: iOS Safari neither preloads video data (so loadeddata may never
+// fire) nor allows gestureless unmuted play(). The primer must play muted
+// right away - play() itself is what makes iOS load the data - then pause,
+// unmute, and drop the transparent poster once a frame has been painted.
+test("showVideoFirstFrameWhenReady primes muted without waiting for data, then pauses, unmutes, and removes the poster", async () => {
+    const video = document.createElement("video");
+    video.setAttribute("poster", "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=");
+    const play = vi.fn(() => Promise.resolve());
+    const pause = vi.fn();
+    Object.defineProperty(video, "play", { value: play });
+    Object.defineProperty(video, "pause", { value: pause });
+    // No data loaded at all; the old implementation would have waited for
+    // loadeddata and done nothing here.
+    Object.defineProperty(video, "readyState", {
+        value: HTMLMediaElement.HAVE_NOTHING,
+        configurable: true,
+    });
+
+    showVideoFirstFrameWhenReady(video);
+
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(video.muted).toBe(true);
+
+    video.dispatchEvent(new Event("playing"));
+    // jsdom has no requestVideoFrameCallback, so the 4ms fallback applies.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(video.muted).toBe(false);
+    expect(video.hasAttribute("poster")).toBe(false);
+});
+
+test("showVideoFirstFrameWhenReady gives up after a timeout, unmuting and removing the poster", () => {
+    vi.useFakeTimers();
+    try {
+        const video = document.createElement("video");
+        video.setAttribute("poster", "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=");
+        // play() never settles and playing never fires, as when the data
+        // never arrives.
+        const play = vi.fn(() => new Promise<void>(() => {}));
+        Object.defineProperty(video, "play", { value: play });
+        Object.defineProperty(video, "pause", { value: vi.fn() });
+
+        showVideoFirstFrameWhenReady(video);
+        expect(video.muted).toBe(true);
+        expect(video.hasAttribute("poster")).toBe(true);
+
+        vi.advanceTimersByTime(3100);
+
+        expect(video.muted).toBe(false);
+        expect(video.hasAttribute("poster")).toBe(false);
+    } finally {
+        vi.useRealTimers();
+    }
+});
+
 test("hidingPage stops shared sequential video playback", async () => {
     const firstVideo = document.createElement("video");
     const secondVideo = document.createElement("video");

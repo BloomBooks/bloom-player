@@ -1401,94 +1401,106 @@ export function isTransientVideoPlayFailure(reason: any): boolean {
     return message.includes("interrupted by a call to pause()");
 }
 
-// Attempt to show a video's first frame by briefly starting playback and then pausing.
-// The callback allows callers to decide at the moment playback starts whether pausing
-// is still desired (for example, page-level logic may stop pausing after initial load).
+// Attempt to show a video's first frame by briefly starting muted playback and
+// then pausing. We mute while priming because gestureless unmuted play() is
+// rejected by autoplay policies (iOS especially, where a past tap elsewhere on
+// the page grants nothing). Calling play() is also what forces browsers that
+// don't preload video data (again, iOS Safari) to fetch and decode the first
+// frame, so we must not wait for loadeddata first: on iOS it typically never
+// fires until something plays. (BL-16146)
+// The callback allows callers to decide at the moment playback starts whether
+// pausing is still desired (for example, page-level logic may stop pausing
+// after initial load).
 export function showVideoFirstFrameWhenReady(
     video: HTMLVideoElement,
     shouldPauseAfterPlaying: () => boolean = () => true,
     onAutoplayBlocked: () => void = () => showVideoAutoplayBlockedHint(video),
 ) {
-    let canceled = false;
-    const attempt = () => {
-        if (canceled) {
+    // If something else has already started playback, don't interfere.
+    if (!video.paused) {
+        return;
+    }
+    const wasMuted = video.muted;
+    let giveUpTimeout: number | undefined;
+    let done = false;
+    // Idempotent cleanup: whatever way the priming attempt ends, restore the
+    // video's real muted state and stop listening.
+    const finish = () => {
+        if (done) {
             return;
         }
-        // If something else has already started playback, don't attach our
-        // pause-on-playing behavior.
-        if (!video.paused) {
-            return;
-        }
-        const playingListener = () => {
-            window.clearTimeout(removePlayingListenerTimeout);
-            hideVideoAutoplayBlockedHint(video);
-            if (!shouldPauseAfterPlaying()) {
-                return;
-            }
-            const pauseIfStillWanted = () => {
-                if (shouldPauseAfterPlaying()) {
-                    video.pause();
-                }
-            };
-            // Prefer pausing after a composited video frame, not just after a timer.
-            // Some videos/devices can report "playing" before pixels are actually painted.
-            const requestVideoFrameCallback = (video as any)
-                .requestVideoFrameCallback as
-                | ((callback: (...args: any[]) => void) => number)
-                | undefined;
-            if (requestVideoFrameCallback) {
-                requestVideoFrameCallback.call(video, () => {
-                    pauseIfStillWanted();
-                });
-            } else {
-                // Fallback for older browsers. This sometimes helps, but is not as reliable as the
-                // above on browsers that implement it.
-                setTimeout(() => {
-                    pauseIfStillWanted();
-                }, 4);
-            }
-        };
-        video.addEventListener("playing", playingListener, { once: true });
-        // If our play() attempt doesn't lead to playback soon, remove the
-        // listener so it can't affect unrelated later playback.
-        const removePlayingListenerTimeout = window.setTimeout(() => {
-            video.removeEventListener("playing", playingListener);
-        }, 1000);
+        done = true;
+        window.clearTimeout(giveUpTimeout);
+        video.removeEventListener("playing", playingListener);
+        video.muted = wasMuted;
+    };
+    // If playAllVideo has meanwhile taken this video for real playback, we
+    // must neither pause it nor leave it muted.
+    const sequencerOwnsVideo = () => activePlayAllVideoElement === video;
+    const playingListener = () => {
         hideVideoAutoplayBlockedHint(video);
-        const promise = video.play();
-        if (promise && promise.catch) {
-            promise.catch((reason) => {
-                window.clearTimeout(removePlayingListenerTimeout);
-                // If play() fails (e.g., autoplay policy), remove the listener
-                // so it won't interfere if playback starts later by other means.
-                video.removeEventListener("playing", playingListener);
-                // If autoplay is blocked, remove our transparent poster so a decoded
-                // first frame can be shown when available.
-                if (reason?.name === "NotAllowedError") {
-                    video.removeAttribute("poster");
-                    onAutoplayBlocked();
-                }
+        if (!shouldPauseAfterPlaying() || sequencerOwnsVideo()) {
+            // Real playback has taken over; restore audio and get out of the way.
+            finish();
+            video.removeAttribute("poster");
+            return;
+        }
+        const pauseIfStillWanted = () => {
+            if (done) {
+                return; // we already gave up or something else took over
+            }
+            if (shouldPauseAfterPlaying() && !sequencerOwnsVideo()) {
+                video.pause();
+            }
+            finish();
+            // A frame has been painted; the transparent poster (set at book
+            // load to hide videos until then) is no longer wanted.
+            video.removeAttribute("poster");
+        };
+        // Prefer pausing after a composited video frame, not just after a timer.
+        // Some videos/devices can report "playing" before pixels are actually painted.
+        const requestVideoFrameCallback = (video as any)
+            .requestVideoFrameCallback as
+            | ((callback: (...args: any[]) => void) => number)
+            | undefined;
+        if (requestVideoFrameCallback) {
+            requestVideoFrameCallback.call(video, () => {
+                pauseIfStillWanted();
             });
+        } else {
+            // Fallback for older browsers. This sometimes helps, but is not as reliable as the
+            // above on browsers that implement it.
+            setTimeout(() => {
+                pauseIfStillWanted();
+            }, 4);
         }
     };
-    // HAVE_CURRENT_DATA (2) means at least the first frame is decoded.
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        attempt();
-    } else {
-        let cancelAttempt: () => void;
-        const onLoadedData = () => {
-            video.removeEventListener("play", cancelAttempt);
-            attempt();
-        };
-        cancelAttempt = () => {
-            canceled = true;
-            video.removeEventListener("loadeddata", onLoadedData);
-            video.removeEventListener("play", cancelAttempt);
-        };
-        // If something requests playback before the video has loaded enough data,
-        // don't run this first-frame trick when loadeddata eventually fires.
-        video.addEventListener("play", cancelAttempt, { once: true });
-        video.addEventListener("loadeddata", onLoadedData, { once: true });
+    video.addEventListener("playing", playingListener, { once: true });
+    // If nothing has painted after a while (very slow data, or a policy we
+    // didn't anticipate), give up: cancel our pending muted playback, restore
+    // audio, and remove the transparent poster so the browser can show its own
+    // first frame when it has one, rather than leaving the video invisible.
+    giveUpTimeout = window.setTimeout(() => {
+        const pauseWanted = shouldPauseAfterPlaying() && !sequencerOwnsVideo();
+        if (pauseWanted && !video.paused) {
+            video.pause();
+        }
+        finish();
+        video.removeAttribute("poster");
+    }, 3000);
+    hideVideoAutoplayBlockedHint(video);
+    video.muted = true;
+    const promise = video.play();
+    if (promise && promise.catch) {
+        promise.catch((reason) => {
+            finish();
+            // If autoplay is blocked even muted, remove our transparent poster
+            // so a decoded first frame can be shown when available.
+            if (reason?.name === "NotAllowedError") {
+                video.removeAttribute("poster");
+                onAutoplayBlocked();
+            }
+        });
     }
 }
 

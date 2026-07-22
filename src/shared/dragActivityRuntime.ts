@@ -186,9 +186,7 @@ export function prepareActivity(
             // Ensure the first frame is visible. The transparent poster (set globally by
             // bloom-player at book load) hides the video until playback begins. Non-draggable
             // videos get a play+pause first-frame trick in video.ts HandlePageVisible, but
-            // draggable videos are skipped there. If the video source hasn't loaded yet
-            // (e.g. cold cache after a build), play() fails silently, leaving the video blank.
-            // We use a loadeddata listener so the trick runs whenever the data is available.
+            // draggable videos are skipped there, so they depend entirely on this call.
             showVideoFirstFrameWhenReady(video);
         }
     });
