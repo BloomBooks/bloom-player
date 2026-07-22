@@ -982,6 +982,19 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
     classSetter(page, "drag-activity-wrong", !correct);
 
     const playOtherStuff = () => {
+        // This runs when the correct/wrong sound finishes, which may be after
+        // the user has already clicked "Show Correct" or "Try Again". Those
+        // take the page out of the state this feedback belongs to, and
+        // "Show Correct" starts playing the solution videos, which the
+        // playAllVideo call below would silently cancel (BL-16146). If the
+        // page is no longer showing the state we were queued for, do nothing.
+        if (
+            !page.parentElement?.classList.contains(
+                correct ? "drag-activity-correct" : "drag-activity-wrong",
+            )
+        ) {
+            return;
+        }
         const elementsMadeVisible = Array.from(
             page.getElementsByClassName(
                 correct ? "drag-item-correct" : "drag-item-wrong",
