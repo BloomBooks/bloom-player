@@ -138,6 +138,14 @@ We just make them follow the main content normally. */
             display: block;
             color: @hoverNextPrevButtonBar;
             background-color: @bloomRed;
+            // MUI 5 removed the .MuiIconButton-label flex wrapper that used to
+            // collapse the inline line-box around the icon. Without it, this
+            // display:block IconButton picks up the icon's baseline line-height
+            // and stretches into a vertical oval. Making the svg block-level
+            // removes that gap so the button hugs the icon and stays round.
+            svg {
+                display: block;
+            }
         }
         &.swiper-button-disabled {
             display: none;

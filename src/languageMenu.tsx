@@ -48,7 +48,11 @@ export const LanguageMenu: React.FunctionComponent<ILanguageMenuProps> = (
                 <div className="chooserItem" key={langData.Code}>
                     <FormControlLabel
                         value={langData.Code}
-                        control={<Radio />}
+                        // MUI 4's Radio defaulted to the theme's secondary color
+                        // (bloomRed); MUI 5 changed the default to primary (the
+                        // dark bloomGrey), so we ask for secondary explicitly to
+                        // keep the selected language dot red.
+                        control={<Radio color="secondary" />}
                         label={langData.Name}
                         checked={langData.Code === selectedLanguage}
                     />

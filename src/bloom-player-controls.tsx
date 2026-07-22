@@ -804,16 +804,25 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
 
     // Styling the slots of the slider. (Since MUI 5 this uses emotion's styled();
     // it was previously a JSS withStyles with per-slot rule names.)
-    // Note: the v4 version also nudged the valueLabel position (left/top offsets)
-    // to compensate for v4's thumb internals; v5's redesigned value label centers
-    // itself, so those offsets are no longer applied.
     const PageChooserBar = styled(DragBar)({
         color: bloomRed,
         height: 2,
         padding: "15px 0",
+        // The value label is the bubble above the thumb showing the page
+        // number. Keep MUI 5's default rounded-rectangle shape, just recolored
+        // red with white text (the pointer inherits the background). MUI 5
+        // sizes the label to its text, so on pages whose page number is ""
+        // (e.g. the cover) it would collapse to a thin nub; a minimum size
+        // keeps it a proper, consistently-sized bubble there, matching the
+        // always-present bubble of the v4 slider.
         "& .MuiSlider-valueLabel": {
-            background: bloomRed,
+            backgroundColor: bloomRed,
             color: "white",
+            // border-box so these are the actual bubble size (they include the
+            // default padding), matching the ~32x28 the label has with a digit.
+            boxSizing: "border-box",
+            minWidth: 32,
+            minHeight: 28,
         },
         "& .MuiSlider-track": {
             height: 4,
