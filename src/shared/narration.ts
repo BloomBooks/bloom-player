@@ -1432,6 +1432,12 @@ export function showVideoFirstFrameWhenReady(
     if (!video.paused) {
         return;
     }
+    // If an earlier priming attempt on this video is still armed (e.g. the
+    // page was left and re-entered within the give-up window), cancel it so
+    // there is only ever one live attempt per video — otherwise the old
+    // attempt's listeners/timer linger, and this attempt would wrongly record
+    // the old attempt's muting as the video's real muted state.
+    cancelVideoFirstFramePriming(video);
     const wasMuted = video.muted;
     let giveUpTimeout: number | undefined;
     let done = false;
@@ -1442,19 +1448,24 @@ export function showVideoFirstFrameWhenReady(
             return;
         }
         done = true;
-        firstFramePrimingCancels.delete(video);
+        // Deregister only our own cancel function, in case a newer priming
+        // attempt has already replaced it.
+        if (firstFramePrimingCancels.get(video) === cancel) {
+            firstFramePrimingCancels.delete(video);
+        }
         window.clearTimeout(giveUpTimeout);
         video.removeEventListener("playing", playingListener);
         video.muted = wasMuted;
     };
     // Let real-playback initiators cancel this priming attempt so it can't
     // mute or pause the playback they are about to start.
-    firstFramePrimingCancels.set(video, () => {
+    const cancel = () => {
         finish();
         // Real playback is starting; make sure our transparent poster can't
         // hide it.
         video.removeAttribute("poster");
-    });
+    };
+    firstFramePrimingCancels.set(video, cancel);
     const playingListener = () => {
         hideVideoAutoplayBlockedHint(video);
         if (!shouldPauseAfterPlaying()) {

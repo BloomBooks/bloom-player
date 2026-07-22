@@ -78,6 +78,26 @@ test("starting real playback cancels an in-progress priming attempt", async () =
     expect(pause).not.toHaveBeenCalled();
 });
 
+test("re-priming a video cancels the earlier attempt instead of stacking", () => {
+    const video = document.createElement("video");
+    const play = vi.fn(() => new Promise<void>(() => {}));
+    Object.defineProperty(video, "play", { value: play });
+    Object.defineProperty(video, "pause", { value: vi.fn() });
+
+    // Two priming attempts on the same (still paused, per jsdom) video, as
+    // when a page is left and re-entered within the give-up window.
+    showVideoFirstFrameWhenReady(video);
+    expect(video.muted).toBe(true);
+    showVideoFirstFrameWhenReady(video);
+    expect(video.muted).toBe(true);
+
+    // Cancelling must restore the video's ORIGINAL muted state (false), not
+    // the first attempt's muting, and must not be orphaned by the first
+    // attempt's cleanup.
+    playAllVideo([video], () => {});
+    expect(video.muted).toBe(false);
+});
+
 test("showVideoFirstFrameWhenReady gives up after a timeout, unmuting and removing the poster", () => {
     vi.useFakeTimers();
     try {
