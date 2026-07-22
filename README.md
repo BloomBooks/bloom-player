@@ -172,7 +172,20 @@ To test Bloom Player on a book in the Bloom Editor, follow these steps:
 
 ### Running unit tests
 
-To run unit tests use `pnpm test`. This will run all `*.test.ts`, which should be collocated with the thing being tested.
+To run unit tests use `pnpm test`. This will run all `*.test.ts` under `src/`, which should be collocated with the thing being tested. These are vitest + jsdom tests.
+
+### Running end-to-end (browser) tests
+
+The vitest tests run in jsdom, which can't exercise real-browser behavior such as swiper page-turning geometry, the audio autoplay policy, or the actual built `dist/bloomplayer.htm` artifact that hosts embed. Those are covered by a Playwright suite under `e2e/`.
+
+Because the e2e tests run against the built standalone bundle, build it first:
+
+```bash
+pnpm build:standalone
+pnpm test:e2e
+```
+
+`pnpm test:e2e:build` does both in one step, and `pnpm test:e2e:ui` opens the Playwright UI. The suite serves `dist/` plus the hermetic `public/testBooks/` fixtures via `e2e/server.mjs`; no network access or external books are required. See [E2E-TESTING-PLAN.md](E2E-TESTING-PLAN.md) for the design and the list of specs.
 
 
 ### Version Info
