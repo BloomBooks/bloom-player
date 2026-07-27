@@ -14,6 +14,7 @@
 
 import { ActivityManager } from "../activities/activityManager";
 import {
+    cancelVideoFirstFramePriming,
     kAudioSentence,
     playAllAudio,
     playAllVideo,
@@ -186,9 +187,7 @@ export function prepareActivity(
             // Ensure the first frame is visible. The transparent poster (set globally by
             // bloom-player at book load) hides the video until playback begins. Non-draggable
             // videos get a play+pause first-frame trick in video.ts HandlePageVisible, but
-            // draggable videos are skipped there. If the video source hasn't loaded yet
-            // (e.g. cold cache after a build), play() fails silently, leaving the video blank.
-            // We use a loadeddata listener so the trick runs whenever the data is available.
+            // draggable videos are skipped there, so they depend entirely on this call.
             showVideoFirstFrameWhenReady(video);
         }
     });
@@ -297,6 +296,9 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
 
 const playVideo = (e: MouseEvent) => {
     const video = e.currentTarget as HTMLVideoElement;
+    // The user asked for real playback; a pending first-frame priming attempt
+    // must not mute or pause it.
+    cancelVideoFirstFramePriming(video);
     video.play();
 };
 
@@ -982,6 +984,19 @@ function showCorrectOrWrongItems(page: HTMLElement, correct: boolean) {
     classSetter(page, "drag-activity-wrong", !correct);
 
     const playOtherStuff = () => {
+        // This runs when the correct/wrong sound finishes, which may be after
+        // the user has already clicked "Show Correct" or "Try Again". Those
+        // take the page out of the state this feedback belongs to, and
+        // "Show Correct" starts playing the solution videos, which the
+        // playAllVideo call below would silently cancel (BL-16146). If the
+        // page is no longer showing the state we were queued for, do nothing.
+        if (
+            !page.parentElement?.classList.contains(
+                correct ? "drag-activity-correct" : "drag-activity-wrong",
+            )
+        ) {
+            return;
+        }
         const elementsMadeVisible = Array.from(
             page.getElementsByClassName(
                 correct ? "drag-item-correct" : "drag-item-wrong",

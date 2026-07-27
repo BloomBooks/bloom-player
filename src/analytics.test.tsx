@@ -224,7 +224,7 @@ describe("analytics: BookOrShelf opened", () => {
 
 describe("analytics: media durations feed the book progress report", () => {
     // These call the same entry points the runtime media code uses:
-    // video.ts reports watched durations through BloomPlayerCore's
+    // video.ts reports watched durations through the currentPlayer registry's
     // storeVideoAnalytics, and narration.ts reports played audio durations
     // through storeAudioAnalytics (wired up via listenForPlayDuration).
     // From there everything through bookInteraction and externalContext to
