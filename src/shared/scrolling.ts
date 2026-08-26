@@ -345,8 +345,14 @@ export function setupSpecialMouseTrackingForNiceScroll(
     bloomPage: Element,
     pointerEventHandler?: (e: PointerEvent) => void,
 ) {
-    bloomPage.removeEventListener("pointerdown", listenForPointerDown); // only want one!
-    bloomPage.addEventListener("pointerdown", listenForPointerDown);
+    bloomPage.removeEventListener(
+        "pointerdown",
+        listenForPointerDown as EventListener,
+    ); // only want one!
+    bloomPage.addEventListener(
+        "pointerdown",
+        listenForPointerDown as EventListener,
+    );
     if (!pointerEventHandler) {
         return;
     }
@@ -355,7 +361,7 @@ export function setupSpecialMouseTrackingForNiceScroll(
     for (const eventName of ["pointermove", "pointerup"]) {
         bloomPage.ownerDocument.body.addEventListener(
             eventName,
-            pointerEventHandler,
+            pointerEventHandler as EventListener,
             {
                 capture: true,
             },

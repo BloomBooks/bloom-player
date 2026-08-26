@@ -57,22 +57,27 @@ function AddBloomPlayerStory(
 ) {
     const urlThroughProxy = url.replace("s3/", "s3/");
     const commonArgs = {
-        //showBackButton:{showBackButtonKnob},
-        // initiallyShowAppBar:{initiallyShowAppBar()},
-        // allowToggleAppBar:{allowToggleAppBar()},
-        // paused:{paused()},
         url: urlThroughProxy,
-        //locationOfDistFolder:{"/dist/"},
-        //hideFullScreenButton:{hideFullScreenButton()},
         initialLanguageCode,
-        //useOriginalPageSize:{useOriginalPageSize()},
+        autoplay: "motion" as autoPlayType,
+        // Show the control bar (language switch, play/pause, etc.) by default.
+        // These used to be supplied by withKnobs; when the knobs addon was
+        // removed, leaving them unset meant showAppBar defaulted to undefined
+        // and the control bar was rendered but slid off-screen. Give them
+        // literal defaults so the controls are visible.
+        initiallyShowAppBar: true,
+        allowToggleAppBar: true,
+        showBackButton: false,
+        paused: false,
+        locationOfDistFolder: "",
+        hideFullScreenButton: false,
         // useful for seeing what will happen in video preview/recording
         // hideSwiperButtons:{true},
         // autoplay:{"yes"},
         // skipActivities:{true},
         // videoPreviewMode:{true},
-        autoplay: "motion" as autoPlayType,
-        //extraButtons:{extraButtons},
+        // useOriginalPageSize:{useOriginalPageSize()},
+        // extraButtons:{extraButtons},
         // startPage:{1},
         // autoplayCount:{3}
     };

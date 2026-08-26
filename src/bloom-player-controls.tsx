@@ -3,6 +3,7 @@ BloomPlayerControls wraps BloomPlayerCore and adds just enough controls to previ
 book inside of the Bloom:Publish:Android screen.
 */
 import { BloomPlayerCore, ForceShowAppBar } from "./bloom-player-core";
+import { getPageSizeClass } from "./pageSizing";
 import * as ReactDOM from "react-dom";
 import {
     informHostOfBackAction,
@@ -402,7 +403,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
         // and have to make sure the resulting timeouts occur in the right order...
         let localMaxPageDimension = maxPageDimension;
         let localAspectRatio = pageAspectRatio;
-        const pageClass = BloomPlayerCore.getPageSizeClass(page);
+        const pageClass = getPageSizeClass(page);
         if (props.url !== previousUrl || pageClass !== previousPageClass) {
             setPreviousUrl(props.url);
             setPreviousPageClass(pageClass);
@@ -870,7 +871,8 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
             // until we select them. And even if we could get them instantiated as needed,
             // continuous scrolling would probably be too slow to allow the page number control to be
             // responsive. So wait until we release.
-            onChangeCommitted={(ev, val: number) => {
+            onChangeCommitted={(ev, value) => {
+                const val = value as number; // not a range slider, so never number[]
                 if (val - 1 != pageNumberControlPos) {
                     setPageNumberControlPos(val - 1);
                     if (pageNumberSetter.current) {

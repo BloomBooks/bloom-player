@@ -39,7 +39,9 @@ class SimpleCheckboxQuiz implements IActivityObject {
         const choices = this.activityContext.pageElement.getElementsByClassName(
             "checkbox-and-textbox-choice",
         );
-        Array.from(choices).forEach((choice: HTMLElement, index: number) => {
+        Array.from(
+            choices as HTMLCollectionOf<HTMLElement>,
+        ).forEach((choice: HTMLElement, index: number) => {
             const checkbox = this.getCheckBox(choice);
 
             // ----- This whole file is never loaded in Bloom. For now it is bloom-player only.

@@ -1,7 +1,8 @@
 import LiteEvent from "./shared/event";
-import { BloomPlayerCore } from "./bloom-player-core";
+import { getCurrentPlayer } from "./currentPlayer";
 import { isMacOrIOS } from "./utilities/osUtils";
 import {
+    cancelVideoFirstFramePriming,
     currentPlaybackMode,
     setCurrentPlaybackMode,
     PlaybackMode,
@@ -110,15 +111,16 @@ export class Video {
             );
             replayButton.addEventListener("click", this.handleReplayClick);
 
+            // Prevent iOS from opening the video in a fullscreen/PiP pop-up window,
+            // which breaks playback (especially for draggable videos). See BL-16146.
+            videoElement.setAttribute("playsinline", "");
+            videoElement.setAttribute("webkit-playsinline", "");
+            videoElement.setAttribute("disablePictureInPicture", "");
             // These settings are useful if we use the built-in controls.
-            // videoElement.setAttribute("disablepictureinpicture", "true");
             // videoElement.setAttribute(
             //     "controlsList",
             //     "noplaybackrate nofullscreen nodownload noremoteplayback"
             // );
-            // if (!videoElement.hasAttribute("playsinline")) {
-            //     videoElement.setAttribute("playsinline", "true");
-            // }
             if (videoElement.currentTime !== 0) {
                 // in case we previously played this video and are returning to this page...
                 videoElement.currentTime = 0;
@@ -420,7 +422,7 @@ export class Video {
     }
 
     private reportVideoPlayed(duration: number) {
-        BloomPlayerCore.storeVideoAnalytics(duration);
+        getCurrentPlayer()?.storeVideoAnalytics(duration);
     }
 
     public hidingPage() {
@@ -621,6 +623,9 @@ export class Video {
             hideVideoError(video);
             hideVideoAutoplayBlockedHint(video);
             setCurrentPlaybackMode(PlaybackMode.VideoPlaying);
+            // This is real playback; a pending first-frame priming attempt
+            // must not mute or pause it.
+            cancelVideoFirstFramePriming(video);
             this.currentVideoStartTime = video.currentTime || 0;
             video.closest(".bloom-videoContainer")?.classList.add("playing");
             const promise = video.play();

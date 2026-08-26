@@ -1,6 +1,9 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        // TypeScript 6 deprecates target es5 (TS 7 removes it), which broke
+        // `tsc --noEmit`. es2018 matches our lib below; the shipped build is
+        // unaffected either way - vite/esbuild does the real transpilation.
+        "target": "es2018",
         "lib": ["es2018", "dom"],
         "esModuleInterop": true,
         "declaration": true /* Generate .d.ts declaration files */,
@@ -18,5 +21,5 @@
         "module": "esnext"
     },
     "include": ["src/**/*"],
-    "exclude": ["node_modules", "**/*.test.ts", "**/*.stories.tsx"]
+    "exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx", "**/*.stories.tsx"]
 }

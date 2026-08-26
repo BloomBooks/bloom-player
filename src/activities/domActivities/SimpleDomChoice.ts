@@ -29,7 +29,7 @@ class MultipleChoiceDomActivity implements IActivityObject {
     public initializePageHtml(activityContext: ActivityContext) {
         // These flags may be set for the edit-time experience. Remove them now that we're actually going to do the activity.
         activityContext.pageElement
-            .querySelectorAll(".chosen-correct, .chosen-wrong")
+            .querySelectorAll<HTMLElement>(".chosen-correct, .chosen-wrong")
             .forEach((choiceElement: HTMLElement) => {
                 choiceElement.classList.remove("chosen-correct");
                 choiceElement.classList.remove("chosen-wrong");
@@ -37,13 +37,13 @@ class MultipleChoiceDomActivity implements IActivityObject {
         // Actual buttons are problematic in the editing mode, so we wrap things with a div.player-button and then here in the player,
         // we replace that with a real button.
         activityContext.pageElement
-            .querySelectorAll(".player-button")
+            .querySelectorAll<HTMLElement>(".player-button")
             .forEach((choiceElement: HTMLElement) => {
                 this.replaceWithButton(choiceElement);
             });
         // If the activity calls for it, shuffle the buttons
         activityContext.pageElement
-            .querySelectorAll(".player-shuffle-buttons")
+            .querySelectorAll<HTMLElement>(".player-shuffle-buttons")
             .forEach((container: HTMLElement) => {
                 this.shuffleChildren(container);
             });
@@ -70,7 +70,7 @@ class MultipleChoiceDomActivity implements IActivityObject {
     // The context removes event listeners each time the page is shown, so we have to put them back.
     private prepareToDisplayActivityEachTime(activityContext: ActivityContext) {
         activityContext.pageElement
-            .querySelectorAll(".player-button")
+            .querySelectorAll<HTMLButtonElement>(".player-button")
             .forEach((button: HTMLButtonElement) => {
                 const correct =
                     button.getAttribute("data-activityRole") ===

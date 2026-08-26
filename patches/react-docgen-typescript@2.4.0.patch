@@ -1,0 +1,23 @@
+diff --git a/lib/parser.js b/lib/parser.js
+index 3e83fdc9f6cb975b025aa6875723f7cd5652376e..5405c5796b581a83aa204193a126a1d02682740e 100644
+--- a/lib/parser.js
++++ b/lib/parser.js
+@@ -24,9 +24,15 @@ var buildFilter_1 = require("./buildFilter");
+ var trimFileName_1 = require("./trimFileName");
+ exports.defaultParserOpts = {};
+ exports.defaultOptions = {
+-    jsx: ts.JsxEmit.React,
+-    module: ts.ModuleKind.CommonJS,
+-    target: ts.ScriptTarget.Latest,
++    // TypeScript 7.0's `typescript` package no longer exposes the classic enum
++    // objects (JsxEmit/ModuleKind/ScriptTarget) as runtime values, so this
++    // module-level read crashes on import. Guard it with the historical numeric
++    // fallbacks. This code path is never exercised anyway: Storybook's react
++    // preset imports this package unconditionally, but we disable its docgen
++    // (typescript.reactDocgen = false in .storybook/main.ts).
++    jsx: (ts.JsxEmit && ts.JsxEmit.React) || 2,
++    module: (ts.ModuleKind && ts.ModuleKind.CommonJS) || 1,
++    target: (ts.ScriptTarget && ts.ScriptTarget.Latest) || 99,
+     esModuleInterop: true
+ };
+ /**

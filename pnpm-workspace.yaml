@@ -22,3 +22,6 @@ allowBuilds:
 # Prevent transitive dependencies from using exotic sources such as git URLs or
 # direct tarball links; only direct dependencies may use those sources.
 blockExoticSubdeps: true
+
+patchedDependencies:
+  react-docgen-typescript@2.4.0: patches/react-docgen-typescript@2.4.0.patch
