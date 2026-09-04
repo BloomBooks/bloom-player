@@ -39,7 +39,10 @@ let currentPage: HTMLElement | undefined;
 // Our latest templates don't have their own change page buttons, just encourage the user
 // to leave room for the player to add them.
 let currentChangePageAction: (next: boolean) => void | undefined;
-let positionsToRestore: { x: string; y: string; elt: HTMLElement }[] = [];
+// Where each draggable was when play began, keyed by its draggable id rather than by the element
+// itself. The id is what lets us put a COPY of the page back to its starting state as well as the
+// page we prepared -- see restorePositions.
+let positionsToRestore: { x: string; y: string; id: string }[] = [];
 
 // Save the current positions of all draggables (when entering Play tab, so we can restore them when leaving).
 const savePositions = (page: HTMLElement) => {
@@ -48,17 +51,21 @@ const savePositions = (page: HTMLElement) => {
         positionsToRestore.push({
             x: elt.style.left,
             y: elt.style.top,
-            elt,
+            id: elt.getAttribute("data-draggable-id")!,
         });
     });
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
 // after being in that tab or when clicking the retry button during play).
-const restorePositions = () => {
+const restorePositions = (page: HTMLElement) => {
     positionsToRestore.forEach((p) => {
-        p.elt.style.left = p.x;
-        p.elt.style.top = p.y;
-        p.elt.classList.remove("bloom-draggedToTarget");
+        const elt = page.querySelector<HTMLElement>(
+            `[data-draggable-id="${p.id}"]`,
+        );
+        if (!elt) return;
+        elt.style.left = p.x;
+        elt.style.top = p.y;
+        elt.classList.remove("bloom-draggedToTarget");
     });
 };
 
@@ -273,25 +280,23 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
         page.getElementsByClassName(
             "drag-item-order-sentence",
         ) as HTMLCollectionOf<HTMLElement>,
-    ).forEach(
-        (elt: HTMLElement) => {
-            const contentElt = elt.getElementsByClassName(
-                "bloom-content1 bloom-visibility-code-on",
-            )[0] as HTMLElement;
-            const content = contentElt?.textContent?.trim();
-            if (!content) return;
-            const words = content.split(" ");
-            const shuffledWords = shuffle(words);
-            const container = page.ownerDocument.createElement("div");
-            container.classList.add("drag-item-random-sentence");
-            container.setAttribute("data-answer", content);
-            makeWordItems(page, shuffledWords, container, contentElt, true);
-            container.style.left = elt.style.left;
-            container.style.top = elt.style.top;
-            container.style.width = elt.style.width;
-            elt.parentElement?.insertBefore(container, elt);
-        },
-    );
+    ).forEach((elt: HTMLElement) => {
+        const contentElt = elt.getElementsByClassName(
+            "bloom-content1 bloom-visibility-code-on",
+        )[0] as HTMLElement;
+        const content = contentElt?.textContent?.trim();
+        if (!content) return;
+        const words = content.split(" ");
+        const shuffledWords = shuffle(words);
+        const container = page.ownerDocument.createElement("div");
+        container.classList.add("drag-item-random-sentence");
+        container.setAttribute("data-answer", content);
+        makeWordItems(page, shuffledWords, container, contentElt, true);
+        container.style.left = elt.style.left;
+        container.style.top = elt.style.top;
+        container.style.width = elt.style.width;
+        elt.parentElement?.insertBefore(container, elt);
+    });
 };
 
 const playVideo = (e: MouseEvent) => {
@@ -305,12 +310,27 @@ const playVideo = (e: MouseEvent) => {
 // Cleans up whatever prepareActivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
+//
+// Everything here happens to the page you pass, and only to it -- including putting the draggables
+// back where play found them. That matters because the page you pass is not always the page we
+// prepared: Bloom desktop hands us a detached COPY, because that is how a toolbox tool takes its
+// markup off the copy of the page being saved, while the user goes on playing. Such a copy needs
+// the same treatment -- a book should record where the author put the draggables, not where a
+// tester dragged them -- and the live page must be left alone.
 export function undoPrepareActivity(page: HTMLElement) {
-    stopPlayAllVideoPlayback();
-    restorePositions();
+    // Only when we are really ending the session, not cleaning a copy of a page still in play.
+    if (page === currentPage) {
+        stopPlayAllVideoPlayback();
+    }
+
+    restorePositions(page);
+
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
-    // if we leave the page completely.
-    positionsToRestore = [];
+    // if we leave the page completely. Only when the session is over, though: forgetting them
+    // because someone cleaned a copy would leave the live page stuck wherever it was dragged.
+    if (page === currentPage) {
+        positionsToRestore = [];
+    }
 
     const changePageButtons = Array.from(
         page.getElementsByClassName(
@@ -636,7 +656,7 @@ const showCorrect = (e: MouseEvent) => {
     if (!currentPage) {
         return; // huh?? but makes TS happy
     }
-    restorePositions(); // any distractors return to start positions.
+    restorePositions(currentPage); // any distractors return to start positions.
     currentPage
         .querySelectorAll<HTMLElement>("[data-draggable-id]")
         .forEach((elt: HTMLElement) => {
@@ -858,7 +878,7 @@ export const performTryAgain = (e: MouseEvent) => {
     //currently I don't think it could be set here, but make sure.
     classSetter(page, "drag-activity-solution", false);
     // Restore everything to the starting positions.  BL-14482.
-    restorePositions();
+    restorePositions(page);
     // If we're still playing video, e.g. a 'wrong' video, stop it.
     stopPlayAllVideoPlayback();
 };
@@ -927,7 +947,9 @@ export function preloadSoundsForActivity(page: HTMLElement): void {
         const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
         // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
         const already = Array.from(
-            page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+            page.querySelectorAll<HTMLAudioElement>(
+                `audio[${kPreloadSoundAttr}]`,
+            ),
         ).find((a) => a.dataset.preloadSound === url);
         if (already) return;
 
@@ -1025,7 +1047,9 @@ function playSound(
     // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
     // This avoids re-downloading the file and removes the delay before playback starts.
     const preloaded = Array.from(
-        someElt.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+        someElt.querySelectorAll<HTMLAudioElement>(
+            `audio[${kPreloadSoundAttr}]`,
+        ),
     ).find((a) => a.dataset.preloadSound === url);
 
     let audio: HTMLAudioElement;
