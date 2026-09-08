@@ -39,26 +39,37 @@ let currentPage: HTMLElement | undefined;
 // Our latest templates don't have their own change page buttons, just encourage the user
 // to leave room for the player to add them.
 let currentChangePageAction: (next: boolean) => void | undefined;
-let positionsToRestore: { x: string; y: string; elt: HTMLElement }[] = [];
+// Where each draggable was when play began, keyed by its draggable id rather than by the element
+// itself. The id is what lets us put a COPY of the page back to its starting state as well as the
+// page we prepared -- see restorePositions.
+let positionsToRestore = new Map<string, { x: string; y: string }>();
 
 // Save the current positions of all draggables (when entering Play tab, so we can restore them when leaving).
 const savePositions = (page: HTMLElement) => {
-    positionsToRestore = [];
+    positionsToRestore = new Map();
     page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
-        positionsToRestore.push({
+        positionsToRestore.set(elt.getAttribute("data-draggable-id")!, {
             x: elt.style.left,
             y: elt.style.top,
-            elt,
         });
     });
 };
 // Restore the positions saved by savePositions (when leaving the Play tab, or leaving this page altogether
 // after being in that tab or when clicking the retry button during play).
-const restorePositions = () => {
-    positionsToRestore.forEach((p) => {
-        p.elt.style.left = p.x;
-        p.elt.style.top = p.y;
-        p.elt.classList.remove("bloom-draggedToTarget");
+// Walk the page's draggables once and ask what we recorded for each, rather than searching the page
+// once per recorded id: one pass instead of one per draggable, and no selector built out of an id.
+// (That last is worth little on its own -- getTarget and others still interpolate the same ids, so
+// an id needing escaping would break the activity well before it got here -- but there is no reason
+// to add another.)
+const restorePositions = (page: HTMLElement) => {
+    page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
+        const saved = positionsToRestore.get(
+            elt.getAttribute("data-draggable-id")!,
+        );
+        if (!saved) return;
+        elt.style.left = saved.x;
+        elt.style.top = saved.y;
+        elt.classList.remove("bloom-draggedToTarget");
     });
 };
 
@@ -305,12 +316,27 @@ const playVideo = (e: MouseEvent) => {
 // Cleans up whatever prepareActivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
+//
+// Everything here happens to the page you pass, and only to it -- including putting the draggables
+// back where play found them. That matters because the page you pass is not always the page we
+// prepared: Bloom desktop hands us a detached COPY, because that is how a toolbox tool takes its
+// markup off the copy of the page being saved, while the user goes on playing. Such a copy needs
+// the same treatment -- a book should record where the author put the draggables, not where a
+// tester dragged them -- and the live page must be left alone.
 export function undoPrepareActivity(page: HTMLElement) {
-    stopPlayAllVideoPlayback();
-    restorePositions();
+    // Only when we are really ending the session, not cleaning a copy of a page still in play.
+    if (page === currentPage) {
+        stopPlayAllVideoPlayback();
+    }
+
+    restorePositions(page);
+
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
-    // if we leave the page completely.
-    positionsToRestore = [];
+    // if we leave the page completely. Only when the session is over, though: forgetting them
+    // because someone cleaned a copy would leave the live page stuck wherever it was dragged.
+    if (page === currentPage) {
+        positionsToRestore.clear();
+    }
 
     const changePageButtons = Array.from(
         page.getElementsByClassName(
@@ -636,7 +662,7 @@ const showCorrect = (e: MouseEvent) => {
     if (!currentPage) {
         return; // huh?? but makes TS happy
     }
-    restorePositions(); // any distractors return to start positions.
+    restorePositions(currentPage); // any distractors return to start positions.
     currentPage
         .querySelectorAll<HTMLElement>("[data-draggable-id]")
         .forEach((elt: HTMLElement) => {
@@ -858,7 +884,7 @@ export const performTryAgain = (e: MouseEvent) => {
     //currently I don't think it could be set here, but make sure.
     classSetter(page, "drag-activity-solution", false);
     // Restore everything to the starting positions.  BL-14482.
-    restorePositions();
+    restorePositions(page);
     // If we're still playing video, e.g. a 'wrong' video, stop it.
     stopPlayAllVideoPlayback();
 };
