@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test } from "vitest";
-import { getNarrationFileExtension } from "./narration";
+import {
+    currentAudioUrl,
+    getNarrationFileExtension,
+    setCurrentPage,
+} from "./narration";
 
 describe("getNarrationFileExtension", () => {
     afterEach(() => {
@@ -51,5 +55,43 @@ describe("getNarrationFileExtension", () => {
         expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
             "opus",
         );
+    });
+});
+
+describe("currentAudioUrl", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    // Neighboring pages stay in the DOM, and two of them can contain the same id.
+    function setUpTwoPagesSharingAnId() {
+        document.body.innerHTML =
+            '<div id="pageA" class="bloom-page"><span id="shared" class="audio-sentence"></span></div>' +
+            '<div id="pageB" class="bloom-page" data-audio-ext="opus"><span id="shared" class="audio-sentence"></span></div>';
+        return {
+            pageA: document.getElementById("pageA")!,
+            pageB: document.getElementById("pageB")!,
+        };
+    }
+
+    test("uses the element on the current page when an earlier page reuses the id", () => {
+        const { pageB } = setUpTwoPagesSharingAnId();
+        setCurrentPage(pageB);
+        expect(currentAudioUrl("shared")).toMatch(/\/audio\/shared\.opus$/);
+    });
+
+    test("uses the element it is given, wherever it is", () => {
+        const { pageA, pageB } = setUpTwoPagesSharingAnId();
+        setCurrentPage(pageA);
+        const elementOnB = pageB.querySelector("#shared");
+        expect(currentAudioUrl("shared", elementOnB)).toMatch(
+            /\/audio\/shared\.opus$/,
+        );
+    });
+
+    test("falls back to mp3 when the element can't be found", () => {
+        const { pageA } = setUpTwoPagesSharingAnId();
+        setCurrentPage(pageA);
+        expect(currentAudioUrl("missing")).toMatch(/\/audio\/missing\.mp3$/);
     });
 });
