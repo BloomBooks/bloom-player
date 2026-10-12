@@ -1085,8 +1085,18 @@ function updatePlayerStatus() {
     player.setAttribute("src", src);
 }
 
+// Bloom marks books (or individual elements) whose narration isn't mp3 with
+// data-audio-ext, e.g. data-audio-ext="opus". Absent => mp3 (all older books).
+export function getNarrationFileExtension(element: Element | null): string {
+    const ext = element
+        ?.closest("[data-audio-ext]")
+        ?.getAttribute("data-audio-ext");
+    return (ext || "mp3").replace(/^\./, "").toLowerCase();
+}
+
 function currentAudioUrl(id: string): string {
-    const result = urlPrefix() + "/audio/" + id + ".mp3";
+    const ext = getNarrationFileExtension(document.getElementById(id));
+    const result = urlPrefix() + "/audio/" + id + "." + ext;
     return result;
 }
 
