@@ -50,6 +50,8 @@ const mimeTypes = {
     ".svg": "image/svg+xml",
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
+    ".opus": "audio/ogg",
+    ".ogg": "audio/ogg",
     ".mp4": "video/mp4",
     ".webm": "video/webm",
     ".woff": "font/woff",

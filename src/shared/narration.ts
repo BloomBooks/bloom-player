@@ -1032,12 +1032,12 @@ function getPreloadPlayer(): HTMLAudioElement {
 }
 
 function preloadAudioForElement(element: Element): void {
-    const firstAudioSentence = getFirstAudioSentenceWithinElement(element);
-    const id = firstAudioSentence ? firstAudioSentence.id : element.id;
+    const audioElement = getFirstAudioSentenceWithinElement(element) ?? element;
+    const id = audioElement.id;
     if (preloadedAudioId === id) return; // already preloading this one
 
     const url =
-        currentAudioUrl(id) +
+        currentAudioUrl(id, audioElement) +
         "?nocache=" +
         new Date().getTime() +
         "&optional=true";
@@ -1085,8 +1085,24 @@ function updatePlayerStatus() {
     player.setAttribute("src", src);
 }
 
-function currentAudioUrl(id: string): string {
-    const result = urlPrefix() + "/audio/" + id + ".mp3";
+// Bloom marks books (or individual elements) whose narration isn't mp3 with
+// data-audio-ext, e.g. data-audio-ext="opus". Absent => mp3 (all older books).
+export function getNarrationFileExtension(element: Element | null): string {
+    const ext = element
+        ?.closest("[data-audio-ext]")
+        ?.getAttribute("data-audio-ext");
+    return (ext || "mp3").replace(/^\./, "").toLowerCase();
+}
+
+// Neighboring pages stay in the DOM and can reuse ids, so prefer the element we were
+// given, then one on the current page, before searching the whole document.
+export function currentAudioUrl(id: string, element?: Element | null): string {
+    const audioElement =
+        element ??
+        currentPlayPage?.querySelector(`[id="${id}"]`) ??
+        document.getElementById(id);
+    const ext = getNarrationFileExtension(audioElement);
+    const result = urlPrefix() + "/audio/" + id + "." + ext;
     return result;
 }
 
