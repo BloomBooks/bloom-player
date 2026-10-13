@@ -1086,7 +1086,8 @@ function updatePlayerStatus() {
 }
 
 // Bloom can name a recording's file in data-audio-src on the element that carries its id,
-// e.g. data-audio-src="<id>.opus". Absent => <id>.mp3 (all older books).
+// e.g. data-audio-src="<id>.opus". Absent => <id>.mp3 (all older books). Like the music and
+// drag-activity sound attributes, the value goes into the URL as is, so it must be URL-safe.
 export function getNarrationFileName(
     id: string,
     element: Element | null | undefined,
