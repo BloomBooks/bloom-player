@@ -1085,13 +1085,13 @@ function updatePlayerStatus() {
     player.setAttribute("src", src);
 }
 
-// Bloom marks books (or individual elements) whose narration isn't mp3 with
-// data-audio-ext, e.g. data-audio-ext="opus". Absent => mp3 (all older books).
-export function getNarrationFileExtension(element: Element | null): string {
-    const ext = element
-        ?.closest("[data-audio-ext]")
-        ?.getAttribute("data-audio-ext");
-    return (ext || "mp3").replace(/^\./, "").toLowerCase();
+// Bloom can name a recording's file in data-audio-src on the element that carries its id,
+// e.g. data-audio-src="<id>.opus". Absent => <id>.mp3 (all older books).
+export function getNarrationFileName(
+    id: string,
+    element: Element | null | undefined,
+): string {
+    return element?.getAttribute("data-audio-src") || id + ".mp3";
 }
 
 // Neighboring pages stay in the DOM and can reuse ids, so prefer the element we were
@@ -1101,8 +1101,8 @@ export function currentAudioUrl(id: string, element?: Element | null): string {
         element ??
         currentPlayPage?.querySelector(`[id="${id}"]`) ??
         document.getElementById(id);
-    const ext = getNarrationFileExtension(audioElement);
-    const result = urlPrefix() + "/audio/" + id + "." + ext;
+    const result =
+        urlPrefix() + "/audio/" + getNarrationFileName(id, audioElement);
     return result;
 }
 

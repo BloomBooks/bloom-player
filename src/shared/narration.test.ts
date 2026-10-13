@@ -1,59 +1,48 @@
 import { afterEach, describe, expect, test } from "vitest";
 import {
     currentAudioUrl,
-    getNarrationFileExtension,
+    getNarrationFileName,
     setCurrentPage,
 } from "./narration";
 
-describe("getNarrationFileExtension", () => {
+describe("getNarrationFileName", () => {
     afterEach(() => {
-        document.body.removeAttribute("data-audio-ext");
         document.body.innerHTML = "";
     });
 
-    test("defaults to mp3 when no data-audio-ext is present", () => {
+    test("defaults to <id>.mp3 when no data-audio-src is present", () => {
         document.body.innerHTML =
             '<span id="s1" class="audio-sentence"></span>';
-        expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
-            "mp3",
+        expect(getNarrationFileName("s1", document.getElementById("s1"))).toBe(
+            "s1.mp3",
         );
     });
 
-    test("defaults to mp3 for a missing element", () => {
-        expect(getNarrationFileExtension(null)).toBe("mp3");
+    test("defaults to <id>.mp3 for a missing element", () => {
+        expect(getNarrationFileName("s1", null)).toBe("s1.mp3");
     });
 
-    test("uses data-audio-ext on the element itself", () => {
+    test("defaults to <id>.mp3 when data-audio-src is empty", () => {
         document.body.innerHTML =
-            '<span id="s1" class="audio-sentence" data-audio-ext="opus"></span>';
-        expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
-            "opus",
+            '<span id="s1" class="audio-sentence" data-audio-src=""></span>';
+        expect(getNarrationFileName("s1", document.getElementById("s1"))).toBe(
+            "s1.mp3",
         );
     });
 
-    test("inherits data-audio-ext from an ancestor", () => {
-        document.body.setAttribute("data-audio-ext", "opus");
+    test("uses data-audio-src on the element", () => {
         document.body.innerHTML =
-            '<div class="bloom-page"><span id="s1" class="audio-sentence"></span></div>';
-        expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
-            "opus",
+            '<span id="s1" class="audio-sentence" data-audio-src="s1.opus"></span>';
+        expect(getNarrationFileName("s1", document.getElementById("s1"))).toBe(
+            "s1.opus",
         );
     });
 
-    test("the nearest data-audio-ext wins", () => {
-        document.body.setAttribute("data-audio-ext", "opus");
+    test("ignores data-audio-src on an ancestor", () => {
         document.body.innerHTML =
-            '<span id="s1" class="audio-sentence" data-audio-ext="mp3"></span>';
-        expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
-            "mp3",
-        );
-    });
-
-    test("normalizes a leading dot and uppercase", () => {
-        document.body.innerHTML =
-            '<span id="s1" class="audio-sentence" data-audio-ext=".OPUS"></span>';
-        expect(getNarrationFileExtension(document.getElementById("s1"))).toBe(
-            "opus",
+            '<div class="bloom-page" data-audio-src="page.opus"><span id="s1" class="audio-sentence"></span></div>';
+        expect(getNarrationFileName("s1", document.getElementById("s1"))).toBe(
+            "s1.mp3",
         );
     });
 });
@@ -67,7 +56,7 @@ describe("currentAudioUrl", () => {
     function setUpTwoPagesSharingAnId() {
         document.body.innerHTML =
             '<div id="pageA" class="bloom-page"><span id="shared" class="audio-sentence"></span></div>' +
-            '<div id="pageB" class="bloom-page" data-audio-ext="opus"><span id="shared" class="audio-sentence"></span></div>';
+            '<div id="pageB" class="bloom-page"><span id="shared" class="audio-sentence" data-audio-src="shared.opus"></span></div>';
         return {
             pageA: document.getElementById("pageA")!,
             pageB: document.getElementById("pageB")!,
@@ -89,7 +78,7 @@ describe("currentAudioUrl", () => {
         );
     });
 
-    test("falls back to mp3 when the element can't be found", () => {
+    test("falls back to <id>.mp3 when the element can't be found", () => {
         const { pageA } = setUpTwoPagesSharingAnId();
         setCurrentPage(pageA);
         expect(currentAudioUrl("missing")).toMatch(/\/audio\/missing\.mp3$/);

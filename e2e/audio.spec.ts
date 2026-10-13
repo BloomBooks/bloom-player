@@ -70,8 +70,8 @@ test("narration is blocked before interaction, then plays after the big play but
     await expect.poll(anyAudioPlaying, { timeout: 10_000 }).toBe(true);
 });
 
-// A copy of the talking page above whose narration is Ogg Opus, with
-// data-audio-ext="opus" on <body> (BL-17005). Page index 4 is that page.
+// A copy of the talking page above whose narration is Ogg Opus, named by
+// data-audio-src on the sentence (BL-17005). Page index 4 is that page.
 const kOpusBookUrl = "/testBooks/opus-talking-book";
 const kOpusSentenceId = "i8cfdc51a-ef47-479e-b166-2b82c8b623de";
 
