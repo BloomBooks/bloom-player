@@ -1032,12 +1032,12 @@ function getPreloadPlayer(): HTMLAudioElement {
 }
 
 function preloadAudioForElement(element: Element): void {
-    const firstAudioSentence = getFirstAudioSentenceWithinElement(element);
-    const id = firstAudioSentence ? firstAudioSentence.id : element.id;
+    const audioElement = getFirstAudioSentenceWithinElement(element) ?? element;
+    const id = audioElement.id;
     if (preloadedAudioId === id) return; // already preloading this one
 
     const url =
-        currentAudioUrl(id) +
+        currentAudioUrl(id, audioElement) +
         "?nocache=" +
         new Date().getTime() +
         "&optional=true";
@@ -1085,8 +1085,25 @@ function updatePlayerStatus() {
     player.setAttribute("src", src);
 }
 
-function currentAudioUrl(id: string): string {
-    const result = urlPrefix() + "/audio/" + id + ".mp3";
+// Bloom can name a recording's file in data-audio-src on the element that carries its id,
+// e.g. data-audio-src="<id>.opus". Absent => <id>.mp3 (all older books). Like the music and
+// drag-activity sound attributes, the value goes into the URL as is, so it must be URL-safe.
+export function getNarrationFileName(
+    id: string,
+    element: Element | null | undefined,
+): string {
+    return element?.getAttribute("data-audio-src") || id + ".mp3";
+}
+
+// Neighboring pages stay in the DOM and can reuse ids, so prefer the element we were
+// given, then one on the current page, before searching the whole document.
+export function currentAudioUrl(id: string, element?: Element | null): string {
+    const audioElement =
+        element ??
+        currentPlayPage?.querySelector(`[id="${id}"]`) ??
+        document.getElementById(id);
+    const result =
+        urlPrefix() + "/audio/" + getNarrationFileName(id, audioElement);
     return result;
 }
 
