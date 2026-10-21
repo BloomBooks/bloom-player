@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PlayerPage } from "./playerPage";
 
 // Talking-book narration and the blocked-autoplay path (BL-16146 territory):
 // when the browser refuses to play media before a user gesture, the player
@@ -67,4 +68,56 @@ test("narration is blocked before interaction, then plays after the big play but
     await expect(bigPlayButton).not.toBeVisible();
     await expect(activePage.locator("span.ui-audioCurrent")).toBeVisible();
     await expect.poll(anyAudioPlaying, { timeout: 10_000 }).toBe(true);
+});
+
+// A copy of the talking page above whose narration is Ogg Opus, named by
+// data-audio-src on the sentence (BL-17005). Page index 4 is that page.
+const kOpusBookUrl = "/testBooks/opus-talking-book";
+const kOpusSentenceId = "i8cfdc51a-ef47-479e-b166-2b82c8b623de";
+
+test("narration marked as Opus requests the .opus file and plays to the end", async ({
+    page,
+}) => {
+    // Media "ended" events don't bubble, but a capturing listener on the
+    // document still sees them.
+    await page.addInitScript(() => {
+        (window as any).__endedSources = [];
+        document.addEventListener(
+            "ended",
+            (e) =>
+                (window as any).__endedSources.push(
+                    (e.target as HTMLMediaElement).currentSrc,
+                ),
+            true,
+        );
+    });
+    const narrationRequests: string[] = [];
+    page.on("request", (request) => {
+        if (request.url().includes(kOpusSentenceId)) {
+            narrationRequests.push(request.url());
+        }
+    });
+    const opusResponse = page.waitForResponse((response) =>
+        response.url().includes(`/audio/${kOpusSentenceId}.opus`),
+    );
+
+    const player = new PlayerPage(page);
+    await player.gotoBook(kOpusBookUrl, { "start-page": "4" });
+    await player.shouldSeePageText(kTalkingPageText);
+
+    expect((await opusResponse).status()).toBe(200);
+    await expect
+        .poll(
+            () =>
+                page.evaluate(
+                    (id) =>
+                        (window as any).__endedSources.some((src: string) =>
+                            src.includes(`${id}.opus`),
+                        ),
+                    kOpusSentenceId,
+                ),
+            { timeout: 15_000 },
+        )
+        .toBe(true);
+    expect(narrationRequests.some((url) => url.includes(".mp3"))).toBe(false);
 });
