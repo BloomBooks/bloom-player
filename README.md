@@ -61,9 +61,19 @@ Example: `showBackButton=true`
 Default: `false`
 
 > [!NOTE]
-> Normally this button will be a left arrow. However if bloom-player is the top level window (i.e. it is not embedded in another page), it will show as an ellipsis.
+> If bloom-player is the top level window (e.g. in Bloom Reader), this button will be a left arrow. However if bloom-player is embedded in another page (e.g. in an iframe), it will show as an ellipsis, unless `backButtonIcon` says otherwise.
 >
-> This is used in BloomLibrary.org when the user has used a link from somewhere else to jump directly into to reading a book. In that case, this button isn't really taking them "back", it's instead taking them to the "Detail" page for that same book on BloomLibrary.org.
+> The ellipsis is used in BloomLibrary.org when the user has used a link from somewhere else to jump directly into to reading a book. In that case, this button isn't really taking them "back", it's instead taking them to the "Detail" page for that same book on BloomLibrary.org.
+>
+> Either way, once the user has followed a link within the book to another page or book, the button is an arrow that returns them to where they came from.
+
+#### backButtonIcon
+
+Which icon to show on the button that `showBackButton` adds: `arrow` or `ellipsis`. Use this when embedding bloom-player in an iframe in an app whose back button really does go back, so it should be an arrow.
+
+Example: `showBackButton=true&backButtonIcon=arrow`
+
+Default: none (bloom-player chooses, as described under `showBackButton`)
 
 #### lang
 

@@ -48,3 +48,32 @@ test("works inside a host iframe and posts messages to the host", async ({
             ]),
         );
 });
+
+// Embedded with showBackButton, the back button is an ellipsis by default
+// (bloomlibrary.org uses it to go to the book's detail page); a host whose
+// button really goes back asks for an arrow with backButtonIcon=arrow.
+for (const [icon, label] of [
+    [undefined, "More Menu"],
+    ["arrow", "Go Back"],
+    ["ellipsis", "More Menu"],
+] as const) {
+    test(`embedded back button with backButtonIcon=${icon} shows "${label}"`, async ({
+        page,
+    }) => {
+        await page.goto("/host.html");
+        // Replace the host's iframe (rather than changing its src) so the
+        // assertion below can only match the player loaded with our param.
+        await page.evaluate((icon) => {
+            const old = document.getElementById("player") as HTMLIFrameElement;
+            const iframe = old.cloneNode() as HTMLIFrameElement;
+            if (icon) iframe.src += `&backButtonIcon=${icon}`;
+            old.replaceWith(iframe);
+        }, icon);
+        const backButton = page
+            .frameLocator("#player")
+            .getByTestId("history-back-button");
+        await expect(
+            backButton.locator(`svg[aria-label="${label}"]`),
+        ).toBeVisible();
+    });
+}

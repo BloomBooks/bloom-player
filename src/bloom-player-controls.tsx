@@ -14,6 +14,7 @@ import {
     logError,
 } from "./externalContext";
 import {
+    BackButtonIcon,
     BackButtonState,
     ControlBar,
     IExtraButton,
@@ -56,6 +57,10 @@ export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     initiallyShowAppBar: boolean;
     allowToggleAppBar: boolean;
     showBackButton: boolean;
+    // Which icon the back button shows when it is offering a way back to the host (see showBackButton).
+    // Undefined means choose automatically: an arrow if we are the top window (e.g. Bloom Reader),
+    // an ellipsis ("more") if we are embedded (e.g. bloomlibrary.org, where it goes to the book's detail page).
+    backButtonIcon?: BackButtonIcon;
     hideFullScreenButton: boolean;
     centerVertically?: boolean;
     // when bloom-player is told what content language to use from the start (vs. user changing using the language picker)
@@ -783,6 +788,7 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
     const {
         allowToggleAppBar,
         showBackButton,
+        backButtonIcon,
         initiallyShowAppBar,
         locationOfDistFolder,
         hideFullScreenButton,
@@ -933,6 +939,10 @@ export const BloomPlayerControls: React.FunctionComponent<BloomPlayerProps> = (
                     else if (showBackButton) {
                         // so our internal history is empty, but the container
                         // wants us to offer a way "back" to it. Bloom Reader uses this.
+                        if (backButtonIcon === "arrow")
+                            return BackButtonState.showArrow;
+                        if (backButtonIcon === "ellipsis")
+                            return BackButtonState.showEllipsis;
                         if (window === window.top)
                             return BackButtonState.showArrow;
                         // Used by bloomlibrary.org if you went straight to a book via some URL
@@ -1111,6 +1121,12 @@ function getExtraButtons(): IExtraButton[] {
     }
 }
 
+// backButtonIcon=arrow|ellipsis; anything else (or missing) means choose automatically.
+function getBackButtonIconUrlParam(): BackButtonIcon | undefined {
+    const icon = getQueryStringParamAndUnencode("backButtonIcon");
+    return icon === "arrow" || icon === "ellipsis" ? icon : undefined;
+}
+
 // a bit goofy...we need some way to get react called when this code is loaded into an HTML
 // document (as part of bloomPlayerControlBundle.js). When that module is loaded, any
 // not-in-a-class code gets called. So we arrange in bloom-player-root.ts to call this
@@ -1143,6 +1159,7 @@ export function InitBloomPlayerControls() {
                     false,
                 )}
                 showBackButton={getBooleanUrlParam("showBackButton", false)}
+                backButtonIcon={getBackButtonIconUrlParam()}
                 initiallyShowAppBar={getBooleanUrlParam(
                     "initiallyShowAppBar",
                     true,
