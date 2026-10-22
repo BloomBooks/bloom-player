@@ -53,6 +53,8 @@ export enum BackButtonState {
     showNothing,
 }
 
+export type BackButtonIcon = "arrow" | "ellipsis";
+
 interface IControlBarProps {
     visible: boolean; // will slide into / out of view based on this
     paused: boolean;
