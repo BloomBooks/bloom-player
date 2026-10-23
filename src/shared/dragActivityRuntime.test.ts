@@ -228,3 +228,80 @@ describe("undoPrepareActivity works on the page it is given, and only that page"
         expect(img.getAttribute("draggable")).toBe("false");
     });
 });
+
+import { playSoundOf, preloadSoundsForActivity } from "./dragActivityRuntime";
+
+describe("sound file names are URL-encoded when they become a URL", () => {
+    // Bloom stores data-sound, data-correct-sound and data-wrong-sound as the plain file name
+    // (BL-16669). Put into a URL as is, a '#' starts a fragment (BL-16177) and a '%' starts an
+    // escape (BL-16688), so the browser asks for the wrong file and the sound never plays.
+    // (urlPrefix is mocked to "" above, so a book's audio URL is just "/audio/<name>".)
+    const urlsGivenToNewAudio: string[] = [];
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        urlsGivenToNewAudio.length = 0;
+        (globalThis as any).Audio = function (this: any, url: string) {
+            urlsGivenToNewAudio.push(url);
+            const audio = document.createElement("audio") as HTMLAudioElement;
+            audio.play = vi.fn(() => Promise.resolve()) as any;
+            return audio;
+        } as any;
+        // jsdom does not implement media loading or playing.
+        vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(
+            () => {},
+        );
+        vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() =>
+            Promise.resolve(),
+        );
+    });
+
+    function clickSoundElement(soundFile: string) {
+        const elt = document.createElement("div");
+        elt.setAttribute("data-sound", soundFile);
+        document.body.appendChild(elt);
+        // sanity: the attribute holds the plain name, as Bloom writes it
+        expect(elt.getAttribute("data-sound")).toBe(soundFile);
+        elt.addEventListener("click", playSoundOf);
+        elt.dispatchEvent(new MouseEvent("click"));
+    }
+
+    test("a '#' in a clicked sound's name is encoded, not taken as a fragment", () => {
+        clickSoundElement("bird#1.mp3");
+        expect(urlsGivenToNewAudio).toEqual(["/audio/bird%231.mp3"]);
+    });
+
+    test("a '%' in a clicked sound's name is encoded, not taken as an escape", () => {
+        clickSoundElement("beep%41.mp3");
+        expect(urlsGivenToNewAudio).toEqual(["/audio/beep%2541.mp3"]);
+    });
+
+    test("a correct sound with '#' in its name is preloaded encoded, and the preload is the one played", () => {
+        const wrapper = document.createElement("div");
+        const page = document.createElement("div");
+        page.classList.add("bloom-page");
+        page.setAttribute("data-correct-sound", "right#1.mp3");
+        page.setAttribute("data-wrong-sound", "none");
+        wrapper.appendChild(page);
+        document.body.appendChild(wrapper);
+        const checkButton = document.createElement("button");
+        checkButton.classList.add("check-button");
+        page.appendChild(checkButton);
+
+        preloadSoundsForActivity(page);
+
+        const preloaded = page.querySelectorAll<HTMLAudioElement>(
+            "audio[data-preload-sound]",
+        );
+        expect(preloaded.length).toBe(1);
+        expect(preloaded[0].getAttribute("src")).toBe("/audio/right%231.mp3");
+
+        performCheck({ currentTarget: checkButton } as unknown as MouseEvent);
+
+        // Playing built the same URL the preload did, so it reused the preloaded element
+        // instead of making a new one.
+        expect(urlsGivenToNewAudio).toEqual([]);
+        expect(preloaded[0].hasAttribute("data-preload-sound")).toBe(false);
+        expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    });
+});
