@@ -923,6 +923,21 @@ export function setDefaultSoundUrls(
 // Attribute used to mark audio elements preloaded for correct/wrong sounds.
 const kPreloadSoundAttr = "data-preload-sound";
 
+// Get the URL to play a sound from. If addPrefix is true, soundFile is the value of a
+// data-sound, data-correct-sound or data-wrong-sound attribute: a file in the book's audio
+// folder. Bloom stores that as the plain file name, NOT URL-encoded (BL-16669), so we must
+// encode it here, when it becomes part of a URL. Otherwise a '#' in the name starts a fragment
+// ("bird#1.mp3" is asked for as "bird", BL-16177) and a '%' starts an escape ("beep%41.mp3" is
+// asked for as "beepA.mp3", BL-16688), and the sound silently never plays. Encoding the whole
+// name is safe because it is a bare file name, with no '/' of its own to preserve.
+// If addPrefix is false, soundFile is one of the default sound URLs, already a URL.
+function getSoundUrl(soundFile: string, addPrefix: boolean): string {
+    if (!addPrefix) {
+        return soundFile;
+    }
+    return urlPrefix() + "/audio/" + encodeURIComponent(soundFile);
+}
+
 // Remove any audio elements previously added by preloadSoundsForActivity.
 // Called from undoPrepareActivity and ActivityContext.stop().
 export function cleanupActivitySounds(page: HTMLElement): void {
@@ -950,7 +965,7 @@ export function preloadSoundsForActivity(page: HTMLElement): void {
         }
         if (!soundFile) return;
 
-        const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+        const url = getSoundUrl(soundFile, addPrefix);
         // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
         const already = Array.from(
             page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
@@ -1046,7 +1061,7 @@ function playSound(
     addPrefix = true,
     then?: () => void,
 ) {
-    const url = (addPrefix ? urlPrefix() + "/audio/" : "") + soundFile;
+    const url = getSoundUrl(soundFile, addPrefix);
 
     // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
     // This avoids re-downloading the file and removes the delay before playback starts.
