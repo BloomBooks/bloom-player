@@ -120,7 +120,7 @@ import { ExpandLessSharp } from "@material-ui/icons";
 interface IProps {
     // Url of the bloom book (folder). Should be a valid, well-formed URL
     // e.g. any special chars in the path or book title should be appropriately encoded
-    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
+    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/bps/k3x9q/C%23
     url: string;
     landscape: boolean; // whether viewing as landscape or portrait
     // ``paused`` allows the parent to control pausing of audio. We expect we may supply
