@@ -21,7 +21,11 @@ You could possibly download the files from the URL above, however, there is no e
 
 The url parameter points to the HTML file that is the core of the bloom book. It's supporting files (images etc) must be available at the expected relative addresses.
 
-(Currently we also support the url pointing to the FOLDER that contains the book files. The book itself must have the same name as the folder, with the extension .htm. In the example above, `C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle` must yield the book's main folder, containing the html file and the other files it references.)
+(Currently we also support the url pointing to the FOLDER that contains the book files. The book itself must have the same name as the folder, with the extension .htm. For example, `http://localhost:8089/bloom/C%3A/Users/YourName/AppData/Local/Temp/bps/k3x9q/myBookTitle` must yield the book's main folder, containing the html file and the other files it references.)
+
+### Viewing the book Bloom is previewing
+
+Bloom Desktop stages each BloomPUB it makes, including the preview on its Publish → BloomPUB screen, in a new folder `%TEMP%\bps\<five random characters>`, so the URL of the previewed book changes with every preview. To get the current one, ask the running Bloom: `http://localhost:8089/bloom/current-bloompub-url` returns `{"url": "..."}`, the localhost URL of the staged book's .htm file. The storybook's "Live from Bloom Editor" story does this for you.
 
 The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider then it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
 

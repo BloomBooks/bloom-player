@@ -51,7 +51,7 @@ export type autoPlayType = "yes" | "no" | "motion"; // default "motion" means au
 export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     // Url of the bloom book (folder). Should be a valid, well-formed URL
     // e.g. any special chars in the path or book title should be appropriately encoded using URL (percent) encoding
-    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/PlaceForStagingBook/C%23
+    // e.g. if title is C#, url should be http://localhost:8089/bloom/C:/PathToTemp/bps/k3x9q/C%23
     // (Not "[...]/C#" nor "[...]%2FC%2523", and most certainly not with any XML (entity) encoding)
     url: string;
     initiallyShowAppBar: boolean;
