@@ -86,8 +86,8 @@ export interface BloomPlayerProps extends React.HTMLProps<HTMLDivElement> {
     // audio/video preview and recording)
     hideSwiperButtons?: boolean;
     // Options here allow Bloom Player to advance automatically through the book (or just some books, or not at all).
-    // Audio will play on the first page (even if not advancing automatically) unless autoplay is set to "no"
-    // (or unless the browser does not allow it).
+    // This only controls page advance (see shouldAutoPlay() in bloom-player-core); it does not control narration,
+    // which plays on each page unless paused (or unless the browser does not allow it).
     autoplay: autoPlayType;
     // If true, pages marked as bloom-interactive will not be shown. This is also useful in
     // non-interactive scenarios like autoplaying a book to record video.

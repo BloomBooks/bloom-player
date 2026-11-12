@@ -654,9 +654,10 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
             this.initializeMedia();
 
             const newSourceUrl = this.preprocessUrl();
-            // Inside of Bloom Publish Preview,
-            // this will be "/working" if we should just keep spinning, waiting for a render with different
-            // props once the bloomd is created.
+            // The "/working" comparison below is a leftover: url=working once meant "keep spinning until
+            // a real url arrives", but since the constructor turns props.url into an absolute URL, this
+            // can never match. (Hosts that need to wait, like Bloom Editor's Publish Preview and
+            // BloomLibrary.org, now just don't give us a url until they have one.)
 
             if (
                 newSourceUrl &&
