@@ -2,40 +2,31 @@
 
 ## Getting the pieces
 
-    `pnpm add bloom-player`
+```bash
+pnpm add bloom-player
+```
 
-This puts the files you need at
+This puts the files you need in `node_modules/bloom-player/dist`: `bloomplayer.htm`, the hashed JavaScript and CSS files it loads, and the mp3 files that activities use. Copy the whole `dist` folder wherever you need it for your project.
 
-    `node_modules/bloom-player/dist`
-
-Copy those wherever you need them for your project.
-
-
-### Other options
-
-You can install npm, run "npm pack bloom-player", and extract the files from the resulting pack.
-
-You could possibly download the files from the URL above, however, there is no easy way to get a list of all the files needed.
+You can, instead, run `npm pack bloom-player` and extract the files from the resulting tarball.
 
 ## Notes
 
-The url parameter points to the HTML file that is the core of the bloom book. It's supporting files (images etc) must be available at the expected relative addresses.
+The `url` parameter points to the HTML file that is the core of the Bloom book. Its name must end in `.htm` (not `.html`). Its supporting files (images, etc.) must be available at the expected relative addresses.
 
-(Currently we also support the url pointing to the FOLDER that contains the book files. The book itself must have the same name as the folder, with the extension .htm. In the example above, `C%3A/Users/YourName/AppData/Local/Temp/PlaceForStagingBook/myBookTitle` must yield the book's main folder, containing the html file and the other files it references.)
+We also support a `url` that points to the folder containing the book files. In that case the book's HTML file must have the same name as the folder, with the extension `.htm`. For example, `url=https%3A%2F%2Fexample.org%2Fbooks%2FmyBookTitle` (the URL-encoded form of `https://example.org/books/myBookTitle`) loads `https://example.org/books/myBookTitle/myBookTitle.htm`.
 
-The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider then it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
+The display of the book will automatically grow to be as large as will fit in the given space. If the book can rotate, it will pick an orientation depending on whether the window is wider than it is tall. If the book has special behaviors, such as motion/animation when in landscape mode, they will be triggered based on the chosen orientation.
 
-`Bloom-player` is designed to be published using `npm` so as to be readily available to a variety of clients. The published version includes both `dist/bloomPlayer-HASH.js`, as well as some mp3 files used by activities.
-
-We deliberately require this component to be used in an `iframe` so that the containing web page is safe from any scripts that might get embedded in Bloom books. For this reason `bloom-player` deliberately manipulates (with `React`) the body of its HTML document.
+On a web page, we deliberately require this component to be used in an `iframe` so that the containing web page is safe from any scripts that might get embedded in Bloom books. (Apps can instead load it as the top-level document of a WebView, as Bloom Reader does.) Because it owns its whole document, `bloom-player` renders (with `React`) into its own HTML document rather than into a host page.
 
 ## CORS permissions
 
-The javascript that makes bloomplayer.htm work needs to load the files from the URL that you pass to it as a param. Unless the URL for bloomplayer.htm has the same 'origin' (basically the part of the URL up to the first slash) as that parameter, browsers will typically consider this a violation of the 'same origin policy' and not allow the book files to be opened.
+The JavaScript that makes `bloomplayer.htm` work needs to load the files from the URL that you pass to it as a parameter. Unless the URL for `bloomplayer.htm` has the same "origin" (basically the part of the URL up to the first single slash) as that parameter, browsers will typically consider this a violation of the "same origin policy" and not allow the book files to be opened.
 
-If you are displaying a book published on Bloom Library, this is not a problem, because we have configured the Bloom Library server to publish the books with the required CORS headers to permit this.
+If you are displaying a book published on Bloom Library with the player served from bloomlibrary.org (https://bloomlibrary.org/bloom-player/bloomplayer.htm), this is not a problem: Bloom Library's book storage sends CORS headers that allow bloomlibrary.org. It does not allow arbitrary origins, so a copy of the player hosted elsewhere cannot load books straight from Bloom Library.
 
-If you are making something entirely independent, you may be able to arrange things so bloomplayer.htm is in fact loaded from the same origin as the book content.
+If you are making something entirely independent, you may be able to arrange things so `bloomplayer.htm` is in fact loaded from the same origin as the book content.
 
 Otherwise, you will have to arrange for the server that is serving the book data to do so with appropriate CORS permissions. Typically there is nothing sensitive in a Bloom book and it is safe to publish it with CORS permissions allowing it to be embedded anywhere.
 
@@ -43,37 +34,34 @@ Otherwise, you will have to arrange for the server that is serving the book data
 
 ## Getting and using the shared code
 
-    `pnpm add bloom-player`
+```bash
+pnpm add bloom-player
+```
 
-This shares the code from the files in `src/shared` in
+This puts the shared code, built from the files in `src/shared`, in `node_modules/bloom-player/lib`. Import it in your TypeScript code as usual:
 
-    `node_modules/bloom-player/lib`
+```ts
+import { function1, function2 } from "bloom-player";
+```
 
-To enable using the functions exported from one of the source files in `src/shared`, they need
-to be re-exported in the index.ts file, adding a line something like this to
-`src/shared/index.ts`:
+Only what `src/shared/index.ts` re-exports is available. To share functions from another file in `src/shared`, a bloom-player developer adds a line like this to `src/shared/index.ts`, then builds (`pnpm build:sharedlib`) and publishes a new version:
 
-    `export * from "./srcFileName";
-
-After this setup, and updating the library, the exported function can be imported as expected
-into your program's typescript code:
-
-    `import { function1, function2 } from "bloom-player";
+```ts
+export * from "./srcFileName";
+```
 
 ## Debugging bloom-player development in another program (pnpm 11)
 
-In the other program's development folder where package.json lives, use this command:
+In the other program's development folder where package.json lives, use this command (with a relative or absolute path):
 
-    `pnpm link <path-to-bloom-player>` (provide the relative or absolute path)
+```bash
+pnpm link <path-to-bloom-player>
+```
 
-This adjusts node_modules to use a link to the live output in the bloom-player output folder.  Any changes made to the bloom-player code can be tested without waiting for packages to be created and downloaded.
+When you are through debugging bloom-player in the other program, go to the same folder and type:
 
-When you are through debugging bloom-player in the other program, go to the same spot in the other program's development folder and type:
+```bash
+pnpm unlink bloom-player
+```
 
-    `pnpm unlink`
-
-Note that this unlinks all links that have been made.  If you are testing multiple local package builds, then try this command instead:
-
-    `pnpm unlink --filter bloom-player`
-
-See pnpm link documentation for current usage details.
+See the [pnpm link documentation](https://pnpm.io/cli/link) for current usage details.
