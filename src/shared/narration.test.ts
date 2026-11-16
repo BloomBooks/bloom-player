@@ -3,7 +3,8 @@ import {
     currentAudioUrl,
     getNarrationFileName,
     playAllAudio,
-    recordHighlightingFixesOn,
+    startRecordingHighlightingFixesFor,
+    stopRecordingHighlightingFixes,
     setCurrentPage,
     undoHighlightingFixes,
 } from "./narration";
@@ -42,13 +43,13 @@ describe("undoing what playing a sentence does to its highlighting", () => {
     });
 
     afterEach(() => {
-        recordHighlightingFixesOn(undefined);
+        stopRecordingHighlightingFixes();
         document.body.innerHTML = "";
     });
 
     test("puts a copy of the page back as the book had it, and leaves the page alone", () => {
         const page = makePage();
-        recordHighlightingFixesOn(page);
+        startRecordingHighlightingFixesFor(page);
         play(page);
         const played = page.querySelector("#s1")!.outerHTML;
         expect(played, "test setup: playing changed the sentence").not.toBe(
@@ -67,7 +68,7 @@ describe("undoing what playing a sentence does to its highlighting", () => {
 
     test("playing the sentence again does not replace what was recorded", () => {
         const page = makePage();
-        recordHighlightingFixesOn(page);
+        startRecordingHighlightingFixesFor(page);
         play(page);
         play(page);
 
@@ -80,7 +81,7 @@ describe("undoing what playing a sentence does to its highlighting", () => {
         // Duplicate ids do turn up in real books.
         document.body.innerHTML = `<div class="bloom-page"><div class="bloom-editable">${original}</div><div class="bloom-editable"><span id="s1" class="audio-sentence">Other&nbsp; &nbsp;words</span></div></div>`;
         const page = document.querySelector<HTMLElement>(".bloom-page")!;
-        recordHighlightingFixesOn(page);
+        startRecordingHighlightingFixesFor(page);
         playAllAudio(
             Array.from(page.querySelectorAll<HTMLElement>("span#s1")),
             page,

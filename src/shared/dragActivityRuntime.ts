@@ -20,7 +20,8 @@ import {
     kAudioSentence,
     playAllAudio,
     playAllVideo,
-    recordHighlightingFixesOn,
+    startRecordingHighlightingFixesFor,
+    stopRecordingHighlightingFixes,
     removeNarrationHighlights,
     showVideoFirstFrameWhenReady,
     stopPlayAllVideoPlayback,
@@ -127,7 +128,7 @@ export function prepareActivity(
     // not sure we need this in BP, but definitely for when Bloom desktop goes to another tab.
     savePositions(page);
     // So that undoPrepareActivity can undo what playing the page's audio does to its text.
-    recordHighlightingFixesOn(page);
+    startRecordingHighlightingFixesFor(page);
 
     // Set up event listeners for any change page buttons.
     const changePageButtons = Array.from(
@@ -352,7 +353,7 @@ export function undoPrepareActivity(page: HTMLElement) {
     // The same goes for the record of what narration did to the page's sentences.
     if (page === currentPage) {
         positionsToRestore.clear();
-        recordHighlightingFixesOn(undefined);
+        stopRecordingHighlightingFixes();
     }
 
     const changePageButtons = Array.from(

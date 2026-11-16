@@ -391,10 +391,16 @@ function fixHighlighting(audioElements: HTMLElement[]) {
 let pageWhoseHighlightingFixesAreRecorded: HTMLElement | undefined;
 const htmlBeforeHighlightingFixes = new Map<string, string>();
 
-// Start recording what fixHighlighting changes on 'page' (or stop, given undefined), forgetting
-// anything recorded before.
-export function recordHighlightingFixesOn(page: HTMLElement | undefined) {
+// From now on, whenever fixHighlighting is about to change a sentence on 'page' for the first time,
+// record what it was. Forgets anything recorded before.
+export function startRecordingHighlightingFixesFor(page: HTMLElement) {
     pageWhoseHighlightingFixesAreRecorded = page;
+    htmlBeforeHighlightingFixes.clear();
+}
+
+// Stop recording, and forget what was recorded.
+export function stopRecordingHighlightingFixes() {
+    pageWhoseHighlightingFixesAreRecorded = undefined;
     htmlBeforeHighlightingFixes.clear();
 }
 
