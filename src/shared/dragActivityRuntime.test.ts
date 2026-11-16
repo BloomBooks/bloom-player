@@ -91,9 +91,7 @@ describe("dragActivityRuntime correct/wrong media sequencing", () => {
 
         // User clicks Try Again (or Show Correct) before the sound finishes;
         // both take the page out of the drag-activity-correct/wrong state.
-        performTryAgain({
-            currentTarget: checkButton,
-        } as unknown as MouseEvent);
+        performTryAgain({ currentTarget: checkButton } as unknown as MouseEvent);
 
         createdAudioElements[0].dispatchEvent(new Event("ended"));
 

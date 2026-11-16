@@ -400,8 +400,9 @@ export function recordHighlightingFixesOn(page: HTMLElement | undefined) {
 
 function recordBeforeHighlightingFix(element: HTMLElement) {
     if (
-        !pageWhoseHighlightingFixesAreRecorded?.contains(element) ||
-        htmlBeforeHighlightingFixes.has(element.id) // keep the markup from before the first fix
+        !element.id ||
+        htmlBeforeHighlightingFixes.has(element.id) || // keep the markup from before the first fix
+        !pageWhoseHighlightingFixesAreRecorded?.contains(element)
     ) {
         return;
     }
@@ -409,19 +410,31 @@ function recordBeforeHighlightingFix(element: HTMLElement) {
 }
 
 // Put each recorded sentence in 'root' (the page being played, or a copy of it) back as it was
-// before fixHighlighting changed it.
+// before fixHighlighting changed it. A sentence whose id is not unique in 'root' is left as it is:
+// the record cannot say which of them it came from, and putting one's text into the other would
+// lose words, which is worse than keeping the extra highlight spans.
 export function undoHighlightingFixes(root: HTMLElement) {
+    if (htmlBeforeHighlightingFixes.size === 0) {
+        return; // the usual case: nothing on the page has been read aloud
+    }
     // Walk the spans once and look each up, rather than building a selector out of an id.
-    Array.from(root.querySelectorAll<HTMLElement>("span[id]")).forEach(
-        (span) => {
-            const original = htmlBeforeHighlightingFixes.get(span.id);
-            // A span inside one already put back is no longer in 'root', and was put back with it.
-            if (original === undefined || !root.contains(span)) {
-                return;
-            }
-            span.outerHTML = original;
-        },
+    const spans = Array.from(root.querySelectorAll<HTMLElement>("span[id]"));
+    const countOfId = new Map<string, number>();
+    spans.forEach((span) =>
+        countOfId.set(span.id, (countOfId.get(span.id) ?? 0) + 1),
     );
+    spans.forEach((span) => {
+        const original = htmlBeforeHighlightingFixes.get(span.id);
+        // A span inside one already put back is no longer in 'root', and was put back with it.
+        if (
+            original === undefined ||
+            countOfId.get(span.id) !== 1 ||
+            !root.contains(span)
+        ) {
+            return;
+        }
+        span.outerHTML = original;
+    });
 }
 
 // Remove from 'root' the classes narration adds to show what is playing.
@@ -912,7 +925,10 @@ function setHighlightTo({
                 "playing",
                 currentSuppressPlayingListener,
             );
-            mediaPlayer.addEventListener("error", currentSuppressErrorListener);
+            mediaPlayer.addEventListener(
+                "error",
+                currentSuppressErrorListener,
+            );
         }
     }
 
@@ -1696,7 +1712,7 @@ function playAllVideoInternal(
                     ? video.playbackRate
                     : 1;
             const timeoutMs = Math.max(
-                (duration * 1000) / playbackRate + watchdogGraceMs,
+                duration * 1000 / playbackRate + watchdogGraceMs,
                 watchdogGraceMs,
             );
             watchdogTimerId = window.setTimeout(() => {

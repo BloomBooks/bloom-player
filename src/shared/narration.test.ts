@@ -76,6 +76,24 @@ describe("undoing what playing a sentence does to its highlighting", () => {
         expect(page.querySelector("#s1")!.outerHTML).toBe(original);
     });
 
+    test("never puts one sentence's text into another that shares its id", () => {
+        // Duplicate ids do turn up in real books.
+        document.body.innerHTML = `<div class="bloom-page"><div class="bloom-editable">${original}</div><div class="bloom-editable"><span id="s1" class="audio-sentence">Other&nbsp; &nbsp;words</span></div></div>`;
+        const page = document.querySelector<HTMLElement>(".bloom-page")!;
+        recordHighlightingFixesOn(page);
+        playAllAudio(
+            Array.from(page.querySelectorAll<HTMLElement>("span#s1")),
+            page,
+        );
+
+        undoHighlightingFixes(page);
+
+        const sentences = page.querySelectorAll("span#s1");
+        expect(sentences.length).toBe(2);
+        expect(sentences[0].textContent).toBe("One   two three");
+        expect(sentences[1].textContent).toBe("Other   words");
+    });
+
     test("records nothing for a page it was not asked to", () => {
         const page = makePage();
         play(page);
