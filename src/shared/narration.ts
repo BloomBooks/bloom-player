@@ -362,6 +362,8 @@ function fixHighlighting(audioElements: HTMLElement[]) {
             audioElement,
             true,
         );
+        // Before changing any of them, so that a nested span is recorded as it was, too.
+        matches.forEach(recordBeforeHighlightingFix);
         matches.forEach((element) => {
             // Remove all existing highlight classes from element and element's descendants.
             // These shouldn't be in the dom as the editor is supposed to clean them up,
@@ -379,6 +381,59 @@ function fixHighlighting(audioElements: HTMLElement[]) {
             }
         });
     });
+}
+
+// While a drag activity's page is being played (see prepareActivity in dragActivityRuntime.ts), the
+// markup each sentence on it had before fixHighlighting changed it, keyed by the sentence's id. The id
+// is what lets undoHighlightingFixes put back a COPY of the page as well as the page itself: Bloom
+// desktop saves a copy while the tester goes on playing, and fixHighlighting both splits the text
+// into extra spans and strips the book's own highlight classes, neither of which belongs in the book.
+let pageWhoseHighlightingFixesAreRecorded: HTMLElement | undefined;
+const htmlBeforeHighlightingFixes = new Map<string, string>();
+
+// Start recording what fixHighlighting changes on 'page' (or stop, given undefined), forgetting
+// anything recorded before.
+export function recordHighlightingFixesOn(page: HTMLElement | undefined) {
+    pageWhoseHighlightingFixesAreRecorded = page;
+    htmlBeforeHighlightingFixes.clear();
+}
+
+function recordBeforeHighlightingFix(element: HTMLElement) {
+    if (
+        !pageWhoseHighlightingFixesAreRecorded?.contains(element) ||
+        htmlBeforeHighlightingFixes.has(element.id) // keep the markup from before the first fix
+    ) {
+        return;
+    }
+    htmlBeforeHighlightingFixes.set(element.id, element.outerHTML);
+}
+
+// Put each recorded sentence in 'root' (the page being played, or a copy of it) back as it was
+// before fixHighlighting changed it.
+export function undoHighlightingFixes(root: HTMLElement) {
+    // Walk the spans once and look each up, rather than building a selector out of an id.
+    Array.from(root.querySelectorAll<HTMLElement>("span[id]")).forEach(
+        (span) => {
+            const original = htmlBeforeHighlightingFixes.get(span.id);
+            // A span inside one already put back is no longer in 'root', and was put back with it.
+            if (original === undefined || !root.contains(span)) {
+                return;
+            }
+            span.outerHTML = original;
+        },
+    );
+}
+
+// Remove from 'root' the classes narration adds to show what is playing.
+export function removeNarrationHighlights(root: HTMLElement) {
+    const classes = [
+        "ui-audioCurrent",
+        "ui-audioCurrentImg",
+        kSuppressHighlightClass,
+    ];
+    root.querySelectorAll(classes.map((c) => "." + c).join(",")).forEach(
+        (element) => element.classList.remove(...classes),
+    );
 }
 
 // Remove all existing highlight classes from element and element's descendants.
@@ -857,10 +912,7 @@ function setHighlightTo({
                 "playing",
                 currentSuppressPlayingListener,
             );
-            mediaPlayer.addEventListener(
-                "error",
-                currentSuppressErrorListener,
-            );
+            mediaPlayer.addEventListener("error", currentSuppressErrorListener);
         }
     }
 
@@ -1644,7 +1696,7 @@ function playAllVideoInternal(
                     ? video.playbackRate
                     : 1;
             const timeoutMs = Math.max(
-                duration * 1000 / playbackRate + watchdogGraceMs,
+                (duration * 1000) / playbackRate + watchdogGraceMs,
                 watchdogGraceMs,
             );
             watchdogTimerId = window.setTimeout(() => {

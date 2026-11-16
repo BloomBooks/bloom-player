@@ -6,11 +6,14 @@ const narrationMocks = vi.hoisted(() => ({
     stopPlayAllVideoPlayback: vi.fn(),
 }));
 
-vi.mock("./narration", () => ({
+// Playing media is mocked; the functions that only add or remove markup are the real ones, since
+// undoPrepareActivity's job is to take that markup off.
+vi.mock("./narration", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("./narration")>()),
     cancelVideoFirstFramePriming: vi.fn(),
-    kAudioSentence: "audio-sentence",
     playAllAudio: narrationMocks.playAllAudio,
     playAllVideo: narrationMocks.playAllVideo,
+    showVideoFirstFrameWhenReady: vi.fn(),
     stopPlayAllVideoPlayback: narrationMocks.stopPlayAllVideoPlayback,
     urlPrefix: () => "",
 }));
@@ -88,7 +91,9 @@ describe("dragActivityRuntime correct/wrong media sequencing", () => {
 
         // User clicks Try Again (or Show Correct) before the sound finishes;
         // both take the page out of the drag-activity-correct/wrong state.
-        performTryAgain({ currentTarget: checkButton } as unknown as MouseEvent);
+        performTryAgain({
+            currentTarget: checkButton,
+        } as unknown as MouseEvent);
 
         createdAudioElements[0].dispatchEvent(new Event("ended"));
 
@@ -227,6 +232,57 @@ describe("undoPrepareActivity works on the page it is given, and only that page"
         // ...and the live page is still prepared, because it is still being played.
         expect(img.getAttribute("draggable")).toBe("false");
     });
+
+    test("what playing leaves on the page is taken off the copy too", () => {
+        const { page, draggable } = makeActivityPage();
+        prepareActivity(page, () => {});
+
+        // A copy taken mid-drag, while a sentence is being read aloud, with a video that would not play.
+        draggable.classList.add("bloom-ui-dragging");
+        const sentence = document.createElement("span");
+        sentence.id = "s1";
+        sentence.classList.add(
+            "audio-sentence",
+            "ui-audioCurrent",
+            "ui-suppressHighlight",
+        );
+        page.appendChild(sentence);
+        const videoContainer = document.createElement("div");
+        videoContainer.classList.add("bloom-videoContainer", "autoplayBlocked");
+        const video = document.createElement("video");
+        videoContainer.appendChild(video);
+        const errorMessage = document.createElement("div");
+        errorMessage.classList.add("video-error-message");
+        videoContainer.appendChild(errorMessage);
+        page.appendChild(videoContainer);
+
+        const copy = page.cloneNode(true) as HTMLElement;
+        undoPrepareActivity(copy);
+
+        for (const className of [
+            "bloom-ui-dragging",
+            "ui-audioCurrent",
+            "ui-suppressHighlight",
+            "autoplayBlocked",
+            "video-error-message",
+        ]) {
+            expect(
+                copy.getElementsByClassName(className).length,
+                `${className} should be gone from the copy`,
+            ).toBe(0);
+        }
+        expect(
+            copy.querySelector(".audio-sentence"),
+            "the text itself stays",
+        ).not.toBeNull();
+        expect(
+            draggable.classList.contains("bloom-ui-dragging"),
+            "the live page is left alone",
+        ).toBe(true);
+        expect(sentence.classList.contains("ui-audioCurrent")).toBe(true);
+    });
+    // (Taking off the touch-action that prepareActivity sets can't be checked here: jsdom ignores
+    // that property. BloomDesktop's gamePlayMode.browser.spec.ts checks it in a real browser.)
 });
 
 import { playSoundOf, preloadSoundsForActivity } from "./dragActivityRuntime";

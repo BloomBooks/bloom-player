@@ -15,11 +15,16 @@
 import { ActivityManager } from "../activities/activityManager";
 import {
     cancelVideoFirstFramePriming,
+    hideVideoAutoplayBlockedHint,
+    hideVideoError,
     kAudioSentence,
     playAllAudio,
     playAllVideo,
+    recordHighlightingFixesOn,
+    removeNarrationHighlights,
     showVideoFirstFrameWhenReady,
     stopPlayAllVideoPlayback,
+    undoHighlightingFixes,
     urlPrefix,
 } from "./narration";
 
@@ -121,6 +126,8 @@ export function prepareActivity(
     );
     // not sure we need this in BP, but definitely for when Bloom desktop goes to another tab.
     savePositions(page);
+    // So that undoPrepareActivity can undo what playing the page's audio does to its text.
+    recordHighlightingFixesOn(page);
 
     // Set up event listeners for any change page buttons.
     const changePageButtons = Array.from(
@@ -284,25 +291,23 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
         page.getElementsByClassName(
             "drag-item-order-sentence",
         ) as HTMLCollectionOf<HTMLElement>,
-    ).forEach(
-        (elt: HTMLElement) => {
-            const contentElt = elt.getElementsByClassName(
-                "bloom-content1 bloom-visibility-code-on",
-            )[0] as HTMLElement;
-            const content = contentElt?.textContent?.trim();
-            if (!content) return;
-            const words = content.split(" ");
-            const shuffledWords = shuffle(words);
-            const container = page.ownerDocument.createElement("div");
-            container.classList.add("drag-item-random-sentence");
-            container.setAttribute("data-answer", content);
-            makeWordItems(page, shuffledWords, container, contentElt, true);
-            container.style.left = elt.style.left;
-            container.style.top = elt.style.top;
-            container.style.width = elt.style.width;
-            elt.parentElement?.insertBefore(container, elt);
-        },
-    );
+    ).forEach((elt: HTMLElement) => {
+        const contentElt = elt.getElementsByClassName(
+            "bloom-content1 bloom-visibility-code-on",
+        )[0] as HTMLElement;
+        const content = contentElt?.textContent?.trim();
+        if (!content) return;
+        const words = content.split(" ");
+        const shuffledWords = shuffle(words);
+        const container = page.ownerDocument.createElement("div");
+        container.classList.add("drag-item-random-sentence");
+        container.setAttribute("data-answer", content);
+        makeWordItems(page, shuffledWords, container, contentElt, true);
+        container.style.left = elt.style.left;
+        container.style.top = elt.style.top;
+        container.style.width = elt.style.width;
+        elt.parentElement?.insertBefore(container, elt);
+    });
 };
 
 const playVideo = (e: MouseEvent) => {
@@ -330,12 +335,15 @@ export function undoPrepareActivity(page: HTMLElement) {
     }
 
     restorePositions(page);
+    undoHighlightingFixes(page);
+    removeNarrationHighlights(page);
 
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
     // if we leave the page completely. Only when the session is over, though: forgetting them
     // because someone cleaned a copy would leave the live page stuck wherever it was dragged.
     if (page === currentPage) {
         positionsToRestore.clear();
+        recordHighlightingFixesOn(undefined);
     }
 
     const changePageButtons = Array.from(
@@ -357,6 +365,10 @@ export function undoPrepareActivity(page: HTMLElement) {
 
     page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
         elt.removeEventListener("pointerdown", startDrag, { capture: true });
+        elt.style.removeProperty("touch-action");
+        // bloom-ui-dragging is there if this is a copy taken in the middle of a drag.
+        // restorePositions only takes bloom-draggedToTarget off draggables it recorded.
+        elt.classList.remove("bloom-ui-dragging", "bloom-draggedToTarget");
     });
 
     Array.from(page.getElementsByTagName("img")).forEach((img: HTMLElement) => {
@@ -367,6 +379,8 @@ export function undoPrepareActivity(page: HTMLElement) {
     videos.forEach((video) => {
         video.removeEventListener("pointerdown", playVideo);
         video.classList.remove("bloom-ui-no-controls");
+        hideVideoError(video);
+        hideVideoAutoplayBlockedHint(video);
     });
     const checkButtons = Array.from(
         page.getElementsByClassName(
@@ -968,7 +982,9 @@ export function preloadSoundsForActivity(page: HTMLElement): void {
         const url = getSoundUrl(soundFile, addPrefix);
         // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
         const already = Array.from(
-            page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+            page.querySelectorAll<HTMLAudioElement>(
+                `audio[${kPreloadSoundAttr}]`,
+            ),
         ).find((a) => a.dataset.preloadSound === url);
         if (already) return;
 
@@ -1066,7 +1082,9 @@ function playSound(
     // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
     // This avoids re-downloading the file and removes the delay before playback starts.
     const preloaded = Array.from(
-        someElt.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+        someElt.querySelectorAll<HTMLAudioElement>(
+            `audio[${kPreloadSoundAttr}]`,
+        ),
     ).find((a) => a.dataset.preloadSound === url);
 
     let audio: HTMLAudioElement;
