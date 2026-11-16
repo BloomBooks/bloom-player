@@ -325,6 +325,10 @@ const playVideo = (e: MouseEvent) => {
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
 // It also removes what playing the page left on it: the mark on an item being dragged, the
 // narration's highlighting and the extra spans it split sentences into, and video error messages.
+// Each of these is removed explicitly, rather than by putting back a snapshot of the page taken
+// when play began: play may one day want to record things worth keeping (whether the reader got
+// the answer first time, say), and a snapshot would wipe those out along with the play markup.
+// So anything new that play adds to the page needs its own line here.
 //
 // Everything here happens to the page you pass, and only to it -- including putting the draggables
 // back where play found them. That matters because the page you pass is not always the page we
