@@ -15,11 +15,17 @@
 import { ActivityManager } from "../activities/activityManager";
 import {
     cancelVideoFirstFramePriming,
+    hideVideoAutoplayBlockedHint,
+    hideVideoError,
     kAudioSentence,
     playAllAudio,
     playAllVideo,
+    startRecordingHighlightingFixesFor,
+    stopRecordingHighlightingFixes,
+    removeNarrationHighlights,
     showVideoFirstFrameWhenReady,
     stopPlayAllVideoPlayback,
+    undoHighlightingFixes,
     urlPrefix,
 } from "./narration";
 
@@ -121,6 +127,8 @@ export function prepareActivity(
     );
     // not sure we need this in BP, but definitely for when Bloom desktop goes to another tab.
     savePositions(page);
+    // So that undoPrepareActivity can undo what playing the page's audio does to its text.
+    startRecordingHighlightingFixesFor(page);
 
     // Set up event listeners for any change page buttons.
     const changePageButtons = Array.from(
@@ -316,6 +324,12 @@ const playVideo = (e: MouseEvent) => {
 // Cleans up whatever prepareActivity() did, especially when switching to another tab.
 // May also be useful to do when switching pages in player. If not, we may want to move
 // this out of this runtime file; but it's nice to keep it with prepareActivity.
+// It also removes what playing the page left on it: the mark on an item being dragged, the
+// narration's highlighting and the extra spans it split sentences into, and video error messages.
+// Each of these is removed explicitly, rather than by putting back a snapshot of the page taken
+// when play began: play may one day want to record things worth keeping (whether the reader got
+// the answer first time, say), and a snapshot would wipe those out along with the play markup.
+// So anything new that play adds to the page needs its own line here.
 //
 // Everything here happens to the page you pass, and only to it -- including putting the draggables
 // back where play found them. That matters because the page you pass is not always the page we
@@ -330,12 +344,16 @@ export function undoPrepareActivity(page: HTMLElement) {
     }
 
     restorePositions(page);
+    undoHighlightingFixes(page);
+    removeNarrationHighlights(page);
 
     // In case we do more editing after leaving the Play tab, we don't want to restore the same positions again
     // if we leave the page completely. Only when the session is over, though: forgetting them
     // because someone cleaned a copy would leave the live page stuck wherever it was dragged.
+    // The same goes for the record of what narration did to the page's sentences.
     if (page === currentPage) {
         positionsToRestore.clear();
+        stopRecordingHighlightingFixes();
     }
 
     const changePageButtons = Array.from(
@@ -357,6 +375,10 @@ export function undoPrepareActivity(page: HTMLElement) {
 
     page.querySelectorAll<HTMLElement>("[data-draggable-id]").forEach((elt) => {
         elt.removeEventListener("pointerdown", startDrag, { capture: true });
+        elt.style.removeProperty("touch-action");
+        // bloom-ui-dragging is there if this is a copy taken in the middle of a drag.
+        // restorePositions only takes bloom-draggedToTarget off draggables it recorded.
+        elt.classList.remove("bloom-ui-dragging", "bloom-draggedToTarget");
     });
 
     Array.from(page.getElementsByTagName("img")).forEach((img: HTMLElement) => {
@@ -367,6 +389,8 @@ export function undoPrepareActivity(page: HTMLElement) {
     videos.forEach((video) => {
         video.removeEventListener("pointerdown", playVideo);
         video.classList.remove("bloom-ui-no-controls");
+        hideVideoError(video);
+        hideVideoAutoplayBlockedHint(video);
     });
     const checkButtons = Array.from(
         page.getElementsByClassName(
