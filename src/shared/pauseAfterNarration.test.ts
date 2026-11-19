@@ -11,13 +11,24 @@ import {
     setPauseAfterNarration,
 } from "./narration";
 
-// A page with one narrated sentence lasting two seconds.
-function makeNarratedPage(): HTMLElement {
+// A page whose one text box holds the given paragraph.
+function makePage(paragraph: string): HTMLElement {
     document.body.innerHTML =
         '<div class="bloom-page" id="page1"><div class="bloom-editable bloom-visibility-code-on" lang="en">' +
-        '<p><span id="s1" class="audio-sentence" data-duration="2.0">Hello.</span></p>' +
-        "</div></div>";
+        `<p>${paragraph}</p></div></div>`;
     return document.getElementById("page1")!;
+}
+
+// A page with one narrated sentence lasting two seconds.
+function makeNarratedPage(): HTMLElement {
+    return makePage(
+        '<span id="s1" class="audio-sentence" data-duration="2.0">Hello.</span>',
+    );
+}
+
+// A page with text but no narration.
+function makePageWithoutNarration(): HTMLElement {
+    return makePage("No recording here.");
 }
 
 // Simulates the browser's audio player reaching the end of the current recording.
@@ -160,43 +171,17 @@ describe("pauseAfterNarration", () => {
     });
 
     test("computeDuration does not add the pause to a page without narration", () => {
-        document.body.innerHTML = '<div class="bloom-page" id="page1"></div>';
+        const page = makePageWithoutNarration();
         setDurationOfPagesWithoutNarration(3);
         setPauseAfterNarration(4);
 
-        expect(computeDuration(document.getElementById("page1")!)).toBe(3);
-    });
-});
-
-// The wait on a page without narration shares its mechanism with the pause after narration.
-describe("a page without narration", () => {
-    let completedPages: HTMLElement[];
-    const recordCompletion = (page: HTMLElement | undefined) =>
-        completedPages.push(page!);
-
-    function makePageWithoutNarration(): HTMLElement {
-        document.body.innerHTML =
-            '<div class="bloom-page" id="page1"><div class="bloom-editable bloom-visibility-code-on" lang="en">' +
-            "<p>No recording here.</p></div></div>";
-        return document.getElementById("page1")!;
-    }
-
-    beforeEach(() => {
-        vi.useFakeTimers();
-        completedPages = [];
-        setDurationOfPagesWithoutNarration(3);
-        PageNarrationComplete.subscribe(recordCompletion);
+        expect(computeDuration(page)).toBe(3);
     });
 
-    afterEach(() => {
-        PageNarrationComplete.unsubscribe(recordCompletion);
-        hidingPage();
-        setDurationOfPagesWithoutNarration(3.0);
-        vi.useRealTimers();
-        document.body.innerHTML = "";
-    });
-
-    test("completes only after its usual delay", () => {
+    // A page without narration waits its own delay, which the pause after narration doesn't
+    // lengthen, and which pausing holds just as it holds the pause after narration.
+    test("a page without narration completes after its usual delay, without the pause", () => {
+        setPauseAfterNarration(4);
         const page = makePageWithoutNarration();
         playAllSentences(page);
         vi.advanceTimersByTime(2900);
@@ -207,7 +192,7 @@ describe("a page without narration", () => {
         expect(completedPages).toEqual([page]);
     });
 
-    test("pausing during the delay holds the page; resuming completes it at once, once", () => {
+    test("a page without narration: pausing during its delay holds it; resuming completes it at once, once", () => {
         const page = makePageWithoutNarration();
         playAllSentences(page);
         vi.advanceTimersByTime(1000);
