@@ -16,14 +16,9 @@ export function activityRequirements() {
 // This implements IActivityObject (though at the moment it is javascript, so there's
 // no way to say that)
 export default class SnakeActivity {
-    // When a page that has this activity becomes the selected one, the bloom-player calls this.
-    // We need to connect any listeners, start animation, etc. Here,
-    // we are using a javascript class to make sure that we get a fresh start,
-    // which is important because the user could be either
-    // coming back to this page, or going to another instance of this activity
-    // in a subsequent page.
+    // The player constructs a fresh object each time the page is shown, so the game starts fresh
+    // whether the user comes back to this page or goes on to another instance of the activity.
     constructor(pageElement) {
-        //alert("this.start(this.snake)");
         this.running = true;
         this.frameCount = 0;
         this.canvas = pageElement.getElementsByTagName("canvas")[0];
@@ -51,7 +46,11 @@ export default class SnakeActivity {
         // away from this page
         this.listeners = [];
     }
-    /* public*/ start() {
+    // Called once when the book loads, on a copy of the page's html. The game needs no setup there.
+    /* public */ initializePageHtml() {}
+
+    // Called each time the page becomes the current one, on the real DOM.
+    /* public */ showingPage() {
         this.addEventListener("touchstart", this.handleTouchstart);
         this.addEventListener("touchmove", this.handleTouchMove);
         this.addEventListener("touchend", this.handleTouchEnd);
