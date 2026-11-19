@@ -1135,13 +1135,19 @@ function getBackButtonIconUrlParam(): BackButtonIcon | undefined {
 // not-in-a-class code gets called. So we arrange in bloom-player-root.ts to call this
 // function which turns the element with id 'root' into a BloomPlayerControls.
 export function InitBloomPlayerControls() {
-    setDurationOfPagesWithoutNarration(
-        parseFloat(getQueryStringParamAndUnencode("defaultDuration", "3.0")),
+    // Seconds to stay on a page without narration, and to wait after the last narration on a
+    // page, before autoplay turns the page. When the host doesn't say, the book's own publish
+    // settings (or the defaults) apply once the book is loaded.
+    const defaultDuration = getQueryStringParamAndUnencode("defaultDuration");
+    if (defaultDuration) {
+        setDurationOfPagesWithoutNarration(parseFloat(defaultDuration));
+    }
+    const pauseAfterNarration = getQueryStringParamAndUnencode(
+        "pauseAfterNarration",
     );
-    // Seconds to wait after the last narration on a page before autoplay turns the page.
-    setPauseAfterNarration(
-        parseFloat(getQueryStringParamAndUnencode("pauseAfterNarration", "0")),
-    );
+    if (pauseAfterNarration) {
+        setPauseAfterNarration(parseFloat(pauseAfterNarration));
+    }
     const autoplay = getQueryStringParamAndUnencode(
         "autoplay",
         "motion",

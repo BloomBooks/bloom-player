@@ -75,6 +75,7 @@ import {
     setIncludeImageDescriptions,
     playAllSentences,
     abortNarrationPlayback,
+    applyBookPublishSettings,
 } from "./shared/narration";
 import { logSound } from "./videoRecordingSupport";
 import {
@@ -689,6 +690,7 @@ export class BloomPlayerCore extends React.Component<IProps, IPlayerState> {
                         this.metaDataObject = loadedBook.metaDataObject;
                         this.distributionSource =
                             loadedBook.distributionSource;
+                        applyBookPublishSettings(loadedBook.audioVideoSettings);
 
                         const requiredVersionMessage =
                             this.getRequiredVersionMessage(

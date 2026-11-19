@@ -160,7 +160,7 @@ How many seconds autoplay stays on a page that has no narration.
 
 Example: `defaultDuration=5`
 
-Default: `3.0`
+Default: the book's own setting (`audioVideo.pageTurnDelay` in its `publish-settings.json`, which Bloom's Audio/Video publish screen sets), or `3.0` if it has none.
 
 ### pauseAfterNarration
 
@@ -168,7 +168,7 @@ How many seconds autoplay waits, after the last narration on a page finishes, be
 
 Example: `pauseAfterNarration=4`
 
-Default: `0`
+Default: the book's own setting (`audioVideo.pauseAfterNarration` in its `publish-settings.json`), or `0` if it has none.
 
 ### hideNavButtons
 
