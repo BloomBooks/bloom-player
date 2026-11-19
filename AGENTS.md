@@ -35,3 +35,8 @@ this check runs the player in that real old Chromium.
   it never shows a page or a page turn doesn't happen, or if the old Chromium throws an error that
   current Chromium doesn't. Lines marked "note, from the book's own files" come from a test book's
   own scripts and don't fail the check.
+
+This check isn't in CI, so a change that doesn't go through an agent's preflight (a human's PR,
+a bot's dependency bump) skips it. We could consider also running `pnpm test:old-chromium` in
+`.github/workflows/release.yml`, which already builds on Ubuntu; its Linux path (`xvfb-run`) hasn't
+been tried yet.
