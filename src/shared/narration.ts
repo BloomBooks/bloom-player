@@ -219,22 +219,26 @@ let fakeNarrationTimer: number;
 // playNarration() uses this to move on at once, rather than replaying the page.
 let waitingToCompletePage = false;
 
-// Pretend to keep playing the page for the given number of seconds, then raise
+// Pretend to keep playing the current page for the given number of seconds, then raise
 // PageNarrationComplete (which, in autoplay, turns the page). We pretend to play, rather than
 // being in MediaFinished, so that pausing and resuming work during the wait.
-function completePageAfter(page: HTMLElement, seconds: number) {
+// (The current page can't change during the wait: playAllAudio, which changes it, cancels the wait.)
+function completePageAfter(seconds: number) {
     setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
     waitingToCompletePage = true;
-    fakeNarrationTimer = window.setTimeout(() => {
-        waitingToCompletePage = false;
-        setCurrentPlaybackMode(PlaybackMode.MediaFinished);
-        PageNarrationComplete?.raise(page);
-    }, seconds * 1000);
+    fakeNarrationTimer = window.setTimeout(completeWaitingPageNow, seconds * 1000);
 }
 
 function cancelPendingPageCompletion() {
     clearTimeout(fakeNarrationTimer);
     waitingToCompletePage = false;
+}
+
+// Stop waiting and complete the page now.
+function completeWaitingPageNow() {
+    cancelPendingPageCompletion();
+    setCurrentPlaybackMode(PlaybackMode.MediaFinished);
+    PageNarrationComplete?.raise(currentPlayPage!);
 }
 
 // List of segments that are currently being played, or will be resumed (or restarted) when play resumes.
@@ -335,7 +339,7 @@ export function playAllAudio(elements: HTMLElement[], page: HTMLElement): void {
         }
         // Simulate playing for a fixed amount of time before raising PageNarrationComplete, in case we're autoadvancing.
         // (If we left it in MediaFinished from the previous page or from raising PlayCompleted, pause wouldn't work.)
-        completePageAfter(page, durationOfPagesWithoutNarration);
+        completePageAfter(durationOfPagesWithoutNarration);
         return;
     }
 
@@ -1238,6 +1242,11 @@ export function abortNarrationPlayback() {
     // So if you're tempted to modify this code, especially if you need to
     // reference elementsToPlayConsecutivelyStack, be sure to test in BloomPUB Viewer.
 
+    if (waitingToCompletePage) {
+        // Nothing is playing; the page is only waiting before it completes.
+        completeWaitingPageNow();
+        return;
+    }
     playEnded(false);
 }
 
@@ -1284,7 +1293,7 @@ function reportPlayEnded(pauseSeconds: number) {
     removeAudioCurrent();
     if (pauseSeconds > 0) {
         PlayCompleted?.raise();
-        completePageAfter(currentPlayPage!, pauseSeconds);
+        completePageAfter(pauseSeconds);
     } else {
         PageNarrationComplete?.raise(currentPlayPage!);
         PlayCompleted?.raise();
@@ -1417,13 +1426,12 @@ export function playNarration() {
     if (currentPlaybackMode === PlaybackMode.AudioPlaying) {
         return; // no change.
     }
-    setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
     if (waitingToCompletePage) {
         // The reader paused as long as wanted, so move on.
-        waitingToCompletePage = false;
-        PageNarrationComplete?.raise(currentPlayPage!);
+        completeWaitingPageNow();
         return;
     }
+    setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
     // I'm not sure how getPlayer() can return null/undefined, but have seen it happen
     // typically when doing something odd like trying to go back from the first page.
     if (segmentsWeArePlaying.length && getPlayer()) {
@@ -1442,9 +1450,8 @@ export function playNarration() {
             return;
         }
     }
-    // Nothing real to play on this page, so PageNarrationComplete depends on a timeout.
-    // We only get here following a pause, so assume the reader has paused as long as wanted,
-    // and move on.
+    // Nothing real to play on this page, and it is not waiting to complete (for example, its
+    // wait ran out while we were paused), so move on.
     PageNarrationComplete?.raise(currentPlayPage!);
 }
 

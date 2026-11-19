@@ -124,6 +124,21 @@ describe("pauseAfterNarration", () => {
         expect(completedPages).toEqual([page]);
     });
 
+    test("aborting during the pause completes the page at once", () => {
+        setPauseAfterNarration(4);
+        const page = makeNarratedPage();
+        playAllSentences(page);
+        finishPlayingTheRecording();
+        vi.advanceTimersByTime(1000);
+        expect(completedPages).toEqual([]);
+
+        abortNarrationPlayback();
+
+        expect(completedPages).toEqual([page]);
+        vi.advanceTimersByTime(10000);
+        expect(completedPages).toEqual([page]);
+    });
+
     test("aborting the narration completes the page without a pause", () => {
         setPauseAfterNarration(4);
         const page = makeNarratedPage();
