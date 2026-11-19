@@ -38,7 +38,10 @@ import { withStyles, createTheme } from "@material-ui/core/styles";
 // the pages is already known as a slider, so the two would get confused.
 import DragBar from "@material-ui/core/Slider";
 import { bloomRed } from "./bloomPlayerTheme";
-import { setDurationOfPagesWithoutNarration } from "./shared/narration";
+import {
+    setDurationOfPagesWithoutNarration,
+    setPauseAfterNarration,
+} from "./shared/narration";
 import { roundToNearestK, normalizeDigits } from "./utilities/mathUtils";
 import { fixNiceScrollOffsets } from "./shared/scrolling";
 import { DiagnosticInfoControl } from "./diagnostic-info-control";
@@ -1134,6 +1137,10 @@ function getBackButtonIconUrlParam(): BackButtonIcon | undefined {
 export function InitBloomPlayerControls() {
     setDurationOfPagesWithoutNarration(
         parseFloat(getQueryStringParamAndUnencode("defaultDuration", "3.0")),
+    );
+    // Seconds to wait after the last narration on a page before autoplay turns the page.
+    setPauseAfterNarration(
+        parseFloat(getQueryStringParamAndUnencode("pauseAfterNarration", "0")),
     );
     const autoplay = getQueryStringParamAndUnencode(
         "autoplay",
