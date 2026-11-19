@@ -39,13 +39,6 @@ describe("pauseAfterNarration", () => {
     beforeEach(() => {
         vi.useFakeTimers();
         completedPages = [];
-        // jsdom doesn't implement media playback.
-        vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() =>
-            Promise.resolve(),
-        );
-        vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
-            () => {},
-        );
         PageNarrationComplete.subscribe(recordCompletion);
     });
 
@@ -54,7 +47,6 @@ describe("pauseAfterNarration", () => {
         hidingPage();
         setPauseAfterNarration(0);
         setDurationOfPagesWithoutNarration(3.0);
-        vi.restoreAllMocks();
         vi.useRealTimers();
         document.body.innerHTML = "";
     });
@@ -112,6 +104,24 @@ describe("pauseAfterNarration", () => {
         vi.advanceTimersByTime(10000);
 
         expect(completedPages).toEqual([]);
+    });
+
+    test("starting new audio on the same page during the pause cancels it", () => {
+        // What a game page does when the reader taps another item during the pause.
+        setPauseAfterNarration(4);
+        const page = makeNarratedPage();
+        playAllSentences(page);
+        finishPlayingTheRecording();
+        expect(completedPages).toEqual([]);
+
+        playAllSentences(page);
+        vi.advanceTimersByTime(10000);
+        expect(completedPages).toEqual([]);
+
+        finishPlayingTheRecording();
+        vi.advanceTimersByTime(4100);
+
+        expect(completedPages).toEqual([page]);
     });
 
     test("aborting the narration completes the page without a pause", () => {

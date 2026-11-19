@@ -172,11 +172,6 @@ export function setPauseAfterNarration(d: number) {
     pauseAfterNarration = d;
 }
 
-// True while we are waiting out pauseAfterNarration on a page whose narration has finished.
-// If the user pauses during the wait, playNarration() uses this to move on at once,
-// rather than replaying the page.
-let inPauseAfterNarration = false;
-
 // Even though these can now encompass more than strict sentences,
 // we continue to use this class name for backwards compatability reasons.
 export const kAudioSentence = "audio-sentence";
@@ -216,9 +211,31 @@ let startPlay: Date;
 let startPause: Date;
 
 // Timer used to raise PageNarrationComplete after a delay when there is no audio on the page,
-// or after pauseAfterNarration when there is.
+// or after pauseAfterNarration when there is (see completePageAfter).
 // Gets canceled if we pause and restarted if we resume.
 let fakeNarrationTimer: number;
+
+// True while a page waits out that delay. If the user pauses during the wait,
+// playNarration() uses this to move on at once, rather than replaying the page.
+let waitingToCompletePage = false;
+
+// Pretend to keep playing the page for the given number of seconds, then raise
+// PageNarrationComplete (which, in autoplay, turns the page). We pretend to play, rather than
+// being in MediaFinished, so that pausing and resuming work during the wait.
+function completePageAfter(page: HTMLElement, seconds: number) {
+    setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
+    waitingToCompletePage = true;
+    fakeNarrationTimer = window.setTimeout(() => {
+        waitingToCompletePage = false;
+        setCurrentPlaybackMode(PlaybackMode.MediaFinished);
+        PageNarrationComplete?.raise(page);
+    }, seconds * 1000);
+}
+
+function cancelPendingPageCompletion() {
+    clearTimeout(fakeNarrationTimer);
+    waitingToCompletePage = false;
+}
 
 // List of segments that are currently being played, or will be resumed (or restarted) when play resumes.
 // Typically the output of getPageAudioElements, but Bloom Games sometimes gives a different list.
@@ -278,7 +295,10 @@ export function playAllSentences(
 }
 
 export function playAllAudio(elements: HTMLElement[], page: HTMLElement): void {
-    inPauseAfterNarration = false;
+    // A game can start new audio on the same page (e.g. when the reader taps an item) while
+    // we are still waiting out pauseAfterNarration or the delay for a page without narration.
+    // That earlier wait must not go on to complete the page.
+    cancelPendingPageCompletion();
     setCurrentPage(page);
     segmentsWeArePlaying = elements;
     startPlay = new Date();
@@ -314,15 +334,8 @@ export function playAllAudio(elements: HTMLElement[], page: HTMLElement): void {
             PlayCompleted?.raise(page);
         }
         // Simulate playing for a fixed amount of time before raising PageNarrationComplete, in case we're autoadvancing.
-        // We're not really playing, but we're pretending, so things work best if we go to that mode.
-        // For example, if we leave it in MediaFinished from the previous page or from raising PlayCompleted, pause won't work.
-        setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
-        if (PageNarrationComplete) {
-            fakeNarrationTimer = window.setTimeout(() => {
-                setCurrentPlaybackMode(PlaybackMode.MediaFinished);
-                PageNarrationComplete?.raise(page);
-            }, durationOfPagesWithoutNarration * 1000);
-        }
+        // (If we left it in MediaFinished from the previous page or from raising PlayCompleted, pause wouldn't work.)
+        completePageAfter(page, durationOfPagesWithoutNarration);
         return;
     }
 
@@ -1251,10 +1264,10 @@ function playEnded(keepPlayingTheStack = true): void {
             setSoundAndHighlight(nextElement, true);
             playCurrentInternal();
         } else {
-            // Only a page whose narration ran to the end gets the pause before it turns.
+            // Only narration that ran to the end gets the pause before the page turns.
             // When playback is aborted (typically because we are leaving the page),
             // PageNarrationComplete must be raised at once.
-            reportPlayEnded(keepPlayingTheStack);
+            reportPlayEnded(keepPlayingTheStack ? pauseAfterNarration : 0);
             removeAudioCurrent(elementJustPlayed);
             // In some error conditions, we need to stop repeating attempts to play.
             getPlayer().pause();
@@ -1262,30 +1275,20 @@ function playEnded(keepPlayingTheStack = true): void {
     }
 }
 
-// Clears the narration state of the page and raises PlayCompleted and PageNarrationComplete.
-// If pauseAfterEnd is true and pauseAfterNarration is set, PageNarrationComplete is raised
-// only after that many seconds.
-function reportPlayEnded(pauseAfterEnd = false) {
+// Clears the page's play state and raises PlayCompleted and PageNarrationComplete,
+// the latter only after pauseSeconds when that is more than zero.
+function reportPlayEnded(pauseSeconds: number) {
     elementsToPlayConsecutivelyStack = [];
     subElementsWithTimings = [];
 
     removeAudioCurrent();
-    if (!pauseAfterEnd || pauseAfterNarration <= 0) {
+    if (pauseSeconds > 0) {
+        PlayCompleted?.raise();
+        completePageAfter(currentPlayPage!, pauseSeconds);
+    } else {
         PageNarrationComplete?.raise(currentPlayPage!);
         PlayCompleted?.raise();
-        return;
     }
-    const page = currentPlayPage!;
-    PlayCompleted?.raise();
-    // As for a page with no narration (see playAllAudio), we pretend to keep playing
-    // until the pause is over, so that pausing and resuming work.
-    setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
-    inPauseAfterNarration = true;
-    fakeNarrationTimer = window.setTimeout(() => {
-        inPauseAfterNarration = false;
-        setCurrentPlaybackMode(PlaybackMode.MediaFinished);
-        PageNarrationComplete?.raise(page);
-    }, pauseAfterNarration * 1000);
 }
 
 function reportPlayDuration() {
@@ -1407,17 +1410,17 @@ export function pageHasAudio(page: HTMLElement): boolean {
 // Called when the user clicks the play/pause button, and we want to resume playing.
 // If we're in the middle of playing, we resume it.
 // If we have finished playing, we start over.
-// If we paused while waiting out pauseAfterNarration, or the page has no audio, we assume the user paused as long as wanted on
-// the page, and raise the PageNarrationComplete event at once (to move to the
-// next page if we are in autoplay).
+// If we paused while waiting out pauseAfterNarration, or the page has no audio,
+// we assume the user paused as long as wanted on the page, and raise the
+// PageNarrationComplete event at once (to move to the next page if we are in autoplay).
 export function playNarration() {
     if (currentPlaybackMode === PlaybackMode.AudioPlaying) {
         return; // no change.
     }
     setCurrentPlaybackMode(PlaybackMode.AudioPlaying);
-    if (inPauseAfterNarration) {
-        // The narration is done; the reader paused as long as wanted, so move on.
-        inPauseAfterNarration = false;
+    if (waitingToCompletePage) {
+        // The reader paused as long as wanted, so move on.
+        waitingToCompletePage = false;
         PageNarrationComplete?.raise(currentPlayPage!);
         return;
     }
@@ -1507,8 +1510,7 @@ export function hidingPage() {
     // If that page has no audio, we pause the player then.
     // If it DOES have audio, a pause here can interfere with playing it.
     //pausePlaying(); // Doesn't set AudioPaused state.  Caller sets NewPage state.
-    clearTimeout(fakeNarrationTimer);
-    inPauseAfterNarration = false;
+    cancelPendingPageCompletion();
     stopPlayAllVideoPlayback();
 }
 
