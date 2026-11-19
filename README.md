@@ -162,6 +162,14 @@ Example: `defaultDuration=5`
 
 Default: `3.0`
 
+### pauseAfterNarration
+
+How many seconds autoplay waits, after the last narration on a page finishes, before turning the page.
+
+Example: `pauseAfterNarration=4`
+
+Default: `0`
+
 ### hideNavButtons
 
 Hide the next and previous page buttons. Mainly useful with `autoplay=yes`.
