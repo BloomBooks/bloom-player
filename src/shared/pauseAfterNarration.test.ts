@@ -167,3 +167,59 @@ describe("pauseAfterNarration", () => {
         expect(computeDuration(document.getElementById("page1")!)).toBe(3);
     });
 });
+
+// The wait on a page without narration shares its mechanism with the pause after narration.
+describe("a page without narration", () => {
+    let completedPages: HTMLElement[];
+    const recordCompletion = (page: HTMLElement | undefined) =>
+        completedPages.push(page!);
+
+    function makePageWithoutNarration(): HTMLElement {
+        document.body.innerHTML =
+            '<div class="bloom-page" id="page1"><div class="bloom-editable bloom-visibility-code-on" lang="en">' +
+            "<p>No recording here.</p></div></div>";
+        return document.getElementById("page1")!;
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        completedPages = [];
+        setDurationOfPagesWithoutNarration(3);
+        PageNarrationComplete.subscribe(recordCompletion);
+    });
+
+    afterEach(() => {
+        PageNarrationComplete.unsubscribe(recordCompletion);
+        hidingPage();
+        setDurationOfPagesWithoutNarration(3.0);
+        vi.useRealTimers();
+        document.body.innerHTML = "";
+    });
+
+    test("completes only after its usual delay", () => {
+        const page = makePageWithoutNarration();
+        playAllSentences(page);
+        vi.advanceTimersByTime(2900);
+        expect(completedPages).toEqual([]);
+
+        vi.advanceTimersByTime(200);
+
+        expect(completedPages).toEqual([page]);
+    });
+
+    test("pausing during the delay holds the page; resuming completes it at once, once", () => {
+        const page = makePageWithoutNarration();
+        playAllSentences(page);
+        vi.advanceTimersByTime(1000);
+
+        pauseNarration();
+        vi.advanceTimersByTime(10000);
+        expect(completedPages).toEqual([]);
+
+        playNarration();
+
+        expect(completedPages).toEqual([page]);
+        vi.advanceTimersByTime(10000);
+        expect(completedPages).toEqual([page]);
+    });
+});
