@@ -4,12 +4,21 @@ import path from "path";
 import fs from "fs";
 import dts from "vite-plugin-dts";
 
+// The oldest browser engine bloom-player supports. Bloom Reader hosts the player in the Android
+// WebView and warns when it is older than this (ReaderActivity.haveCurrentWebView); keep the two
+// in step. Without it, Vite's default target leaves syntax in the bundle that an older WebView
+// cannot parse, and the player hangs on "Loading Bloom Player..." (BL-17113).
+// It lowers JS and CSS syntax only and adds no polyfills, so don't use browser APIs newer than
+// Chrome 54 either.
+const minimumBrowserTarget = "chrome54";
+
 export default defineConfig(({ command, mode }) => {
     // If we're building in library mode, configure for the shared library
     if (mode === "lib") {
         return {
             build: {
                 outDir: "lib",
+                target: minimumBrowserTarget,
                 lib: {
                     entry: path.resolve(__dirname, "src/shared/index.ts"),
                     name: "BloomPlayerShared",
@@ -43,6 +52,7 @@ export default defineConfig(({ command, mode }) => {
         },
         build: {
             outDir: "dist",
+            target: minimumBrowserTarget,
             copyPublicDir: false, // Disables the copying of public/ directory during build
             rollupOptions: {
                 input: {
