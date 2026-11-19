@@ -21,7 +21,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Chromium snapshots are numbered by trunk position. The trunk is version N until N branches
 // off, so the last snapshot before N's branch point is version N. Add a milestone here to move
 // the floor (https://chromiumdash.appspot.com/branches lists the branch points).
-const branchPoints = { 54: 414607 }; // Win_x64 snapshot 414589 reports 54.0.2840.0
+const branchPoints = { 54: 414607 }; // Win_x64 snapshots 414589 and 414607 both report 54.0.2840.0
 
 const target = JSON.parse(
     fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"),
@@ -154,9 +154,23 @@ async function checkBook(chromeExe, version, url) {
     ];
     const useXvfb =
         !headless && process.platform === "linux" && !process.env.DISPLAY;
+    // On Linux the browser (or xvfb-run, with Xvfb and the browser under it) gets its own
+    // process group, so stopBrowser can stop all of it.
+    const detached = process.platform !== "win32";
     const browser = useXvfb
-        ? spawn("xvfb-run", ["-a", chromeExe, ...args], { stdio: "ignore" })
-        : spawn(chromeExe, args, { stdio: "ignore" });
+        ? spawn("xvfb-run", ["-a", chromeExe, ...args], {
+              stdio: "ignore",
+              detached,
+          })
+        : spawn(chromeExe, args, { stdio: "ignore", detached });
+    const stopBrowser = () => {
+        try {
+            if (detached) process.kill(-browser.pid, "SIGTERM");
+            else browser.kill();
+        } catch {
+            // already gone
+        }
+    };
     const exited = new Promise((resolve) => {
         browser.once("exit", resolve);
         browser.once("error", (e) => {
@@ -243,7 +257,7 @@ async function checkBook(chromeExe, version, url) {
     } catch (e) {
         runProblems.push(`could not drive the browser: ${e.message}`);
     } finally {
-        browser.kill();
+        stopBrowser();
         await exited;
         fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
     }
@@ -329,9 +343,9 @@ async function getChromium(m) {
         process.platform === "win32"
             ? ["chrome-win32.zip", "chrome-win.zip"]
             : ["chrome-linux.zip"];
-    const tmp = fs.mkdtempSync(
-        path.join(os.tmpdir(), "old-chromium-download-"),
-    );
+    // Unpack next to the cache folder, so the final rename stays on one filesystem.
+    fs.mkdirSync(path.dirname(dir), { recursive: true });
+    const tmp = fs.mkdtempSync(path.join(path.dirname(dir), "download-"));
     try {
         let zip;
         for (const name of names) {
@@ -366,7 +380,6 @@ async function getChromium(m) {
         const unpacked = fs
             .readdirSync(tmp)
             .find((f) => f.startsWith("chrome-") && !f.endsWith(".zip"));
-        fs.mkdirSync(path.dirname(dir), { recursive: true });
         fs.renameSync(path.join(tmp, unpacked), dir);
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
