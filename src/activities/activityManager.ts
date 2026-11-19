@@ -298,7 +298,12 @@ export class ActivityManager {
         if (activityID) {
             // We should have learned about this activity when the book
             // was first loaded, and dynamically loaded its javascript,
-            // so that it is waiting now to be run
+            // so that it is waiting now to be run.
+            // Known gap (BL-17113): an activity script from the book's folder
+            // loads asynchronously (prepareActivityType). Until it arrives, its
+            // initializePageHtml is skipped and its page's activity won't start,
+            // and nothing retries. Built-in activities aren't affected; no
+            // shipped activity loads from the book's folder.
             const activity = this.loadedActivityScripts[activityID];
             console.assert(
                 activity,
