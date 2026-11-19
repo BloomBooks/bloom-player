@@ -159,55 +159,17 @@ const kDisableHighlightClass = "ui-disableHighlight";
 // For example, audio highlighting is suppressed until the related audio starts playing (to avoid flashes)
 const kSuppressHighlightClass = "ui-suppressHighlight";
 
-// How long autoplay stays on a page that has no narration.
-const kDefaultDurationOfPagesWithoutNarration = 3.0; // seconds
-let durationOfPagesWithoutNarration = kDefaultDurationOfPagesWithoutNarration;
-
-// How long to wait, after the last narration on a page finishes, before raising
-// PageNarrationComplete (which, in autoplay, turns the page), so the viewer has time to
-// take in the page before it turns.
-let pauseAfterNarration = 0; // seconds
-
-// Both durations come, in order of precedence, from the host (URL parameters), from the book's
-// own Audio/Video publish settings (see applyBookPublishSettings), or from the defaults above.
-// These remember what the host asked for, so that a book's settings don't override it.
-let hostDurationOfPagesWithoutNarration: number | undefined;
-let hostPauseAfterNarration: number | undefined;
-
+let durationOfPagesWithoutNarration = 3.0; // seconds
 export function setDurationOfPagesWithoutNarration(d: number) {
-    hostDurationOfPagesWithoutNarration = d;
     durationOfPagesWithoutNarration = d;
 }
 
+// How long to wait, after the last narration on a page finishes, before raising
+// PageNarrationComplete (which, in autoplay, turns the page). Bloom sets this when
+// recording a video, so the viewer has time to take in the page before it turns.
+let pauseAfterNarration = 0; // seconds
 export function setPauseAfterNarration(d: number) {
-    hostPauseAfterNarration = d;
     pauseAfterNarration = d;
-}
-
-// The "audioVideo" section of a book's publish-settings.json, which Bloom writes when the user
-// sets up publishing the book as audio or video. Bloom saves the durations in milliseconds.
-export interface IBookAudioVideoSettings {
-    pageTurnDelay?: number;
-    pauseAfterNarration?: number;
-}
-
-// Apply a newly loaded book's own durations, except where the host has set them. Called for
-// each book, so a book without settings gets the defaults rather than the previous book's.
-export function applyBookPublishSettings(
-    audioVideo: IBookAudioVideoSettings | undefined,
-) {
-    durationOfPagesWithoutNarration =
-        hostDurationOfPagesWithoutNarration ??
-        secondsFromMs(audioVideo?.pageTurnDelay) ??
-        kDefaultDurationOfPagesWithoutNarration;
-    pauseAfterNarration =
-        hostPauseAfterNarration ??
-        secondsFromMs(audioVideo?.pauseAfterNarration) ??
-        0;
-}
-
-function secondsFromMs(ms: number | undefined): number | undefined {
-    return typeof ms === "number" && ms >= 0 ? ms / 1000 : undefined;
 }
 
 // Even though these can now encompass more than strict sentences,

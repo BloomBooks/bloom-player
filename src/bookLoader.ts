@@ -1,5 +1,4 @@
 import axios from "axios";
-import { IBookAudioVideoSettings } from "./shared/narration";
 
 // The book-fetching part of loading a book: figuring out the actual .htm url
 // and folder prefix from the url we were given, downloading the book's html,
@@ -59,14 +58,11 @@ export interface ILoadedBook {
     bookHtmlElement: HTMLHtmlElement;
     metaDataObject: any;
     distributionSource: string;
-    // The "audioVideo" section of the book's publish-settings.json, if it has one.
-    audioVideoSettings: IBookAudioVideoSettings | undefined;
 }
 
-// Fetch the book's htm file, meta.json, .distribution and publish-settings.json, and parse the html.
+// Fetch the book's htm file, meta.json, and .distribution, and parse the html.
 // Rejects (with the axios error) if the htm or meta.json cannot be fetched;
-// a missing .distribution is normal and yields an empty string, and a missing
-// publish-settings.json (older books have none) yields no settings.
+// a missing .distribution is normal and yields an empty string.
 export async function loadBook(
     urlOfBookHtmlFile: string,
     urlPrefix: string,
@@ -90,21 +86,13 @@ export async function loadBook(
                 return { data: "" };
             },
         );
-    const publishSettingsPromise = axios
-        .get(fullUrl("publish-settings.json", urlPrefix))
-        .then(
-            (result) => result.data,
-            () => undefined,
-        );
     const htmlPromise = axios.get(urlOfBookHtmlFile);
     const metadataPromise = axios.get(fullUrl("meta.json", urlPrefix));
-    const [htmlResult, metadataResult, distributionResult, publishSettings] =
-        await Promise.all([
-            htmlPromise,
-            metadataPromise,
-            distributionPromise,
-            publishSettingsPromise,
-        ]);
+    const [htmlResult, metadataResult, distributionResult] = await Promise.all([
+        htmlPromise,
+        metadataPromise,
+        distributionPromise,
+    ]);
     // Note: we do NOT want to try just making an HtmlElement (e.g., document.createElement("html"))
     // and setting its innerHtml, since that leads to the browser trying to load all the
     // urls referenced in the book, which is a waste and also won't work because we
@@ -116,7 +104,6 @@ export async function loadBook(
         bookHtmlElement: bookDoc.documentElement as HTMLHtmlElement,
         metaDataObject: metadataResult?.data,
         distributionSource: (distributionResult as any).data,
-        audioVideoSettings: publishSettings?.audioVideo,
     };
 }
 
