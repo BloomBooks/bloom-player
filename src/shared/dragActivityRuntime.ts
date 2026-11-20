@@ -579,7 +579,8 @@ export function setReportScore(
 }
 
 function getAudioSentences(editables: HTMLElement[]) {
-    // Could be done more cleanly with flatMap or flat() but not ready to switch to es2019 yet.
+    // Could be done more cleanly with flatMap or flat(), but they need Chrome 69, newer than the
+    // oldest browser we support ("browserslist" in package.json; see "Browser support" in AGENTS.md).
     const result: HTMLElement[] = [];
     editables.forEach((e) => {
         if (e.classList.contains(kAudioSentence)) {

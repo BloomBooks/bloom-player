@@ -11,8 +11,8 @@ export function toModuleSpecifier(src, baseUrl) {
     return new URL(src, baseUrl).href;
 }
 
-// Note that loading a script as a module needs Chrome 61 or later, which may be newer than the
-// oldest engine the player otherwise supports.
+// Note that loading a script as a module needs Chrome 61 or later, newer than the oldest browser
+// the player otherwise supports ("browserslist" in package.json; see "Browser support" in AGENTS.md).
 export function loadDynamically(src) {
     // eslint-disable-next-line no-undef
     return polyfill_import(toModuleSpecifier(src, document.baseURI));

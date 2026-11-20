@@ -22,6 +22,10 @@
             "default": "./lib/shared.es.js"
         }
     },
+    "// browserslist is the oldest browser bloom-player supports (Bloom Reader's ReaderActivity.haveCurrentWebView must match). To change it, also change everything listed under Browser support in AGENTS.md (BL-17113)": "",
+    "browserslist": [
+        "chrome 54"
+    ],
     "scripts": {
         "// COMMENTS: make the action a space rather than empty string so `pnpm run` can list the scripts": " ",
         "//": " ",
@@ -32,10 +36,14 @@
         "build:standalone": "vite build",
         "build:sharedlib": "vite build --mode lib",
         "test": "vitest",
+        "// lint:browser-support checks the built bundle against browserslist (see eslint.config.js); run build:standalone first": " ",
+        "lint:browser-support": "eslint \"dist/bloomPlayer.*.js\"",
         "// test:e2e requires a current dist/ build; run build:standalone first or use test:e2e:build": " ",
         "test:e2e": "playwright test",
         "test:e2e:ui": "playwright test --ui",
         "test:e2e:build": "pnpm build:standalone && playwright test",
+        "// test:old-chromium: see scripts/old-chromium-smoke.mjs; run build:standalone first": " ",
+        "test:old-chromium": "node scripts/old-chromium-smoke.mjs",
         "// blame.ignoreRevsFile - This allows blame to see through commits that are only there to format code.": " ",
         "prepare": "husky install && git config blame.ignoreRevsFile .git-blame-ignore-revs",
         "storybook": "storybook dev -p 6006",
@@ -77,6 +85,7 @@
         "@typescript/typescript6": "6.0.2",
         "editorconfig": "2.0.1",
         "eslint": "9.39.4",
+        "eslint-plugin-compat": "7.0.2",
         "eslint-plugin-storybook": "10.3.6",
         "glob": "10.5.0",
         "husky": "8.0.3",
