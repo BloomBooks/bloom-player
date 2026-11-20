@@ -292,25 +292,23 @@ const prepareOrderSentenceActivity = (page: HTMLElement) => {
         page.getElementsByClassName(
             "drag-item-order-sentence",
         ) as HTMLCollectionOf<HTMLElement>,
-    ).forEach(
-        (elt: HTMLElement) => {
-            const contentElt = elt.getElementsByClassName(
-                "bloom-content1 bloom-visibility-code-on",
-            )[0] as HTMLElement;
-            const content = contentElt?.textContent?.trim();
-            if (!content) return;
-            const words = content.split(" ");
-            const shuffledWords = shuffle(words);
-            const container = page.ownerDocument.createElement("div");
-            container.classList.add("drag-item-random-sentence");
-            container.setAttribute("data-answer", content);
-            makeWordItems(page, shuffledWords, container, contentElt, true);
-            container.style.left = elt.style.left;
-            container.style.top = elt.style.top;
-            container.style.width = elt.style.width;
-            elt.parentElement?.insertBefore(container, elt);
-        },
-    );
+    ).forEach((elt: HTMLElement) => {
+        const contentElt = elt.getElementsByClassName(
+            "bloom-content1 bloom-visibility-code-on",
+        )[0] as HTMLElement;
+        const content = contentElt?.textContent?.trim();
+        if (!content) return;
+        const words = content.split(" ");
+        const shuffledWords = shuffle(words);
+        const container = page.ownerDocument.createElement("div");
+        container.classList.add("drag-item-random-sentence");
+        container.setAttribute("data-answer", content);
+        makeWordItems(page, shuffledWords, container, contentElt, true);
+        container.style.left = elt.style.left;
+        container.style.top = elt.style.top;
+        container.style.width = elt.style.width;
+        elt.parentElement?.insertBefore(container, elt);
+    });
 };
 
 const playVideo = (e: MouseEvent) => {
@@ -579,7 +577,8 @@ export function setReportScore(
 }
 
 function getAudioSentences(editables: HTMLElement[]) {
-    // Could be done more cleanly with flatMap or flat() but not ready to switch to es2019 yet.
+    // Could be done more cleanly with flatMap or flat(), but they need Chrome 69, newer than the
+    // oldest browser we support ("browserslist" in package.json; see "Browser support" in AGENTS.md).
     const result: HTMLElement[] = [];
     editables.forEach((e) => {
         if (e.classList.contains(kAudioSentence)) {
@@ -992,7 +991,9 @@ export function preloadSoundsForActivity(page: HTMLElement): void {
         const url = getSoundUrl(soundFile, addPrefix);
         // Avoid duplicate preloads (e.g. if prepareActivity is called more than once)
         const already = Array.from(
-            page.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+            page.querySelectorAll<HTMLAudioElement>(
+                `audio[${kPreloadSoundAttr}]`,
+            ),
         ).find((a) => a.dataset.preloadSound === url);
         if (already) return;
 
@@ -1090,7 +1091,9 @@ function playSound(
     // Reuse a preloaded element if one was prepared by preloadSoundsForActivity.
     // This avoids re-downloading the file and removes the delay before playback starts.
     const preloaded = Array.from(
-        someElt.querySelectorAll<HTMLAudioElement>(`audio[${kPreloadSoundAttr}]`),
+        someElt.querySelectorAll<HTMLAudioElement>(
+            `audio[${kPreloadSoundAttr}]`,
+        ),
     ).find((a) => a.dataset.preloadSound === url);
 
     let audio: HTMLAudioElement;

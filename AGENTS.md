@@ -34,6 +34,10 @@ checks below.
 - Bloom Reader's `ReaderActivity.haveCurrentWebView` (BloomReader repo), which tells users with an
   older WebView to update. It must not accept a WebView older than this.
 
+These mention the version in prose; update their wording too: `README.md`, the comments in
+`vite.config.ts`, `eslint.config.js`, `tsconfig.json`, `src/activities/loadDynamically.js` and
+`src/shared/dragActivityRuntime.ts`, and the comment on Bloom Reader's `MINIMUM_CHROME_VERSION`.
+
 # Preflight checks
 
 Checks `preflight` runs in this repo, in addition to its own steps.
