@@ -5,8 +5,8 @@ import fs from "fs";
 import dts from "vite-plugin-dts";
 
 // The oldest browser engine bloom-player supports is the "browserslist" entry in package.json
-// (e.g. "chrome 54"). Bloom Reader hosts the player in the Android WebView and warns when it is
-// older than that (ReaderActivity.haveCurrentWebView); keep the two in step. Without a target,
+// (Chrome 54). Changing it means changing the other places listed under "Browser support" in
+// AGENTS.md too, including Bloom Reader's ReaderActivity.haveCurrentWebView. Without a target,
 // Vite leaves syntax in the bundle that an older WebView cannot parse, and the player hangs on
 // "Loading Bloom Player..." (BL-17113). The target lowers JS and CSS syntax only and adds no
 // polyfills, so browser APIs must be that old too; e2e/bundle-browser-support.spec.ts checks both.

@@ -22,7 +22,7 @@
             "default": "./lib/shared.es.js"
         }
     },
-    "// browserslist is the oldest browser bloom-player supports; vite.config.ts builds for it and eslint.config.js checks against it (BL-17113)": "",
+    "// browserslist is the oldest browser bloom-player supports (Bloom Reader's ReaderActivity.haveCurrentWebView must match). To change it, also change everything listed under Browser support in AGENTS.md (BL-17113)": "",
     "browserslist": [
         "chrome 54"
     ],

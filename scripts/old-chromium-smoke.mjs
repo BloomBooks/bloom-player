@@ -19,8 +19,9 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Chromium snapshots are numbered by trunk position. The trunk is version N until N branches
-// off, so the last snapshot before N's branch point is version N. Add a milestone here to move
-// the floor (https://chromiumdash.appspot.com/branches lists the branch points).
+// off, so the last snapshot before N's branch point is version N. Add a milestone here when the
+// browserslist floor moves; see "Browser support" in AGENTS.md for everything that changes with
+// it (https://chromiumdash.appspot.com/branches lists the branch points).
 const branchPoints = { 54: 414607 }; // Win_x64 snapshots 414589 and 414607 both report 54.0.2840.0
 
 const target = JSON.parse(
