@@ -32,7 +32,7 @@ const describe = (m: (typeof messages)[number]) =>
     `${m.file}:${m.line}: ${m.text}`;
 
 // Newer syntax, such as `?.`, fails to parse in that browser and the player hangs on
-// "Loading Bloom Player...". (eslint.config.js sets which syntax it parses.)
+// "Loading Bloom Player...".
 test(`the built player bundle parses in ${oldestBrowser}`, () => {
     expect(messages.filter((m) => m.fatal).map(describe)).toEqual([]);
 });

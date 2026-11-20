@@ -29,14 +29,16 @@ checks below.
 
 - `browserslist` in `package.json`. `vite.config.ts` builds for it (`minimumBrowserTarget`), and
   the e2e test names and the smoke test read it.
-- `ecmaVersion` in `eslint.config.js`: the newest syntax that browser parses (ES2016 for Chrome 54).
-- `branchPoints` in `scripts/old-chromium-smoke.mjs`: where to find that Chromium build.
+- `ecmaVersionForChrome` in `eslint.config.js`: the newest syntax that browser parses (ES2016 for
+  Chrome 54). Lint stops with an error until it has a row for the new version.
+- `branchPoints` in `scripts/old-chromium-smoke.mjs`: where to find that Chromium build. The smoke
+  test stops with an error until it has a row for the new version.
 - Bloom Reader's `ReaderActivity.haveCurrentWebView` (BloomReader repo), which tells users with an
   older WebView to update. It must not accept a WebView older than this.
 
 These mention the version in prose; update their wording too: `README.md`, the comments in
-`vite.config.ts`, `eslint.config.js`, `tsconfig.json`, `src/activities/loadDynamically.js` and
-`src/shared/dragActivityRuntime.ts`, and the comment on Bloom Reader's `MINIMUM_CHROME_VERSION`.
+`vite.config.ts`, `eslint.config.js` and `tsconfig.json`, and the comment on Bloom Reader's
+`MINIMUM_CHROME_VERSION`.
 
 # Preflight checks
 
@@ -44,9 +46,8 @@ Checks `preflight` runs in this repo, in addition to its own steps.
 
 ## The player still runs in the oldest supported browser
 
-See Browser support above. The e2e suite checks the built bundle's syntax and some browser APIs
-statically (`e2e/bundle-browser-support.spec.ts`); this check runs the player in that real old
-Chromium.
+See Browser support above. The e2e spec named there checks the bundle statically; this check runs
+the player in that real old Chromium.
 
 - **When it applies:** the diff changes anything that goes into the built player: anything under
   `src/`, the `dependencies` in `package.json` (or their versions in `pnpm-lock.yaml`),
