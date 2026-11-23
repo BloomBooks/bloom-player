@@ -4,12 +4,23 @@ import path from "path";
 import fs from "fs";
 import dts from "vite-plugin-dts";
 
+// The oldest browser engine bloom-player supports is the "browserslist" entry in package.json
+// (Chrome 54). Changing it means changing the other places listed under "Browser support" in
+// AGENTS.md too, including Bloom Reader's ReaderActivity.haveCurrentWebView. Without a target,
+// Vite leaves syntax in the bundle that an older WebView cannot parse, and the player hangs on
+// "Loading Bloom Player..." (BL-17113). The target lowers JS and CSS syntax only and adds no
+// polyfills, so browser APIs must be that old too; e2e/bundle-browser-support.spec.ts checks both.
+const minimumBrowserTarget = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8"),
+).browserslist[0].replace(" ", ""); // "chrome 54" -> esbuild's "chrome54"
+
 export default defineConfig(({ command, mode }) => {
     // If we're building in library mode, configure for the shared library
     if (mode === "lib") {
         return {
             build: {
                 outDir: "lib",
+                target: minimumBrowserTarget,
                 lib: {
                     entry: path.resolve(__dirname, "src/shared/index.ts"),
                     name: "BloomPlayerShared",
@@ -43,6 +54,7 @@ export default defineConfig(({ command, mode }) => {
         },
         build: {
             outDir: "dist",
+            target: minimumBrowserTarget,
             copyPublicDir: false, // Disables the copying of public/ directory during build
             rollupOptions: {
                 input: {

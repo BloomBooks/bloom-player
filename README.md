@@ -12,6 +12,10 @@ The Bloom project uses _bloom-player_ in the following places:
 - In [BloomPUB Viewer](https://github.com/bloombooks/bloompub-viewer)
 - In Android and iOS apps created with Reading App Builder
 
+The oldest browser it supports is the `browserslist` entry in `package.json` (Chrome 54), because
+Bloom Reader shows books in the phone's built-in Android WebView, which can be old. See "Browser
+support" in [AGENTS.md](AGENTS.md).
+
 # Using bloom-player in a website
 
 We serve bloom-player from a CDN at
