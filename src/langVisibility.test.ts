@@ -51,8 +51,9 @@ function expectBookAsBuilt(html: HTMLHtmlElement, defaultLanguages: string) {
 }
 
 describe("updateDivVisibilityByLangCode", () => {
-    // V and CL1 must behave the same, so run each test for both.
-    describe.each(["V", "CL1"])("a block marked %s", (role) => {
+    // V and CL1 must behave the same, so run each test for both, and for CL1 in a list after
+    // another role, as Bloom writes such lists.
+    describe.each(["V", "CL1", "N1,CL1"])("a block marked %s", (role) => {
         it("keeps Bloom's classes when the book is shown in its first language", () => {
             const html = makeBook(role);
             expectBookAsBuilt(html, role);
