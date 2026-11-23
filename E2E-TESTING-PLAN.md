@@ -18,7 +18,7 @@ automated exercises that today.
 
 - **No headless browser tests exist.** No Playwright/Cypress/Puppeteer/test-runner
   anywhere; CI (`.github/workflows/release.yml`) runs only vitest, on push to
-  master/alpha, and already builds `dist/` *before* the test step.
+  release/master, and already builds `dist/` *before* the test step.
 - **Storybook `play()` tests exist but only run manually.** `src/stories/`
   `playerInteraction.stories.tsx` (3 assertion-rich tests), `controlBarInteraction.stories.tsx`,
   and `navigation.stories.tsx` (multi-book navigation via the `BloomPlayerTester` page-object)
@@ -46,7 +46,7 @@ automated exercises that today.
      for the checks that can't be asserted automatically: visual/layout fidelity, motion and
      animation quality, RTL appearance, touch-device behavior, and the live-from-Bloom-Editor
      story.
-2. **CI: release workflow only.** Add e2e steps to `release.yml` (push to master/alpha).
+2. **CI: release workflow only.** Add e2e steps to `release.yml` (push to release/master).
    No PR workflow for now. A failing e2e run blocks the release — that is the point.
 3. **No S3 books checked in.** Reuse the existing `public/testBooks/` fixtures; author
    new minimal fixture books only where a feature has no local coverage.
@@ -171,4 +171,4 @@ caching (`~/.cache/ms-playwright`) until job time becomes a problem.
    the `/book/<id>/index.htm` rewrite, and a spaces-in-path fixture.
 3. Rename `dist/` away → `pnpm test:e2e` fails fast with the actionable message; restore.
 4. `pnpm test:e2e` green headless on Windows; `pnpm test` still runs only the vitest suite.
-5. Push to alpha and watch the release workflow run the new steps on ubuntu.
+5. Push to master and watch the release workflow run the new steps on ubuntu.

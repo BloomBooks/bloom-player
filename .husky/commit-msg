@@ -17,7 +17,7 @@ if ! echo "$FIRST_LINE" | grep -Eq '^(fix|feat|chore)(\([^)]*\))?(!)?:|^Merge'; 
     echo "e.g. chore: Updated README"
     echo "     fix: Made a repair"
     echo "     feat: Added a new thing"
-    echo "     Merge alpha into main"
+    echo "     Merge master into release"
     exit 1
 fi
 
