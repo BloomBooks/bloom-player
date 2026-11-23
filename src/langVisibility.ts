@@ -124,7 +124,7 @@ function areStringsEqualInvariantCultureIgnoreCase(a: string, b: string) {
 // bloom-contentNational1, now with just the second class making it visible).
 // And the chosen language may take up more space than the original language, so bi- or tri-lingual
 // content blocks may overflow.
-// We decided (BL-9256) that in fields that display the book's primary language (V or auto),
+// We decided (BL-9256) that in fields that display the book's primary language (V, CL1 or auto),
 // if the user has chosen a different language, we will only show that chosen language.
 export function updateDivVisibilityByLangCode(
     htmlElement: HTMLHtmlElement | undefined,

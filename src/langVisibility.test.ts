@@ -33,6 +33,11 @@ function isVisible(html: HTMLHtmlElement, lang: string): boolean {
     return editable(html, lang).classList.contains("bloom-visibility-code-on");
 }
 
+// The classes of each of the book's boxes, in kBookLanguages order.
+function classesOf(html: HTMLHtmlElement): string[] {
+    return kBookLanguages.map((lang) => editable(html, lang).className);
+}
+
 // Checks the book is as makeBook built it, so a test can't pass because the data was wrong.
 function expectBookAsBuilt(html: HTMLHtmlElement, defaultLanguages: string) {
     expect(
@@ -51,14 +56,11 @@ describe("updateDivVisibilityByLangCode", () => {
         it("keeps Bloom's classes when the book is shown in its first language", () => {
             const html = makeBook(role);
             expectBookAsBuilt(html, role);
-            const originalEnClass = editable(html, "en").className;
+            const originalClasses = classesOf(html);
 
             updateDivVisibilityByLangCode(html, "en", kBookLanguages, true);
 
-            expect(editable(html, "en").className).toBe(originalEnClass);
-            expect(isVisible(html, "en")).toBe(true);
-            expect(isVisible(html, "fr")).toBe(true);
-            expect(isVisible(html, "es")).toBe(false);
+            expect(classesOf(html)).toEqual(originalClasses);
         });
 
         it("shows only the chosen language when the reader picks another one", () => {
@@ -79,19 +81,13 @@ describe("updateDivVisibilityByLangCode", () => {
         it("goes back to Bloom's classes when the reader returns to the first language", () => {
             const html = makeBook(role);
             expectBookAsBuilt(html, role);
-            const originalClasses = ["en", "fr", "es"].map(
-                (lang) => editable(html, lang).className,
-            );
+            const originalClasses = classesOf(html);
             updateDivVisibilityByLangCode(html, "es", kBookLanguages, true);
             expect(isVisible(html, "en")).toBe(false);
 
             updateDivVisibilityByLangCode(html, "en", kBookLanguages, false);
 
-            expect(
-                ["en", "fr", "es"].map(
-                    (lang) => editable(html, lang).className,
-                ),
-            ).toEqual(originalClasses);
+            expect(classesOf(html)).toEqual(originalClasses);
         });
     });
 
@@ -101,18 +97,11 @@ describe("updateDivVisibilityByLangCode", () => {
         it("keeps Bloom's classes when the reader picks another language", () => {
             const html = makeBook(role);
             expectBookAsBuilt(html, role);
-            const originalClasses = ["en", "fr", "es"].map(
-                (lang) => editable(html, lang).className,
-            );
+            const originalClasses = classesOf(html);
 
             updateDivVisibilityByLangCode(html, "es", kBookLanguages, true);
 
-            expect(
-                ["en", "fr", "es"].map(
-                    (lang) => editable(html, lang).className,
-                ),
-            ).toEqual(originalClasses);
-            expect(isVisible(html, "es")).toBe(false);
+            expect(classesOf(html)).toEqual(originalClasses);
         });
     });
 });
