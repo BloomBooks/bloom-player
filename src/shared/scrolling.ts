@@ -9,6 +9,43 @@ export const kSelectorForPotentialNiceScrollElements =
     ".bloom-translationGroup:not(.bloom-imageDescription) .bloom-editable.bloom-visibility-code-on, " +
     ".scrollable"; // we added .scrollable for branding cases where the boilerplate text also needs to scroll
 
+// The class of a table that Bloom Desktop's Insert Table puts in the text of a bloom-editable,
+// between its paragraphs.
+export const kTableInTextClass = "bloom-tableInText";
+
+/**
+ * The empty paragraph at the end of `box` that comes right after a table in text, if there is one
+ * and nothing has been typed in it. Bloom Desktop adds it while editing, so that the author has
+ * somewhere to type below a table that ends the text, and leaves it out of the page it saves. It is
+ * not text that has to fit the box: Bloom Desktop's overflow check leaves it out, and so does the
+ * check here for whether a box needs a scroll bar.
+ */
+export function unusedParagraphBelowLastTable(
+    box: HTMLElement,
+): HTMLElement | undefined {
+    const paragraphs = box.querySelectorAll<HTMLElement>(":scope > p");
+    const last = paragraphs[paragraphs.length - 1];
+    if (!last?.previousElementSibling?.classList.contains(kTableInTextClass)) {
+        return undefined;
+    }
+    // A <br> is what keeps an empty paragraph one line high; a span may be left empty by
+    // the editor. Anything else, such as a picture, is content.
+    const isEmpty =
+        (last.textContent ?? "").trim() === "" &&
+        !last.querySelector(":not(br, span)");
+    return isEmpty ? last : undefined;
+}
+
+// The last child of `box` that has to fit in it for the box to need no scroll bar: its last
+// element child, unless that is the empty paragraph below a table, when it is the table.
+function lastChildThatMustFit(box: HTMLElement): Element | null {
+    const last = box.lastElementChild;
+    if (last && last === unusedParagraphBelowLastTable(box)) {
+        return last.previousElementSibling;
+    }
+    return last;
+}
+
 // Add a "nice" scrollbar to the page if the content overflows.
 export function addScrollbarsToPage(
     bloomPage: Element,
@@ -50,7 +87,7 @@ export function addScrollbarsToPage(
                 // have done without it.  Using the same code in Bloom Desktop and bloom-player
                 // ensures consistent scrollbar behavior between the two.
                 const firstChild = elt.firstElementChild;
-                const lastChild = elt.lastElementChild;
+                const lastChild = lastChildThatMustFit(elt as HTMLElement);
                 if (!firstChild || !lastChild) {
                     // no children, can't be overflowing
                     return;
